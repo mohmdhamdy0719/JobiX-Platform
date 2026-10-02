@@ -1,0 +1,13 @@
+{
+  "@@locale": "en",
+  "appTitle": "Jobix",
+  "boot": "Starting Jobix",
+  "signedOut": "Signed-out foundation",
+  "signedIn": "Signed-in foundation",
+  "placeholder": "Foundation placeholder. Product screens are not implemented.",
+  "updateRequired": "An app update is required.",
+  "startupFailed": "Jobix could not start. Check configuration and connectivity, then retry.",
+  "retry": "Retry",
+  "signOut": "Sign out",
+  "signOutFailed": "Sign-out could not complete. Please retry."
+}

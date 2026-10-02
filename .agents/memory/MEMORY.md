@@ -1,1 +1,2 @@
 - [Jobix scope and authority](jobix-authority.md) — preserve the approved mobile stack, source hierarchy, brand spelling, and audit-before-build boundary.
+- [Secure auth startup](secure-auth-startup.md) — SDK initialization is not a session-recovery barrier; finish recovery before enabling guards or sign-out.

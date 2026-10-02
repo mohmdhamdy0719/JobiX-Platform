@@ -1,0 +1,317 @@
+Implement the Jobix Foundation only.
+
+IMPORTANT:
+This is an implementation task, not a planning or architecture task.
+Do NOT re-analyze the product, redesign the architecture, invent features, or continue into feature slices.
+
+Use the approved Product Design, Architecture V2, Constitution, DESIGN.md, and the reviewed Finalization & Foundation Plan as the source of truth.
+
+The Foundation scope is ONLY the scope below.
+
+==================================================
+1. FOUNDATION SCOPE
+==================================================
+
+Build the Flutter application foundation with:
+
+1. Flutter app structure
+   - Feature-first folder structure.
+   - Keep the Flutter app separate from the existing pnpm workspace where applicable.
+   - Clean dev/staging/prod configuration.
+   - Only public client configuration may exist in the Flutter app.
+
+2. State management
+   - Riverpod.
+   - Providers for:
+     - app configuration
+     - Drift database
+     - Supabase client
+     - auth session
+     - locale
+
+3. Localization
+   - English and Arabic.
+   - Flutter ARB localization.
+   - Device language is the initial default.
+   - If the device language is neither Arabic nor English, fall back to English.
+   - Persisted language override infrastructure should exist for the future Settings screen.
+
+4. RTL/LTR
+   - Arabic => RTL.
+   - English => LTR.
+   - Use start/end instead of left/right in layout code.
+   - Add tests that detect inappropriate left/right-specific layout usage.
+   - Support mixed Arabic/English text direction correctly.
+
+5. Design system foundation
+   - Implement provisional `tokens_v0` from DESIGN.md only.
+   - Build the Material 3 theme from those tokens.
+   - Do NOT invent a new visual language.
+   - Do NOT create final production screens.
+   - Do NOT invent typography, final fonts, logo assets, or Figma values.
+   - Font family must remain a replaceable token until the production font is approved.
+   - Treat these tokens as provisional until Figma is reconciled.
+
+6. Navigation
+   - Establish the application route table and route guards.
+   - Boot state.
+   - Signed-out state.
+   - Signed-in state.
+   - Use placeholder destinations only.
+   - Do NOT implement the actual onboarding/auth/profile screens.
+
+7. Splash / startup
+   Implement the startup sequence:
+   - load environment configuration
+   - initialize/open local database
+   - restore Supabase session
+   - read minimum app version from `app_policies`
+   - reach an appropriate placeholder state
+   - support the minimum-version failure state
+
+   Use the approved logo if available.
+   If the real logo is unavailable, do not invent one.
+
+8. Drift
+   - Establish Drift database infrastructure.
+   - Migration framework.
+   - Schema v1 should contain infrastructure/settings tables only.
+   - Do NOT implement Career Profile tables yet.
+   - Do NOT implement Skills tables yet.
+   - Do NOT implement sync/outbox tables yet unless strictly required as infrastructure.
+   - Add migration tests.
+
+9. Secure storage
+   - Use flutter_secure_storage.
+   - iOS Keychain should be configured as this-device-only.
+   - Android Keystore.
+   - Store the Supabase session securely rather than in SharedPreferences.
+   - Do not log session tokens or secrets.
+
+10. Local database encryption
+   - Use SQLCipher as approved.
+   - Generate a random database key.
+   - Store the key only in secure storage.
+   - Opening the encrypted database without the correct key must fail.
+   - If the local key is permanently lost, the local database may reset and later resync from the server.
+   - Do not invent a recovery mechanism that conflicts with the architecture.
+
+11. Backup exclusion
+   - Android backup/data extraction must exclude the encrypted database and secure local secrets.
+   - iOS database files must be excluded from backup.
+   - Keychain items must be configured as this-device-only.
+
+12. Supabase foundation
+   - Initialize Supabase using only:
+     - public project URL
+     - anon/publishable client key
+   - Never include a service-role key in Flutter.
+   - Add a build/static check that detects accidental service-role keys in client code.
+   - Keep environments isolated.
+
+13. Authentication foundation
+   - Session restoration.
+   - Auth state stream.
+   - Sign-out.
+   - No sign-in/sign-up UI yet.
+
+14. Server migration foundation
+   - Create the minimum required `users` table.
+   - Create `app_policies`.
+   - Apply appropriate RLS.
+   - `app_policies` must be read-only from the client through the approved safe access pattern.
+   - Add RLS tests proving:
+     - signed-out users cannot read protected user data
+     - user A cannot read user B's data
+     - authorized owner access works where applicable
+
+15. Testing
+   Add:
+   - unit tests
+   - widget tests
+   - English/Arabic golden tests
+   - RTL/LTR tests
+   - mixed-language direction test
+   - Drift migration tests
+   - encrypted database tests
+   - RLS tests
+   - configuration/secret checks
+   - lint/static checks
+
+==================================================
+2. STRICTLY OUT OF SCOPE
+==================================================
+
+Do NOT implement any of the following:
+
+- Onboarding UI
+- Sign-in/sign-up UI
+- Career Profile UI
+- Personal Information UI
+- Experience/Education/Projects UI
+- Skills UI
+- Skills catalog
+- AI generation
+- AI quota
+- ATS
+- Credits
+- Daily Reward
+- PDF generation
+- Resume export
+- Resume templates
+- Cover Letter
+- Professional Email
+- Profile Completeness UI
+- Profile sync/outbox
+- Career Profile business tables
+- Translation of user content
+- Premium billing
+- Analytics vendor integration
+- AdMob implementation
+- Final Figma screens
+- Final production typography
+- New product features
+
+Do not create placeholder business logic for these features.
+
+==================================================
+3. IMPORTANT PRODUCT/ARCHITECTURE RULES
+==================================================
+
+- Product name is Jobix.
+- Do not rename technical identifiers, database history, or package identifiers unless explicitly required.
+- Arabic and English are first-class.
+- Resume content translation is NOT an MVP feature.
+- Resume language switching must not imply automatic content translation.
+- Do not silently invent missing product decisions.
+- Do not choose a Skills dataset.
+- Do not invent production fonts.
+- Do not invent Figma measurements.
+- Do not add dependencies unless necessary for this Foundation.
+- Do not add external services.
+- Do not introduce analytics.
+- No secrets in source control.
+- No service-role Supabase key in the client.
+- RLS is mandatory for protected server data.
+
+==================================================
+4. DESIGN RULES
+==================================================
+
+The Foundation must establish infrastructure, not final UI.
+
+Use DESIGN.md only for provisional tokens.
+
+Known unresolved visual items must remain unresolved:
+- exact typography scale
+- final production font
+- exact radius values where DESIGN.md gives ranges
+- final Figma variables
+- final logo/assets
+- final screen layouts
+
+Do not "solve" these by inventing values.
+
+A minimal placeholder shell is acceptable only to prove:
+- boot
+- localization
+- RTL/LTR
+- routing
+- theme
+- auth state
+- startup states
+
+==================================================
+5. ACCEPTANCE CRITERIA
+==================================================
+
+The Foundation is complete only when:
+
+1. `flutter analyze` passes with zero issues.
+
+2. All Foundation tests pass.
+
+3. App runs in English and Arabic.
+
+4. Arabic switches the application direction to RTL.
+   English switches it to LTR.
+
+5. No production layout relies on hard-coded left/right positioning where start/end is appropriate.
+
+6. Mixed Arabic/English text has a tested correct direction behavior.
+
+7. Theme values come from the provisional token system rather than scattered hard-coded values.
+
+8. Startup works with:
+   - no session
+   - valid stored session
+   - minimum-version failure
+
+9. Drift database opens successfully.
+
+10. Drift database is encrypted.
+
+11. Opening the encrypted database with a wrong/missing key fails.
+
+12. Drift migration v0 -> v1 is tested.
+
+13. Supabase session data is stored securely and not in SharedPreferences.
+
+14. Android and iOS backup exclusion rules are configured and verifiable.
+
+15. RLS tests prove isolation between users.
+
+16. No service-role key or other server secret exists in the client.
+
+17. Dev/staging/prod configuration is isolated.
+
+18. Android build succeeds.
+19. iOS build configuration is valid, subject to the available build environment.
+
+20. No out-of-scope feature has been implemented.
+
+==================================================
+6. IMPLEMENTATION DISCIPLINE
+==================================================
+
+Before changing anything:
+- inspect the existing repository structure
+- reuse existing valid setup where possible
+- do not recreate working infrastructure unnecessarily
+
+During implementation:
+- make small coherent changes
+- keep the project buildable
+- keep migrations deterministic
+- keep secrets out of files
+- do not make speculative architecture changes
+- do not modify Product Design, Architecture V2, or Constitution unless explicitly requested
+
+If an implementation detail conflicts with the approved architecture:
+STOP and report the conflict instead of choosing your own product/architecture decision.
+
+If a dependency is unavailable:
+do not replace it with an arbitrary alternative without reporting it first.
+
+At the end:
+STOP.
+
+Do not automatically proceed to the next feature.
+
+==================================================
+7. FINAL REPORT
+==================================================
+
+After implementation, report only:
+
+1. Files/modules created or changed
+2. Dependencies added
+3. Database migrations added
+4. Security measures implemented
+5. Tests added and their results
+6. Build/analyze results
+7. Anything that could not be verified because of the environment
+8. Any deviations from the requested Foundation scope
+9. Any blockers for the next slice
+
+Do not implement the next slice.
