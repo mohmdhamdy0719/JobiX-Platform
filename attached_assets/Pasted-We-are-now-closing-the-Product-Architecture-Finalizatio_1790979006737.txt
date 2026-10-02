@@ -1,0 +1,523 @@
+We are now closing the Product/Architecture Finalization Gate before implementation.
+
+Do NOT implement anything yet.
+
+Do NOT modify code, database, migrations, Supabase, dependencies, infrastructure, Figma, configuration, or project files.
+
+Do NOT start the Flutter Foundation.
+
+This step is for formalizing the decisions below and producing an implementation-ready plan only.
+
+==================================================
+1. SOURCE OF TRUTH
+==================================================
+
+Continue to use:
+
+1. Jobix Product Design
+   → product behavior, user journeys, UX rules, copy, MVP scope
+
+2. Jobix Architecture V2
+   → technical architecture, APIs, database, security, synchronization,
+     AI, Credits, ATS, rendering, export, deletion, operations
+
+3. Jobix Constitution
+   → non-negotiable engineering/product principles
+
+4. DESIGN.md
+   → design/engineering implementation guidance
+
+5. Figma + approved prototype
+   → visual source of truth
+
+Architecture V1 is historical/contextual only.
+
+Do not silently override any approved decision.
+
+==================================================
+2. BRAND NAME
+==================================================
+
+The approved current product name is:
+
+Jobix
+
+Use "Jobix" in all NEW user-facing copy and documentation.
+
+Do NOT perform a blind global rename of technical identifiers, package names,
+database identifiers, migrations, or historical references.
+
+==================================================
+3. PROFILE COMPLETENESS — LOCK THE PRODUCT RULE
+==================================================
+
+We are approving the following proposed Profile Completeness structure:
+
+Contact Information: 15%
+Career Evidence: 45%
+Skills: 15%
+Summary: 10%
+Languages: 10%
+Target Role: 5%
+
+Total: 100%
+
+Career Evidence may include:
+
+- Work Experience
+- Education
+- Projects
+- Volunteer Experience
+- Achievements
+
+The purpose is to make completeness fair across:
+
+- Students
+- Recent Graduates
+- Early-Career users
+- Mid/Experienced users
+- Career Changers
+- Returning-to-Work users
+
+Work Experience must NOT be mandatory for a user to achieve meaningful completeness.
+
+However:
+
+Skills alone must NEVER be sufficient to satisfy the
+Minimum Meaningful Career Content requirement.
+
+Minimum Meaningful Career Content must be satisfied by at least one
+meaningful career-evidence item.
+
+A meaningful evidence item must contain the minimum fields required by
+Product Design for that section and must contain meaningful user-provided
+content rather than placeholders.
+
+The first meaningful career-evidence item contributes 30 percentage points
+inside the Career Evidence category.
+
+The second meaningful career-evidence item contributes the remaining
+15 percentage points.
+
+Additional evidence items improve completeness only according to the
+approved section completion rules; do not invent additional weighting.
+
+If the profile does not satisfy Minimum Meaningful Career Content,
+the completeness score must not cross the approved AI-transition threshold.
+
+The first-profile AI-building phase transitions permanently when
+Profile Completeness reaches 50%.
+
+IMPORTANT:
+
+Before treating this as final, verify that this interpretation is
+consistent with the Product Design and Architecture V2.
+
+If you identify a genuine contradiction, report it instead of silently
+changing the rule.
+
+==================================================
+4. PROFILE COMPLETENESS — FIELD RULES
+==================================================
+
+Define the implementation contract for each component:
+
+A. Contact Information
+B. Career Evidence
+C. Skills
+D. Summary
+E. Languages
+F. Target Role
+
+For each one specify:
+
+- required fields
+- optional fields
+- what counts as complete
+- what counts as incomplete
+- invalid values
+- empty sections
+- partially completed sections
+- duplicate entries
+- deleted entries
+- meaningful-content rules
+
+Do not invent product behavior that is not supported by the approved
+documents.
+
+Where the Product Design is authoritative, follow it exactly.
+
+==================================================
+5. TARGET ROLE
+==================================================
+
+The Product Design allows Target Role to be optional.
+
+Preserve that behavior.
+
+Define the implementation contract only:
+
+- optional
+- searchable/typeable if applicable
+- user-controlled
+- does not block profile creation
+- does not block export unless another approved rule requires it
+- may influence ATS only according to approved ATS rules
+- must not become a hidden mandatory onboarding field
+
+Do not invent a Target Role taxonomy unless an approved source already exists.
+
+If the source is missing, use a safe user-entered value and report the missing
+taxonomy as a future/reference-data decision.
+
+==================================================
+6. FIELD LIMITS
+==================================================
+
+Before implementation, reconcile the field-length rules from Product Design
+and Architecture V2.
+
+Create one authoritative implementation table for:
+
+- Full Name
+- Email
+- Phone
+- City
+- Target Role
+- Summary
+- Experience Description
+- Education fields
+- Project Description
+- Skills
+- Languages
+- Certifications
+- Achievements
+- Optional sections
+- Professional links
+
+Use the approved Product Design limits where they exist.
+
+Do not invent arbitrary limits where none are approved.
+
+If Architecture V2 and Product Design disagree, report the conflict and
+identify which source is authoritative.
+
+==================================================
+7. ATS — DO NOT TURN IMPLEMENTATION DETAILS INTO PRODUCT RULES
+==================================================
+
+Keep the approved product definition:
+
+ATS Readiness Score:
+- 0–100
+- explicit evaluation
+- deterministic + AI-assisted where appropriate
+- versioned
+- honest "Not enough information yet" state
+- separate from Profile Completeness
+- separate from job-match score
+- separate from hiring probability
+- does not block export
+- does not consume the ordinary AI generation allowance unless explicitly
+  defined otherwise by the approved architecture
+
+The previously proposed technical details such as:
+- AI scoring bands
+- temperature
+- number of AI calls
+- internal normalization methods
+
+must remain implementation details, NOT new Product Design rules.
+
+If Architecture V2 already defines exact ATS dimensions/weights, preserve them.
+
+If a detail is not actually defined by the approved sources, report it as
+an implementation decision rather than silently turning it into product
+behavior.
+
+Do not implement ATS yet.
+
+==================================================
+8. SKILLS CATALOG
+==================================================
+
+We have approved the UX behavior:
+
+- search
+- type
+- suggestions
+- select
+- remove
+- custom skills allowed
+- duplicate prevention
+
+SQLite/Drift should provide the local searchable reference catalog.
+
+However, DO NOT invent or download a large skills dataset.
+
+For now:
+
+- define the database structure
+- define normalization/search behavior
+- define bilingual handling
+- define versioning
+- define catalog vs custom skill distinction
+- define future catalog update mechanism
+
+If an approved skill taxonomy/dataset is not present, mark:
+
+"Skill taxonomy/data source requires Product Owner decision."
+
+Do not block Foundation architecture because of the missing dataset.
+
+Do not implement the dataset yet.
+
+==================================================
+9. PROFESSIONAL EMAIL + COVER LETTER
+==================================================
+
+Do not expand these features during Foundation.
+
+The MVP scope remains:
+
+Professional Email:
+- text-only MVP
+
+Cover Letter:
+- one default MVP layout/template
+
+However, the detailed end-to-end UX/screens for these services are not yet
+fully represented in the available Product Design/Figma handoff.
+
+Therefore:
+
+- do not invent their UI
+- do not implement them now
+- mark their detailed UX as a later pre-implementation requirement
+
+They must not block the Foundation slice.
+
+==================================================
+10. TRANSLATION
+==================================================
+
+Translation of Career Profile content is NOT an MVP feature.
+
+Do not implement automatic content translation.
+
+However, Jobix must support from day one:
+
+- English UI
+- Arabic UI
+- English Resume layout
+- Arabic Resume layout
+- LTR
+- RTL
+- mixed Arabic/English content
+
+Changing Resume language changes presentation/layout/direction.
+
+It does NOT silently translate user content.
+
+==================================================
+11. PRODUCTION FONTS
+==================================================
+
+Do not invent final production fonts.
+
+Review the current Figma/design references.
+
+If the approved production font and licensing information is already
+available, record it.
+
+If it is not available:
+
+- identify the missing decision
+- do not substitute a random production font
+- do not introduce an unapproved font as final
+
+The same rendering system must support Preview and Chromium PDF output.
+
+==================================================
+12. RESUME PAGE COUNT
+==================================================
+
+Preserve the approved behavior:
+
+- 1 page is valid
+- multiple pages are valid
+- actual rendered page count must be known
+- page count may be shown to the user
+- informational guidance may be shown
+- export must not be blocked merely because the Resume is multiple pages
+- user content must never be silently deleted
+- typography must not be degraded just to force one page
+
+Architecture safety limits remain technical safety limits.
+
+Do not turn them into arbitrary product restrictions without approval.
+
+==================================================
+13. ARCHITECTURE V2 FINALIZATION
+==================================================
+
+Prepare a targeted patch list only.
+
+Do NOT rewrite Architecture V2.
+
+Check and document the minimum required corrections for:
+
+- translation being future-only
+- Jobix branding
+- Profile Completeness
+- Target Role
+- profile section schema
+- export state consistency
+- AI UNKNOWN/reconciliation
+- sync/conflict behavior
+- deletion ordering/FK semantics
+- idempotency
+- error-code consistency
+- skill uniqueness
+- Professional Email scope
+- Cover Letter scope
+- production font dependency
+
+For every patch provide:
+
+1. Existing issue
+2. Minimal correction
+3. Why it is needed
+4. Whether Product Owner approval is required
+
+==================================================
+14. CONSTITUTION FINALIZATION
+==================================================
+
+Prepare only the required amendments.
+
+Do NOT rewrite the Constitution.
+
+Check consistency with:
+
+- Jobix branding
+- Arabic/English first-class support
+- AI anti-fabrication
+- user ownership
+- server authority
+- Credits
+- RLS
+- local storage
+- private PDFs
+- deletion
+- rendering
+- ATS
+- AI quota
+- Profile Completeness
+- translation being future-only
+
+Only report genuine changes.
+
+==================================================
+15. FOUNDATION SCOPE
+==================================================
+
+After the above reconciliation, prepare the exact scope for the FIRST
+implementation slice.
+
+The first slice should be:
+
+FOUNDATION + BILINGUAL APP SHELL
+
+Expected scope:
+
+- Flutter project foundation
+- Riverpod
+- localization
+- Arabic/English
+- RTL/LTR
+- approved design-token foundation
+- theme foundation
+- routing/navigation foundation
+- Splash foundation
+- Drift foundation
+- secure local-storage strategy
+- local database encryption/protection strategy where appropriate
+- backup exclusion strategy
+- basic test infrastructure
+- Supabase integration foundation
+- Auth integration foundation only where needed for the architecture
+- RLS migration foundation only where needed
+- clean environment/configuration separation
+
+Do NOT implement:
+
+- full onboarding
+- full authentication UX
+- AI
+- ATS
+- Credits
+- Daily Reward
+- PDF generation
+- Cover Letter
+- Professional Email
+- full Career Profile UI
+- final Figma screen implementation
+
+Those will be separate vertical slices.
+
+==================================================
+16. DESIGN FIDELITY
+==================================================
+
+Do not build UI based on assumptions.
+
+The Figma/prototype remains the visual source of truth.
+
+Before implementing final screens, actual Figma frames/assets must be available.
+
+If they are not currently accessible, record exactly what is missing.
+
+Do not redesign the UI.
+
+Do not create a different visual language.
+
+==================================================
+17. FINAL OUTPUT
+==================================================
+
+Return ONLY an approval-ready Finalization & Foundation Plan.
+
+Use exactly:
+
+1. CLOSED DECISIONS
+2. PROFILE COMPLETENESS FINAL CONTRACT
+3. TARGET ROLE + FIELD LIMITS
+4. ATS CONTRACT
+5. SKILLS CATALOG CONTRACT
+6. REQUIRED ARCHITECTURE V2 PATCHES
+7. REQUIRED CONSTITUTION PATCHES
+8. REMAINING PRODUCT DECISIONS
+9. FOUNDATION SCOPE
+10. FOUNDATION ACCEPTANCE CRITERIA
+11. FOUNDATION TEST PLAN
+12. FOUNDATION SECURITY CHECKLIST
+13. FOUNDATION DESIGN REQUIREMENTS
+14. BLOCKERS
+15. RECOMMENDED NEXT ACTION
+
+Important:
+
+Do NOT implement anything.
+
+Do NOT modify files.
+
+Do NOT create migrations.
+
+Do NOT install packages.
+
+Do NOT create Supabase resources.
+
+Do NOT start the Flutter app.
+
+We will review this final plan before granting implementation permission.
