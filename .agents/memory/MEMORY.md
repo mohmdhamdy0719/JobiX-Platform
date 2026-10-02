@@ -1,0 +1,1 @@
+- [Jobix scope and authority](jobix-authority.md) — preserve the approved mobile stack, source hierarchy, brand spelling, and audit-before-build boundary.
