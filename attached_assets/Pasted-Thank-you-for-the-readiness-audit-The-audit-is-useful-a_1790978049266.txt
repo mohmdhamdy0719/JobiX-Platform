@@ -1,0 +1,426 @@
+Thank you for the readiness audit. The audit is useful and we will use it as the basis for controlled implementation.
+
+Do NOT start implementation yet.
+
+Do NOT modify code, database schema, Supabase, dependencies, infrastructure, Figma, or configuration.
+
+We are now entering a FINALIZATION / DECISION-LOCK phase before the first implementation slice.
+
+Your job in this step is to help us close the remaining implementation-critical decisions and prepare the project for approval.
+
+==================================================
+1. IMPORTANT GOVERNANCE
+==================================================
+
+The approved product and architecture documents remain the source of truth.
+
+Do not invent product behavior.
+
+Do not silently change existing decisions.
+
+Do not redesign the product.
+
+Do not introduce new technologies or services.
+
+If you discover a contradiction, identify it explicitly and propose the smallest possible resolution.
+
+Any major change to:
+- product behavior
+- business rules
+- user journeys
+- architecture
+- database authority
+- API contracts
+- security model
+- AI/ATS behavior
+- Credits
+- export behavior
+- infrastructure
+must be presented for Product Owner approval before implementation.
+
+Minor implementation clarifications are allowed only when they do not change approved behavior.
+
+==================================================
+2. DECISIONS WE ARE LOCKING NOW
+==================================================
+
+We want to resolve the remaining implementation-critical decisions before Foundation implementation.
+
+Focus on these areas:
+
+A. Profile Completeness
+B. ATS detailed scoring rubric
+C. Skills catalog
+D. Production fonts
+E. Resume page-count / oversized-document behavior
+F. RPO/RTO and analytics as launch-gate decisions
+G. Architecture V2 finalization consistency
+H. Constitution finalization consistency
+I. Figma / visual asset requirements
+
+==================================================
+3. PROFILE COMPLETENESS
+==================================================
+
+Review the Product Design, Architecture V2, and Constitution.
+
+We need an implementation-ready definition of Profile Completeness.
+
+Do NOT invent a formula without first checking whether the documents already define one.
+
+If the exact formula is not defined, propose a minimal, explainable formula based strictly on the existing approved product structure.
+
+The result must define:
+
+- What counts toward completeness
+- Section weights
+- Field-level completion rules where necessary
+- What counts as meaningful career information
+- How empty optional sections behave
+- How incomplete-but-used sections behave
+- How invalid required fields affect completeness
+- How completeness reaches the 50% AI transition threshold
+- Whether Personal Information is required for completeness
+- Whether Experience is required
+- Whether Summary is optional
+- How users with no work experience are treated
+- How Students / Recent Graduates are treated
+- How Career Changers are treated
+
+Important:
+Do not make completeness unfairly dependent on having traditional work experience.
+
+The rule must work for:
+- students
+- recent graduates
+- early-career users
+- experienced professionals
+- career changers
+- returning-to-work users
+
+Provide:
+
+1. Proposed final formula
+2. Exact section weights
+3. Exact completion predicates
+4. Examples for different career stages
+5. Edge cases
+6. Any remaining Product Owner decision
+
+Do not implement it.
+
+==================================================
+4. ATS READINESS RUBRIC
+==================================================
+
+Review the existing ATS definition and weights in the approved architecture/product documents.
+
+We need an implementation-ready detailed rubric.
+
+Do NOT invent a generic ATS score disconnected from the approved architecture.
+
+Define, if the documents support it:
+
+- Each ATS dimension
+- Weight
+- Evidence required
+- Scoring criteria
+- Deterministic checks
+- AI-assisted checks
+- Minimum-data behavior
+- "Not enough information yet" behavior
+- Score normalization to 0–100
+- Versioning
+- Freshness rules
+- What happens when Profile content changes
+- What happens when Resume configuration changes
+- Whether Resume language affects ATS evaluation
+- How Arabic and English are handled
+- How missing sections are treated
+
+Clearly separate:
+
+1. deterministic validation
+2. AI-assisted evaluation
+3. user-facing recommendations
+
+Important:
+ATS Readiness is NOT:
+- a hiring probability
+- a job-match score
+- a universal ATS-vendor score
+- a prediction of interview success
+
+ATS must not block PDF export merely because the score is low.
+
+If any part cannot be safely defined from the approved documents, mark it as requiring Product Owner approval.
+
+Do not implement it.
+
+==================================================
+5. SKILLS CATALOG
+==================================================
+
+We need to prepare the implementation contract for the local SQLite Skills catalog.
+
+The user experience is already approved:
+
+- searchable
+- typeable
+- suggestions while typing
+- selectable chips
+- removable
+- custom skills allowed
+- duplicate prevention
+
+Now determine what is actually missing.
+
+Do NOT download or invent a large skills dataset.
+
+Instead:
+
+A. Identify whether an approved taxonomy/source already exists.
+B. If not, state clearly that the dataset source is still a Product Owner decision.
+C. Propose the data model required for the catalog.
+D. Define bilingual considerations.
+E. Define normalization/search behavior.
+F. Define versioning.
+G. Define how custom skills differ from catalog skills.
+H. Define how the catalog can be updated later.
+
+The local catalog must remain reference data.
+
+The user's selected skills remain part of the authoritative Career Profile data.
+
+Do not implement it yet.
+
+==================================================
+6. PRODUCTION FONTS
+==================================================
+
+Review the existing design guidance and Figma references.
+
+Determine:
+
+- English font candidate
+- Arabic font candidate
+- required weights
+- mobile UI usage
+- Resume usage
+- PDF usage
+- licensing requirements
+- whether fonts need to be bundled
+- whether the same font must be used in WebView and Chromium
+
+If the documents do not provide enough information to approve a production font bundle, do not guess.
+
+Mark the exact decision required.
+
+==================================================
+7. RESUME PAGE COUNT / OVERSIZED DOCUMENTS
+==================================================
+
+The approved behavior is:
+
+- Resume may be 1 page or multiple pages.
+- Export must not be blocked merely because a Resume is multiple pages.
+- The actual rendered page count must be known.
+- A small informational hint may be shown.
+- User content must never be silently deleted.
+- Typography must not be made unprofessional merely to force one page.
+
+Architecture V2 also contains operational rendering limits.
+
+Reconcile these carefully.
+
+Define:
+
+- normal page-count behavior
+- informational messaging
+- operational safety limits
+- what happens at 20 pages
+- what happens above 20 pages
+- what happens if normalized text exceeds the configured size limit
+- whether such a condition is a hard technical rendering safety failure or a user-facing export restriction
+- how the user is informed
+
+Do not silently create a new product rule.
+
+If Product Owner approval is required, state exactly what needs approval.
+
+==================================================
+8. RPO / RTO
+==================================================
+
+Review the architecture's current operational assumptions.
+
+Separate:
+
+- MVP implementation requirements
+- production launch requirements
+- future operational hardening
+
+Recommend concrete RPO/RTO targets only if they are appropriate and supported by the architecture's intended scale.
+
+Do not turn these into new product behavior.
+
+==================================================
+9. ANALYTICS
+==================================================
+
+The current architecture intentionally does not introduce an analytics vendor yet.
+
+Do not add Firebase, Mixpanel, Amplitude, PostHog, or another analytics provider.
+
+Determine only:
+
+- what analytics decision remains unresolved
+- whether any analytics abstraction is needed in the MVP codebase
+- what privacy/consent decision must eventually be made
+
+Do not implement analytics.
+
+==================================================
+10. ARCHITECTURE V2 FINALIZATION CHECK
+==================================================
+
+Perform a targeted consistency review of Architecture V2 against the Product Design and Constitution.
+
+Do NOT rewrite the architecture.
+
+Look specifically for:
+
+- API contract inconsistencies
+- database schema ambiguities
+- state-machine inconsistencies
+- export state inconsistencies
+- AI UNKNOWN/reconciliation behavior
+- synchronization/conflict behavior
+- deletion ordering/FK behavior
+- idempotency requirements
+- profile versioning
+- credit reservation behavior
+- rendering assumptions
+- translation capability accidentally treated as MVP
+- Professional Email scope
+- Cover Letter scope
+- missing production-font definition
+
+If you find an issue:
+
+For each issue provide:
+1. Current wording/behavior
+2. Why it is inconsistent or incomplete
+3. Minimal correction
+4. Whether it requires Product Owner approval
+
+Do not rewrite the entire architecture.
+
+==================================================
+11. CONSTITUTION FINALIZATION CHECK
+==================================================
+
+Perform the same targeted review for the Constitution.
+
+Do not rewrite it.
+
+Check that it is consistent with:
+
+- Jobix branding
+- Arabic/English first-class support
+- AI anti-fabrication
+- user ownership
+- server authority
+- Credits
+- RLS
+- local storage
+- PDF privacy
+- deletion
+- rendering
+- ATS
+- AI quota
+- Profile completeness
+- translation being future-only unless explicitly approved
+
+Flag only real inconsistencies or missing rules.
+
+==================================================
+12. FIGMA / VISUAL ASSET HANDOFF
+==================================================
+
+The previous audit correctly identified that the current Stitch archive is unusable and that the attempted Figma fetch did not expose the actual project frames.
+
+Do not pretend that you can validate visual fidelity without actual visual references.
+
+Create a precise checklist of what the implementation team needs from the design source before Foundation implementation.
+
+Separate:
+
+A. Required
+B. Strongly recommended
+C. Optional
+
+Include:
+
+- screens
+- states
+- responsive variants
+- Arabic versions
+- English versions
+- splash animation
+- logos
+- icons
+- images
+- fonts
+- typography
+- design tokens
+- component states
+- interaction behavior
+
+Do NOT create a separate Brand Assets document unless it is actually necessary.
+
+The Figma/prototype remains the visual source of truth.
+
+==================================================
+13. FINAL OUTPUT
+==================================================
+
+Return ONLY a concise but implementation-grade FINALIZATION REPORT.
+
+Use exactly these sections:
+
+1. DECISIONS THAT ARE ALREADY CLOSED
+2. PROFILE COMPLETENESS — PROPOSED FINAL DEFINITION
+3. ATS — PROPOSED FINAL RUBRIC
+4. SKILLS CATALOG — IMPLEMENTATION CONTRACT
+5. PRODUCTION FONTS
+6. RESUME PAGE COUNT / OVERSIZE BEHAVIOR
+7. RPO / RTO
+8. ANALYTICS
+9. ARCHITECTURE V2 — REQUIRED PATCHES
+10. CONSTITUTION — REQUIRED PATCHES
+11. FIGMA / VISUAL ASSET CHECKLIST
+12. REMAINING PRODUCT OWNER DECISIONS
+13. IMPLEMENTATION READINESS VERDICT
+14. RECOMMENDED FIRST IMPLEMENTATION SLICE
+
+For every recommendation, clearly distinguish:
+
+- Already approved
+- Derived implementation detail
+- New recommendation
+- Requires Product Owner approval
+
+Do not implement anything.
+
+Do not modify files.
+
+Do not create migrations.
+
+Do not install dependencies.
+
+Do not create Supabase resources.
+
+Do not start the Flutter application.
+
+We will review this report before giving permission to implement Foundation.
