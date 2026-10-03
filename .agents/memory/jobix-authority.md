@@ -56,3 +56,20 @@ removing unsupported examples and shortcuts before any next feature slice.
 matching source layouts. Replace prohibited demonstration content with the
 smallest neutral static illustration. Report deliberate HTML differences and
 stop after the authorized revision; do not infer next-slice permission.
+
+The user accepted the first-slice revision for now and requires an iterative
+visual review of the existing real Flutter application: run, inspect, identify
+an issue, make the smallest UI/UX fix, run again and inspect again. Keep supplied
+HTML as the visual source of truth. No new product functionality, flow changes,
+invented screens or behavior; no tables/migrations except when required to fix
+an existing implementation bug. Do not start the next feature slice until the
+user explicitly approves the current visual implementation.
+
+**Why:** The user explicitly limited the next work to Design-mode visual
+validation and interactive review, not feature implementation.
+
+**How to apply:** Check actual runtime/configuration availability before
+promising an interactive Flutter preview. Review layout, typography, components,
+navigation, direction/language independence, input/keyboard/scroll behavior,
+states and responsiveness. Fix only identified UI/UX issues and keep native
+acceptance limitations distinct from test renders or mockups.
