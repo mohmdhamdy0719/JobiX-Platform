@@ -99,10 +99,46 @@ class _ResearchPageState extends ConsumerState<ResearchPage> {
               ],
             ];
             final selected = [progress.stage, progress.goal, progress.location];
+            const icons = [
+              [
+                Icons.school_outlined,
+                Icons.workspace_premium_outlined,
+                Icons.trending_up,
+                Icons.psychology_outlined,
+                Icons.military_tech_outlined,
+                Icons.history,
+                Icons.alt_route,
+              ],
+              [
+                Icons.school_outlined,
+                Icons.trending_up,
+                Icons.swap_horiz,
+                Icons.military_tech_outlined,
+                Icons.hourglass_top,
+                Icons.explore_outlined,
+              ],
+              [
+                Icons.location_city,
+                Icons.map_outlined,
+                Icons.laptop_mac,
+                Icons.flight_takeoff,
+                Icons.hub_outlined,
+                Icons.explore_outlined,
+              ],
+              [
+                Icons.description_outlined,
+                Icons.explore_outlined,
+                Icons.alt_route,
+                Icons.laptop_chromebook,
+                Icons.psychology_outlined,
+                Icons.forum_outlined,
+              ],
+            ];
             final answered = question == 3
                 ? progress.help.isNotEmpty
                 : selected[question] != null;
             return SliceScaffold(
+              canvasColor: TokensV0.surfaceCard,
               title: copy.researchHeading,
               actions: const [AppLanguageButton()],
               leading: question == 0
@@ -137,24 +173,47 @@ class _ResearchPageState extends ConsumerState<ResearchPage> {
                     key: const Key('research-step'),
                     style: Theme.of(context).textTheme.labelLarge,
                   ),
-                  const SizedBox(height: TokensV0.space12),
+                  const SizedBox(height: TokensV0.space4),
                   LinearProgressIndicator(value: (question + 1) / 4),
                   const SizedBox(height: TokensV0.space24),
-                  SectionHeading(
-                    title: questions[question],
-                    subtitle: question == 3 ? copy.helpLimit : null,
+                  Text(
+                    questions[question],
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontSize: 26,
+                      height: 34 / 26,
+                      letterSpacing: -0.39,
+                    ),
                   ),
+                  if (question == 3) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            copy.helpLimit,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        Text(
+                          '${progress.help.length}/3',
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: TokensV0.space24),
                   for (var i = 0; i < researchOptions[question].length; i++)
                     Padding(
                       padding: const EdgeInsetsDirectional.only(
-                        bottom: TokensV0.space12,
+                        bottom: TokensV0.space8,
                       ),
                       child: ChoiceTile(
                         key: Key(
                           'research-option-${researchOptions[question][i]}',
                         ),
                         label: labels[question][i],
+                        icon: icons[question][i],
+                        multiple: question == 3,
                         selected: question == 3
                             ? progress.help.contains(
                                 researchOptions[question][i],

@@ -31,7 +31,6 @@ String? sliceRedirect({
   required bool firstEntry,
   required bool entryLoading,
   required bool recovery,
-  bool existingLogin = false,
 }) {
   if (startup != StartupState.signedIn && startup != StartupState.signedOut) {
     final destination = routeFor(startup);
@@ -52,11 +51,10 @@ String? sliceRedirect({
       : !progress.complete
       ? '/research'
       : '/auth';
-  if (path == '/auth' && (existingLogin || progress?.complete == true)) {
+  if (path == '/auth' && progress?.complete == true) {
     return null;
   }
-  if ((path == '/confirm' || path == '/forgot') &&
-      (progress?.complete == true || existingLogin)) {
+  if ((path == '/confirm' || path == '/forgot') && progress?.complete == true) {
     return null;
   }
   if (path == '/onboarding' && progress?.onboardingDone != true) return null;
@@ -97,9 +95,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         firstEntry: entry.valueOrNull ?? false,
         entryLoading: entry.isLoading,
         recovery: flow.recovery,
-        existingLogin:
-            route.uri.queryParameters['mode'] == 'login' ||
-            route.matchedLocation == '/forgot',
       );
     },
     routes: [

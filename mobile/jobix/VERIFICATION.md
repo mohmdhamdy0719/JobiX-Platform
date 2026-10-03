@@ -1,6 +1,45 @@
 # Jobix verification evidence
 
-## First vertical slice — 2026-10-03
+## HTML/product correction — 2026-10-03
+
+Completed only the requested first-slice revision. No next feature, server
+migration, live database write, environment/configuration change or original
+HTML edit was made.
+
+- `flutter gen-l10n`, `dart format lib test`, `flutter analyze`: passed;
+  analyzer reported **no issues**.
+- `dart tool/check_foundation.dart`: public-client secret, directional-layout
+  and token checks passed. `git diff --check`: passed.
+- Final `flutter test` without `--update-goldens`: **68 tests passed**.
+  This includes 20 first-slice contract tests and 15 widget tests, plus the
+  existing Foundation tests.
+- New regressions cover every incomplete first-time stage and direct Auth,
+  Login, confirmation/reset URLs; Skip remains introduction-only.
+- Rendered-content assertions cover all three English introduction pages,
+  research, empty Personal and mixed-language Personal; they reject fictional
+  identities/location/contact claims and the named unsupported ATS/marketing
+  claims. The approved ATS-friendly headline remains.
+- Empty Personal controllers/server snapshots are asserted for all eight
+  fields. Displaying the EG suggestion and saving Resume Language alone sends
+  no Country or other personal values. Accepting Egypt explicitly creates only
+  a draft until another explicit Save.
+- Resume changes preserve content/App Language. App Language changes preserve
+  Resume Language, CV labels and user content.
+- Disposable local PostgreSQL Foundation/slice RLS/RPC/bootstrap checks passed.
+  The empty-bootstrap assertion now covers **all eight** personal fields,
+  plus null Profile name and Resume Language. No live checks were repeated.
+- Regenerated and visually inspected native-widget goldens: all three
+  onboarding pages; all four English research pages; Arabic research;
+  empty English Personal (a tall all-section test render); mixed English
+  App/Arabic Resume Personal. Existing Auth/Home baselines also still pass.
+  A 320px phone/1.6x text check passes. These are test renders, not device captures.
+
+Exact source adaptations and remaining HTML differences are recorded in
+[FIRST_SLICE.md](FIRST_SLICE.md#deliberate-differences-from-the-original-html).
+The provider configuration, operational policy, native build/device/security
+and full location-catalog gates below remain unverified/unchanged.
+
+## First vertical slice — 2026-10-03 (pre-correction evidence)
 
 This is the separately authorized feature slice; it supersedes the historical
 Foundation-only scope below, not the remaining native acceptance gates.
@@ -12,7 +51,7 @@ contracts, minimal Architecture V2 patches and visual handoff limitations.
 - Flutter localization/Drift generation and dependency resolution.
 - `flutter analyze`: **no issues**.
 - `flutter test`: **65 tests passed**, including the 19 new contract and
-  13 new native-widget journey tests. Final run compared goldens normally,
+  13 new native-widget journey tests. That run compared goldens normally,
   without `--update-goldens`; no screenshot mismatch or layout error.
 - Actual SQLCipher encrypted v1→v2 migration, settings preservation, repeated
   singleton onboarding writes, restart/readback, account-scoped drafts,
@@ -81,8 +120,9 @@ Historical Foundation live HTTP/session evidence below remains separate.
   native RTL/locale/deep-link behavior and macOS/Xcode/CocoaPods.
 - Full approved location autocomplete catalog; only account history/custom
   input is implemented. No dataset was invented or downloaded.
-- Final separate visual frames for research/confirmation/recovery/conflicts;
+- Final separate visual frames for confirmation/recovery/conflicts;
   these use minimum structural UI with the accepted shared styling.
+  Research HTML frames exist and are used by the correction above.
 
 The source-tested slice is implemented; the unavailable native/provider gates
 are not certified. Do not interpret this as production readiness.

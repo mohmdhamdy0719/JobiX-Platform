@@ -16,15 +16,21 @@ class OnboardingPage extends ConsumerStatefulWidget {
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   bool busy = false;
-  Future<void> advance(ResearchProgress progress, {bool skip = false}) async {
+  Future<void> advance(
+    ResearchProgress progress, {
+    bool skip = false,
+    bool back = false,
+  }) async {
     setState(() => busy = true);
     try {
-      final finish = skip || progress.onboardingPage == 2;
+      final finish = !back && (skip || progress.onboardingPage == 2);
       await ref
           .read(researchProvider.notifier)
           .persist(
             progress.copy(
-              page: finish
+              page: back
+                  ? progress.onboardingPage - 1
+                  : finish
                   ? progress.onboardingPage
                   : progress.onboardingPage + 1,
               done: finish,
@@ -71,18 +77,110 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
           copy.onboardingBodyThree,
         ];
         return SliceScaffold(
-          leading: const BrandMark(size: 40),
-          actions: [
-            const AppLanguageButton(),
-            TextButton(
-              key: const Key('skip-onboarding'),
-              onPressed: busy ? null : () => advance(progress, skip: true),
-              child: Text(copy.skipOnboarding),
+          header: Padding(
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 96,
+                  height: 56,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 48,
+                        child: page == 0
+                            ? const Center(child: BrandMark(size: 32))
+                            : IconButton(
+                                key: const Key('onboarding-back'),
+                                tooltip: copy.backAction,
+                                icon: const Icon(Icons.arrow_back),
+                                onPressed: busy
+                                    ? null
+                                    : () => advance(progress, back: true),
+                              ),
+                      ),
+                      const AppLanguageButton(),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Semantics(
+                    label: '${page + 1}/3',
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (var i = 0; i < 3; i++)
+                          Container(
+                            margin: const EdgeInsetsDirectional.all(
+                              TokensV0.space4,
+                            ),
+                            width: i == page
+                                ? (page == 0 ? 32 : 24)
+                                : (page == 0 ? 6 : 8),
+                            height: page == 0 ? 6 : 8,
+                            decoration: BoxDecoration(
+                              color: i == page
+                                  ? TokensV0.primary
+                                  : TokensV0.surfaceContainer,
+                              borderRadius: BorderRadius.circular(
+                                TokensV0.chipRadius,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 96,
+                  child: TextButton(
+                    key: const Key('skip-onboarding'),
+                    onPressed: busy
+                        ? null
+                        : () => advance(progress, skip: true),
+                    child: Tooltip(
+                      message: copy.skipOnboarding,
+                      child: Text(copy.skipShort),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-          bottom: Column(
-            mainAxisSize: MainAxisSize.min,
+          ),
+          child: Column(
+            crossAxisAlignment: page == 1
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
             children: [
+              ExcludeSemantics(
+                child: IgnorePointer(child: OnboardingArt(page: page)),
+              ),
+              const SizedBox(height: TokensV0.space24),
+              Text(
+                page == 0
+                    ? titles[page].replaceFirst(', ', ',\n')
+                    : page == 2
+                    ? titles[page].replaceFirst('. ', '.\n')
+                    : titles[page],
+                key: Key('onboarding-title-$page'),
+                textAlign: page == 1 ? TextAlign.start : TextAlign.center,
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontSize: TokensV0.headlineMobileSize,
+                  height: 34 / 26,
+                  letterSpacing: -0.39,
+                ),
+              ),
+              const SizedBox(height: TokensV0.space8),
+              Text(
+                bodies[page],
+                textAlign: page == 1 ? TextAlign.start : TextAlign.center,
+                style: page == 1
+                    ? Theme.of(context).textTheme.bodyLarge
+                    : Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: TokensV0.textSecondary,
+                      ),
+              ),
+              const SizedBox(height: TokensV0.space32),
               PrimaryAction(
                 key: const Key('onboarding-continue'),
                 label: copy.continueAction,
@@ -90,49 +188,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 onPressed: () => advance(progress),
                 icon: Icons.arrow_forward,
               ),
-              TextButton(
-                onPressed: busy ? null : () => context.go('/auth?mode=login'),
-                child: Text(copy.existingAccount),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Semantics(
-                label: '${page + 1}/3',
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (var i = 0; i < 3; i++)
-                      Container(
-                        margin: const EdgeInsetsDirectional.all(
-                          TokensV0.space4,
-                        ),
-                        width: i == page ? 32 : 8,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: i == page
-                              ? TokensV0.primary
-                              : TokensV0.surfaceContainer,
-                          borderRadius: BorderRadius.circular(
-                            TokensV0.chipRadius,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: TokensV0.space24),
-              OnboardingArt(page: page),
-              const SizedBox(height: TokensV0.space32),
-              Text(
-                titles[page],
-                key: Key('onboarding-title-$page'),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineLarge,
-              ),
-              const SizedBox(height: TokensV0.space16),
-              Text(bodies[page], textAlign: TextAlign.center),
             ],
           ),
         );

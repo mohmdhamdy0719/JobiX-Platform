@@ -381,26 +381,45 @@ class _PersonalInformationPageState
                     subtitle: copy.resumeLanguageHint,
                   ),
                   const SizedBox(height: TokensV0.space16),
-                  Wrap(
-                    spacing: TokensV0.space12,
-                    children: [
-                      ChoiceChip(
-                        key: const Key('resume-en'),
-                        label: const Text('English'),
-                        selected: language == 'en',
-                        onSelected: busy
-                            ? null
-                            : (_) => retain(draft!.language('en')),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: TokensV0.secondarySurface,
+                      borderRadius: BorderRadius.circular(
+                        TokensV0.controlRadius,
                       ),
-                      ChoiceChip(
-                        key: const Key('resume-ar'),
-                        label: const Text('العربية'),
-                        selected: language == 'ar',
-                        onSelected: busy
-                            ? null
-                            : (_) => retain(draft!.language('ar')),
-                      ),
-                    ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            key: const Key('resume-en'),
+                            label: const Text('English (LTR)'),
+                            showCheckmark: false,
+                            selectedColor: TokensV0.surfaceCard,
+                            backgroundColor: TokensV0.secondarySurface,
+                            selected: language == 'en',
+                            onSelected: busy
+                                ? null
+                                : (_) => retain(draft!.language('en')),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: ChoiceChip(
+                            key: const Key('resume-ar'),
+                            label: const Text('العربية (RTL)'),
+                            showCheckmark: false,
+                            selectedColor: TokensV0.surfaceCard,
+                            backgroundColor: TokensV0.secondarySurface,
+                            selected: language == 'ar',
+                            onSelected: busy
+                                ? null
+                                : (_) => retain(draft!.language('ar')),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

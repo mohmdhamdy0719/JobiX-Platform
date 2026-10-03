@@ -176,6 +176,12 @@ abstract class AppLocalizations {
   /// **'Skip introduction'**
   String get skipOnboarding;
 
+  /// No description provided for @skipShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skipShort;
+
   /// No description provided for @languageSwitch.
   ///
   /// In en, this message translates to:
@@ -599,13 +605,13 @@ abstract class AppLocalizations {
   /// No description provided for @contactHeading.
   ///
   /// In en, this message translates to:
-  /// **'Contact information'**
+  /// **'Contact Essentials'**
   String get contactHeading;
 
   /// No description provided for @optionalHeading.
   ///
   /// In en, this message translates to:
-  /// **'Location and professional links'**
+  /// **'Professional Links'**
   String get optionalHeading;
 
   /// No description provided for @fullName.
@@ -653,31 +659,31 @@ abstract class AppLocalizations {
   /// No description provided for @nameExample.
   ///
   /// In en, this message translates to:
-  /// **'e.g. Mohamed Hamdy Hassan'**
+  /// **'Your full name'**
   String get nameExample;
 
   /// No description provided for @emailExample.
   ///
   /// In en, this message translates to:
-  /// **'e.g. mohamed.hassan@email.com'**
+  /// **'name@example.com'**
   String get emailExample;
 
   /// No description provided for @phoneExample.
   ///
   /// In en, this message translates to:
-  /// **'e.g. +20 100 123 4567'**
+  /// **'Phone number'**
   String get phoneExample;
 
   /// No description provided for @countryExample.
   ///
   /// In en, this message translates to:
-  /// **'e.g. Egypt'**
+  /// **'Country'**
   String get countryExample;
 
   /// No description provided for @cityExample.
   ///
   /// In en, this message translates to:
-  /// **'e.g. Alexandria'**
+  /// **'City'**
   String get cityExample;
 
   /// No description provided for @useEgypt.

@@ -49,6 +49,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get skipOnboarding => 'تخطي المقدمة';
 
   @override
+  String get skipShort => 'تخطي';
+
+  @override
   String get languageSwitch => 'لغة التطبيق';
 
   @override
@@ -277,10 +280,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'اختر لغة السيرة الذاتية لبدء إدخال معلوماتك.';
 
   @override
-  String get contactHeading => 'معلومات التواصل';
+  String get contactHeading => 'بيانات التواصل الأساسية';
 
   @override
-  String get optionalHeading => 'الموقع والروابط المهنية';
+  String get optionalHeading => 'الروابط المهنية';
 
   @override
   String get fullName => 'الاسم الكامل';
@@ -304,19 +307,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get portfolioLabel => 'الموقع الشخصي (اختياري)';
 
   @override
-  String get nameExample => 'مثال: محمد حمدي حسن';
+  String get nameExample => 'اسمك الكامل';
 
   @override
-  String get emailExample => 'مثال: mohamed.hassan@email.com';
+  String get emailExample => 'name@example.com';
 
   @override
-  String get phoneExample => 'مثال: ‎+20 100 123 4567';
+  String get phoneExample => 'رقم الهاتف';
 
   @override
-  String get countryExample => 'مثال: مصر';
+  String get countryExample => 'البلد';
 
   @override
-  String get cityExample => 'مثال: الإسكندرية';
+  String get cityExample => 'المدينة';
 
   @override
   String get useEgypt => 'استخدام مصر';

@@ -103,6 +103,7 @@ void main() {
         themeProvider.overrideWithValue(
           theme.copyWith(
             textTheme: theme.textTheme.apply(
+              fontFamilyFallback: const ['FoundationTestFont'],
               fontFamily: locale == 'ar' || mixedFont
                   ? 'FoundationTestFont'
                   : 'Inter',
@@ -142,11 +143,58 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  void noUnsupportedContent(WidgetTester tester) {
+    final text = tester.allWidgets
+        .whereType<Text>()
+        .map((w) => w.data ?? w.textSpan?.toPlainText() ?? '')
+        .join(' ')
+        .toLowerCase();
+    for (final forbidden in [
+      'marcus vance',
+      'alex harrison',
+      'saudi arabia',
+      'riyadh',
+      'recruiter approved',
+      '100% parsed',
+      'ats parsing optimized',
+      'ats priority',
+      'deliverable',
+      'official id standard',
+      'executive search',
+      'gulf',
+      'gcc',
+      'step 1 of 6',
+      '0/6 ai uses',
+      'ats match',
+      '94% strong',
+      'ats 98%',
+      'recruiter match',
+      'keywords: 14/14',
+      'product strategy',
+      'cross-functional lead',
+      'zero-hallucination',
+      'quantified impact',
+      '80% of screening',
+      'ai panel simulation',
+      'السعودية',
+      'الرياض',
+      'معتمد من مسؤولي التوظيف',
+    ]) {
+      expect(
+        text,
+        isNot(contains(forbidden)),
+        reason: 'Unsupported rendered content: $forbidden',
+      );
+    }
+  }
+
   testWidgets(
     'exactly three onboarding screens, then research; skip also reaches Q1',
     (tester) async {
       await pump(tester);
       expect(find.byKey(const Key('onboarding-title-0')), findsOneWidget);
+      noUnsupportedContent(tester);
+      expect(find.text('Sign in to an existing account'), findsNothing);
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile('goldens/slice_onboarding_en.png'),
@@ -155,6 +203,12 @@ void main() {
         await tester.tap(find.byKey(const Key('onboarding-continue')));
         await tester.pumpAndSettle();
         expect(find.byKey(Key('onboarding-title-$next')), findsOneWidget);
+        noUnsupportedContent(tester);
+        expect(find.text('Sign in to an existing account'), findsNothing);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/slice_onboarding_${next + 1}_en.png'),
+        );
       }
       await tester.tap(find.byKey(const Key('onboarding-continue')));
       await tester.pumpAndSettle();
@@ -216,6 +270,120 @@ void main() {
         container!.read(routerProvider).routeInformationProvider.value.uri.path,
         '/auth',
       );
+    },
+  );
+  testWidgets(
+    'first-time login URLs stay gated until Q1-Q4; approved research renders',
+    (tester) async {
+      await pump(tester);
+      for (final path in ['/auth?mode=login', '/forgot', '/confirm']) {
+        await route(tester, path);
+        expect(
+          container!
+              .read(routerProvider)
+              .routeInformationProvider
+              .value
+              .uri
+              .path,
+          '/onboarding',
+        );
+      }
+      await tester.tap(find.byKey(const Key('skip-onboarding')));
+      await tester.pumpAndSettle();
+      const answers = ['student', 'unsure', 'remote', 'cv'];
+      for (var question = 0; question < 4; question++) {
+        for (final path in [
+          '/auth?mode=login',
+          '/auth?mode=signup',
+          '/forgot',
+        ]) {
+          await route(tester, path);
+          expect(
+            container!
+                .read(routerProvider)
+                .routeInformationProvider
+                .value
+                .uri
+                .path,
+            '/research',
+          );
+          expect(find.text('${question + 1}/4'), findsOneWidget);
+        }
+        noUnsupportedContent(tester);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/slice_research_q${question + 1}_en.png'),
+        );
+        final option = find.byKey(Key('research-option-${answers[question]}'));
+        await tester.ensureVisible(option);
+        await tester.tap(option);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('research-continue')));
+        await tester.pumpAndSettle();
+      }
+      expect(
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/auth',
+      );
+      expect(auth.calls, isEmpty);
+    },
+  );
+  testWidgets(
+    'empty Profile and region suggestion never send fictional or unaccepted personal values',
+    (tester) async {
+      tester.binding.platformDispatcher.localeTestValue = const Locale(
+        'en',
+        'EG',
+      );
+      addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
+      await pump(tester, state: StartupState.signedIn, newEntry: true);
+      expect(api.server.personal, isEmpty);
+      expect(api.server.resumeLanguage, isNull);
+      expect(api.requests, isEmpty);
+      noUnsupportedContent(tester);
+      await tester.tap(find.byKey(const Key('resume-en')));
+      await tester.pumpAndSettle();
+      for (final field in personalFields.where((f) => f != 'city')) {
+        expect(
+          tester
+              .widget<TextFormField>(find.byKey(Key('personal-$field')))
+              .controller!
+              .text,
+          isEmpty,
+        );
+      }
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('personal-city')))
+            .controller!
+            .text,
+        isEmpty,
+      );
+      expect(find.byKey(const Key('use-egypt')), findsOneWidget);
+      noUnsupportedContent(tester);
+      // Tall test render exposes all supplied sections; it is not a device capture.
+      tester.view.physicalSize = const Size(402, 1700);
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile('goldens/slice_personal_empty_en.png'),
+      );
+      expect(api.server.personal, isEmpty);
+      expect(api.requests, isEmpty);
+      await tester.tap(find.byKey(const Key('save-personal')));
+      await tester.pumpAndSettle();
+      expect(api.server.resumeLanguage, 'en');
+      expect(api.server.personal.values.every((v) => v.isEmpty), true);
+      expect(api.requests.single.frozen!['personal'], isEmpty);
+      // Accepting a suggestion remains local until a separate explicit Save.
+      await tester.tap(find.byKey(const Key('use-egypt')));
+      await tester.pumpAndSettle();
+      expect(
+        (await repository.draft(api.server))!.personal['country'],
+        'Egypt',
+      );
+      expect(api.server.personal['country'], '');
+      expect(api.requests.length, 1);
     },
   );
   testWidgets('app language switch changes general UI and persists', (
@@ -399,6 +567,18 @@ void main() {
       );
       expect(find.text('Full Name'), findsOneWidget);
       expect(await database.setting('locale'), 'en');
+      noUnsupportedContent(tester);
+      await tester.tap(find.byKey(const Key('app-language')));
+      await tester.pumpAndSettle();
+      expect(await database.setting('locale'), 'ar');
+      expect((await repository.draft(api.server))!.resumeLanguage, 'en');
+      expect(
+        tester.widget<TextFormField>(field).controller!.text,
+        'مهندس Flutter',
+      );
+      expect(find.text('Full Name'), findsOneWidget);
+      expect(find.text('حفظ'), findsOneWidget);
+      noUnsupportedContent(tester);
     },
   );
   testWidgets(

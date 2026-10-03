@@ -16,6 +16,8 @@ invented or exposed as functioning features.
 
 - Exactly three introduction screens, with Skip; approved copy comes from
   Product Design rather than unsupported marketing claims in reference HTML.
+  The last Continue and Skip lead to Q1; there is no pre-research login shortcut,
+  including direct login, confirmation or reset URLs for a first-time user.
 - Exactly four ordered research questions; no group Skip, Q4 capped at three.
   Selections and last incomplete question persist in encrypted local storage.
   No anonymous server users or onboarding rows are created.
@@ -83,19 +85,49 @@ No operational minimum-version policy was seeded.
 
 ## Visual sources and missing handoffs
 
-The accepted `attached_assets/jobix_*.html` references provide the shared
-blue/navy palette, Inter, surface treatments, typography, radii, controls,
-cards, spacing and logo. Flutter renders native widgets; no HTML is placed
-in a WebView and no web/Expo replacement is created. HTML references for
-AI/ATS/other later screens are visual references only.
+The correction instructions in
+`attached_assets/Pasted-Before-starting-any-next-feature-slice-revise-the-curre_1791021151279.txt`
+apply to the existing slice only. The original HTML files are unchanged.
 
-Approved onboarding, Home and Personal Information visuals are reused.
-Research, confirmation, reset, recovery and conflict dialogs have only the
-minimum structural UI using those shared tokens; no separate final frames
-for these states were supplied. Original system splash/native launcher icon
-acceptance is not claimed. Production Arabic uses platform font fallback;
-Arabic goldens use the documented test-only DejaVu font, not a new production
-font choice.
+The actual sources read for this revision are the three
+`jobix_onboarding_*` files, all four `jobix_research_q*` files, and
+`jobix_step_1_personal_info_links_1791015087825.html`. Their structure and
+tokens are used directly: 16px page/card padding, 8/24/32px spacing, 12px
+cards/controls, 26/34px onboarding/research headings, Inter, blue/navy colors,
+header progress pills, inline introduction CTA, selection-card icon blocks,
+independent segmented Resume selector, external field labels, a contact card
+with a Country/City grid, and separate professional-link rows.
+
+### Deliberate differences from the original HTML
+
+- Fictional CV identities, skills, experience, percentages, success badges and
+  verification claims are not reproduced. Intro illustrations retain the card
+  and comparison/layering structure using text-free decorative placeholders.
+  Mock AI action buttons, future-feature marketing pills and quantitative
+  badges are omitted; no refine/export functionality is introduced.
+- The third introduction retains **Continue** and Skip under the approved flow,
+  rather than the HTML's Get Started label/absent Skip. App Language remains
+  available. The approved research wording/options and context-only guidance
+  are preserved instead of the HTML's ATS/personalization claims or preset answers.
+- Personal Information starts empty, without a preselected Resume Language.
+  Neutral headings/placeholders replace unsupported verification/marketing
+  copy. The progress/AI counters are absent. Links are editable empty fields in
+  the supplied row treatment, not fictional populated/verified links.
+- The bottom Personal actions remain Leave/Save, not a Continue to an
+  unimplemented next step. Existing validation, save/draft/error/conflict
+  states are kept. Text enlargement/narrow widths can stack Country/City.
+- These are native Flutter widgets, not pixel-identical CSS. Material icons,
+  native focus/scroll/safe-area behavior and native shadows replace the HTML's
+  Material Symbols, browser hover behavior and backdrop effects. The existing
+  Home/Auth presentation was not redesigned by this focused correction.
+- Confirmation, reset, recovery and conflict states still use minimum neutral
+  native UI; separate final frames for these states were not supplied.
+
+Research HTML frames **were supplied** and are used; the previous missing-frame
+statement for research was incorrect. Original system splash/native launcher
+icon acceptance is not claimed. Production Arabic uses platform fallback;
+test renders load DejaVu as a test-only Arabic fallback, not a new production
+font choice. Native rendering comparisons are not device acceptance.
 
 No full approved country/city autocomplete catalog was supplied. The history
 autocomplete is intentionally limited, not a replacement fabricated catalog.

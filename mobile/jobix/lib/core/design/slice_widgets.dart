@@ -10,6 +10,8 @@ class SliceScaffold extends StatelessWidget {
     this.leading,
     this.actions,
     this.bottom,
+    this.header,
+    this.canvasColor = TokensV0.canvas,
     super.key,
   });
 
@@ -18,17 +20,21 @@ class SliceScaffold extends StatelessWidget {
   final Widget? leading;
   final List<Widget>? actions;
   final Widget? bottom;
+  final Widget? header;
+  final Color canvasColor;
 
   @override
   Widget build(BuildContext context) {
     final hasHeader = title != null || leading != null || actions != null;
     return Scaffold(
-      backgroundColor: TokensV0.canvas,
+      backgroundColor: canvasColor,
       body: SafeArea(
         bottom: bottom == null,
         child: Column(
           children: [
-            if (hasHeader)
+            if (header != null)
+              header!
+            else if (hasHeader)
               _SliceHeader(title: title, leading: leading, actions: actions),
             Expanded(
               child: LayoutBuilder(
@@ -245,6 +251,7 @@ class ChoiceTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.icon,
+    this.multiple = false,
     super.key,
   });
 
@@ -252,6 +259,7 @@ class ChoiceTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final IconData? icon;
+  final bool multiple;
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +305,15 @@ class ChoiceTile extends StatelessWidget {
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 21, color: color),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: TokensV0.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(TokensV0.chipRadius),
+                    ),
+                    child: Icon(icon, size: 22, color: color),
+                  ),
                   const SizedBox(width: TokensV0.space12),
                 ],
                 Expanded(
@@ -316,7 +332,7 @@ class ChoiceTile extends StatelessWidget {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(multiple ? 4 : 20),
                     color: selected
                         ? TokensV0.primary
                         : TokensV0.surfaceContainer,
@@ -370,7 +386,7 @@ class SectionHeading extends StatelessWidget {
   }
 }
 
-/// An abstract, text-free resume visual inspired by the onboarding previews.
+/// HTML card geometry with decorative placeholders, never fabricated CV data.
 class OnboardingArt extends StatelessWidget {
   const OnboardingArt({required this.page, super.key});
 
@@ -379,8 +395,11 @@ class OnboardingArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final normalizedPage = page.clamp(0, 2);
-    return AspectRatio(
-      aspectRatio: 1.34,
+    if (normalizedPage == 0) return _firstCard();
+    if (normalizedPage == 1) return _comparisonCard();
+    return SizedBox(
+      width: double.infinity,
+      height: 252,
       child: Stack(
         alignment: AlignmentDirectional.center,
         children: [
@@ -398,7 +417,7 @@ class OnboardingArt extends StatelessWidget {
             Transform.rotate(
               angle: -0.085,
               child: _miniDocument(
-                width: 148,
+                width: 210,
                 color: TokensV0.surfaceCard.withValues(alpha: 0.83),
                 alignment: AlignmentDirectional.centerStart,
               ),
@@ -409,7 +428,7 @@ class OnboardingArt extends StatelessWidget {
               child: Transform.rotate(
                 angle: 0.085,
                 child: _miniDocument(
-                  width: 140,
+                  width: 210,
                   color: TokensV0.surfaceCard.withValues(alpha: 0.88),
                   alignment: AlignmentDirectional.centerEnd,
                   rtl: true,
@@ -418,12 +437,127 @@ class OnboardingArt extends StatelessWidget {
             ),
           Transform.translate(
             offset: Offset(0, normalizedPage == 1 ? 0 : -2),
-            child: _mainDocument(refined: normalizedPage == 1),
+            child: _mainDocument(),
           ),
         ],
       ),
     );
   }
+
+  Widget _firstCard() => SliceCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: TokensV0.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.badge_outlined, color: TokensV0.primary),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _line(width: 100, height: 8, color: TokensV0.surfaceContainer),
+                const SizedBox(height: 6),
+                _line(
+                  width: 78,
+                  height: 6,
+                  color: TokensV0.surfaceContainerHigh,
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _placeholderPanel(TokensV0.secondarySurface),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _skillPill(width: 100),
+            _skillPill(width: 118),
+            _skillPill(width: 126),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _placeholderPanel(TokensV0.surfaceContainerLow),
+      ],
+    ),
+  );
+
+  Widget _comparisonCard() => SliceCard(
+    child: Column(
+      children: [
+        _placeholderPanel(TokensV0.secondarySurface, tall: true),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: TokensV0.primary,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, size: 16, color: TokensV0.onPrimary),
+              SizedBox(width: 8),
+              Icon(Icons.arrow_downward, size: 16, color: TokensV0.onPrimary),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _placeholderPanel(TokensV0.surfaceContainerLow, tall: true),
+      ],
+    ),
+  );
+
+  Widget _placeholderPanel(Color color, {bool tall = false}) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _line(width: 82, height: 6, color: TokensV0.surfaceVariant),
+        const SizedBox(height: 10),
+        _line(
+          width: double.infinity,
+          height: 8,
+          color: TokensV0.surfaceContainerHigh,
+        ),
+        const SizedBox(height: 6),
+        FractionallySizedBox(
+          widthFactor: 0.8,
+          child: _line(
+            width: double.infinity,
+            height: 8,
+            color: TokensV0.surfaceContainer,
+          ),
+        ),
+        if (tall) ...[
+          const SizedBox(height: 6),
+          FractionallySizedBox(
+            widthFactor: 0.6,
+            child: _line(
+              width: double.infinity,
+              height: 8,
+              color: TokensV0.surfaceContainer,
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
 
   Widget _ambientDisc({required double size, required Color color}) {
     return Container(
@@ -446,7 +580,7 @@ class OnboardingArt extends StatelessWidget {
       alignment: alignment,
       child: Container(
         width: width,
-        height: 146,
+        height: 224,
         padding: const EdgeInsets.all(TokensV0.space12),
         decoration: BoxDecoration(
           color: color,
@@ -526,14 +660,14 @@ class OnboardingArt extends StatelessWidget {
     );
   }
 
-  Widget _mainDocument({required bool refined}) {
+  Widget _mainDocument() {
     return Container(
-      width: 206,
-      height: 204,
+      width: 240,
+      height: 240,
       padding: const EdgeInsets.all(TokensV0.space16),
       decoration: BoxDecoration(
         color: TokensV0.surfaceCard,
-        borderRadius: BorderRadius.circular(TokensV0.panelRadius),
+        borderRadius: BorderRadius.circular(TokensV0.cardRadius),
         border: Border.all(color: TokensV0.border.withValues(alpha: 0.78)),
         boxShadow: [
           BoxShadow(
@@ -571,11 +705,6 @@ class OnboardingArt extends StatelessWidget {
                     _line(width: 53, height: 4, color: TokensV0.disabled),
                   ],
                 ),
-              ),
-              Icon(
-                refined ? Icons.auto_awesome : Icons.check_circle_outline,
-                size: 17,
-                color: TokensV0.primary,
               ),
             ],
           ),
@@ -622,7 +751,6 @@ class OnboardingArt extends StatelessWidget {
                   color: TokensV0.surfaceContainer,
                 ),
               ),
-              const Icon(Icons.check_circle, size: 16, color: TokensV0.success),
             ],
           ),
         ],

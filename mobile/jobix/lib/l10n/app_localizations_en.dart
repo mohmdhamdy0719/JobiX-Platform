@@ -50,6 +50,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get skipOnboarding => 'Skip introduction';
 
   @override
+  String get skipShort => 'Skip';
+
+  @override
   String get languageSwitch => 'App language';
 
   @override
@@ -283,10 +286,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose a Resume Language to start entering your information.';
 
   @override
-  String get contactHeading => 'Contact information';
+  String get contactHeading => 'Contact Essentials';
 
   @override
-  String get optionalHeading => 'Location and professional links';
+  String get optionalHeading => 'Professional Links';
 
   @override
   String get fullName => 'Full Name';
@@ -310,19 +313,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get portfolioLabel => 'Portfolio (optional)';
 
   @override
-  String get nameExample => 'e.g. Mohamed Hamdy Hassan';
+  String get nameExample => 'Your full name';
 
   @override
-  String get emailExample => 'e.g. mohamed.hassan@email.com';
+  String get emailExample => 'name@example.com';
 
   @override
-  String get phoneExample => 'e.g. +20 100 123 4567';
+  String get phoneExample => 'Phone number';
 
   @override
-  String get countryExample => 'e.g. Egypt';
+  String get countryExample => 'Country';
 
   @override
-  String get cityExample => 'e.g. Alexandria';
+  String get cityExample => 'City';
 
   @override
   String get useEgypt => 'Use Egypt';

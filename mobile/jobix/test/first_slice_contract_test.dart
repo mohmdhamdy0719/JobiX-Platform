@@ -269,6 +269,51 @@ void main() {
     },
   );
   test(
+    'first-time Auth, login query, confirmation and reset cannot bypass any research question',
+    () {
+      var progress = const ResearchProgress();
+      for (var answered = 0; answered <= 4; answered++) {
+        for (final path in [
+          '/auth',
+          '/forgot',
+          '/confirm',
+          '/career/personal',
+        ]) {
+          expect(
+            sliceRedirect(
+              startup: StartupState.signedOut,
+              path: path,
+              progress: progress,
+              firstEntry: false,
+              entryLoading: false,
+              recovery: false,
+            ),
+            answered == 0 ? '/onboarding' : '/research',
+          );
+        }
+        progress = switch (answered) {
+          0 => progress.copy(done: true),
+          1 => progress.select(0, 'student'),
+          2 => progress.select(1, 'unsure'),
+          3 => progress.select(2, 'remote'),
+          _ => progress.select(3, 'cv'),
+        };
+      }
+      expect(progress.complete, true);
+      expect(
+        sliceRedirect(
+          startup: StartupState.signedOut,
+          path: '/auth',
+          progress: progress,
+          firstEntry: false,
+          entryLoading: false,
+          recovery: false,
+        ),
+        isNull,
+      );
+    },
+  );
+  test(
     'onboarding skip never skips research or exposes a guarded Career screen',
     () {
       final skipped = const ResearchProgress(onboardingDone: true);

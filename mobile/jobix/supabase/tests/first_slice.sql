@@ -10,7 +10,9 @@ DO $$ BEGIN
    ('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000012')) <> 2
    OR EXISTS (SELECT 1 FROM public.profile_personal_data d JOIN public.career_profiles p ON p.id=d.profile_id
      WHERE p.user_id IN ('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000012')
-       AND (d.full_name IS NOT NULL OR d.email IS NOT NULL))
+        AND (d.full_name IS NOT NULL OR d.email IS NOT NULL OR d.phone IS NOT NULL
+          OR d.country IS NOT NULL OR d.city IS NOT NULL OR d.linkedin_url IS NOT NULL
+          OR d.github_url IS NOT NULL OR d.portfolio_url IS NOT NULL))
    OR EXISTS (SELECT 1 FROM public.career_profiles WHERE user_id IN
      ('00000000-0000-4000-8000-000000000011','00000000-0000-4000-8000-000000000012')
      AND (cv_language IS NOT NULL OR name IS NOT NULL))

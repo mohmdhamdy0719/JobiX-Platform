@@ -1,0 +1,73 @@
+Before starting any next feature slice, revise the current First Jobix Vertical Slice to match the supplied HTML design files and the approved product decisions.
+
+The current implementation passes the functional tests, but the rendered UI contains several unapproved product/content additions that must be removed.
+
+Required corrections:
+
+1. ONBOARDING
+- The onboarding must visually and textually follow the supplied approved HTML design.
+- Do not invent a fictional user/CV such as “Marcus Vance”.
+- Remove invented ATS scores, “Recruiter Approved”, “100% Parsed”, “ATS Parsing Optimized”, “Gulf” claims, fake skills, fake experience, fake contact information, or any other fabricated CV/ATS data.
+- Keep the approved onboarding copy and structure.
+- There must be no “Sign in to an existing account” action before the four research questions.
+- “Skip introduction” skips only the three introduction screens.
+- Final onboarding Continue navigates to Research Question 1.
+- First-time flow remains:
+  Onboarding → Q1 → Q2 → Q3 → Q4 → Auth → Profile #1 → Personal Information.
+
+2. PERSONAL INFORMATION
+- Match the supplied HTML design rather than inventing a new product UI.
+- Remove unapproved UI such as:
+  - “Step 1 of 6”
+  - “0/6 AI uses”
+  - “ATS Priority”
+  - “Deliverable”
+  - “Official ID standard”
+  - “Used by executive search teams”
+  - “ATS font metrics standardized for Gulf”
+  - any other unsupported marketing/ATS claims.
+- Do not prepopulate a new Profile #1 with fictional values such as Saudi Arabia/Riyadh or fake user/contact data.
+- Country may have a device/region suggestion when available, but a displayed suggestion must not silently populate the empty server profile.
+- Preserve the approved Personal Information fields: Full Name, Email, Phone, optional Country, City, LinkedIn, GitHub and Portfolio.
+- Preserve the approved bilingual behavior:
+  App Language controls the application UI and research questions.
+  Resume Language is independent and controls CV-related labels/examples where appropriate.
+  Changing Resume Language must not translate existing user content.
+- Do not introduce any new language coupling.
+
+3. VISUAL FIDELITY
+- The supplied HTML design files are the visual source of truth for this slice.
+- Do not approximate the design from memory.
+- Reuse the actual approved structure, spacing, typography hierarchy, cards, buttons, labels, icons and states where represented by the supplied HTML.
+- If an exact visual detail is not represented in the supplied design, do not invent a new product behavior; use the smallest neutral implementation necessary.
+
+4. FUNCTIONAL SCOPE
+Keep the existing implemented behavior:
+- three onboarding screens
+- four research questions
+- Supabase Auth
+- automatic empty Profile #1 creation
+- Personal Information
+- local encrypted drafts
+- partial saves
+- safe discard
+- retry/conflict handling
+- owner isolation
+
+Do not implement the next feature slice yet.
+
+5. TESTS
+Add regression tests specifically proving:
+- onboarding cannot reach Auth before Q1–Q4 for a first-time user
+- Skip skips only the three introduction screens
+- no fabricated profile data is inserted into a new Profile #1
+- Country/region suggestion does not silently populate the server profile
+- App Language and Resume Language remain independent
+- no unapproved onboarding/Personal Information marketing or ATS claims are rendered.
+
+After the revision, rerun all tests, analyzer/static checks, and regenerate the Flutter renders for:
+- onboarding
+- research flow
+- Personal Information
+
+Stop after this revision and report exactly what changed and any remaining deviations from the supplied HTML designs.

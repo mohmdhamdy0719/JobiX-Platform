@@ -28,3 +28,17 @@ mtime_ms = 1791016882829
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/7a8fc62e-4fed-4d39-82e9-a11090951678/80d765a2-92e5-4fc0-bc2e-24fc1867e938"
 storage_version_token = "1791018468313913"
 content_type = "image/png"
+
+[[outputs]]
+id = "TgZimCemHs4JwqBK8L4fD"
+uri = "file://mobile/jobix/build/revision-renders/review.html"
+type = "html"
+title = "Revised Jobix Flutter renders"
+description = "Self-contained review of all three onboarding screens, Q1–Q4 and empty/mixed-language Personal Information. Native-widget test renders, not device screenshots."
+logical_id = "a66e8f7f-0cd1-47d6-9c59-719a47b6f4da"
+content_hash = "sha256:126f19d2668fecb927211f74f22eead2cddd9bd1aa77cc627068c7ff4761de7e"
+size = 719653
+mtime_ms = 1791021967981
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/a66e8f7f-0cd1-47d6-9c59-719a47b6f4da/20b118bb-7c3d-4e56-8de9-58f1bb2a5e15"
+storage_version_token = "1791021989230280"
+content_type = "text/html"

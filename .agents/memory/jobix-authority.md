@@ -23,8 +23,9 @@ Home-first returning navigation and local drafts. No AI, ATS, Credits, export,
 rendering, translation, sync/outbox, analytics or premium billing in this slice.
 
 **Why:** The owner's resolved decisions explicitly authorize this scope and
-prohibit re-planning or reopening them. Accepted HTML references now supply
-shared native styling; later-screen references do not authorize their features.
+prohibit re-planning or reopening them. Accepted HTML files are the visual
+source of truth, including structure and typography, not just shared colors.
+Later-screen references do not authorize their features.
 
 **How to apply:** Resume implementation within this scope without seeking
 Foundation-only approval again. Required-for-export fields never block partial
@@ -42,3 +43,16 @@ Supabase results and closing verification with documented environment blockers.
 **How to apply:** Obtain genuine prerequisites and authorization before
 resuming blocked checks. Task closure with accepted blockers is not proof that
 native build, Keystore/Keychain or device acceptance passed.
+
+Use the actual supplied HTML when revising this slice, never an approximation
+from memory. Fictional CV examples, scores, verification badges and unsupported
+marketing in those files are not authorized product data or claims. First-time
+users must finish Q1–Q4 before any Auth/login entry; Skip is introduction-only.
+
+**Why:** The user explicitly corrected visual/product drift and required
+removing unsupported examples and shortcuts before any next feature slice.
+
+**How to apply:** Preserve approved behavior and bilingual independence while
+matching source layouts. Replace prohibited demonstration content with the
+smallest neutral static illustration. Report deliberate HTML differences and
+stop after the authorized revision; do not infer next-slice permission.
