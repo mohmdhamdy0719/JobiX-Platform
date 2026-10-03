@@ -10,7 +10,8 @@ command-line SDK-root option.
 **Why:** The workspace package index rejected the nested Android SDK attribute
 even though Nixpkgs knew it. The separately packaged SDK manager accepted the
 SDK-root argument but ignored it during installation, falling back to a
-read-only system directory.
+read-only system directory. Its help also advertises an unimplemented uninstall
+command; use the installed Google command-line tools for that operation.
 
 **How to apply:** Check installer results and actual installation destinations.
 Use explicit writable SDK-root environment configuration and verify native
@@ -36,3 +37,27 @@ Flutter 3.32.0 cannot recognize its license-status output.
 **How to apply:** Verify Flutter/tool compatibility before upgrading native
 tooling. An unknown license status can be a CLI compatibility problem rather
 than missing license acceptance.
+
+Use explicit physical-device ARM targets for debug review builds with this
+Flutter distribution. Match the NDK to the highest requirement of the locked
+native plugins, not blindly to the wrapped Flutter SDK's default.
+
+**Why:** The default debug build requested an unavailable legacy x86 profile
+engine artifact. The wrapped SDK's default NDK was also older than the existing
+plugins required. Explicit ARM targets and the plugins' required NDK produced
+a signed debug APK without changing product behavior.
+
+**How to apply:** For physical Android review use
+`--target-platform android-arm,android-arm64` with the genuine dev define file.
+Do not fabricate engine artifacts or replace Flutter. Plugin libraries may
+still include other ABIs; inspect the packaged Flutter engine before claiming
+an emulator architecture is supported.
+
+Large debug APKs can exceed the Library's 100 MiB per-file upload limit.
+Package the unchanged APK in a compressed ZIP when that makes delivery fit.
+
+**Why:** Direct APK registration was rejected by the upload limit, while the
+compressed archive could be delivered without rebuilding or altering the app.
+
+**How to apply:** Preserve the original APK/output path, check archive integrity
+and tell the user to extract the APK before installation.

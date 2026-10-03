@@ -73,3 +73,18 @@ promising an interactive Flutter preview. Review layout, typography, components,
 navigation, direction/language independence, input/keyboard/scroll behavior,
 states and responsiveness. Fix only identified UI/UX issues and keep native
 acceptance limitations distinct from test renders or mockups.
+
+For physical-Android design review, the user explicitly authorizes installing
+only required Android SDK/build tools, accepting their licenses, restoring the
+existing development configuration, and building a development/debug APK.
+Do not configure/build staging or production, request new/service-role
+credentials, alter databases, or substitute Expo/React Native/Linux. If a
+required Android build prerequisite cannot be provided here, stop and report
+the exact prerequisite rather than changing architecture.
+
+**Why:** The user repeated these boundaries to distinguish native build setup
+from product changes.
+
+**How to apply:** Use genuine existing dev settings for the review APK. Keep
+the standard multi-environment build checks unchanged and report the exact APK
+path only after a successful build; a build is not physical-device validation.

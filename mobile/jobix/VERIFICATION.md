@@ -1,5 +1,49 @@
 # Jobix verification evidence
 
+## Physical-Android review APK — 2026-10-03
+
+Development/debug build only, explicitly authorized for visual review.
+
+- Installed Android SDK/build components and accepted their licenses. Flutter
+  doctor reports a healthy Android toolchain. No emulator or replacement
+  Expo/React Native/Linux application was created.
+- Restored ignored dev configuration from existing workspace public settings.
+  `dart tool/check_foundation.dart config/dev.local.json` passed. No new
+  credentials or staging/production configuration was created.
+- The first default debug build requested an unavailable legacy x86 profile
+  engine artifact. The successful build explicitly targets physical-device
+  ARM CPUs. Pinned Android NDK 27.0.12077973 to satisfy the existing native
+  plugins instead of the older wrapped-Flutter default.
+- Successful command, from `mobile/jobix`, with the workspace-local Gradle cache:
+
+  ```sh
+  GRADLE_USER_HOME="$PWD/../../.local/toolchains/gradle-cache" \
+    flutter build apk --debug \
+    --target-platform android-arm,android-arm64 \
+    --dart-define-from-file=config/dev.local.json
+  ```
+
+- APK: `mobile/jobix/build/app/outputs/flutter-apk/app-debug.apk`
+- Download archive: `mobile/jobix/build/review/jobix-dev-debug.zip` (73,958,679
+  bytes), containing the unchanged `app-debug.apk`. ZIP integrity checked.
+  The raw APK exceeds the Library's 100 MiB upload limit.
+- Size: 143,700,892 bytes. SHA-256:
+  `700ce05a9443b41b10ed6c400d4ee53852ab3fc5c9042a5417d6652ebf967fc7`
+- `apksigner verify --verbose`: passed, APK Signature Scheme v2.
+- Package `com.mhflow.jobix`, version 1.0.0 (1), debuggable, minimum API 24,
+  target/compile API 36. Flutter engines are present for ARMv7 and ARM64;
+  other ABI plugin libraries do not imply x86 emulator support.
+- No product flow/UI, architecture, schema, migration or remote database changes.
+  The standard three-environment build script is unchanged and was not used
+  for this specifically authorized development-only review build.
+
+**Not verified:** installation/launch on a physical device, native keyboard,
+Keystore/session restore and the full interactive Auth/Profile journey.
+The documented operational-policy/provider prerequisites are not bypassed or
+changed by producing an APK. No production/staging build or release acceptance
+is claimed. Earlier missing-toolchain/build statements below are historical;
+remaining native-device acceptance gates still apply.
+
 ## HTML/product correction — 2026-10-03
 
 Completed only the requested first-slice revision. No next feature, server

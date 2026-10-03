@@ -42,3 +42,17 @@ mtime_ms = 1791021967981
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/a66e8f7f-0cd1-47d6-9c59-719a47b6f4da/20b118bb-7c3d-4e56-8de9-58f1bb2a5e15"
 storage_version_token = "1791021989230280"
 content_type = "text/html"
+
+[[outputs]]
+id = "PZFySDECQ-zyhuGNhEbzc"
+uri = "file://mobile/jobix/build/review/jobix-dev-debug.zip"
+type = "unspecified"
+title = "Jobix Android debug APK — ZIP download"
+description = "Extract app-debug.apk and install on an ARM Android device running Android 7.0 or newer. Existing development backend only; APK signature verified, physical-device launch not yet verified."
+logical_id = "fc192176-e991-452b-8d01-c52a1bea544c"
+content_hash = "sha256:46f2880727030037e161b4bec0389922ea9790687375f4b3d0ed375d13e06b02"
+size = 73958679
+mtime_ms = 1791024448942
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/fc192176-e991-452b-8d01-c52a1bea544c/1991cadc-3a09-4ac3-b84a-de430f519e6b"
+storage_version_token = "1791024454534998"
+content_type = "application/octet-stream"
