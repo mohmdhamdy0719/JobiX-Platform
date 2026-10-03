@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/auth/secure_session_storage.dart';
+import '../features/auth/auth_repository.dart';
 import '../features/boot/startup.dart';
 import 'config/app_config.dart';
 import 'database/database.dart';
@@ -39,7 +40,7 @@ final supabaseClientProvider = FutureProvider<SupabaseClient>((ref) async {
     publishableKey: config.clientKey,
     debug: false,
     authOptions: FlutterAuthClientOptions(
-      detectSessionInUri: false, // No auth flow in Foundation.
+      detectSessionInUri: false, // Explicit validated native callback handler.
       localStorage: sessionStorage,
       pkceAsyncStorage: SecurePkceStorage(
         ref.watch(secretStoreProvider),
@@ -87,7 +88,7 @@ class _RuntimeStartupServices implements StartupServices {
   }
 
   @override
-  bool get hasSession => _client?.auth.currentSession != null;
+  bool get hasSession => sessionIsConfirmed(_client?.auth.currentSession);
   @override
   Future<String?> readMinimumVersion() async {
     final row = await _client!

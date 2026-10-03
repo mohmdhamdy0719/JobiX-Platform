@@ -1,4 +1,91 @@
-# Foundation verification evidence
+# Jobix verification evidence
+
+## First vertical slice — 2026-10-03
+
+This is the separately authorized feature slice; it supersedes the historical
+Foundation-only scope below, not the remaining native acceptance gates.
+See [FIRST_SLICE.md](FIRST_SLICE.md) for source authority, implemented
+contracts, minimal Architecture V2 patches and visual handoff limitations.
+
+### Passed in the current checkout
+
+- Flutter localization/Drift generation and dependency resolution.
+- `flutter analyze`: **no issues**.
+- `flutter test`: **65 tests passed**, including the 19 new contract and
+  13 new native-widget journey tests. Final run compared goldens normally,
+  without `--update-goldens`; no screenshot mismatch or layout error.
+- Actual SQLCipher encrypted v1→v2 migration, settings preservation, repeated
+  singleton onboarding writes, restart/readback, account-scoped drafts,
+  offline retention and offline acknowledged-cache use.
+- Atomic research ownership/command writes reject a stale snapshot, a
+  switched account or signed-out caller. Context cannot be assigned to a
+  different account during a delayed response.
+- Three-screen order/Skip, ordered four-question research retention and Q4's
+  maximum, confirmation guards, Google/reset boundary calls, returning Home,
+  new-registration Personal entry, Save & Continue Later and safe Discard.
+- Sign-out explains that local unsaved work is removed but acknowledged
+  server data remains; cancelling it preserves the draft.
+- Unknown-outcome retries use the same frozen command after further edits;
+  version conflicts do not silently overwrite, and non-network failures never
+  fall back to an old acknowledged Profile.
+- Mixed English App/Arabic Resume labels and direction without content
+  translation; optional custom city/history selection; 320px phone and
+  1.6× text navigation; native goldens for onboarding, research, auth, Home
+  and Personal Information.
+- `dart tool/check_foundation.dart`: public-client secret, directional-layout
+  and token checks passed. `git diff --check` passed.
+- Disposable local PostgreSQL Foundation + slice checks: Auth-trigger
+  bootstrap, exactly one empty Profile/slot/personal record per new account,
+  no Resume-language default, duplicate prevention, anonymous denial, owner
+  isolation, lifecycle exclusion, partial saves, idempotent replay,
+  payload-mismatch rejection, version conflicts and first-entry claim isolation.
+
+### Live isolated-development SQL
+
+Applied the two source migrations, in order, using the server-only protected
+session-pooler credential, the uploaded public CA and verified TLS:
+
+- `202610030002_first_vertical_slice.sql`
+- `202610030003_registration_entry.sql`
+
+The target was checked against the already authorized isolated development
+project. Staging/production were not contacted or changed. The existing
+Foundation schema was required, not replaced.
+
+The real Supabase PostgreSQL roles and `auth.uid()` passed the slice bootstrap,
+RLS and save/retry checks. First-entry routing is server-authoritative:
+new identities can claim first entry once; returning identities cannot be
+misclassified solely by choosing a Signup or Login button. Anonymous callers,
+other owners and inactive accounts cannot claim another user's state.
+SQL fixtures were inserted only inside a rollback transaction and removed
+by rollback; no new persistent Auth account or profile test data remains.
+No operational app-policy version was seeded.
+
+These are **live SQL** results, not real Google/email provider round trips,
+native deep-link, Keystore/Keychain or new PostgREST/SDK journey results.
+Historical Foundation live HTTP/session evidence below remains separate.
+
+### Still unverified / unavailable
+
+- The previously supplied, ignored public dev client config file is absent
+  in this checkout and must be restored from genuine settings.
+- Staging/production public settings remain NOT_CONFIGURED. The three-project
+  native build gate is preserved; no APK/IPA or release build pass is claimed.
+- Supabase Google provider configuration, confirmation enforcement/mail
+  delivery, reset emails and native redirect allowlisting/round trips.
+  The required redirect is `com.mhflow.jobix://auth/callback`.
+- Foundation recorded the operational `mobile` policy as absent; no slice
+  migration creates it. Authenticated startup remains fail-closed without
+  an administrator-approved policy.
+- Physical Android/iOS device storage, process death, backups/device transfer,
+  native RTL/locale/deep-link behavior and macOS/Xcode/CocoaPods.
+- Full approved location autocomplete catalog; only account history/custom
+  input is implemented. No dataset was invented or downloaded.
+- Final separate visual frames for research/confirmation/recovery/conflicts;
+  these use minimum structural UI with the accepted shared styling.
+
+The source-tested slice is implemented; the unavailable native/provider gates
+are not certified. Do not interpret this as production readiness.
 
 ## Final disposition — 2026-10-03
 

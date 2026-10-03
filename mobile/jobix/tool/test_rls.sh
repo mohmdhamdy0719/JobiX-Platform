@@ -10,5 +10,8 @@ pg_ctl -D "$work/data" -l "$work/server.log" \
 psql -X -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/tests/local_auth_fixture.sql \
   -f supabase/migrations/202610030001_foundation.sql \
-  -f supabase/tests/rls.sql
-echo "PASS: Foundation RLS (disposable PostgreSQL with auth fixture, not live Supabase)"
+  -f supabase/tests/rls.sql \
+  -f supabase/migrations/202610030002_first_vertical_slice.sql \
+  -f supabase/migrations/202610030003_registration_entry.sql \
+  -f supabase/tests/first_slice.sql
+echo "PASS: Foundation and first-slice RLS/RPC/bootstrap (disposable PostgreSQL, not live Supabase)"

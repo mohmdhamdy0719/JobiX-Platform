@@ -1,8 +1,11 @@
-# Jobix Foundation
+# Jobix — Foundation and first vertical slice
 
-Native Flutter infrastructure only, separate from the pnpm starter. No product
-screens, Career Profile tables, AI/ATS, billing, export or sync are implemented.
-Product Design, Architecture V2 and Constitution remain unchanged.
+Native Flutter, separate from the pnpm starter. The approved first slice adds
+three onboarding screens, four research questions, Supabase authentication,
+an automatically provisioned empty Profile #1, Home and Personal Information.
+AI/ATS, Credits, billing, export, rendering, translation and background sync
+remain out of scope. See [FIRST_SLICE.md](FIRST_SLICE.md) for the minimal
+dependency patches, contracts, visual sources and outstanding gates.
 
 ## Toolchain
 
@@ -18,7 +21,8 @@ The ignored local files must contain only the public project URL and
 publishable/anon client key, environment and app version. Never use a service
 key. Obtain the public values through the workspace configuration flow.
 The three hosts must differ; builds check this. Public development configuration
-has been supplied through the workspace flow. Staging and production remain
+was previously supplied, but the ignored `dev.local.json` is absent in this
+checkout and must be restored from genuine public settings. Staging and production remain
 `NOT_CONFIGURED`; do not turn that marker into a client configuration.
 
 `APP_VERSION` must equal the built package version. The workspace configuration
@@ -47,14 +51,13 @@ wrong-key tests are expected.
 Goldens use a bundled **test-only** DejaVu Sans (license in `test/assets`).
 It is not a production font and is not included in the app asset manifest.
 SHA256: ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280.
-Production font family is replaceable and unresolved. Radius ranges and
-typography scales are not chosen. Framework defaults in the placeholder
-shell are not approved product styling.
+Approved HTML references now supply Inter, typography, radii and colors.
+Inter/OFL and the reference logo are bundled production assets.
 
 ## Startup and authenticated app policies
 
 Config -> encrypted database/settings -> secure Supabase session restore.
-Signed-out clients reach the signed-out placeholder without reading
+Signed-out clients reach onboarding/research/auth without reading
 app policies: V2 authorizes policy reads only to authenticated clients.
 Authenticated sessions call `read_app_policy('mobile')`. Missing policy,
 malformed version, connection failure or storage failure is explicit startup
@@ -67,7 +70,7 @@ using authenticated startup against Supabase. The opt-in verification harness
 uses a temporary test-only policy and removes it afterward; it never chooses
 an operational minimum version.
 
-Auth restoration and sign-out are provided, not a login/register flow. Both
+Email signup, confirmed login, Google OAuth and password reset are provided. Both
 Supabase session storage and the PKCE adapter use secure storage, never its
 default unencrypted SharedPreferences adapters. Android's secure plugin uses
 **encrypted** preferences backed by Keystore; no plaintext session preferences
@@ -75,12 +78,14 @@ are used.
 
 ## Local security
 
-Drift v1 has only `infrastructure_metadata` and `local_settings`.
+Drift v1 has only `infrastructure_metadata` and `local_settings`; the tested
+v1→v2 migration adds encrypted onboarding progress, acknowledged Profile
+snapshots and account-scoped drafts.
 SQLCipher verifies `cipher_version` and reads page metadata before proceeding.
 A random 256-bit key stays in secure storage. A missing key deletes only the
 orphaned local Foundation DB and sidecars before creating a fresh DB.
 Wrong or corrupt existing keys fail; they never trigger destructive resets.
-This is infrastructure/settings only; server resync is a future slice.
+No background resync, outbox or worker is implemented.
 
 Android disables backup and excludes root/files/databases/shared preferences
 from both cloud backup and device transfer. HTTPS only.
@@ -90,7 +95,7 @@ Live device Keychain/Keystore and restore tests still require native devices.
 
 ## Server
 
-One Foundation migration in `supabase/migrations` creates:
+The Foundation migration in `supabase/migrations` creates:
 * `users` referencing existing Supabase `auth.users`, owner-only non-deleted
   reads, no client lifecycle writes.
 * `app_policies`, no direct client access; authenticated safe RPC projects
@@ -151,6 +156,7 @@ or Android/iOS physical devices are currently available. Podfile, project and
 backup bridge are present but device integration is unverified.
 
 The native splash uses only DESIGN.md navy, no logo or new artwork. Flutter's
-generated icon files are scaffolding assets, not Jobix assets. Production
-logo/icon and final screens remain gated on approved Figma/asset access.
+generated icon files are scaffolding assets, not Jobix assets. The approved
+reference logo is bundled for Flutter UI. Launcher icons and missing visual
+handoffs remain unverified.
 This project has no browser preview: don't create a web/Expo replacement.

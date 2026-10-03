@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/design/tokens.dart';
 import 'core/navigation/router.dart';
 import 'core/providers.dart';
+import 'features/auth/auth_controller.dart';
 import 'l10n/app_localizations.dart';
 
 class JobixApp extends ConsumerWidget {
   const JobixApp({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(authLinkServiceProvider);
     final device = WidgetsBinding.instance.platformDispatcher.locale;
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,

@@ -24,33 +24,42 @@ void main() {
   });
   tearDown(() => directory.deleteSync(recursive: true));
 
-  test('encrypted v0 -> v1 migration creates infrastructure only', () async {
-    final db = AppDatabase(encryptedDatabase(file, key));
-    await db.setSetting('locale', 'ar');
-    expect(await db.setting('locale'), 'ar');
-    final tables = await db
-        .customSelect(
-          "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
-        )
-        .get();
-    expect(tables.map((row) => row.read<String>('name')), [
-      'infrastructure_metadata',
-      'local_settings',
-    ]);
-    expect(
-      (await db.customSelect('PRAGMA user_version').getSingle())
-          .data
-          .values
-          .single,
-      1,
-    );
-    expect((await db.select(db.infrastructureMetadata).getSingle()).value, '1');
-    await db.close();
-    expect(
-      file.readAsBytesSync().take(16).toList(),
-      isNot('SQLite format 3\u0000'.codeUnits),
-    );
-  });
+  test(
+    'encrypted v0 -> v2 creates infrastructure and real slice storage',
+    () async {
+      final db = AppDatabase(encryptedDatabase(file, key));
+      await db.setSetting('locale', 'ar');
+      expect(await db.setting('locale'), 'ar');
+      final tables = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
+          )
+          .get();
+      expect(tables.map((row) => row.read<String>('name')), [
+        'infrastructure_metadata',
+        'local_drafts',
+        'local_onboarding',
+        'local_profiles',
+        'local_settings',
+      ]);
+      expect(
+        (await db.customSelect('PRAGMA user_version').getSingle())
+            .data
+            .values
+            .single,
+        2,
+      );
+      expect(
+        (await db.select(db.infrastructureMetadata).getSingle()).value,
+        '2',
+      );
+      await db.close();
+      expect(
+        file.readAsBytesSync().take(16).toList(),
+        isNot('SQLite format 3\u0000'.codeUnits),
+      );
+    },
+  );
   test('correct key reopens settings without repeating migration', () async {
     final db = AppDatabase(encryptedDatabase(file, key));
     await db.setSetting('locale', 'ar');

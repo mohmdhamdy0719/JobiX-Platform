@@ -14,7 +14,22 @@ Implementation authorization is slice-specific. Foundation approval does not aut
 
 **Why:** The user explicitly required stopping at the end of Foundation and not continuing into features.
 
-**How to apply:** Finish and verify the authorized slice, report remaining gates honestly, and wait for separate feature-slice permission. Keep unresolved fonts, assets, typography and ranged design values unresolved.
+**How to apply:** Finish and verify the authorized slice, report remaining gates honestly, and wait for separate feature-slice permission. Do not choose unresolved visual values without an approved source.
+
+The owner separately authorized the first vertical slice: three skippable
+onboarding screens, four non-skippable-as-a-group context questions, confirmed
+email/password and Google Auth, one empty Profile #1, Personal Information,
+Home-first returning navigation and local drafts. No AI, ATS, Credits, export,
+rendering, translation, sync/outbox, analytics or premium billing in this slice.
+
+**Why:** The owner's resolved decisions explicitly authorize this scope and
+prohibit re-planning or reopening them. Accepted HTML references now supply
+shared native styling; later-screen references do not authorize their features.
+
+**How to apply:** Resume implementation within this scope without seeking
+Foundation-only approval again. Required-for-export fields never block partial
+saves or leaving. Keep App Language independent of explicitly selected Resume
+Language; do not translate content or invent Resume defaults/location catalogs.
 
 Do not create or invent staging/production Supabase projects or credentials
 just to satisfy Jobix verification gates. Record unavailable native tooling,

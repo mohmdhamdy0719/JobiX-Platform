@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jobix/app.dart';
 import 'package:jobix/core/design/tokens.dart';
 import 'package:jobix/core/providers.dart';
 import 'package:jobix/features/boot/startup.dart';
+import 'package:jobix/features/shell/foundation_page.dart';
+import 'package:jobix/l10n/app_localizations.dart';
 
 void main() {
   setUpAll(() async {
@@ -45,7 +46,17 @@ void main() {
             ),
           ),
         ],
-        child: const JobixApp(),
+        child: MaterialApp(
+          locale: Locale(locale),
+          theme: foundationTheme().copyWith(
+            textTheme: foundationTheme().textTheme.apply(
+              fontFamily: 'FoundationTestFont',
+            ),
+          ),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: FoundationPage(state: state),
+        ),
       ),
     );
     await tester.pump();
@@ -77,11 +88,13 @@ void main() {
     StartupState.updateRequired,
     StartupState.failed,
   ]) {
-    testWidgets('route guard reaches ${state.name}', (tester) async {
+    testWidgets('legacy Foundation state ${state.name} remains usable', (
+      tester,
+    ) async {
       await pumpShell(tester, 'en', state);
       expect(find.byType(Scaffold), findsOneWidget);
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(JobixApp)),
+        tester.element(find.byType(FoundationPage)),
       );
       expect(await container.read(startupProvider.future), state);
       if (state == StartupState.signedIn) {

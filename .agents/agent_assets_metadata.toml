@@ -1,0 +1,30 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "y4Q8IYOlynUsg9saAD1zH"
+uri = "file://mobile/jobix/test/goldens/slice_onboarding_en.png"
+type = "image"
+title = "Jobix onboarding — Flutter render"
+description = "Rendered from the implemented Flutter widgets. This is a test render, not a physical-device screenshot."
+logical_id = "b751cdd6-672f-45b2-b983-2fa8c3354a41"
+content_hash = "sha256:54f8d26621968cee8a8e5c5b9036d2e98e6ff0c3efe69b477fc9e7a733d839db"
+size = 47896
+mtime_ms = 1791016878821
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/b751cdd6-672f-45b2-b983-2fa8c3354a41/2a7e582a-77ff-4783-9f6d-d47fded587a9"
+storage_version_token = "1791018467726796"
+content_type = "image/png"
+
+[[outputs]]
+id = "rBjZKI5X7Dpu-8QIjYXBh"
+uri = "file://mobile/jobix/test/goldens/slice_personal_mixed.png"
+type = "image"
+title = "Personal Information — English App / Arabic Resume"
+description = "Verified native-widget render showing independent App and Resume languages. This is not native-device acceptance evidence."
+logical_id = "7a8fc62e-4fed-4d39-82e9-a11090951678"
+content_hash = "sha256:19cc1373b334dcd551a3e8a80962cb6c85e6e019c12f97cfed79707d75b64ee3"
+size = 64068
+mtime_ms = 1791016882829
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/7a8fc62e-4fed-4d39-82e9-a11090951678/80d765a2-92e5-4fc0-bc2e-24fc1867e938"
+storage_version_token = "1791018468313913"
+content_type = "image/png"

@@ -1,0 +1,151 @@
+The product-owner decisions for Task #4 are now resolved. Proceed to implementation.
+
+Do not re-plan the product or reopen these decisions. Use the existing Foundation and implement the first Jobix vertical slice only.
+
+FINAL PRODUCT DECISIONS
+
+1. AUTH
+- MVP supports Email + Password and Google Sign-In.
+- Email/password accounts require email confirmation before being treated as authenticated.
+- Google users may enter as authenticated according to the provider's verified identity.
+- Forgot Password is supported for email/password accounts.
+- Do not invent additional providers or verification mechanisms.
+
+2. ONBOARDING
+- Exactly 3 onboarding screens using the approved copy.
+- The 3 onboarding screens are skippable.
+- After onboarding, exactly 4 ordered research/context questions are shown.
+- The research questions are not skippable as a group.
+- Q4 allows up to 3 selections.
+- These questions are context only and must never gate eligibility or product access.
+
+3. RESEARCH PROGRESS
+- Persist unfinished onboarding/research progress locally.
+- If the app is closed or connectivity is lost, resume from the last incomplete question.
+- Do not create anonymous server-side users or anonymous onboarding rows.
+- After authentication, persist the collected onboarding context to the authenticated user's server-side data.
+
+4. RETURNING USERS
+- After a user is already registered, reopening the app goes to Home, not directly into the builder.
+- Home must clearly show the user's next incomplete Career action.
+- When the user opens Career, resume at the last incomplete/unfinished Career Profile step.
+- Do not force the user into the builder on every app launch.
+
+5. CAREER PROFILE #1
+- Successful new registration creates exactly one empty Career Profile #1 server-side.
+- Creation must be idempotent and retry-safe.
+- Profile creation must not depend on Credits.
+- Do not invent Resume language/template defaults.
+- Do not create fake placeholder tables or fake schema versions.
+- Do not implement AI, ATS, Credits, export, rendering, translation, sync/outbox, analytics or premium billing in this slice.
+
+6. PERSONAL INFORMATION
+Fields:
+Required for eventual export:
+- Full Name
+- Email
+- Phone
+
+Optional:
+- Country
+- City
+- LinkedIn
+- GitHub
+- Portfolio
+
+Important:
+- Required-for-export does NOT mean required to enter, navigate or save the Career Profile.
+- Users may leave the screen with incomplete data.
+- Incomplete work is retained locally according to the existing draft architecture.
+- Export validation is out of scope for this slice except preserving the existing contract.
+
+7. APP LANGUAGE VS RESUME LANGUAGE
+These are independent concepts.
+
+APP LANGUAGE:
+- Controls Jobix UI.
+- Defaults from device language.
+- Arabic/English switch remains available.
+- Research questions, navigation, buttons, dialogs and general product UI use App Language.
+
+RESUME LANGUAGE:
+- Controls the language/context of Resume-oriented labels, examples, placeholders and profile-building guidance.
+- If Resume Language is Arabic, Resume/Profile field labels, examples and contextual placeholders should be Arabic.
+- If Resume Language is English, those Resume/Profile labels, examples and contextual placeholders should be English.
+- This applies even when App Language and Resume Language differ.
+
+Example:
+App Language = English
+Resume Language = Arabic
+
+Then:
+- Navigation/questions/general UI = English
+- Resume-oriented Profile labels/examples/placeholders = Arabic
+
+Changing Resume Language must NOT automatically translate existing user content.
+Translation is not part of MVP.
+
+8. COUNTRY / CITY UX
+- Country and City are optional.
+- Do not silently populate the user's server-side Country/City from device location or IP.
+- If a device-region suggestion is reasonably available, it may be shown only as an explicit non-binding suggestion such as "Use Egypt".
+- The user must explicitly choose/accept it before it becomes profile data.
+- User may ignore the suggestion and choose manually.
+- City supports approved autocomplete plus custom values.
+- Do not invent or download an unapproved external location dataset.
+- Country/City labels, suggestions and examples follow Resume Language, not App Language.
+- App UI surrounding those controls still follows App Language.
+- Do not infer location from IP.
+
+9. SAVE / LEAVE BEHAVIOR
+- Users can navigate normally and leave incomplete profile work.
+- If there is unsynced local work when leaving, offer:
+  Save & Continue Later
+  Discard
+- Discard deletes only the unsynced local draft.
+- Discard must never delete acknowledged server-side data.
+- Local drafts survive app restart and temporary connectivity loss.
+
+10. VISUAL IMPLEMENTATION
+- Do not invent final visual designs where approved Figma/Stitch frames are unavailable.
+- Use existing approved prototype/design assets where available.
+- If a required screen has no approved visual source, implement only the minimum structurally necessary UI using the existing Foundation design tokens and clearly document the missing visual handoff.
+- Do not invent a new design system.
+- Preserve RTL/LTR correctly.
+
+11. SCOPE
+Implement ONLY:
+Onboarding
+→ 4 Research Questions
+→ Supabase Auth
+→ automatic empty Career Profile #1
+→ Personal Information
+→ required navigation, guards and local draft behavior.
+
+Required database/RLS/schema changes for this slice are allowed, but must follow Architecture V2 and be minimal.
+
+12. TESTING
+Add tests for:
+- onboarding ordering and skip behavior
+- research question persistence/resume
+- Q4 max 3 selections
+- Arabic/English App Language
+- independent Resume Language behavior
+- RTL/LTR
+- email/password auth states
+- Google auth integration boundary
+- email confirmation behavior
+- forgot-password flow boundary
+- idempotent Profile #1 creation
+- owner isolation/RLS
+- retry behavior
+- incomplete Personal Information drafts
+- Save & Continue Later / Discard semantics
+- Home-first behavior for returning users
+- Career resumes at last incomplete step
+
+Do not start any additional feature.
+
+If a technical issue is caused by an actually unresolved Architecture V2 schema dependency, make the smallest explicit architecture-compatible patch required for this slice and document it. Do not invent product behavior.
+
+Proceed with implementation now.
