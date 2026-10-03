@@ -2,6 +2,30 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
+## Current core-MVP authorization
+
+The owner now authorizes the complete post-authentication career-building MVP
+in coherent vertical slices, including profile sections/editing/sync,
+completeness, Gemini proposals, Home/Career/Settings, server-authoritative
+Credits/rewards, canonical resume preview and PDF export. Earlier
+foundation-only, first-slice-only and visual-only restrictions below describe
+prior phases, not the current authorized scope.
+
+**Why:** The owner explicitly supplied a new core-MVP implementation brief.
+
+**How to apply:** Preserve the approved native stack and Architecture V2.
+The newly supplied screen images are the primary visual reference, with small
+corrections allowed for misleading claims or product inconsistencies; they are
+not permission to invent user data, scores, entitlements or backend results.
+Before continuing, verify development startup policy read-only. Stop at missing
+contracts, migrations, configuration or unclear behavior and ask rather than
+guessing. Never substitute mock Credits, AI, rewarded-ad verification or exports
+for real server-authoritative operations. Ask related independent dependency
+questions together. Do not create staging/production infrastructure or weaken
+security to unblock implementation.
+
+## Earlier authorizations and standing constraints
+
 Use “Jobix” for new user-facing copy. Do not blindly rename historical technical identifiers.
 
 Preserve Flutter, Riverpod, Drift/SQLite, Supabase Auth/PostgreSQL/RLS/Edge Functions, Cloud Run, private GCS, Vertex AI, AdMob SSV, and canonical HTML/CSS rendered through WebView and Playwright/Chromium. The starter web scaffold is not permission to substitute a web or Expo stack.

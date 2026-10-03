@@ -1,0 +1,884 @@
+We are now moving from the Foundation into the core Jobix MVP product journey.
+
+I want you to implement the next major vertical slice of Jobix, covering the complete post-authentication career-building experience.
+
+IMPORTANT:
+Do not re-architect the project.
+Do not replace the existing Foundation.
+Do not invent backend architecture.
+Do not silently change approved product behavior.
+Use the existing Product Design, Constitution, Architecture V2, DESIGN.md, and current Flutter Foundation as the source of truth for behavior and infrastructure.
+
+I will provide screenshots for the relevant screens.
+Use those screenshots as the PRIMARY VISUAL REFERENCE.
+
+The goal is NOT to blindly copy screenshots pixel-for-pixel.
+Instead:
+- reproduce the same visual language
+- reproduce the same design quality
+- reproduce the same hierarchy
+- reproduce the same spacing philosophy
+- reproduce the same component patterns
+- reproduce the same interaction quality
+- keep Jobix visually coherent across all screens
+- make small corrections when something in a screenshot is clearly unnecessary, incorrect, inconsistent, misleading, or doesn't fit the established Jobix design system
+
+The final result should feel like ONE professionally designed Jobix application, not a collection of copied screenshots.
+
+==================================================
+1. REQUIRED PRODUCT SCOPE
+==================================================
+
+Implement the following end-to-end:
+
+A. Post-authentication first Career Profile journey
+B. First Career Profile / first Career Slot
+C. Personal Information
+D. Profile sections and career evidence
+E. Profile editing
+F. Gemini Agent Assist
+G. Profile completeness
+H. ATS readiness integration/surface where applicable
+I. Home Page
+J. Career Page after profile creation
+K. Resume configuration
+L. Resume Preview
+M. Canonical Resume Rendering
+N. PDF Export
+O. Credits system UI and server-authoritative operations
+P. Signup +5 Credits
+Q. Daily Reward via rewarded AdMob
+R. Settings Page
+S. English/Arabic and LTR/RTL throughout
+T. Navigation between Home / Career / Settings
+
+Do NOT implement unrelated future features just because they are mentioned in architecture documents.
+
+Keep the current MVP boundaries.
+
+==================================================
+2. FIRST CAREER PROFILE
+==================================================
+
+After successful registration/authentication:
+
+- the user's first Career Profile must already exist server-side according to the approved architecture
+- it starts empty
+- the user is taken into the profile-building journey
+- the user must NOT be forced to complete the entire profile
+- progress must be safely persisted
+- the user can leave and continue later
+- local draft/persistence behavior must follow the existing Foundation and Architecture V2
+- server synchronization must use the existing profile mutation/sync architecture
+
+The first Career Profile is the user's primary professional dataset.
+
+Do not confuse:
+Career Profile = professional data
+Resume = presentation/configuration generated from that profile
+
+Resume language/template settings must NOT become separate Career Profiles.
+
+==================================================
+3. PROFILE DATA
+==================================================
+
+Implement the approved profile sections and fields from Product Design / Architecture V2.
+
+At minimum, the journey must support the approved profile structure including:
+
+- Personal Information
+- Summary
+- Work Experience
+- Education
+- Projects
+- Skills
+- Languages
+- Certifications
+- Achievements
+- Volunteer Experience
+- Target Role
+- Resume configuration
+
+Do not invent additional profile sections unless required for implementation.
+
+Respect the existing product rules:
+
+- Work Experience is NOT mandatory for everyone.
+- Career evidence can come from appropriate sections such as education, projects, volunteer experience, achievements, or work experience.
+- Skills alone cannot satisfy Minimum Meaningful Career Content.
+- Target Role is optional.
+- Target Role is profile-specific free text.
+- Summary is optional.
+- Used sections must be complete or intentionally removed/disabled.
+- Do not force users to fill irrelevant sections.
+
+Use the existing profile completeness model from the approved design/architecture.
+
+Approved completeness structure:
+
+Contact: 15%
+Career Evidence: 45%
+Skills: 15%
+Summary: 10%
+Languages: 10%
+Target Role: 5%
+
+Within Career Evidence:
+- first meaningful evidence item = 30 percentage points
+- second meaningful evidence item = remaining 15 percentage points
+
+Respect the existing MMCC rule and do not invent a different formula.
+
+==================================================
+4. PROFILE COMPLETENESS
+==================================================
+
+Show Profile Completeness clearly where appropriate.
+
+Keep it separate from ATS Readiness.
+
+Profile Completeness:
+- measures how complete/useful the profile data is
+- does not represent hiring probability
+- does not represent job matching
+- does not represent ATS score
+
+The user must be able to continue editing even when completeness is low.
+
+Do not block export solely because the ATS score or completeness score is low.
+
+Export still requires the approved minimum meaningful CV data and valid core fields.
+
+==================================================
+5. GEMINI AGENT ASSIST
+==================================================
+
+Implement Gemini Agent Assist according to the already-approved Jobix AI behavior and existing architecture.
+
+IMPORTANT:
+AI must NEVER invent facts.
+
+AI output is a PROPOSAL until the user accepts it.
+
+The AI may help turn the user's own information into professional CV-ready wording.
+
+For relevant fields such as Experience and Summary, support the approved assistance flow.
+
+For example, Experience assistance can use prompts/hints such as:
+
+- What were your main responsibilities?
+- What did your typical day involve?
+- What tools, software, or systems did you use?
+- Who did you work with or support?
+- What problems did you solve?
+- What did you improve or accomplish?
+- Can you mention any measurable results?
+
+Summary placeholder:
+"Tell us about your experience, strengths, and career direction."
+
+Summary hints:
+- What is your professional background?
+- What are your strongest skills?
+- What type of work do you specialize in?
+- What are you currently looking for?
+- What makes you valuable in your field?
+
+Use the existing AI quota/allowance architecture.
+
+First Career Profile journey:
+- maximum 6 explicit AI generations across the entire first-profile-building journey
+- shared across sections
+- NOT 6 generations per field
+- unused generations do not stack after the first profile reaches 50% completeness
+
+After the first profile reaches 50% completeness:
+- first-profile phase ends permanently
+- subsequent Free allowance follows the approved next-Cairo-day rule
+- Free = 3 generations/day/user
+- Premium future entitlement = 10/day/user
+
+Do NOT charge AI allowance on failed requests when the architecture says the failure should not consume allowance.
+
+Every successful generation must preserve:
+- source input
+- AI output
+- profile version/context
+- generation history
+
+The user must be able to keep the original or choose an accepted generation.
+
+Do not silently overwrite user content.
+
+For text:
+- user can Keep Mine
+- or Use This
+
+For Skills:
+- suggestions can be added
+- never silently delete existing skills
+
+If information is missing:
+- ask for factual information
+- do not fabricate it
+
+Use the existing Vertex/Gemini provider abstraction from the architecture.
+DO NOT put Gemini API credentials in Flutter.
+
+==================================================
+6. CAREER PAGE
+==================================================
+
+After profile creation, implement the Career page.
+
+The Career page should become the user's central profile-management experience.
+
+It should clearly communicate:
+- active Career Profile
+- Profile Completeness
+- ATS Readiness where appropriate
+- profile sections
+- editable content
+- incomplete sections
+- actions to add/edit/remove sections
+- Preview Resume
+- Export Resume
+- profile configuration
+
+Support the existing multi-profile architecture.
+
+For now:
+- Profile 1 is free
+- Profile 2 costs 10 Credits once
+- Profile 3 costs 20 Credits once
+
+Slot unlocking is permanent.
+
+Deleting a purchased profile must NOT revoke the purchased slot.
+
+The UI should support:
+- Switch Profile
+- Rename
+- Delete
+- Add New Profile
+
+Do not implement more than the approved three-profile MVP.
+
+==================================================
+7. HOME PAGE
+==================================================
+
+Implement the Home Page as the Career Command Center.
+
+It should include the approved Jobix concepts such as:
+
+- current Career Profile
+- Profile Completeness
+- ATS Readiness
+- next recommended actions
+- Credits balance
+- Daily Reward
+- recent exports
+- available career services where applicable
+
+The Home page should not become a generic dashboard.
+
+It should help the user understand:
+"What should I do next to make my career profile / CV better?"
+
+Use the supplied screenshots as the visual reference.
+
+Make the layout professional, compact, clear and useful.
+
+==================================================
+8. CREDITS
+==================================================
+
+Credits are SERVER-AUTHORITATIVE.
+
+Do not implement Credits as a client-only counter.
+
+New account:
++5 Credits
+
+PDF Resume Export:
+2 Credits per NEW export
+
+Existing valid generated PDF download:
+0 Credits
+
+Failed export:
+must not permanently consume Credits
+
+Cover Letter:
+follow the already-approved architecture/product rules if included in this slice.
+
+Professional Email:
+follow the already-approved architecture/product rules if included in this slice.
+
+Profile slots:
+Profile 2 = 10 Credits once
+Profile 3 = 20 Credits once
+
+Daily Reward:
++2 Credits after successfully verified rewarded-ad completion.
+
+The client must never be able to simply grant itself Credits.
+
+Use the existing:
+- credit ledger
+- credit reservations
+- idempotency
+- server-authoritative mutation architecture
+
+Do not create a second Credits system.
+
+Show the user's current balance in the appropriate Home/Career surfaces.
+
+If a user tries to export without sufficient Credits:
+show a clear, professional insufficient-Credits state.
+
+==================================================
+9. DAILY REWARD / ADMOB
+==================================================
+
+Implement the approved Daily Reward flow.
+
+Reward:
++2 Credits
+
+Eligibility:
+- first app open in the Africa/Cairo calendar day
+- if finalized current balance < 9 Credits → eligible all day
+- if finalized current balance >= 9 Credits → ineligible all day
+- reservations do NOT count toward eligibility
+
+Claim:
+- user watches a rewarded AdMob advertisement
+- reward is granted ONLY after the server verifies the official AdMob SSV callback
+- client cannot grant the reward
+- duplicate callbacks must be harmless
+- reward claim/open must be idempotent
+- server time is authoritative
+- unique reward per user/date
+
+Use test/sandbox configuration for development where appropriate.
+
+Do not fake production reward verification.
+
+If required AdMob configuration is missing, STOP and ask me rather than inventing IDs or bypassing SSV.
+
+==================================================
+10. RESUME CONFIGURATION
+==================================================
+
+Implement Resume configuration from the Career Profile.
+
+MVP:
+- English Resume
+- Arabic Resume
+- at least one approved English template
+- at least one approved Arabic template
+
+The same Career Profile can switch Resume language/template.
+
+Changing Resume language:
+- changes presentation/direction
+- does NOT automatically translate the user's content
+
+Translation is NOT an MVP feature.
+
+English:
+LTR
+
+Arabic:
+RTL
+
+Arabic must be treated as a first-class layout, not an English layout mirrored mechanically.
+
+==================================================
+11. RESUME PREVIEW
+==================================================
+
+When the profile has enough meaningful information, provide:
+
+Preview Resume
+
+The Preview must use the same canonical representation that will be used for PDF generation.
+
+Do NOT build:
+one renderer for preview
+and another renderer for PDF.
+
+They must share the same canonical HTML/CSS/rendering representation according to Architecture V2.
+
+Preview should show:
+- actual typography
+- actual spacing
+- actual page breaks
+- actual RTL/LTR behavior
+- actual sections
+- actual template
+
+Do not silently remove content to make it fit one page.
+
+Multi-page resumes are valid.
+
+A4 is the MVP format.
+
+The user must be able to review the resume before exporting.
+
+==================================================
+12. PDF EXPORT
+==================================================
+
+Implement:
+
+Preview → Export PDF
+
+A NEW PDF export costs:
+2 Credits
+
+Export must:
+- create the approved immutable export snapshot
+- reserve Credits correctly
+- create the durable export job
+- use the existing export worker/job architecture
+- generate PDF through the approved server-side rendering architecture
+- store the resulting private object according to the existing GCS architecture
+- return a downloadable result when completed
+
+Do NOT generate production PDFs directly inside Flutter.
+
+Use the existing:
+Cloud Run
+Playwright/Chromium
+canonical HTML/CSS
+GCS private storage
+export state machine
+architecture.
+
+Existing valid PDF download:
+0 Credits
+
+Export Again:
+2 Credits
+and it uses the CURRENT profile/configuration, not the old snapshot.
+
+Generated files:
+7-day retention according to the approved lifecycle.
+
+If export fails:
+do not permanently lose the user's Credits.
+
+Handle retries/idempotency according to the existing architecture.
+
+Do not block export because ATS score is low.
+
+==================================================
+13. SETTINGS
+==================================================
+
+Implement the approved Settings structure.
+
+Use:
+
+ACCOUNT
+- Account Information
+- Personal Information
+- Subscription & Plan (only if the existing architecture supports the future-ready surface)
+- Sign Out
+- Delete Account
+
+PREFERENCES
+- App Language
+
+CAREER & DATA
+- Export History
+
+SUPPORT
+- Contact Us
+- Invite Friends
+- Follow Us
+
+LEGAL
+- Privacy Policy
+- Terms of Service
+
+Use "Sign Out", not "Logout".
+Use "App Language", not "Language".
+Use "Terms of Service".
+
+Do NOT invent:
+- Deactivate My Account
+- pricing
+- subscription plans
+- trial periods
+- rewards for inviting friends
+
+unless already explicitly approved.
+
+Delete Account must follow the existing server-side deletion architecture.
+
+==================================================
+14. NAVIGATION
+==================================================
+
+The main authenticated navigation should be:
+
+Home
+Career
+Settings
+
+Career is the central item.
+
+Career should open the user's last-used Career Profile by default.
+
+Use the existing navigation architecture.
+
+Do not introduce another competing navigation structure.
+
+==================================================
+15. TYPOGRAPHY
+==================================================
+
+Typography is extremely important.
+
+Do NOT use ugly/default fallback Arabic typography.
+
+Use professional production fonts.
+
+For English:
+Use Inter as the primary app/UI font if already approved and bundled.
+
+For Arabic:
+Use Noto Sans Arabic.
+
+Noto Sans Arabic must be bundled as a real production asset, not rely on platform fallback.
+
+For Resume rendering:
+choose professional, highly readable fonts with proper Arabic and English support.
+
+The Resume is one of the most important outputs of Jobix.
+
+The typography must be:
+- professional
+- highly readable
+- ATS-friendly
+- suitable for long text
+- visually balanced
+- clear at normal PDF zoom
+- suitable for headings, body text, dates and metadata
+- consistent across pages
+
+Avoid decorative fonts.
+
+Do not use a "cool" font at the expense of readability.
+
+If a production font requires license approval, STOP and ask me.
+
+Do not silently substitute an unapproved font for production.
+
+==================================================
+16. BRAND ASSETS
+==================================================
+
+Use the approved Jobix brand assets that I supplied.
+
+Do NOT redraw, recolor, distort, or reinterpret the logo.
+
+Use the approved app icon master.
+
+Do not use Flutter's default launcher icon.
+
+Preserve:
+- proportions
+- colors
+- shape
+- clear space
+
+If an asset is missing, ask me.
+
+==================================================
+17. VISUAL DESIGN DIRECTION
+==================================================
+
+The new screens should feel like a polished modern career product.
+
+Use:
+- neutral/light surfaces where appropriate
+- Jobix blue for important actions
+- navy for strong headings
+- restrained shadows
+- fine borders
+- clear hierarchy
+- compact but comfortable layouts
+- generous but intentional whitespace
+- professional cards
+- consistent corner radii
+- strong typography
+- clear primary/secondary actions
+- accessible touch targets
+- smooth but restrained motion
+
+Avoid:
+- excessive gradients
+- giant illustrations
+- excessive empty space
+- random colors
+- random Material defaults
+- inconsistent card styles
+- repeated unnecessary language controls
+- decorative UI that doesn't help the user
+- tiny unreadable text
+- over-designed resume templates
+
+The screenshots I provide are the visual target.
+
+If something is clearly wrong in a screenshot or inconsistent with the rest of Jobix, you may make a small correction.
+
+Do not redesign the entire product based on personal preference.
+
+==================================================
+18. RESPONSIVE + ACCESSIBILITY
+==================================================
+
+All screens must work on real Android devices.
+
+The previously reviewed device is:
+
+Samsung Galaxy M31
+Model: M315F/DSN
+Android 12
+
+Test and optimize for this device class.
+
+Support:
+- scrolling
+- safe areas
+- keyboard interaction
+- text scaling where practical
+- accessible touch targets
+- long Arabic text
+- long English text
+- validation/error states
+- loading states
+- empty states
+- success states
+- network failure states
+
+Do not assume every screen fits on one viewport.
+
+==================================================
+19. DATA / SECURITY
+==================================================
+
+Follow Architecture V2 exactly.
+
+Important:
+
+- Credits are server authoritative.
+- Rewards are server authoritative.
+- AI allowance is server authoritative.
+- Premium entitlements are server authoritative.
+- Exports are server authoritative.
+- GCS files are private.
+- No secrets in Flutter.
+- No service-role/admin keys in the client.
+- RLS remains mandatory.
+- Use idempotency for financial/credit operations.
+- Preserve optimistic concurrency/profile version rules.
+- Do not weaken RLS to make UI work.
+- Do not bypass authenticated startup policy.
+- Do not create client-side shortcuts around backend validation.
+
+==================================================
+20. STARTUP POLICY BLOCKER
+==================================================
+
+Before continuing, verify the previously identified development startup policy blocker.
+
+The previous audit found that:
+policy_key = 'mobile'
+was missing from the development database.
+
+Authenticated startup intentionally fails closed when the operational policy is absent.
+
+DO NOT:
+- bypass the check
+- weaken authentication
+- hardcode a fake policy
+- silently modify the database
+
+If the policy is still missing and no approved values were provided:
+STOP and ask me for the administrator-approved:
+- minimum_supported_version
+- policy_version
+- optional recommended_version
+
+Do not guess these values.
+
+If the blocker has already been resolved, verify it read-only and continue.
+
+==================================================
+21. LEGAL
+==================================================
+
+Do not invent Terms of Service or Privacy Policy URLs.
+
+If the URLs are not configured:
+- keep the UI structurally ready
+- use a clearly defined missing-configuration state where appropriate
+- ask me for the approved URLs before enabling production navigation
+
+==================================================
+22. IMPLEMENTATION STRATEGY
+==================================================
+
+Implement this as coherent vertical slices.
+
+Recommended order:
+
+Slice 1:
+Authenticated shell + Home/Career/Settings navigation
+
+Slice 2:
+First Career Profile + profile data entry/editing
+
+Slice 3:
+Profile completeness + persistence/sync
+
+Slice 4:
+Gemini Agent Assist + generation history/acceptance
+
+Slice 5:
+Career Page after profile creation
+
+Slice 6:
+Credits + signup grant + balance/transactions
+
+Slice 7:
+Daily Reward + AdMob rewarded flow + SSV architecture
+
+Slice 8:
+Resume configuration + Preview
+
+Slice 9:
+Canonical PDF rendering + Export + download/history
+
+Slice 10:
+Final English/Arabic visual QA and device testing
+
+Keep each slice testable.
+
+Do not implement fake backend behavior merely to make the UI look finished.
+
+==================================================
+23. TESTING
+==================================================
+
+For every major slice, add appropriate tests.
+
+At minimum verify:
+
+- authentication → first profile
+- first profile creation
+- profile edits
+- local draft persistence
+- sync behavior
+- profile completeness
+- AI proposal/acceptance
+- AI quota
+- Credits grant
+- Credits reservation
+- Credits refund/reconciliation where applicable
+- insufficient Credits
+- Daily Reward eligibility
+- duplicate reward callback
+- PDF export charge
+- failed export behavior
+- existing PDF download = 0 Credits
+- Export Again = 2 Credits
+- private export object access
+- English rendering
+- Arabic rendering
+- RTL/LTR
+- long content
+- multi-page resume
+- Preview/PDF consistency
+- Settings
+- Delete Account flow
+- navigation
+- device-safe layout
+
+Run:
+- flutter analyze
+- relevant unit/widget/integration tests
+- existing Foundation tests
+- available backend/database tests
+- device review where available
+
+Do not claim production verification when only local/mock verification was possible.
+
+==================================================
+24. IMPORTANT QUESTION / STOP RULE
+==================================================
+
+I explicitly want you to ask me questions instead of guessing.
+
+If you encounter ANY of the following:
+- missing API contract
+- missing database field
+- missing migration
+- missing approved font/license
+- missing brand asset
+- missing Figma/screenshot detail
+- missing AdMob configuration
+- missing Gemini configuration
+- missing legal URL
+- missing policy value
+- unclear product behavior
+- conflict between screenshots and Product Design
+- conflict between screenshots and Architecture
+- infrastructure limitation
+- security concern
+
+STOP at that dependency and ask me a concise question.
+
+Do NOT spend Replit credits implementing a guessed solution.
+
+If multiple independent questions exist, ask them together in one message.
+
+==================================================
+25. FINAL REQUIREMENT
+==================================================
+
+The finished result should feel like a real Jobix MVP, not a prototype.
+
+The user journey should be:
+
+Sign Up
+→ +5 Credits
+→ First Career Profile
+→ Enter Career Information
+→ Gemini Agent Assist when explicitly requested
+→ Profile Completeness
+→ Career
+→ Home
+→ Preview Resume
+→ Export PDF
+→ -2 Credits
+→ Download
+→ Settings
+
+And the authenticated navigation must remain:
+
+Home | Career | Settings
+
+The product must remain bilingual:
+English + Arabic.
+
+The implementation must remain aligned with the existing Jobix architecture.
+
+Before making any architectural or product decision that is not explicitly defined, ASK ME.
