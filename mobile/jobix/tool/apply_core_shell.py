@@ -15,6 +15,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply-isolated-dev", action="store_true")
     parser.add_argument("--bootstrap-patch", action="store_true")
+    parser.add_argument("--profile-text", action="store_true")
     parser.add_argument("--ca-file", required=True, type=Path)
     args = parser.parse_args()
     if not args.apply_isolated_dev:
@@ -47,9 +48,9 @@ def main():
     if sql("SELECT to_regprocedure('public.claim_registration_entry()') IS NOT NULL;") != "t":
         raise RuntimeError("Existing first-slice Foundation is required.")
     existing = sql("SELECT to_regclass('public.credit_accounts') IS NOT NULL;")
-    if existing != "f" and not args.bootstrap_patch:
+    if existing != "f" and not args.bootstrap_patch and not args.profile_text:
         raise RuntimeError("Credits schema already exists; refusing to overwrite it.")
-    if existing != "t" and args.bootstrap_patch:
+    if existing != "t" and (args.bootstrap_patch or args.profile_text):
         raise RuntimeError("Credits schema is required before its metadata patch.")
     policy_query = """SELECT jsonb_build_object('minimum',minimum_supported_version,
         'recommended',recommended_version,'policy',policy_version, 'configuration',configuration)
@@ -57,9 +58,14 @@ def main():
     before = sql(policy_query)
     if not before:
         raise RuntimeError("Operational startup policy is missing; no bypass attempted.")
-    if not args.bootstrap_patch:
+    if args.profile_text:
+        if sql("SELECT to_regclass('public.profile_summaries') IS NULL;") != "t":
+            raise RuntimeError("Text schema already exists; refusing to overwrite it.")
+        sql((APP / "supabase/migrations/202610040006_profile_text.sql").read_text())
+    elif not args.bootstrap_patch:
         sql((APP / "supabase/migrations/202610030004_core_shell_credits.sql").read_text())
-    sql((APP / "supabase/migrations/202610030005_bootstrap_envelope.sql").read_text())
+    if not args.profile_text:
+        sql((APP / "supabase/migrations/202610030005_bootstrap_envelope.sql").read_text())
     if sql(policy_query) != before:
         raise RuntimeError("Unexpected policy difference requires administrator review.")
     checks = sql("""BEGIN READ ONLY;
@@ -72,6 +78,16 @@ SELECT has_function_privilege('authenticated','public.app_bootstrap(text,text)',
 ROLLBACK;""").splitlines()
     if checks != ["t", "t", "t", "t"]:
         raise RuntimeError("Core schema security readback failed.")
+    if args.profile_text:
+        protected = sql("""SELECT
+ (SELECT relrowsecurity FROM pg_class WHERE oid='public.profile_summaries'::regclass)
+ AND NOT has_table_privilege('authenticated','public.profile_summaries','INSERT,UPDATE,DELETE')
+ AND NOT has_function_privilege('anon','public.profile_mutate(uuid,uuid,bigint,jsonb)','EXECUTE')
+ AND NOT has_function_privilege('authenticated','public.jobix_profile_text_snapshot(uuid)','EXECUTE')
+ AND has_function_privilege('authenticated','public.first_career_profile()','EXECUTE');""")
+        if protected != "t":
+            raise RuntimeError("Text schema security readback failed.")
+        print("PASS: isolated-dev text migration and security readback; startup policy unchanged.")
     print("PASS: additive core-shell Credits/bootstrap migration applied to isolated dev.")
     print("PASS: RLS, client-write denial, protected RPC and unchanged startup policy.")
     print("Historical accounts: zero initial wallet; no retroactive signup grant.")

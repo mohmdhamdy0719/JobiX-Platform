@@ -25,21 +25,9 @@ class SupabaseProfileApi implements ProfileApi {
   @override
   Future<CareerProfile> firstProfile() async {
     final row = await client
-        .from('career_profiles')
-        .select('id,profile_version,cv_language,profile_personal_data(*)')
-        .eq('slot_number', 1)
-        .eq('status', 'ACTIVE')
-        .maybeSingle()
+        .rpc('first_career_profile')
         .timeout(const Duration(seconds: 15));
-    if (row == null) throw StateError('PROFILE_NOT_PROVISIONED');
-    final children = row['profile_personal_data'];
-    final personal = children is List
-        ? (children.isEmpty ? <String, dynamic>{} : children.first)
-        : children;
-    return CareerProfile.fromJson({
-      ...row,
-      'personal': personal ?? <String, dynamic>{},
-    });
+    return CareerProfile.fromJson(Map<String, dynamic>.from(row as Map));
   }
 
   @override

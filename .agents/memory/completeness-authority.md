@@ -17,3 +17,16 @@ product rules, not to approve a replacement formula.
 minimum-count, validation, visibility, proficiency or storage behavior for
 explicit owner approval before implementation. Correction of a proposal is
 not approval of its other rows.
+
+The owner subsequently approved all four groups of the revised matrix without
+additional conditions: evidence/completeness qualification, validation and
+proficiency, Profile naming/storage, and draft/visibility behavior. The rejected
+cap and all-or-nothing Contact rule remain excluded.
+
+**Why:** The owner explicitly selected each of the four approval groups.
+
+**How to apply:** Implement those approved matrix details within Architecture
+V2; do not reopen those resolved decisions. The document at
+deliverables/jobix-core-validation-proposal.html records the detailed values,
+though its pending labels predate this approval. Unspecified behavior and real
+service configuration still require owner decisions; no substitute providers.

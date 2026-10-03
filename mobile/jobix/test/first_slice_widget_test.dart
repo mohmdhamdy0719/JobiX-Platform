@@ -13,6 +13,7 @@ import 'package:jobix/features/boot/startup.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/career_profile/career_profile_repository.dart';
 import 'package:jobix/features/core_mvp/core_api.dart';
+import 'package:jobix/features/career_profile/text_section_repository.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
 import 'support/slice_fakes.dart';
 import 'support/production_fonts.dart';
@@ -84,6 +85,25 @@ void main() {
           return AuthProviderSettings(googleEnabled: googleEnabled);
         }),
         draftRepositoryProvider.overrideWith((_) async => repository),
+        textSectionRepositoryProvider.overrideWith(
+          (_) async => TextSectionRepository(repository, (draft) async {
+            api.server = CareerProfile(
+              id: api.server.id,
+              version: api.server.version + 1,
+              personal: api.server.personal,
+              resumeLanguage: api.server.resumeLanguage,
+              summary: draft.section == 'summary'
+                  ? draft.request!['text'] as String
+                  : api.server.summary,
+              targetRole: draft.section == 'target_role'
+                  ? draft.request!['text'] as String
+                  : api.server.targetRole,
+              summaryState: 'NEEDS_ATTENTION',
+              completeness: 0,
+            );
+            return api.server;
+          }),
+        ),
         firstEntryProvider.overrideWith((_) async => newEntry),
         contextMergeProvider.overrideWith((_) async {}),
       ],
@@ -192,6 +212,56 @@ void main() {
     },
   );
   for (final locale in ['en', 'ar']) {
+    testWidgets('text sections native captures and saved drafts $locale', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        locale: locale,
+        size: const Size(402, 1100),
+      );
+      for (final section in ['summary', 'target_role']) {
+        container!
+            .read(routerProvider)
+            .go(
+              section == 'summary' ? '/career/summary' : '/career/target-role',
+            );
+        await tester.pumpAndSettle();
+        expect(find.byKey(Key('editor-$section')), findsOneWidget);
+        expect(
+          Directionality.of(tester.element(find.byType(Scaffold).first)),
+          locale == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+        );
+        expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/text_${section}_$locale.png'),
+        );
+        await tester.enterText(
+          find.byKey(Key('editor-$section')),
+          locale == 'ar' ? 'مسودة' : 'draft',
+        );
+        await tester.pumpAndSettle();
+        final retained = await database.sectionDraft(
+          repository.user,
+          api.server.id,
+          section,
+        );
+        expect(
+          TextSectionDraft.decode(retained!).text,
+          locale == 'ar' ? 'مسودة' : 'draft',
+        );
+        await tester.ensureVisible(find.byKey(Key('save-$section')));
+        await tester.tap(find.byKey(Key('save-$section')));
+        await tester.pumpAndSettle();
+        expect(
+          await database.sectionDraft(repository.user, api.server.id, section),
+          isNull,
+        );
+        expect(tester.takeException(), isNull);
+      }
+    });
     testWidgets('core shell native production-font captures $locale', (
       tester,
     ) async {

@@ -14,7 +14,8 @@ final unfinishedDraftProvider = FutureProvider.family<bool, String>((
   profile,
 ) async {
   final repository = await ref.watch(draftRepositoryProvider.future);
-  return await repository.database.draftFor(repository.user, profile) != null;
+  return await repository.database.draftFor(repository.user, profile) != null ||
+      await repository.database.hasSectionDrafts(repository.user, profile);
 });
 
 class HomePage extends ConsumerWidget {

@@ -182,3 +182,31 @@ mtime_ms = 1791062001876
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/efae5ef9-cd90-45cb-99c9-c456897150cd/282db5cf-f5a1-4093-af82-642e4fe8c991"
 storage_version_token = "1791062056062434"
 content_type = "text/html"
+
+[[outputs]]
+id = "GaQ5Y9DdJUKEq8fd9qOeC"
+uri = "file://deliverables/jobix-profile-text/jobix-profile-text-dev-arm64.apk"
+type = "unspecified"
+title = "Jobix — ARM64 development APK"
+description = "Native Flutter development build with Summary and Target Role editors. Uses isolated development services; not a production release. No physical-device verification."
+logical_id = "41baa5ee-73fc-46e4-bd08-de23f60a1d7c"
+content_hash = "sha256:3a573b079df813e26c8e33b370fab7b46ac2123d57108eeae2669e6a06aca79f"
+size = 96222123
+mtime_ms = 1791064733121
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/41baa5ee-73fc-46e4-bd08-de23f60a1d7c/d0df2c41-9bd6-4d63-a632-e9e7d5c303af"
+storage_version_token = "1791064893993637"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "OWJLxf0ZEeetjX8N9FvzA"
+uri = "file://deliverables/jobix-profile-text/native-review.html"
+type = "html"
+title = "Jobix — native English/Arabic editor review"
+description = "Self-contained native Flutter render captures, verification results and remaining scope. Captures use test fixtures, not live account data."
+logical_id = "d0420fad-bca1-446d-bda0-ed30780b3030"
+content_hash = "sha256:f87e76ba8f053bb6bcade20d3d207c93c9c8b69300a97260cde3b655f361aa8d"
+size = 229890
+mtime_ms = 1791064843159
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/d0420fad-bca1-446d-bda0-ed30780b3030/33770a1b-2083-439a-9e80-e0b073d7a64e"
+storage_version_token = "1791064894621135"
+content_type = "text/html"

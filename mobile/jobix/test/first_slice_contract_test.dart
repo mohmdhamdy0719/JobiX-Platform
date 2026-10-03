@@ -124,7 +124,7 @@ void main() {
   );
 
   test(
-    'v1 -> v2 upgrades real encrypted storage without losing settings',
+    'v1 -> v3 upgrades real encrypted storage without losing settings',
     () async {
       await db.close();
       final file = File('${directory.path}/v1.db');
@@ -147,7 +147,7 @@ void main() {
       );
       expect(
         (await db.select(db.infrastructureMetadata).getSingle()).value,
-        '2',
+        '3',
       );
     },
   );

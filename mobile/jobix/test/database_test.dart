@@ -25,7 +25,7 @@ void main() {
   tearDown(() => directory.deleteSync(recursive: true));
 
   test(
-    'encrypted v0 -> v2 creates infrastructure and real slice storage',
+    'encrypted v0 -> v3 creates infrastructure and real slice storage',
     () async {
       final db = AppDatabase(encryptedDatabase(file, key));
       await db.setSetting('locale', 'ar');
@@ -40,6 +40,7 @@ void main() {
         'local_drafts',
         'local_onboarding',
         'local_profiles',
+        'local_section_drafts',
         'local_settings',
       ]);
       expect(
@@ -47,11 +48,11 @@ void main() {
             .data
             .values
             .single,
-        2,
+        3,
       );
       expect(
         (await db.select(db.infrastructureMetadata).getSingle()).value,
-        '2',
+        '3',
       );
       await db.close();
       expect(

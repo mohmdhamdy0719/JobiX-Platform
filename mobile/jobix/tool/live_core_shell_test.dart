@@ -76,8 +76,9 @@ void main() {
               .from('credit_accounts')
               .select('finalized_balance,reserved_balance,version')
               .timeout(const Duration(seconds: 15));
-          if (wallets.length != 1)
+          if (wallets.length != 1) {
             throw StateError('Wallet RLS ownership failed');
+          }
           phase = 'real credit history';
           final history = await api.transactions();
           if (history.items.any((row) => row.containsKey('user_id'))) {

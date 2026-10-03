@@ -15,6 +15,7 @@ import '../../features/onboarding/onboarding_page.dart';
 import '../../features/onboarding/research_context.dart';
 import '../../features/onboarding/research_page.dart';
 import '../../features/personal_information/personal_information_page.dart';
+import '../../features/career_profile/text_section_page.dart';
 import '../../features/shell/foundation_page.dart';
 import '../providers.dart';
 
@@ -45,7 +46,9 @@ String? sliceRedirect({
         path == '/career' ||
         path == '/settings' ||
         path == '/credits' ||
-        path == '/career/personal') {
+        path == '/career/personal' ||
+        path == '/career/summary' ||
+        path == '/career/target-role') {
       return null;
     }
     final destination = entryLoading
@@ -144,6 +147,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/career/personal',
         builder: (_, __) => const PersonalInformationPage(),
+      ),
+      GoRoute(
+        path: '/career/summary',
+        builder: (_, __) => const TextSectionPage(section: 'summary'),
+      ),
+      GoRoute(
+        path: '/career/target-role',
+        builder: (_, __) => const TextSectionPage(section: 'target_role'),
       ),
     ],
   );

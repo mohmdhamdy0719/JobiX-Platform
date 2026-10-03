@@ -27,17 +27,30 @@ class CareerProfile {
     required this.version,
     this.resumeLanguage,
     this.personal = const {},
+    this.summary = '',
+    this.targetRole = '',
+    this.completeness,
+    this.summaryState,
+    this.targetRoleState,
   });
   final String id;
   final int version;
   final String? resumeLanguage;
   final Map<String, String> personal;
+  final String summary, targetRole;
+  final double? completeness;
+  final String? summaryState, targetRoleState;
   factory CareerProfile.fromJson(Map<String, dynamic> json) {
     final data = Map<String, dynamic>.from(json['personal'] as Map? ?? {});
     return CareerProfile(
       id: (json['profile_id'] ?? json['id']) as String,
       version: (json['profile_version'] as num).toInt(),
       resumeLanguage: json['cv_language'] as String?,
+      summary: json['summary'] as String? ?? '',
+      targetRole: json['target_role'] as String? ?? '',
+      completeness: (json['completeness_percent'] as num?)?.toDouble(),
+      summaryState: json['summary_state'] as String?,
+      targetRoleState: json['target_role_state'] as String?,
       personal: {
         for (final field in personalFields) field: data[field] as String? ?? '',
       },
@@ -48,6 +61,11 @@ class CareerProfile {
     'profile_version': version,
     'cv_language': resumeLanguage,
     'personal': personal,
+    'summary': summary,
+    'target_role': targetRole,
+    'completeness_percent': completeness,
+    'summary_state': summaryState,
+    'target_role_state': targetRoleState,
   };
   String encode() => jsonEncode(toJson());
 }

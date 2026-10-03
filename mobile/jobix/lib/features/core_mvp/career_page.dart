@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import 'authenticated_navigation.dart';
 import 'core_api.dart';
+import '../career_profile/text_section_page.dart';
 
 class CareerPage extends ConsumerWidget {
   const CareerPage({super.key});
@@ -154,6 +155,34 @@ class CareerPage extends ConsumerWidget {
                     onPressed: () => context.go('/career/personal'),
                   ),
                   const SizedBox(height: TokensV0.space12),
+                  for (final section in ['summary', 'target_role'])
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        bottom: TokensV0.space12,
+                      ),
+                      child: OutlinedButton.icon(
+                        key: Key('career-edit-$section'),
+                        onPressed: () => context.go(
+                          section == 'summary'
+                              ? '/career/summary'
+                              : '/career/target-role',
+                        ),
+                        icon: Icon(
+                          section == 'summary'
+                              ? Icons.notes_outlined
+                              : Icons.work_outline,
+                        ),
+                        label: Text(textSectionTitle(context, section)),
+                      ),
+                    ),
+                  if (value.completeness != null) ...[
+                    Text(
+                      '${copy.localeName.startsWith('ar') ? 'اكتمال الملف' : 'Profile Completeness'} — ${value.completeness!.toStringAsFixed(0)}%',
+                    ),
+                    const SizedBox(height: TokensV0.space8),
+                    LinearProgressIndicator(value: value.completeness! / 100),
+                    const SizedBox(height: TokensV0.space12),
+                  ],
                   Text(
                     copy.careerOtherSectionsUnavailable,
                     style: Theme.of(context).textTheme.bodySmall,
