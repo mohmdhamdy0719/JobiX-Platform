@@ -88,3 +88,46 @@ from product changes.
 **How to apply:** Use genuine existing dev settings for the review APK. Keep
 the standard multi-environment build checks unchanged and report the exact APK
 path only after a successful build; a build is not physical-device validation.
+
+The owner replaced HTML/Stitch/Figma visual imitation with an original Jobix
+mobile design system on 2026-10-03. Earlier HTML visual-source rules above are
+historical for this redesign; product requirements, UX flows, functional
+behavior, architecture, terminology and brand remain fixed.
+
+**Why:** The owner explicitly said the previous approximation looked poor and
+assigned visual design responsibility to the agent.
+
+**How to apply:** Audit first, report components/tokens/fonts/assets and startup
+cause, then resolve truly blocking inputs before implementation. Limit this
+phase to polished foundation, splash, three introductions, four research
+questions and authentication. Use production Inter and Noto Sans Arabic.
+Do not invent/recolor a logo or app-icon mark: request missing approved variants
+and the existing icon master. Keep App/Resume Language independent, put only
+one compact language control in introduction headers, and do not build full
+Settings, Home dashboard, Career Profile Builder, AI, ATS, billing or export.
+Resume selectable-text/RTL/font requirements constrain future work, not scope.
+
+Use only the owner's approved dark/primary logo and app-icon master, preserving
+proportions, colors, shape and clear space. Do not redraw, restyle, recolor,
+simplify or generate alternatives. Terms/Privacy have no approved public URLs;
+they are a pre-launch dependency, not permission to invent destinations.
+
+**Why:** The owner explicitly supplied approved assets and restricted their use.
+
+**How to apply:** Package the supplied masters without cropping/recoloring;
+platform sizing and safe-area padding are allowed. Missing production values
+never authorize invented production policy or bypassing startup/auth guards.
+
+The owner's resumed redesign instruction explicitly authorizes development-only
+mobile policy values: minimum 1.0.0, recommended 1.0.0, policy version 1.
+Terms/Privacy URLs and undecided production policy are not implementation blockers.
+Original, typography-led native Flutter visuals replace old screenshot imitation.
+
+**Why:** The owner explicitly resolved the previously missing inputs and allowed
+this exact configuration to unblock authenticated development startup.
+
+**How to apply:** Use the existing protected isolated-development configuration
+mechanism; never weaken RLS, use client server credentials, or touch production.
+Document mandatory pre-production review. Preserve architecture and all product
+behavior; physical-device acceptance remains separate from widget/live-service
+checks. Do not build any next feature slice.

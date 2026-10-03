@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design/app_language_button.dart';
+import '../../core/design/async_states.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -55,13 +56,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final copy = AppLocalizations.of(context)!;
     final value = ref.watch(researchProvider);
     return value.when(
-      loading: () => const SliceScaffold(
-        child: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () => const SliceScaffold(child: BrandedLoadingState()),
       error: (_, __) => SliceScaffold(
-        child: TextButton(
-          onPressed: () => ref.invalidate(researchProvider),
-          child: Text(copy.retry),
+        child: BrandedErrorState(
+          message: copy.researchLoadError,
+          retryLabel: copy.retry,
+          onRetry: () => ref.invalidate(researchProvider),
         ),
       ),
       data: (progress) {
@@ -77,12 +77,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
           copy.onboardingBodyThree,
         ];
         return SliceScaffold(
+          fillViewport: true,
           header: Padding(
             padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
             child: Row(
               children: [
                 SizedBox(
-                  width: 96,
+                  width: TokensV0.touchTarget,
                   height: 56,
                   child: Row(
                     children: [
@@ -99,40 +100,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                                     : () => advance(progress, back: true),
                               ),
                       ),
-                      const AppLanguageButton(),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: Semantics(
-                    label: '${page + 1}/3',
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (var i = 0; i < 3; i++)
-                          Container(
-                            margin: const EdgeInsetsDirectional.all(
-                              TokensV0.space4,
-                            ),
-                            width: i == page
-                                ? (page == 0 ? 32 : 24)
-                                : (page == 0 ? 6 : 8),
-                            height: page == 0 ? 6 : 8,
-                            decoration: BoxDecoration(
-                              color: i == page
-                                  ? TokensV0.primary
-                                  : TokensV0.surfaceContainer,
-                              borderRadius: BorderRadius.circular(
-                                TokensV0.chipRadius,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 96,
+                const Spacer(),
+                Flexible(
                   child: TextButton(
                     key: const Key('skip-onboarding'),
                     onPressed: busy
@@ -144,49 +116,68 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     ),
                   ),
                 ),
+                const SizedBox(width: TokensV0.space4),
+                const AppLanguageButton(),
               ],
             ),
           ),
+          bottom: PrimaryAction(
+            key: const Key('onboarding-continue'),
+            label: copy.continueAction,
+            busy: busy,
+            onPressed: () => advance(progress),
+            icon: Icons.arrow_forward,
+          ),
           child: Column(
-            crossAxisAlignment: page == 1
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ExcludeSemantics(
-                child: IgnorePointer(child: OnboardingArt(page: page)),
-              ),
-              const SizedBox(height: TokensV0.space24),
-              Text(
-                page == 0
-                    ? titles[page].replaceFirst(', ', ',\n')
-                    : page == 2
-                    ? titles[page].replaceFirst('. ', '.\n')
-                    : titles[page],
-                key: Key('onboarding-title-$page'),
-                textAlign: page == 1 ? TextAlign.start : TextAlign.center,
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontSize: TokensV0.headlineMobileSize,
-                  height: 34 / 26,
-                  letterSpacing: -0.39,
+              Semantics(
+                label: '${page + 1}/3',
+                child: Text(
+                  '0${page + 1}  /  03',
+                  textDirection: TextDirection.ltr,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: TokensV0.primary,
+                    letterSpacing:
+                        Directionality.of(context) == TextDirection.rtl
+                        ? 0
+                        : .8,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              const SizedBox(height: TokensV0.space8),
-              Text(
-                bodies[page],
-                textAlign: page == 1 ? TextAlign.start : TextAlign.center,
-                style: page == 1
-                    ? Theme.of(context).textTheme.bodyLarge
-                    : Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: TokensV0.textSecondary,
-                      ),
+              const SizedBox(height: TokensV0.space16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(TokensV0.pillRadius),
+                child: LinearProgressIndicator(
+                  value: (page + 1) / 3,
+                  minHeight: 3,
+                  backgroundColor: TokensV0.surfaceContainer,
+                ),
               ),
-              const SizedBox(height: TokensV0.space32),
-              PrimaryAction(
-                key: const Key('onboarding-continue'),
-                label: copy.continueAction,
-                busy: busy,
-                onPressed: () => advance(progress),
-                icon: Icons.arrow_forward,
+              const SizedBox(height: TokensV0.space40),
+              AnimatedSwitcher(
+                duration: motionDuration(context, TokensV0.motionContent),
+                child: Column(
+                  key: ValueKey<int>(page),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titles[page],
+                      key: Key('onboarding-title-$page'),
+                      textAlign: TextAlign.start,
+                      style: Theme.of(context).textTheme.headlineLarge,
+                    ),
+                    const SizedBox(height: TokensV0.space16),
+                    Text(
+                      bodies[page],
+                      textAlign: TextAlign.start,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: TokensV0.space32),
+                  ],
+                ),
               ),
             ],
           ),

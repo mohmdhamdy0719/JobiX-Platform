@@ -1,21 +1,21 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jobix/app.dart';
 import 'package:jobix/core/database/database.dart';
 import 'package:jobix/core/database/encryption.dart';
-import 'package:jobix/core/design/tokens.dart';
 import 'package:jobix/core/navigation/router.dart';
 import 'package:jobix/core/providers.dart';
 import 'package:jobix/features/auth/auth_controller.dart';
+import 'package:jobix/features/auth/provider_settings.dart';
 import 'package:jobix/features/boot/startup.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/career_profile/career_profile_repository.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
 import 'support/slice_fakes.dart';
+import 'support/production_fonts.dart';
+import 'package:jobix/l10n/app_localizations.dart';
 
 final testStartupProvider = StateProvider<StartupState>(
   (ref) => StartupState.signedOut,
@@ -31,31 +31,7 @@ void main() {
   late DraftRepository repository;
   late FakeAuthApi auth;
   ProviderContainer? container;
-  setUpAll(() async {
-    final packages =
-        jsonDecode(File('.dart_tool/package_config.json').readAsStringSync())
-            as Map;
-    final flutter = (packages['packages'] as List).cast<Map>().firstWhere(
-      (p) => p['name'] == 'flutter',
-    );
-    final sdk = Directory.fromUri(
-      Uri.parse(flutter['rootUri'] as String),
-    ).parent.parent.path;
-    for (final entry in {
-      'Inter': 'assets/fonts/Inter.ttf',
-      'FoundationTestFont': 'test/assets/DejaVuSans.ttf',
-      'MaterialIcons':
-          '$sdk/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
-    }.entries) {
-      final loader = FontLoader(entry.key)
-        ..addFont(
-          Future.value(
-            ByteData.sublistView(File(entry.value).readAsBytesSync()),
-          ),
-        );
-      await loader.load();
-    }
-  });
+  setUpAll(loadProductionFonts);
   setUp(() async {
     directory = Directory.systemTemp.createTempSync('jobix-widget-');
     database = AppDatabase(
@@ -80,14 +56,14 @@ void main() {
     ResearchProgress progress = const ResearchProgress(),
     String locale = 'en',
     bool newEntry = false,
-    bool mixedFont = false,
+    bool googleEnabled = true,
+    bool providerFailure = false,
     Size size = const Size(402, 874),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     await database.saveOnboarding(progress.encode());
     await database.setSetting('locale', locale);
-    final theme = foundationTheme();
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWith((_) async => database),
@@ -97,19 +73,15 @@ void main() {
         authSessionProvider.overrideWith((_) => Stream.value(testSession())),
         authLinkServiceProvider.overrideWith((_) async {}),
         authApiProvider.overrideWith((_) async => auth),
+        authProviderSettingsProvider.overrideWith((_) async {
+          if (providerFailure) {
+            throw const FormatException('Test settings unavailable');
+          }
+          return AuthProviderSettings(googleEnabled: googleEnabled);
+        }),
         draftRepositoryProvider.overrideWith((_) async => repository),
         firstEntryProvider.overrideWith((_) async => newEntry),
         contextMergeProvider.overrideWith((_) async {}),
-        themeProvider.overrideWithValue(
-          theme.copyWith(
-            textTheme: theme.textTheme.apply(
-              fontFamilyFallback: const ['FoundationTestFont'],
-              fontFamily: locale == 'ar' || mixedFont
-                  ? 'FoundationTestFont'
-                  : 'Inter',
-            ),
-          ),
-        ),
       ],
     );
     container!.read(testStartupProvider.notifier).state = state;
@@ -122,7 +94,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.runAsync(
       () async => precacheImage(
-        const AssetImage('assets/brand/logo.png'),
+        const AssetImage('assets/brand/logo_dark.png'),
         tester.element(find.byType(MaterialApp)),
       ),
     );
@@ -212,7 +184,7 @@ void main() {
       }
       await tester.tap(find.byKey(const Key('onboarding-continue')));
       await tester.pumpAndSettle();
-      expect(find.text('1/4'), findsOneWidget);
+      expect(find.byKey(const Key('research-step')), findsOneWidget);
     },
   );
   testWidgets(
@@ -221,7 +193,7 @@ void main() {
       await pump(tester);
       await tester.tap(find.byKey(const Key('skip-onboarding')));
       await tester.pumpAndSettle();
-      expect(find.text('1/4'), findsOneWidget);
+      expect(find.byKey(const Key('research-step')), findsOneWidget);
       expect(
         ResearchProgress.decode(await database.onboarding()).onboardingDone,
         true,
@@ -307,7 +279,12 @@ void main() {
                 .path,
             '/research',
           );
-          expect(find.text('${question + 1}/4'), findsOneWidget);
+          expect(
+            tester.widget<Text>(find.byKey(const Key('research-step'))).data,
+            AppLocalizations.of(
+              tester.element(find.byType(Scaffold)),
+            )!.researchStep(question + 1),
+          );
         }
         noUnsupportedContent(tester);
         await expectLater(
@@ -526,12 +503,7 @@ void main() {
   testWidgets(
     'App English / Resume Arabic changes only labels and field direction, not content',
     (tester) async {
-      await pump(
-        tester,
-        state: StartupState.signedIn,
-        newEntry: true,
-        mixedFont: true,
-      );
+      await pump(tester, state: StartupState.signedIn, newEntry: true);
       await tester.tap(find.byKey(const Key('resume-ar')));
       await tester.pumpAndSettle();
       expect(find.text('Full Name'), findsNothing);
@@ -652,4 +624,248 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     },
   );
+  for (final locale in ['en', 'ar']) {
+    testWidgets(
+      '$locale signup/login, validation, keyboard and scaled layout',
+      (tester) async {
+        await pump(tester, progress: complete, locale: locale);
+        await route(tester, '/auth?mode=signup');
+        final copy = AppLocalizations.of(
+          tester.element(find.byType(Scaffold)),
+        )!;
+        expect(find.text(copy.forgotPassword), findsNothing);
+        expect(
+          Theme.of(
+            tester.element(find.byType(Scaffold)),
+          ).textTheme.bodyMedium!.fontFamily,
+          locale == 'ar' ? 'Noto Sans Arabic' : 'Inter',
+        );
+        expect(
+          tester
+              .widget<TextFormField>(find.byKey(const Key('auth-email')))
+              .controller!
+              .text,
+          isEmpty,
+        );
+        expect(
+          tester
+              .widget<TextFormField>(find.byKey(const Key('auth-password')))
+              .controller!
+              .text,
+          isEmpty,
+        );
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/redesign_signup_$locale.png'),
+        );
+        await tester.tap(find.byKey(const Key('auth-submit')));
+        await tester.pumpAndSettle();
+        expect(find.text(copy.invalidEmail), findsOneWidget);
+        expect(find.text(copy.passwordRequired), findsOneWidget);
+        expect(auth.calls, isEmpty);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/redesign_signup_validation_$locale.png'),
+        );
+        await route(tester, '/auth?mode=login');
+        expect(find.text(copy.forgotPassword), findsOneWidget);
+        expect(find.byKey(const Key('app-language')), findsNothing);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/redesign_login_$locale.png'),
+        );
+        await tester.enterText(
+          find.byKey(const Key('auth-email')),
+          'engineer@example.com',
+        );
+        await tester.enterText(
+          find.byKey(const Key('auth-password')),
+          'example secret',
+        );
+        final editable = tester.widget<EditableText>(
+          find.descendant(
+            of: find.byKey(const Key('auth-email')),
+            matching: find.byType(EditableText),
+          ),
+        );
+        expect(editable.textDirection, TextDirection.ltr);
+        // Simulated keyboard inset, not a Samsung IME/device capture.
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('auth-submit')));
+        await tester.pumpAndSettle();
+        expect(
+          tester.getRect(find.byKey(const Key('auth-submit'))).bottom,
+          lessThan(575),
+        );
+        expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/redesign_login_keyboard_$locale.png'),
+        );
+        tester.view.resetViewInsets();
+        tester.testTextInput.hide();
+        FocusManager.instance.primaryFocus?.unfocus();
+        await route(tester, '/auth?mode=signup');
+        expect(
+          tester
+              .widget<TextFormField>(find.byKey(const Key('auth-email')))
+              .controller!
+              .text,
+          isEmpty,
+        );
+        expect(
+          tester
+              .widget<TextFormField>(find.byKey(const Key('auth-password')))
+              .controller!
+              .text,
+          isEmpty,
+        );
+        tester.view.physicalSize = const Size(320, 568);
+        tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('auth-submit')));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        addTearDown(tester.view.resetViewInsets);
+      },
+    );
+    testWidgets(
+      '$locale onboarding and research captures use production fonts',
+      (tester) async {
+        await pump(tester, locale: locale);
+        for (var page = 0; page < 3; page++) {
+          await expectLater(
+            find.byType(Scaffold),
+            matchesGoldenFile('goldens/redesign_intro_${page + 1}_$locale.png'),
+          );
+          await tester.tap(find.byKey(const Key('onboarding-continue')));
+          await tester.pumpAndSettle();
+        }
+        for (var question = 0; question < 4; question++) {
+          expect(find.byKey(const Key('app-language')), findsNothing);
+          await expectLater(
+            find.byType(Scaffold),
+            matchesGoldenFile(
+              'goldens/redesign_research_${question + 1}_$locale.png',
+            ),
+          );
+          final value = ['student', 'unsure', 'remote', 'cv'][question];
+          final tile = find.byKey(Key('research-option-$value'));
+          await tester.ensureVisible(tile);
+          await tester.tap(tile);
+          await tester.pumpAndSettle();
+          expect(tester.getSize(tile).height, greaterThanOrEqualTo(48));
+          await tester.tap(find.byKey(const Key('research-continue')));
+          await tester.pumpAndSettle();
+        }
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/redesign_auth_gateway_$locale.png'),
+        );
+      },
+    );
+  }
+  testWidgets('disabled Google is hidden without preventing email login', (
+    tester,
+  ) async {
+    await pump(tester, progress: complete, googleEnabled: false);
+    await route(tester, '/auth?mode=login');
+    expect(find.byKey(const Key('auth-google')), findsNothing);
+    expect(find.byKey(const Key('auth-email')), findsOneWidget);
+  });
+  testWidgets(
+    'provider discovery failure is explicit and does not fabricate Google',
+    (tester) async {
+      await pump(tester, progress: complete, providerFailure: true);
+      await route(tester, '/auth?mode=login');
+      expect(find.byKey(const Key('auth-google')), findsNothing);
+      expect(find.byKey(const Key('auth-provider-retry')), findsOneWidget);
+      expect(find.textContaining('could not be verified'), findsOneWidget);
+    },
+  );
+  testWidgets('stored auth errors relocalize without altering typed text', (
+    tester,
+  ) async {
+    await pump(tester, progress: complete);
+    await route(tester, '/auth?mode=login');
+    await tester.enterText(
+      find.byKey(const Key('auth-email')),
+      'test@example.com',
+    );
+    await tester.enterText(find.byKey(const Key('auth-password')), 'example');
+    await tester.tap(find.byKey(const Key('auth-submit')));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('could not complete authentication'),
+      findsOneWidget,
+    );
+    await container!.read(localeProvider.notifier).setOverride('ar');
+    await tester.pumpAndSettle();
+    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(copy.authError), findsOneWidget);
+    expect(
+      find.textContaining('could not complete authentication'),
+      findsNothing,
+    );
+    expect(
+      tester
+          .widget<TextFormField>(find.byKey(const Key('auth-email')))
+          .controller!
+          .text,
+      'test@example.com',
+    );
+    await expectLater(
+      find.byType(Scaffold),
+      matchesGoldenFile('goldens/redesign_auth_error_ar.png'),
+    );
+  });
+  for (final locale in ['en', 'ar']) {
+    for (final size in [const Size(320, 568), const Size(800, 1280)]) {
+      testWidgets(
+        '$locale ordered research remains reachable at $size with 1.6 text scale',
+        (tester) async {
+          await pump(
+            tester,
+            locale: locale,
+            size: size,
+            progress: const ResearchProgress(onboardingDone: true),
+          );
+          tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+          await tester.pumpAndSettle();
+          for (var question = 0; question < 4; question++) {
+            final last = find.byKey(
+              Key('research-option-${researchOptions[question].last}'),
+            );
+            await tester.ensureVisible(last);
+            await tester.pumpAndSettle();
+            expect(tester.getSize(last).height, greaterThanOrEqualTo(48));
+            expect(tester.takeException(), isNull);
+            final choice = find.byKey(
+              Key(
+                'research-option-${['student', 'unsure', 'remote', 'cv'][question]}',
+              ),
+            );
+            await tester.ensureVisible(choice);
+            await tester.tap(choice);
+            await tester.pumpAndSettle();
+            await tester.tap(find.byKey(const Key('research-continue')));
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+          }
+          expect(
+            container!
+                .read(routerProvider)
+                .routeInformationProvider
+                .value
+                .uri
+                .path,
+            '/auth',
+          );
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        },
+      );
+    }
+  }
 }

@@ -1,5 +1,110 @@
 # Jobix verification evidence
 
+## Current delivery — original native redesign, 2026-10-03
+
+The owner's resumed brief supersedes earlier blocked audit/HTML-matching status.
+See [VISUAL_REDESIGN_REPORT.md](VISUAL_REDESIGN_REPORT.md) and
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Older sections below are historical
+evidence, not current font/icon/policy status.
+
+### Passed
+
+- Final `flutter analyze --no-pub`: no issues.
+- Final ordinary `flutter test --no-pub --reporter expanded`: **84 tests passed**,
+  including normal comparisons against refreshed visual baselines. Actual
+  SQLCipher is used for persistence tests.
+- `dart tool/check_foundation.dart`: credential, directional-layout and shared
+  design-value checks pass; `git diff --check` has no whitespace errors.
+- Real isolated-dev smoke test: **1 live test passed**. Public Auth settings
+  Google=true; signed-out startup performs no policy request; confirmed real
+  password sign-in, SDK memory-adapter persistence/recovery and authenticated
+  startup pass. Authenticated policy RPC returns owner-approved dev
+  1.0.0 / 1.0.0 / 1; direct policy-table read remains denied.
+- Development-only policy configuration uses the existing protected psql
+  mechanism and certificate/hostname-verified TLS. No schema, RLS, production,
+  staging or Auth-provider settings were changed.
+- English/Arabic 320×568 and 800×1280 research, at 1.6 text scale, retain reachable
+  final rows and all four ordered questions. 402×874 renders cover all current
+  redesigned flows; a simulated 300px IME inset retains reachable Auth submit.
+  Language switching, empty fields, validation, semantic error relocalization,
+  App/Resume independence, draft preservation and navigation guards pass.
+- ARM debug APK rebuild succeeds with true dev defines, package
+  `com.mhflow.jobix`, version `1.0.0+1`, min SDK 24, target/compile SDK 36.
+- APK signature verifies (v2); signing certificate matches the prior review
+  APK, so no destructive uninstall is requested.
+- APK contains approved unchanged brand masters, real Inter and four Noto Sans
+  Arabic weights/glyphs plus OFL license. Android/iOS launcher resources use the
+  approved icon, replacing Flutter defaults.
+- Packaged Flutter engines are ARMv7/ARM64. Other plugin libraries include
+  x86/x86_64, but no Flutter engine for those ABIs is packaged; **emulator/x86
+  execution is not claimed**.
+- Review ZIP integrity passes and the extracted APK hash equals the output APK:
+  `3da0dc7ed03916797f9ba2849c1200dc88a5502628f201261d5a05295e32468b`.
+- Output APK: `build/app/outputs/flutter-apk/app-debug.apk`
+  (166,593,924 bytes). Compressed unchanged package:
+  `build/review/jobix-dev-debug.zip` (below the delivery size limit).
+- **31 full-size redesigned-flow widget renders** and labelled contact sheets
+  delivered in `build/review/`; actual rendered PNGs were visually inspected.
+
+### Explicitly not passed / release dependencies
+
+`adb devices` has no connected device. The owner supplied Galaxy M31 /
+M315F/DSN / Android 12 and older problem captures, but no new physical evidence
+for this rebuilt APK. Physical installation, Samsung keyboard/system splash,
+touch feel, process-death recovery and Keystore acceptance remain unverified.
+No simulated capture or debug build is described as physical-device acceptance.
+
+Real Google browser OAuth, email confirmation/recovery delivery and external
+deep-link/device lifecycle are not verified by settings flags or test fakes.
+Native iOS/Xcode/Keychain verification is unavailable. No confirmation, guard,
+session or RLS bypass was introduced.
+
+Terms/Privacy URLs and operational production policy require approved pre-launch
+configuration. These were not implementation blockers for this explicitly
+authorized development redesign. No next feature slice was started.
+
+## Physical-device visual review — access check, 2026-10-03
+
+**Subsequent owner evidence:** Ten physical-device screenshots were supplied.
+They show native launch/initialization, all three English introductions, English
+and Arabic Q1, Auth gateway, a signup error and startup failure. The owner later
+identified Galaxy M31 / M315F/DSN / Android 12. Q2–Q4, selected states, keyboard
+behavior and Personal Information were not established by those old captures.
+The owner changed visual strategy to an original
+Flutter design system; see [VISUAL_REDESIGN_AUDIT.md](VISUAL_REDESIGN_AUDIT.md).
+At audit time, read-only dev checks confirmed Auth health/settings HTTP 200,
+email/Google enabled, email autoconfirm disabled and zero operational `mobile`
+policy rows. The later explicit dev-only configuration above resolves that gap.
+Missing policy is a confirmed authenticated-startup blocker; without device
+logs the precise captured exception is not established. No remote changes,
+guard bypass, UI implementation or device rerun occurred during this audit.
+Review/redesign remains incomplete pending brand/legal inputs and policy
+remediation authorization. The initial access check below predates the captures.
+
+**Owner clarification:** Approved logo/icon masters are now supplied but not
+integrated. The review device is Samsung M315F/DSN (Galaxy M31), Android 12.
+Terms/Privacy URLs remain a documented pre-launch dependency. The owner requires
+stopping at missing policy values, with no database/policy/migration changes.
+The absent `mobile` policy lacks required `minimum_supported_version` and
+`policy_version`; `recommended_version` is optional. No values were invented,
+no guard was bypassed, and no new implementation or device rerun is claimed.
+
+- `adb devices -l` returned an empty device list. No physical Android device
+  is accessible from this workspace, and no owner-provided device captures or
+  observations have been supplied for this review.
+- The existing review ZIP and original APK are present at the paths below.
+  No installation, native launch or interactive visual inspection was performed.
+- The previously documented absent operational `mobile` policy and unverified
+  email/Google provider setup remain review limitations; their live state was
+  not rechecked or changed. Startup/authentication guards were not bypassed.
+- Review is **blocked, not complete**. Physical-device evidence is needed for
+  introduction, Q1–Q4, authentication and reachable Personal Information,
+  English/Arabic direction, independent App/Resume Language, initial empty
+  fields, touch targets, keyboard, scrolling and navigation. An observed issue
+  must precede a minimal authorized UI fix and a device rerun.
+- No UI/product, architecture, database, provider/policy, staging or production
+  change was made. Build/signature/widget evidence is not device acceptance.
+
 ## Physical-Android review APK — 2026-10-03
 
 Development/debug build only, explicitly authorized for visual review.

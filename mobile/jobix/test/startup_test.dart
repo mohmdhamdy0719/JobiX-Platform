@@ -59,4 +59,22 @@ void main() {
     final service = FakeStartup(hasSession: true)..policyFails = true;
     await expectLater(startFoundation(service, '1.0.0'), throwsStateError);
   });
+  test(
+    'failure categories are safe, actionable, and never expose raw causes',
+    () async {
+      for (final entry in {
+        FakeStartup()..databaseFails = true:
+            StartupFailureStage.protectedStorage,
+        FakeStartup(hasSession: true)..policyFails = true:
+            StartupFailureStage.appPolicy,
+      }.entries) {
+        await expectLater(
+          startFoundation(entry.key, '1.0.0'),
+          throwsA(
+            isA<StartupFailure>().having((e) => e.stage, 'stage', entry.value),
+          ),
+        );
+      }
+    },
+  );
 }

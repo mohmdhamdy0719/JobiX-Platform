@@ -818,6 +818,90 @@ abstract class AppLocalizations {
   /// **'Show or hide password'**
   String get showPassword;
 
+  /// No description provided for @loginAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get loginAction;
+
+  /// No description provided for @loginSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back. Sign in to continue your career profile.'**
+  String get loginSubtitle;
+
+  /// No description provided for @signupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account to keep your career information together.'**
+  String get signupSubtitle;
+
+  /// No description provided for @providerSettingsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Other sign-in options could not be verified. Email sign-in is still available.'**
+  String get providerSettingsUnavailable;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password.'**
+  String get passwordRequired;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// No description provided for @startupStorageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobix could not open the protected local store. Retry to continue; your data has not been reset.'**
+  String get startupStorageFailed;
+
+  /// No description provided for @startupSessionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobix could not restore your secure session. Check your connection and retry.'**
+  String get startupSessionFailed;
+
+  /// No description provided for @startupPolicyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobix could not verify the required app policy. Check your connection and retry.'**
+  String get startupPolicyFailed;
+
+  /// No description provided for @haveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Sign in'**
+  String get haveAccount;
+
+  /// No description provided for @needAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'New to Jobix? Create an account'**
+  String get needAccount;
+
+  /// No description provided for @legalLinksUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'By creating an account, you acknowledge the Terms of Service and Privacy Policy. Their links are not configured yet.'**
+  String get legalLinksUnavailable;
+
+  /// No description provided for @researchLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved career context could not be loaded. Your existing answers have not been changed.'**
+  String get researchLoadError;
+
+  /// No description provided for @researchStep.
+  ///
+  /// In en, this message translates to:
+  /// **'STEP {number} OF 4'**
+  String researchStep(int number);
+
   /// No description provided for @locationDataMissing.
   ///
   /// In en, this message translates to:

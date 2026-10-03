@@ -403,6 +403,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showPassword => 'Show or hide password';
 
   @override
+  String get loginAction => 'Sign in';
+
+  @override
+  String get loginSubtitle =>
+      'Welcome back. Sign in to continue your career profile.';
+
+  @override
+  String get signupSubtitle =>
+      'Create an account to keep your career information together.';
+
+  @override
+  String get providerSettingsUnavailable =>
+      'Other sign-in options could not be verified. Email sign-in is still available.';
+
+  @override
+  String get passwordRequired => 'Enter your password.';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get startupStorageFailed =>
+      'Jobix could not open the protected local store. Retry to continue; your data has not been reset.';
+
+  @override
+  String get startupSessionFailed =>
+      'Jobix could not restore your secure session. Check your connection and retry.';
+
+  @override
+  String get startupPolicyFailed =>
+      'Jobix could not verify the required app policy. Check your connection and retry.';
+
+  @override
+  String get haveAccount => 'Already have an account? Sign in';
+
+  @override
+  String get needAccount => 'New to Jobix? Create an account';
+
+  @override
+  String get legalLinksUnavailable =>
+      'By creating an account, you acknowledge the Terms of Service and Privacy Policy. Their links are not configured yet.';
+
+  @override
+  String get researchLoadError =>
+      'Your saved career context could not be loaded. Your existing answers have not been changed.';
+
+  @override
+  String researchStep(int number) {
+    return 'STEP $number OF 4';
+  }
+
+  @override
   String get locationDataMissing =>
       'Enter a city, or choose one you have saved before.';
 

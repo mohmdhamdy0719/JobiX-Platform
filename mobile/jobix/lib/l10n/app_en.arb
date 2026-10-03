@@ -120,6 +120,25 @@
   "reapplyLocal": "Reapply local work",
   "outcomeUnknown": "The previous save result is not yet confirmed. Retry the save before discarding; already-saved server data cannot be undone here.",
   "showPassword": "Show or hide password",
+  "loginAction": "Sign in",
+  "loginSubtitle": "Welcome back. Sign in to continue your career profile.",
+  "signupSubtitle": "Create an account to keep your career information together.",
+  "providerSettingsUnavailable": "Other sign-in options could not be verified. Email sign-in is still available.",
+  "passwordRequired": "Enter your password.",
+  "hidePassword": "Hide password",
+  "startupStorageFailed": "Jobix could not open the protected local store. Retry to continue; your data has not been reset.",
+  "startupSessionFailed": "Jobix could not restore your secure session. Check your connection and retry.",
+  "startupPolicyFailed": "Jobix could not verify the required app policy. Check your connection and retry.",
+  "haveAccount": "Already have an account? Sign in",
+  "needAccount": "New to Jobix? Create an account",
+  "legalLinksUnavailable": "By creating an account, you acknowledge the Terms of Service and Privacy Policy. Their links are not configured yet.",
+  "researchLoadError": "Your saved career context could not be loaded. Your existing answers have not been changed.",
+  "researchStep": "STEP {number} OF 4",
+  "@researchStep": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
   "locationDataMissing": "Enter a city, or choose one you have saved before.",
   "signOutLocalWarning": "Signing out removes unsaved local work from this device. Data already saved to your account is kept."
 }

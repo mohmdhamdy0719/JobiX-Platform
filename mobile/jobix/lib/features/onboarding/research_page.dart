@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/design/app_language_button.dart';
+import '../../core/design/async_states.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -46,13 +46,12 @@ class _ResearchPageState extends ConsumerState<ResearchPage> {
     return ref
         .watch(researchProvider)
         .when(
-          loading: () => const SliceScaffold(
-            child: Center(child: CircularProgressIndicator()),
-          ),
+          loading: () => const SliceScaffold(child: BrandedLoadingState()),
           error: (_, __) => SliceScaffold(
-            child: TextButton(
-              onPressed: () => ref.invalidate(researchProvider),
-              child: Text(copy.retry),
+            child: BrandedErrorState(
+              message: copy.researchLoadError,
+              retryLabel: copy.retry,
+              onRetry: () => ref.invalidate(researchProvider),
             ),
           ),
           data: (progress) {
@@ -140,7 +139,6 @@ class _ResearchPageState extends ConsumerState<ResearchPage> {
             return SliceScaffold(
               canvasColor: TokensV0.surfaceCard,
               title: copy.researchHeading,
-              actions: const [AppLanguageButton()],
               leading: question == 0
                   ? const BrandMark(size: 36)
                   : IconButton(
@@ -169,20 +167,29 @@ class _ResearchPageState extends ConsumerState<ResearchPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${question + 1}/4',
+                    copy.researchStep(question + 1),
                     key: const Key('research-step'),
-                    style: Theme.of(context).textTheme.labelLarge,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: TokensV0.primary,
+                      letterSpacing:
+                          Directionality.of(context) == TextDirection.rtl
+                          ? 0
+                          : .8,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  const SizedBox(height: TokensV0.space4),
-                  LinearProgressIndicator(value: (question + 1) / 4),
-                  const SizedBox(height: TokensV0.space24),
+                  const SizedBox(height: TokensV0.space8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(TokensV0.pillRadius),
+                    child: LinearProgressIndicator(
+                      value: (question + 1) / 4,
+                      minHeight: 3,
+                    ),
+                  ),
+                  const SizedBox(height: TokensV0.space20),
                   Text(
                     questions[question],
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontSize: 26,
-                      height: 34 / 26,
-                      letterSpacing: -0.39,
-                    ),
+                    style: Theme.of(context).textTheme.headlineLarge,
                   ),
                   if (question == 3) ...[
                     const SizedBox(height: 4),

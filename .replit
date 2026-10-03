@@ -21,7 +21,7 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
-packages = ["flutter", "sqlcipher", "postgresql", "jdk17", "android-tools", "sdkmanager"]
+packages = ["android-tools", "flutter", "freetype", "jdk17", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "postgresql", "sdkmanager", "sqlcipher", "tcl", "tk", "zlib"]
 
 [userenv]
 

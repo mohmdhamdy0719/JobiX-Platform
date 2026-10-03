@@ -397,6 +397,57 @@ class AppLocalizationsAr extends AppLocalizations {
   String get showPassword => 'إظهار أو إخفاء كلمة المرور';
 
   @override
+  String get loginAction => 'تسجيل الدخول';
+
+  @override
+  String get loginSubtitle => 'مرحبًا بعودتك. سجّل الدخول لمتابعة ملفك المهني.';
+
+  @override
+  String get signupSubtitle =>
+      'أنشئ حسابًا للاحتفاظ بمعلوماتك المهنية في مكان واحد.';
+
+  @override
+  String get providerSettingsUnavailable =>
+      'تعذّر التحقق من خيارات الدخول الأخرى. لا يزال الدخول بالبريد الإلكتروني متاحًا.';
+
+  @override
+  String get passwordRequired => 'أدخل كلمة المرور.';
+
+  @override
+  String get hidePassword => 'إخفاء كلمة المرور';
+
+  @override
+  String get startupStorageFailed =>
+      'تعذّر على Jobix فتح التخزين المحلي المحمي. أعد المحاولة للمتابعة؛ لم تُحذف بياناتك.';
+
+  @override
+  String get startupSessionFailed =>
+      'تعذّر على Jobix استعادة جلسة الدخول الآمنة. تحقّق من الاتصال وأعد المحاولة.';
+
+  @override
+  String get startupPolicyFailed =>
+      'تعذّر على Jobix التحقق من سياسة التطبيق المطلوبة. تحقّق من الاتصال وأعد المحاولة.';
+
+  @override
+  String get haveAccount => 'لديك حساب بالفعل؟ سجّل الدخول';
+
+  @override
+  String get needAccount => 'جديد في Jobix؟ أنشئ حسابًا';
+
+  @override
+  String get legalLinksUnavailable =>
+      'بإنشاء حساب، تقرّ بشروط الخدمة وسياسة الخصوصية. لم يتم إعداد روابطهما بعد.';
+
+  @override
+  String get researchLoadError =>
+      'تعذّر تحميل سياقك المهني المحفوظ. لم يتم تغيير إجاباتك السابقة.';
+
+  @override
+  String researchStep(int number) {
+    return 'الخطوة $number من 4';
+  }
+
+  @override
   String get locationDataMissing => 'أدخل مدينة أو اختر مدينة سبق أن حفظتها.';
 
   @override

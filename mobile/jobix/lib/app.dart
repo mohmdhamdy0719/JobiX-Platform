@@ -13,13 +13,14 @@ class JobixApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(authLinkServiceProvider);
     final device = WidgetsBinding.instance.platformDispatcher.locale;
+    final locale = ref.watch(resolvedLocaleProvider(device));
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
-      locale: ref.watch(resolvedLocaleProvider(device)),
+      locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      theme: ref.watch(themeProvider),
+      theme: foundationTheme(languageCode: locale.languageCode),
       routerConfig: ref.watch(routerProvider),
     );
   }

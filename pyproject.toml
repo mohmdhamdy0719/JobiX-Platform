@@ -1,0 +1,9 @@
+[project]
+name = "jobix-asset-tools"
+version = "0.1.0"
+description = "Reproducible Jobix native icon and production font packaging tools"
+requires-python = ">=3.12"
+dependencies = [
+    "fonttools>=4.66.1",
+    "pillow>=12.3.0",
+]

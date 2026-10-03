@@ -61,3 +61,25 @@ compressed archive could be delivered without rebuilding or altering the app.
 
 **How to apply:** Preserve the original APK/output path, check archive integrity
 and tell the user to extract the APK before installation.
+
+When a resumed workspace has Dart package metadata but no matching home pub
+cache, Flutter's localization formatter can fail before dependency resolution.
+Bootstrap Dart dependencies with the installed Flutter SDK's Dart executable
+and explicit FLUTTER_ROOT, then use normal Flutter commands.
+
+**Why:** The localization generator tried to resolve lint includes from an
+absent cache before flutter pub get could repair it; standalone Dart did not
+recognize the Flutter SDK without its root.
+
+**How to apply:** Check the package metadata's actual SDK path and cache
+availability first. Do not disable linting, change pinned dependencies or
+rewrite localization just to bypass this startup ordering problem.
+
+Verify Python package/interpreter minor versions before using native image
+tools; the package installer and the activated module may resolve differently.
+
+**Why:** Asset-tool packages were installed for Python 3.12 while the module's
+shim pointed to 3.13, making successful installation look like missing packages.
+
+**How to apply:** Use the matching interpreter and its installed site-packages;
+do not repeatedly reinstall or create an unsupported virtual environment.

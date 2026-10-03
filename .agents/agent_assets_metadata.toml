@@ -47,12 +47,40 @@ content_type = "text/html"
 id = "PZFySDECQ-zyhuGNhEbzc"
 uri = "file://mobile/jobix/build/review/jobix-dev-debug.zip"
 type = "unspecified"
-title = "Jobix Android debug APK — ZIP download"
-description = "Extract app-debug.apk and install on an ARM Android device running Android 7.0 or newer. Existing development backend only; APK signature verified, physical-device launch not yet verified."
+title = "Jobix development review APK"
+description = "Extract app-debug.apk. ARM Android API 24+, verified debug signature matching the prior review build. Development services only; physical acceptance remains unverified."
 logical_id = "fc192176-e991-452b-8d01-c52a1bea544c"
-content_hash = "sha256:46f2880727030037e161b4bec0389922ea9790687375f4b3d0ed375d13e06b02"
-size = 73958679
-mtime_ms = 1791024448942
-storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/fc192176-e991-452b-8d01-c52a1bea544c/1991cadc-3a09-4ac3-b84a-de430f519e6b"
-storage_version_token = "1791024454534998"
+content_hash = "sha256:aeb728dec5916c400ba0f7a86d41b04772caf4496ba6f52713c7726c1415b265"
+size = 75439911
+mtime_ms = 1791042278827
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/fc192176-e991-452b-8d01-c52a1bea544c/bae6c06e-381d-4357-a116-208e86f22f54"
+storage_version_token = "1791042462728682"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "5KUZLQcTu8jwKBOtRz2aT"
+uri = "file://mobile/jobix/build/review/jobix-overview.png"
+type = "image"
+title = "Jobix redesigned flows"
+description = "Startup, introduction, Arabic research and signup. Actual Flutter widget renders—not physical-device screenshots."
+logical_id = "dd638d5c-f07d-4f65-9e10-84c70a0ac119"
+content_hash = "sha256:abfe0cff2dc08269cc8b097645099e7e1f3f4c591cec05099a79927cad78329a"
+size = 155588
+mtime_ms = 1791042281651
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/dd638d5c-f07d-4f65-9e10-84c70a0ac119/5f236051-5d29-4dda-bdc4-91cdbca74e41"
+storage_version_token = "1791042460996528"
+content_type = "image/png"
+
+[[outputs]]
+id = "QfmsXkPZFI3GG3_1-wSxo"
+uri = "file://mobile/jobix/build/review/jobix-redesign-captures.zip"
+type = "unspecified"
+title = "31 captures and verification reports"
+description = "Full-size English/Arabic renders, design-system notes, changed-file inventory, font licenses/source and test results."
+logical_id = "81b8b9fe-a09c-401c-be11-120c9e524f30"
+content_hash = "sha256:f892fdf3239718829f02ab6e15d311756b776c401ef42619373a58cef9c37efd"
+size = 1208698
+mtime_ms = 1791042428615
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/81b8b9fe-a09c-401c-be11-120c9e524f30/24137224-081b-4c4b-98ac-a894445840d9"
+storage_version_token = "1791042461542351"
 content_type = "application/octet-stream"

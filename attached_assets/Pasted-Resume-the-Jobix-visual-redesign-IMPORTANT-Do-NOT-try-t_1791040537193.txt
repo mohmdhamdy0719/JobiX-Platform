@@ -1,0 +1,328 @@
+Resume the Jobix visual redesign.
+
+IMPORTANT: Do NOT try to reproduce, imitate, or pixel-match the previous screenshots or the existing placeholder UI.
+
+The previous screenshots are only evidence of the current problems. The new UI should be an original Jobix design created from the approved product requirements, architecture, brand assets, and UX rules.
+
+VISUAL DIRECTION
+
+Create a polished, modern, professional career-product UI for Jobix.
+
+Design language:
+- Clean and typography-led.
+- Premium but not flashy.
+- Professional career/productivity feel.
+- Neutral/light surfaces.
+- Jobix brand blue for primary actions and important accents.
+- Deep navy for major headings.
+- Fine borders.
+- Subtle or minimal shadows.
+- Generous but controlled whitespace.
+- Strong visual hierarchy.
+- Compact, clean selection rows/cards.
+- Consistent 8pt-style spacing system.
+- Comfortable touch targets.
+- No oversized decorative illustrations unless they genuinely improve the UX.
+- No generic AI-app visual style.
+- No excessive gradients.
+- No excessive rounded cards everywhere.
+- Avoid empty screens with huge unused areas.
+- Avoid unnecessary visual noise.
+
+The design should look like a serious professional career platform, not a template/demo app.
+
+BRAND
+
+Use the supplied approved Jobix logo and app-icon assets exactly as provided.
+
+Do NOT:
+- redraw the logo
+- recolor the logo
+- distort it
+- modify its proportions
+- invent another logo
+- replace it with a generic icon
+
+Use the correct logo variant depending on background.
+
+TYPOGRAPHY
+
+Typography is a first-class part of the design.
+
+English:
+- Use Inter as the primary English UI font.
+- It is already approved/bundled.
+
+Arabic:
+- Use Noto Sans Arabic as the primary Arabic UI font.
+- Obtain/use the openly licensed Noto Sans Arabic font.
+- Bundle it properly with the Flutter application.
+- Do not rely on Android platform fallback for production Arabic UI.
+
+The Arabic typography must be intentionally designed, not treated as a translated English layout.
+
+For both languages:
+- prioritize readability
+- use appropriate font weights
+- avoid overly small text
+- avoid excessive letter spacing
+- maintain clear hierarchy between display/title/body/caption text
+- ensure Arabic glyphs and line heights look professional
+- verify mixed Arabic/English text
+- verify numbers, email addresses and technical terms
+- support proper RTL/LTR behavior
+
+RESUME TYPOGRAPHY
+
+Resume typography is especially important.
+
+The Resume Builder and generated CV must use professional, highly readable fonts suitable for an actual job application.
+
+English resume:
+- Inter is the default choice unless a more appropriate bundled/approved resume font is required.
+
+Arabic resume:
+- Noto Sans Arabic is the default choice.
+
+Do NOT use decorative, playful, overly stylized, condensed, or difficult-to-read fonts.
+
+The resume must prioritize:
+1. readability
+2. ATS-friendly text extraction
+3. professional appearance
+4. clear hierarchy
+5. good density
+6. consistent rendering in PDF
+
+The resume must remain selectable/searchable text, not an image.
+
+Do not sacrifice readability just to make the resume fit on one page.
+
+PRODUCT REQUIREMENTS
+
+The visual redesign must preserve the existing product behavior and architecture.
+
+Do not change:
+- authentication architecture
+- Supabase architecture
+- Riverpod architecture
+- Drift/local persistence
+- server-authoritative behavior
+- profile model
+- Credits model
+- AI quota model
+- ATS rules
+- export architecture
+- synchronization architecture
+- security model
+- RLS
+- navigation structure
+- English/Arabic independence
+- product decisions already established in Product Design / Architecture V2
+
+The visual redesign is allowed to improve:
+- layout
+- typography
+- spacing
+- components
+- colors within the approved brand direction
+- hierarchy
+- interaction presentation
+- empty states
+- loading states
+- error states
+- selection states
+- form presentation
+- navigation presentation
+- motion
+
+Do not invent new product features.
+
+CURRENT SCOPE
+
+Redesign and implement only the currently approved visual scope:
+- Splash/startup
+- Onboarding
+- Research/context questions
+- Authentication
+- bilingual UI
+- shared design system/components
+- app shell where required for these flows
+- native app icon packaging
+- typography/font integration
+
+Do NOT implement:
+- dashboard
+- full Career Profile Builder
+- ATS
+- Credits
+- AI generation
+- Cover Letter
+- Professional Email
+- PDF export
+- full Settings
+- new product features
+
+DESIGN SYSTEM
+
+Create a coherent Jobix design system in Flutter.
+
+Centralize:
+- colors
+- typography
+- spacing
+- radii
+- borders
+- elevation/shadows
+- button styles
+- input styles
+- selection components
+- cards
+- page headers
+- navigation
+- loading states
+- error states
+- empty states
+
+Avoid scattered magic numbers and one-off Material defaults.
+
+Use Material 3 only where it helps; do not let default Material styling dictate the visual identity.
+
+RESPONSIVE + ACCESSIBILITY
+
+The UI must work on real Android devices, including the reviewed device:
+
+Samsung Galaxy M31 (M315F/DSN)
+Android 12
+
+Requirements:
+- safe areas
+- keyboard handling
+- scrolling
+- small/medium/large Android screens
+- touch targets
+- text scaling
+- accessibility contrast
+- RTL/LTR
+- long Arabic strings
+- long English strings
+- validation/error states
+
+Do not solve overflow by arbitrarily shrinking typography.
+
+AUTH UX
+
+Fix the issues identified in the audit.
+
+Create Account:
+- no "Forgot password?" on the registration screen
+- clear password requirements if required
+- clear validation
+- proper loading/error/success states
+- clear Terms of Service / Privacy acknowledgement presentation
+
+Login:
+- Forgot password belongs here
+- clean separation between login and registration
+
+Do not invent Terms/Privacy URLs because they have not been approved yet.
+
+If the URLs are not configured, keep the UI structurally ready for them and clearly mark the URLs as configuration dependencies rather than inventing destinations.
+
+LANGUAGE
+
+English and Arabic must be treated as first-class designs.
+
+Do not simply mirror the English screen.
+
+For Arabic:
+- RTL layout
+- intentional alignment
+- proper icon placement
+- proper text hierarchy
+- correct spacing
+- correct button/icon ordering
+- professional Arabic typography
+
+For English:
+- LTR layout
+- correct alignment and spacing
+
+The app language must remain independent from CV/resume language.
+
+STARTUP POLICY — DEVELOPMENT ONLY
+
+There is currently no operational `mobile` policy row in the development database.
+
+For DEVELOPMENT ONLY, configure the existing `mobile` policy with:
+
+minimum_supported_version = 1.0.0
+recommended_version = 1.0.0
+policy_version = 1
+
+This is a development configuration required to unblock authenticated startup.
+
+IMPORTANT:
+- Do not weaken or bypass the startup policy check.
+- Do not modify production policy.
+- Do not introduce service-role credentials into Flutter.
+- Do not weaken RLS.
+- Do not create fake production configuration.
+- Use the existing approved development Supabase environment.
+- Make the change through the existing approved migration/configuration mechanism.
+- Document that these are development values and must be reviewed before production launch.
+
+BRAND ASSETS
+
+Use the supplied approved:
+- Jobix logo
+- Jobix app-icon master
+
+Do not modify them.
+
+The Android/iOS launcher icons should use the approved Jobix icon instead of the Flutter default.
+
+QUALITY BAR
+
+Before considering the redesign complete:
+
+1. Test English.
+2. Test Arabic.
+3. Test switching language.
+4. Test RTL/LTR.
+5. Test authentication flows.
+6. Test validation/error states.
+7. Test keyboard/scroll behavior.
+8. Test startup with an authenticated session.
+9. Test startup while signed out.
+10. Test on the Samsung Galaxy M31 / Android 12 where available.
+11. Verify there are no Flutter default icons remaining.
+12. Verify Noto Sans Arabic is actually bundled and used.
+13. Verify Inter is used for English.
+14. Verify there are no obvious placeholder illustrations or unfinished demo components.
+15. Verify no screenshot imitation remains.
+16. Run Flutter analyze and relevant tests.
+
+IMPORTANT PROCESS
+
+Do not stop because Terms/Privacy URLs are not yet available.
+
+Do not invent them.
+
+Do not stop because the production minimum-supported-version policy is not decided.
+
+Use the explicitly approved DEVELOPMENT policy values above only.
+
+Do not make unrelated architecture or product changes.
+
+After implementation, report:
+- files changed
+- fonts added and licenses/source
+- design-system changes
+- screens redesigned
+- policy migration/configuration added
+- tests run
+- Flutter analyze result
+- Android/device verification result
+- any remaining blockers
+- screenshots/captures of the redesigned flows

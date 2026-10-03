@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jobix/core/design/tokens.dart';
@@ -9,50 +6,30 @@ import 'package:jobix/core/providers.dart';
 import 'package:jobix/features/boot/startup.dart';
 import 'package:jobix/features/shell/foundation_page.dart';
 import 'package:jobix/l10n/app_localizations.dart';
+import 'support/production_fonts.dart';
 
 void main() {
-  setUpAll(() async {
-    // Test-only Arabic-capable font. Never packaged in production assets.
-    final loader = FontLoader('FoundationTestFont')
-      ..addFont(
-        Future.value(
-          ByteData.sublistView(
-            File('test/assets/DejaVuSans.ttf').readAsBytesSync(),
-          ),
-        ),
-      );
-    await loader.load();
-  });
+  setUpAll(loadProductionFonts);
   Future<void> pumpShell(
     WidgetTester tester,
     String locale,
-    StartupState state,
-  ) async {
+    StartupState state, {
+    StartupFailureStage? failureStage,
+  }) async {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          startupProvider.overrideWith((ref) async => state),
+          startupProvider.overrideWith((ref) async {
+            if (failureStage != null) throw StartupFailure(failureStage);
+            return state;
+          }),
           localeProvider.overrideWith(() => TestLocale(locale)),
-          themeProvider.overrideWithValue(
-            foundationTheme().copyWith(
-              textTheme: foundationTheme().textTheme.apply(
-                fontFamily: 'FoundationTestFont',
-              ),
-              primaryTextTheme: foundationTheme().primaryTextTheme.apply(
-                fontFamily: 'FoundationTestFont',
-              ),
-            ),
-          ),
         ],
         child: MaterialApp(
           locale: Locale(locale),
-          theme: foundationTheme().copyWith(
-            textTheme: foundationTheme().textTheme.apply(
-              fontFamily: 'FoundationTestFont',
-            ),
-          ),
+          theme: foundationTheme(languageCode: locale),
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: FoundationPage(state: state),
@@ -62,6 +39,13 @@ void main() {
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
+    await tester.runAsync(
+      () async => precacheImage(
+        const AssetImage('assets/brand/logo_dark.png'),
+        tester.element(find.byType(MaterialApp)),
+      ),
+    );
+    await tester.pump();
   }
 
   for (final locale in ['en', 'ar']) {
@@ -104,6 +88,38 @@ void main() {
         expect(find.text('Sign out'), findsNothing);
       } else {
         expect(find.text('Retry'), findsOneWidget);
+      }
+    });
+  }
+  for (final locale in ['en', 'ar']) {
+    testWidgets('$locale redesigned guarded startup captures', (tester) async {
+      for (final state in [
+        StartupState.boot,
+        StartupState.failed,
+        StartupState.updateRequired,
+      ]) {
+        await pumpShell(
+          tester,
+          locale,
+          state,
+          failureStage: state == StartupState.failed
+              ? StartupFailureStage.appPolicy
+              : null,
+        );
+        await tester.runAsync(
+          () async => precacheImage(
+            const AssetImage('assets/brand/logo.png'),
+            tester.element(find.byType(MaterialApp)),
+          ),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile(
+            'goldens/redesign_startup_${state.name}_$locale.png',
+          ),
+        );
       }
     });
   }
