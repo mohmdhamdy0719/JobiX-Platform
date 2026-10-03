@@ -62,6 +62,17 @@ compressed archive could be delivered without rebuilding or altering the app.
 **How to apply:** Preserve the original APK/output path, check archive integrity
 and tell the user to extract the APK before installation.
 
+Flutter's localization generation can run before its package-restore command
+has repaired missing cached dependencies.
+
+**Why:** After a workspace merge, package metadata referenced an absent home
+cache. Flutter package restore failed during localization formatting before
+it could restore the missing lints package.
+
+**How to apply:** Restore locked packages against the actual installed Flutter
+SDK and a writable workspace cache before retrying Flutter commands. Do not
+remove analyzer rules or change dependency versions to bypass a missing cache.
+
 When a resumed workspace has Dart package metadata but no matching home pub
 cache, Flutter's localization formatter can fail before dependency resolution.
 Bootstrap Dart dependencies with the installed Flutter SDK's Dart executable

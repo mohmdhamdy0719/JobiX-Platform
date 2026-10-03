@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/design/app_language_button.dart';
 import '../../core/design/async_states.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import 'onboarding_controller.dart';
+import 'onboarding_illustrations.dart';
 import 'research_context.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
+
   @override
   ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
 }
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   bool busy = false;
+
   Future<void> advance(
     ResearchProgress progress, {
     bool skip = false,
@@ -76,50 +80,18 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
           copy.onboardingBodyTwo,
           copy.onboardingBodyThree,
         ];
+
         return SliceScaffold(
           fillViewport: true,
-          header: Padding(
-            padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: TokensV0.touchTarget,
-                  height: 56,
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 48,
-                        child: page == 0
-                            ? const Center(child: BrandMark(size: 32))
-                            : IconButton(
-                                key: const Key('onboarding-back'),
-                                tooltip: copy.backAction,
-                                icon: const Icon(Icons.arrow_back),
-                                onPressed: busy
-                                    ? null
-                                    : () => advance(progress, back: true),
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                Flexible(
-                  child: TextButton(
-                    key: const Key('skip-onboarding'),
-                    onPressed: busy
-                        ? null
-                        : () => advance(progress, skip: true),
-                    child: Tooltip(
-                      message: copy.skipOnboarding,
-                      child: Text(copy.skipShort),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: TokensV0.space4),
-                const AppLanguageButton(),
-              ],
-            ),
+          header: _OnboardingHeader(
+            page: page,
+            skipLabel: copy.skipOnboarding,
+            skipShort: copy.skipShort,
+            backLabel: copy.backAction,
+            busy: busy,
+            showBack: page > 0,
+            onBack: () => advance(progress, back: true),
+            onSkip: () => advance(progress, skip: true),
           ),
           bottom: PrimaryAction(
             key: const Key('onboarding-continue'),
@@ -128,61 +100,165 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             onPressed: () => advance(progress),
             icon: Icons.arrow_forward,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Semantics(
-                label: '${page + 1}/3',
-                child: Text(
-                  '0${page + 1}  /  03',
-                  textDirection: TextDirection.ltr,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: TokensV0.primary,
-                    letterSpacing:
-                        Directionality.of(context) == TextDirection.rtl
-                        ? 0
-                        : .8,
-                    fontWeight: FontWeight.w700,
+          child: LayoutBuilder(
+            builder: (context, _) {
+              final screenHeight = MediaQuery.sizeOf(context).height;
+              final illustrationHeight = screenHeight < 700
+                  ? 248.0
+                  : switch (page) {
+                      0 => 330.0,
+                      1 => 350.0,
+                      _ => 270.0,
+                    };
+              final isSecond = page == 1;
+              final title = page == 0
+                  ? titles[page].replaceFirst(', ', ',\n')
+                  : page == 2
+                  ? titles[page].replaceFirst('. ', '.\n')
+                  : titles[page];
+              return Column(
+                mainAxisAlignment: screenHeight >= 1000
+                    ? MainAxisAlignment.center
+                    : MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  OnboardingIllustration(
+                    page: page,
+                    height: illustrationHeight,
                   ),
-                ),
-              ),
-              const SizedBox(height: TokensV0.space16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(TokensV0.pillRadius),
-                child: LinearProgressIndicator(
-                  value: (page + 1) / 3,
-                  minHeight: 3,
-                  backgroundColor: TokensV0.surfaceContainer,
-                ),
-              ),
-              const SizedBox(height: TokensV0.space40),
-              AnimatedSwitcher(
-                duration: motionDuration(context, TokensV0.motionContent),
-                child: Column(
-                  key: ValueKey<int>(page),
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      titles[page],
-                      key: Key('onboarding-title-$page'),
-                      textAlign: TextAlign.start,
-                      style: Theme.of(context).textTheme.headlineLarge,
+                  SizedBox(height: screenHeight < 700 ? 24 : 32),
+                  AnimatedSwitcher(
+                    duration: motionDuration(context, TokensV0.motionContent),
+                    child: Column(
+                      key: ValueKey<int>(page),
+                      crossAxisAlignment: isSecond
+                          ? CrossAxisAlignment.start
+                          : CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          semanticsLabel: titles[page],
+                          key: Key('onboarding-title-$page'),
+                          textAlign: isSecond
+                              ? TextAlign.start
+                              : TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        const SizedBox(height: TokensV0.space12),
+                        Text(
+                          bodies[page],
+                          textAlign: isSecond
+                              ? TextAlign.start
+                              : TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: TokensV0.space16),
+                      ],
                     ),
-                    const SizedBox(height: TokensV0.space16),
-                    Text(
-                      bodies[page],
-                      textAlign: TextAlign.start,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: TokensV0.space32),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         );
       },
+    );
+  }
+}
+
+class _OnboardingHeader extends StatelessWidget {
+  const _OnboardingHeader({
+    required this.page,
+    required this.skipLabel,
+    required this.skipShort,
+    required this.backLabel,
+    required this.busy,
+    required this.showBack,
+    required this.onBack,
+    required this.onSkip,
+  });
+
+  final int page;
+  final String skipLabel;
+  final String skipShort;
+  final String backLabel;
+  final bool busy;
+  final bool showBack;
+  final VoidCallback onBack;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = Semantics(
+      label: '${page + 1}/3',
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            final active = index == page;
+            return AnimatedContainer(
+              duration: motionDuration(context, TokensV0.motionFeedback),
+              curve: Curves.easeOutCubic,
+              width: active ? 24 : 7,
+              height: 7,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                color: active
+                    ? TokensV0.primary
+                    : TokensV0.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(TokensV0.pillRadius),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+    return SizedBox(
+      height: 64,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.symmetric(horizontal: 8),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Allocate space for progress on small screens and large text so
+            // that it never overlaps the Skip and language controls.
+            final compact =
+                constraints.maxWidth < 360 ||
+                MediaQuery.textScalerOf(context).scale(14) > 18;
+            final controls = Row(
+              children: [
+                SizedBox(
+                  width: TokensV0.touchTarget,
+                  height: TokensV0.touchTarget,
+                  child: showBack
+                      ? IconButton(
+                          key: const Key('onboarding-back'),
+                          tooltip: backLabel,
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: busy ? null : onBack,
+                        )
+                      : const Center(child: BrandMark(size: 32)),
+                ),
+                if (compact)
+                  Expanded(child: Center(child: progress))
+                else
+                  const Spacer(),
+                TextButton(
+                  key: const Key('skip-onboarding'),
+                  onPressed: busy ? null : onSkip,
+                  child: Tooltip(message: skipLabel, child: Text(skipShort)),
+                ),
+                const AppLanguageButton(),
+              ],
+            );
+            return compact
+                ? controls
+                : Stack(
+                    alignment: Alignment.center,
+                    children: [controls, progress],
+                  );
+          },
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,39 @@
 # Jobix verification evidence
 
+## Screenshot-inspired onboarding update — 2026-10-03
+
+Only the three existing native Flutter introduction screens were revised using
+the owner's newly supplied CV, AI-assistance and export/update screenshots.
+Approved copy, Skip/Back/Continue behavior, persisted progress, language
+switching and the four-question boundary are unchanged. Illustrations are
+static, text-free and excluded from accessibility semantics; they do not
+introduce AI/export actions, fictional CV facts or unsupported ATS claims.
+
+- `flutter analyze --no-pub`: no issues.
+- `dart tool/check_foundation.dart`: passed.
+- Ordinary `flutter test --no-pub --reporter expanded`: **88 tests passed**,
+  including normal golden comparisons after refreshing only onboarding
+  baselines. Four added regressions exercise English/Arabic at 320×568 and
+  800×1280 with 1.6 text scaling, reachable fixed Continue, and ordered entry
+  into research. Existing auth/profile/draft tests remain passing.
+- Actual Flutter English/Arabic renders were visually inspected. Contact
+  sheets are `build/review/jobix-onboarding-en.png` and
+  `build/review/jobix-onboarding-ar.png`, not physical-device screenshots.
+- Development ARM debug APK rebuilt with genuine existing dev defines:
+  `build/app/outputs/flutter-apk/app-debug.apk`, 166,618,451 bytes.
+  SHA-256: `644df21326c6c011886fe10664798f1fab63340b01b70b07e6b6a4ea4b86a508`.
+- APK v2 signature verification passed. Its signing certificate matches the
+  previous delivered APK; no uninstall or deletion of local data is required.
+- `build/review/jobix-onboarding-debug.zip` contains the unchanged
+  `app-debug.apk`, 75,475,988 bytes compressed. ZIP integrity and extracted
+  APK hash equality passed.
+- No dependencies, localization copy, research/auth behavior, architecture,
+  database, provider/policy settings, staging or production were changed.
+
+Physical installation, device rendering and native lifecycle/security acceptance
+remain unverified; prior separately recorded live-service evidence was not
+rerun or replaced by these widget renders.
+
 ## Current delivery — original native redesign, 2026-10-03
 
 The owner's resumed brief supersedes earlier blocked audit/HTML-matching status.

@@ -123,6 +123,18 @@ mobile policy values: minimum 1.0.0, recommended 1.0.0, policy version 1.
 Terms/Privacy URLs and undecided production policy are not implementation blockers.
 Original, typography-led native Flutter visuals replace old screenshot imitation.
 
+The owner subsequently supplied three onboarding screenshots and authorized
+recreating those screens with a similar or improved presentation. This is an
+onboarding-only visual reference update, not new feature or flow permission.
+
+**Why:** The owner explicitly requested recreation from the CV, AI-assistance
+and export/update images.
+
+**How to apply:** Preserve the existing approved onboarding copy, navigation,
+language switch and research boundary. Use neutral decorative illustrations
+instead of fictional CV details, invented metrics or unsupported ATS claims.
+Other screens retain their independently approved design direction.
+
 **Why:** The owner explicitly resolved the previously missing inputs and allowed
 this exact configuration to unblock authenticated development startup.
 

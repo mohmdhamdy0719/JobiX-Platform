@@ -204,6 +204,45 @@ void main() {
       );
     },
   );
+  for (final locale in ['en', 'ar']) {
+    for (final size in [const Size(320, 568), const Size(800, 1280)]) {
+      testWidgets(
+        '$locale illustrated onboarding stays usable at $size with enlarged text',
+        (tester) async {
+          await pump(tester, locale: locale, size: size);
+          tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          await tester.pumpAndSettle();
+          for (var page = 0; page < 3; page++) {
+            final title = find.byKey(Key('onboarding-title-$page'));
+            expect(title, findsOneWidget);
+            await tester.ensureVisible(title);
+            await tester.pumpAndSettle();
+            noUnsupportedContent(tester);
+            expect(tester.takeException(), isNull);
+            final next = find.byKey(const Key('onboarding-continue'));
+            final bounds = tester.getRect(next);
+            expect(bounds.bottom, lessThanOrEqualTo(size.height));
+            expect(bounds.height, greaterThanOrEqualTo(48));
+            expect(find.byKey(const Key('skip-onboarding')), findsOneWidget);
+            await tester.tap(next);
+            await tester.pumpAndSettle();
+          }
+          expect(find.byKey(const Key('research-step')), findsOneWidget);
+          expect(
+            container!
+                .read(routerProvider)
+                .routeInformationProvider
+                .value
+                .uri
+                .path,
+            '/research',
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
   testWidgets(
     'four questions retain selections; Q4 maximum remains three; auth follows',
     (tester) async {

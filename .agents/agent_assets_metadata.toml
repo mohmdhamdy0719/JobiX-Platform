@@ -84,3 +84,45 @@ mtime_ms = 1791042428615
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/81b8b9fe-a09c-401c-be11-120c9e524f30/24137224-081b-4c4b-98ac-a894445840d9"
 storage_version_token = "1791042461542351"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "WikUR3R8AgXtZAVVIDu6U"
+uri = "file://mobile/jobix/build/review/jobix-onboarding-debug.zip"
+type = "unspecified"
+title = "Jobix — updated onboarding APK"
+description = "Extract app-debug.apk and install over the existing Android app. Development ARM debug build; same signing certificate. Physical-device rendering is not yet verified."
+logical_id = "c21811ea-adfc-4a84-b52b-e691ad6cf3b2"
+content_hash = "sha256:9ee018585de9275912f0f4ae77f860432e248cb2f261a2f0cace2526786ff591"
+size = 75475988
+mtime_ms = 1791044271914
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/c21811ea-adfc-4a84-b52b-e691ad6cf3b2/96ffb93b-d2e6-44a1-94be-b3a053ab33b5"
+storage_version_token = "1791044343034872"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "NKR71i0e6M0iNSpSPCJUq"
+uri = "file://mobile/jobix/build/review/jobix-onboarding-en.png"
+type = "image"
+title = "Updated onboarding — English"
+description = "Three actual Flutter widget renders of the screenshot-inspired onboarding. Not physical-device captures."
+logical_id = "c76b88c4-655b-4b18-8bdd-4475d41eb2f5"
+content_hash = "sha256:adc48c2978e949487ee54f80f7ae0910eff31ffcee598f484f939bce33c15ff0"
+size = 106119
+mtime_ms = 1791044257330
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/c76b88c4-655b-4b18-8bdd-4475d41eb2f5/2f6f3b35-960d-4363-bd93-7961fee21916"
+storage_version_token = "1791044343599514"
+content_type = "image/png"
+
+[[outputs]]
+id = "NSYqfmlAxJdngySfUCTNg"
+uri = "file://mobile/jobix/build/review/jobix-onboarding-ar.png"
+type = "image"
+title = "Updated onboarding — Arabic"
+description = "Three actual Flutter widget renders with Arabic typography and RTL layout. Not physical-device captures."
+logical_id = "d64a71cd-dc59-4b6b-afcc-d027dc2389f3"
+content_hash = "sha256:edd9d688a98beb40038eca7e49fc9510c6314ac7055d89c5327a5c912cad6b02"
+size = 105856
+mtime_ms = 1791044257482
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/d64a71cd-dc59-4b6b-afcc-d027dc2389f3/5832957e-c1b6-45a1-8e21-272fadbd7cfe"
+storage_version_token = "1791044344198539"
+content_type = "image/png"
