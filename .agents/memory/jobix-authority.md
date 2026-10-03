@@ -15,3 +15,15 @@ Implementation authorization is slice-specific. Foundation approval does not aut
 **Why:** The user explicitly required stopping at the end of Foundation and not continuing into features.
 
 **How to apply:** Finish and verify the authorized slice, report remaining gates honestly, and wait for separate feature-slice permission. Keep unresolved fonts, assets, typography and ranged design values unresolved.
+
+Do not create or invent staging/production Supabase projects or credentials
+just to satisfy Jobix verification gates. Record unavailable native tooling,
+physical devices and genuine environment configuration as blockers; do not
+substitute simulated native evidence.
+
+**Why:** The user explicitly required this boundary when accepting live
+Supabase results and closing verification with documented environment blockers.
+
+**How to apply:** Obtain genuine prerequisites and authorization before
+resuming blocked checks. Task closure with accepted blockers is not proof that
+native build, Keystore/Keychain or device acceptance passed.

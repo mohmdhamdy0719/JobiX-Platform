@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-24", "python-base-3.13"]
 
 [deployment]
 router = "application"
@@ -21,4 +21,22 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
-packages = ["flutter", "sqlcipher", "postgresql", "jdk17"]
+packages = ["flutter", "sqlcipher", "postgresql", "jdk17", "android-tools", "sdkmanager"]
+
+[userenv]
+
+[userenv.shared]
+JOBIX_ANDROID_APPLICATION_ID = "com.mhflow.jobix"
+JOBIX_IOS_BUNDLE_ID = "com.mhflow.jobix"
+JOBIX_ANDROID_MIN_SDK = "24"
+JOBIX_ANDROID_TARGET_SDK = "36"
+JOBIX_IOS_DEPLOYMENT_TARGET = "13.0"
+JOBIX_APP_VERSION = "1.0.0"
+JOBIX_DEV_SUPABASE_URL = "https://lmouxhbjhtqdtiqijcee.supabase.co"
+JOBIX_DEV_SUPABASE_CLIENT_KEY = "sb_publishable_QXujyEqNvdIJAoSQvmKcsg_l3gQn4be"
+JOBIX_STAGING_SUPABASE_URL = "NOT_CONFIGURED"
+JOBIX_STAGING_SUPABASE_CLIENT_KEY = "NOT_CONFIGURED"
+JOBIX_PROD_SUPABASE_URL = "NOT_CONFIGURED"
+JOBIX_PROD_SUPABASE_CLIENT_KEY = "NOT_CONFIGURED"
+ANDROID_HOME = "/home/runner/workspace/.local/toolchains/android-sdk"
+ANDROID_SDK_ROOT = "/home/runner/workspace/.local/toolchains/android-sdk"

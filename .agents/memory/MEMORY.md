@@ -1,2 +1,5 @@
 - [Jobix scope and authority](jobix-authority.md) — preserve the approved mobile stack, source hierarchy, brand spelling, and audit-before-build boundary.
 - [Secure auth startup](secure-auth-startup.md) — SDK initialization is not a session-recovery barrier; finish recovery before enabling guards or sign-out.
+- [Native tooling constraints](native-tooling.md) — Nixpkgs availability differs from the workspace index; verify the SDK manager's actual installation root.
+- [Database network access](database-network-access.md) — Supabase HTTPS reachability does not imply direct database reachability; IPv6-only endpoints may need a pooler.
+- [Policy RPC compatibility](policy-rpc-compatibility.md) — absent live policies must fail closed; SDK empty-result behavior can differ from fixtures.
