@@ -3,3 +3,4 @@
 - [Native tooling constraints](native-tooling.md) — Nixpkgs availability differs from the workspace index; verify the SDK manager's actual installation root.
 - [Database network access](database-network-access.md) — Supabase HTTPS reachability does not imply direct database reachability; IPv6-only endpoints may need a pooler.
 - [Policy RPC compatibility](policy-rpc-compatibility.md) — absent live policies must fail closed; SDK empty-result behavior can differ from fixtures.
+- [Dev account provisioning](dev-account-provisioning.md) — authentication alone does not prove app-account provisioning; ask before legacy backfill or retroactive credits.

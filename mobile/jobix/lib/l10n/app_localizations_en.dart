@@ -461,4 +461,126 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get signOutLocalWarning =>
       'Signing out removes unsaved local work from this device. Data already saved to your account is kept.';
+
+  @override
+  String get homeNav => 'Home';
+
+  @override
+  String get careerNav => 'Career';
+
+  @override
+  String get settingsNav => 'Settings';
+
+  @override
+  String get balanceUnavailable => 'Credit balance is temporarily unavailable.';
+
+  @override
+  String get availableCredits => 'Available Credits';
+
+  @override
+  String get viewHistory => 'History';
+
+  @override
+  String get careerPageTitle => 'Your Career Profile';
+
+  @override
+  String get careerPageSubtitle =>
+      'Keep your professional information accurate and ready to use.';
+
+  @override
+  String get activeProfile => 'Your current profile';
+
+  @override
+  String get profileTruthNote =>
+      'This profile is your career information. Resume tools and other profile sections are not available in this release.';
+
+  @override
+  String get notEntered => 'Not entered';
+
+  @override
+  String get editPersonalInformation => 'Edit Personal Information';
+
+  @override
+  String get careerOtherSectionsUnavailable =>
+      'Additional profile sections are not available in this release.';
+
+  @override
+  String get arabicLanguage => 'Arabic';
+
+  @override
+  String get englishLanguage => 'English';
+
+  @override
+  String get accountSection => 'Account';
+
+  @override
+  String get accountInformation => 'Account Information';
+
+  @override
+  String get accountInfoUnavailable =>
+      'Account information is temporarily unavailable.';
+
+  @override
+  String get personalInfoSettingsHint => 'Edit your saved contact information';
+
+  @override
+  String get preferencesSection => 'Preferences';
+
+  @override
+  String get languageSettingsHint => 'Controls the Jobix app interface';
+
+  @override
+  String get careerDataSection => 'Career & Data';
+
+  @override
+  String get creditHistoryTitle => 'Credit History';
+
+  @override
+  String get creditHistorySubtitle =>
+      'Server-recorded changes to your available Credits.';
+
+  @override
+  String get supportSection => 'Support';
+
+  @override
+  String get contactUs => 'Contact Us';
+
+  @override
+  String get serviceNotConfigured => 'Support contact is not configured yet.';
+
+  @override
+  String get legalSection => 'Legal';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get legalUnavailable => 'Link not configured yet.';
+
+  @override
+  String get termsOfService => 'Terms of Service';
+
+  @override
+  String get accountActionsSection => 'Account Actions';
+
+  @override
+  String get settingsFooter =>
+      'Jobix keeps your career information factual and under your control.';
+
+  @override
+  String get creditHistoryLoadFailed =>
+      'Credit history could not be loaded. No history has been assumed.';
+
+  @override
+  String get creditHistoryEmpty =>
+      'No credit transactions are available for this account yet.';
+
+  @override
+  String get moreTransactionsFailed => 'More transactions could not be loaded.';
+
+  @override
+  String get loadMore => 'Load more';
+
+  @override
+  String get creditTransaction => 'Credit transaction';
 }

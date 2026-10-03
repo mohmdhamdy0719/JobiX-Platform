@@ -12,6 +12,7 @@ import 'package:jobix/features/auth/provider_settings.dart';
 import 'package:jobix/features/boot/startup.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/career_profile/career_profile_repository.dart';
+import 'package:jobix/features/core_mvp/core_api.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
 import 'support/slice_fakes.dart';
 import 'support/production_fonts.dart';
@@ -30,6 +31,7 @@ void main() {
   late FakeProfileApi api;
   late DraftRepository repository;
   late FakeAuthApi auth;
+  late _CoreFixture core;
   ProviderContainer? container;
   setUpAll(loadProductionFonts);
   setUp(() async {
@@ -40,6 +42,7 @@ void main() {
     api = FakeProfileApi();
     repository = DraftRepository(database, api, 'user-one', () => true);
     auth = FakeAuthApi();
+    core = _CoreFixture();
     await database.setting(
       'locale',
     ); // Open the actual encrypted engine outside the widget flow.
@@ -73,6 +76,7 @@ void main() {
         authSessionProvider.overrideWith((_) => Stream.value(testSession())),
         authLinkServiceProvider.overrideWith((_) async {}),
         authApiProvider.overrideWith((_) async => auth),
+        coreApiProvider.overrideWith((_) async => core),
         authProviderSettingsProvider.overrideWith((_) async {
           if (providerFailure) {
             throw const FormatException('Test settings unavailable');
@@ -187,6 +191,120 @@ void main() {
       expect(find.byKey(const Key('research-step')), findsOneWidget);
     },
   );
+  for (final locale in ['en', 'ar']) {
+    testWidgets('core shell native production-font captures $locale', (
+      tester,
+    ) async {
+      await pump(tester, state: StartupState.signedIn, locale: locale);
+      for (final page in ['home', 'career', 'settings', 'credits']) {
+        container!.read(routerProvider).go('/$page');
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(
+          Directionality.of(tester.element(find.byType(Scaffold).first)),
+          locale == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+        );
+        noUnsupportedContent(tester);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/core_${page}_$locale.png'),
+        );
+      }
+    });
+    testWidgets('core shell narrow scaled layouts $locale', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        locale: locale,
+        size: const Size(320, 740),
+      );
+      for (final page in ['home', 'career', 'settings', 'credits']) {
+        container!.read(routerProvider).go('/$page');
+        await tester.pumpAndSettle();
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '$locale $page overflow',
+        );
+      }
+    });
+  }
+  testWidgets('main tabs are guarded and return to the current profile', (
+    tester,
+  ) async {
+    await pump(tester, state: StartupState.signedIn);
+    for (final destination in ['career', 'settings', 'home']) {
+      await tester.tap(find.byKey(Key('nav-$destination')));
+      await tester.pumpAndSettle();
+      expect(
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/$destination',
+      );
+    }
+    expect(find.byKey(const Key('continue-career')), findsOneWidget);
+  });
+  testWidgets('failed authoritative balance never becomes a zero fallback', (
+    tester,
+  ) async {
+    core.bootstrapFails = true;
+    await pump(tester, state: StartupState.signedIn);
+    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(copy.balanceUnavailable), findsOneWidget);
+    expect(find.text('0'), findsNothing);
+    expect(find.text('5'), findsNothing);
+    core.bootstrapFails = false;
+    await tester.tap(find.byTooltip(copy.retry).first);
+    await tester.pumpAndSettle();
+    expect(find.text('5'), findsOneWidget);
+  });
+  testWidgets('credit history failure is not a fabricated empty ledger', (
+    tester,
+  ) async {
+    core.historyFails = true;
+    await pump(tester, state: StartupState.signedIn);
+    container!.read(routerProvider).go('/credits');
+    await tester.pumpAndSettle();
+    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(copy.creditHistoryLoadFailed), findsOneWidget);
+    expect(find.text(copy.creditHistoryEmpty), findsNothing);
+    core.historyFails = false;
+    await tester.tap(find.text(copy.retry).first);
+    await tester.pumpAndSettle();
+    expect(find.text(copy.creditHistoryEmpty), findsOneWidget);
+    expect(core.historyCalls, 2);
+  });
+  testWidgets('Settings sign-out cancellation preserves the encrypted draft', (
+    tester,
+  ) async {
+    await repository.retain(
+      const PersonalDraft(
+        profileId: 'profile-one',
+        baseVersion: 1,
+        personal: {'full_name': 'Local work'},
+      ),
+    );
+    await pump(tester, state: StartupState.signedIn);
+    container!.read(routerProvider).go('/settings');
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('settings-sign-out')),
+      250,
+    );
+    await tester.tap(find.byKey(const Key('settings-sign-out')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(
+      (await repository.draft(api.server))!.personal['full_name'],
+      'Local work',
+    );
+    expect(
+      container!.read(routerProvider).routeInformationProvider.value.uri.path,
+      '/settings',
+    );
+  });
   testWidgets(
     'skip persists introduction completion but never skips ordered research',
     (tester) async {
@@ -906,5 +1024,42 @@ void main() {
         },
       );
     }
+  }
+}
+
+class _CoreFixture implements CoreApi {
+  bool bootstrapFails = false;
+  bool historyFails = false;
+  int historyCalls = 0;
+
+  @override
+  Future<CoreSummary> bootstrap(String locale) async {
+    if (bootstrapFails) throw StateError('Test transport failure');
+    return const CoreSummary(
+      balance: CreditBalance(
+        finalized: 5,
+        reserved: 0,
+        available: 5,
+        version: 1,
+      ),
+      profiles: [
+        {
+          'id': 'profile-one',
+          'slot_number': 1,
+          'name': null,
+          'profile_version': 1,
+        },
+      ],
+      slots: [
+        {'slot_number': 1, 'unlocked': true},
+      ],
+    );
+  }
+
+  @override
+  Future<CreditHistory> transactions({String? cursor}) async {
+    historyCalls++;
+    if (historyFails) throw StateError('Test history transport failure');
+    return const CreditHistory(items: []);
   }
 }

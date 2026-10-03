@@ -913,6 +913,234 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signing out removes unsaved local work from this device. Data already saved to your account is kept.'**
   String get signOutLocalWarning;
+
+  /// No description provided for @homeNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get homeNav;
+
+  /// No description provided for @careerNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Career'**
+  String get careerNav;
+
+  /// No description provided for @settingsNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsNav;
+
+  /// No description provided for @balanceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit balance is temporarily unavailable.'**
+  String get balanceUnavailable;
+
+  /// No description provided for @availableCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Credits'**
+  String get availableCredits;
+
+  /// No description provided for @viewHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get viewHistory;
+
+  /// No description provided for @careerPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Career Profile'**
+  String get careerPageTitle;
+
+  /// No description provided for @careerPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your professional information accurate and ready to use.'**
+  String get careerPageSubtitle;
+
+  /// No description provided for @activeProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current profile'**
+  String get activeProfile;
+
+  /// No description provided for @profileTruthNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This profile is your career information. Resume tools and other profile sections are not available in this release.'**
+  String get profileTruthNote;
+
+  /// No description provided for @notEntered.
+  ///
+  /// In en, this message translates to:
+  /// **'Not entered'**
+  String get notEntered;
+
+  /// No description provided for @editPersonalInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Personal Information'**
+  String get editPersonalInformation;
+
+  /// No description provided for @careerOtherSectionsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional profile sections are not available in this release.'**
+  String get careerOtherSectionsUnavailable;
+
+  /// No description provided for @arabicLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic'**
+  String get arabicLanguage;
+
+  /// No description provided for @englishLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get englishLanguage;
+
+  /// No description provided for @accountSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountSection;
+
+  /// No description provided for @accountInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Information'**
+  String get accountInformation;
+
+  /// No description provided for @accountInfoUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Account information is temporarily unavailable.'**
+  String get accountInfoUnavailable;
+
+  /// No description provided for @personalInfoSettingsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit your saved contact information'**
+  String get personalInfoSettingsHint;
+
+  /// No description provided for @preferencesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferencesSection;
+
+  /// No description provided for @languageSettingsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Controls the Jobix app interface'**
+  String get languageSettingsHint;
+
+  /// No description provided for @careerDataSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Career & Data'**
+  String get careerDataSection;
+
+  /// No description provided for @creditHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit History'**
+  String get creditHistoryTitle;
+
+  /// No description provided for @creditHistorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server-recorded changes to your available Credits.'**
+  String get creditHistorySubtitle;
+
+  /// No description provided for @supportSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get supportSection;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Us'**
+  String get contactUs;
+
+  /// No description provided for @serviceNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Support contact is not configured yet.'**
+  String get serviceNotConfigured;
+
+  /// No description provided for @legalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get legalSection;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @legalUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Link not configured yet.'**
+  String get legalUnavailable;
+
+  /// No description provided for @termsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
+  /// No description provided for @accountActionsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Actions'**
+  String get accountActionsSection;
+
+  /// No description provided for @settingsFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobix keeps your career information factual and under your control.'**
+  String get settingsFooter;
+
+  /// No description provided for @creditHistoryLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit history could not be loaded. No history has been assumed.'**
+  String get creditHistoryLoadFailed;
+
+  /// No description provided for @creditHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No credit transactions are available for this account yet.'**
+  String get creditHistoryEmpty;
+
+  /// No description provided for @moreTransactionsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'More transactions could not be loaded.'**
+  String get moreTransactionsFailed;
+
+  /// No description provided for @loadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get loadMore;
+
+  /// No description provided for @creditTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit transaction'**
+  String get creditTransaction;
 }
 
 class _AppLocalizationsDelegate

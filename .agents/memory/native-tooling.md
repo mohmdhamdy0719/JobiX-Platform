@@ -18,6 +18,24 @@ Use explicit writable SDK-root environment configuration and verify native
 tool discovery before claiming a toolchain is supplied. Do not treat device
 tools alone as an Android build SDK.
 
+Bundled Flutter fonts do not configure fonts for system image tools.
+
+**Why:** Native Flutter captures rendered correctly while external image
+composition failed because its default font was unavailable.
+
+**How to apply:** Supply a bundled approved font explicitly when an image tool
+renders captions. For combining existing raster captures, avoid unnecessary
+text rendering or dependency installation.
+
+Library delivery has a 100 MiB per-file limit; use ABI-specific development APKs.
+
+**Why:** The combined native debug APK exceeded the asset-registration limit,
+while separate ARM64 and ARMv7 builds fit it.
+
+**How to apply:** Keep a clearly labeled ARM64 development build for the
+Galaxy M31 device class and avoid promising a downloadable combined binary
+without checking its size. This is asset delivery, not production publishing.
+
 Keep large native SDK/NDK downloads and extraction inside ignored workspace
 storage rather than the home filesystem.
 

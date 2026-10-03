@@ -6,6 +6,9 @@ import '../../features/auth/auth_controller.dart';
 import '../../features/auth/auth_repository.dart';
 import '../../features/auth/auth_page.dart';
 import '../../features/boot/startup.dart';
+import '../../features/core_mvp/career_page.dart';
+import '../../features/core_mvp/credits_page.dart';
+import '../../features/core_mvp/settings_page.dart';
 import '../../features/home/home_page.dart';
 import '../../features/onboarding/onboarding_controller.dart';
 import '../../features/onboarding/onboarding_page.dart';
@@ -38,7 +41,13 @@ String? sliceRedirect({
   }
   if (startup == StartupState.signedIn) {
     if (recovery) return path == '/recovery' ? null : '/recovery';
-    if (path == '/home' || path == '/career/personal') return null;
+    if (path == '/home' ||
+        path == '/career' ||
+        path == '/settings' ||
+        path == '/credits' ||
+        path == '/career/personal') {
+      return null;
+    }
     final destination = entryLoading
         ? '/boot'
         : firstEntry
@@ -129,6 +138,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const AuthPage(mode: 'recovery'),
       ),
       GoRoute(path: '/home', builder: (_, __) => const HomePage()),
+      GoRoute(path: '/career', builder: (_, __) => const CareerPage()),
+      GoRoute(path: '/settings', builder: (_, __) => const SettingsPage()),
+      GoRoute(path: '/credits', builder: (_, __) => const CreditsPage()),
       GoRoute(
         path: '/career/personal',
         builder: (_, __) => const PersonalInformationPage(),

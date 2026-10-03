@@ -453,4 +453,124 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get signOutLocalWarning =>
       'سيحذف تسجيل الخروج العمل المحلي غير المحفوظ من هذا الجهاز. تظل البيانات المحفوظة في حسابك كما هي.';
+
+  @override
+  String get homeNav => 'الرئيسية';
+
+  @override
+  String get careerNav => 'المسيرة المهنية';
+
+  @override
+  String get settingsNav => 'الإعدادات';
+
+  @override
+  String get balanceUnavailable => 'الرصيد غير متاح مؤقتًا.';
+
+  @override
+  String get availableCredits => 'الرصيد المتاح';
+
+  @override
+  String get viewHistory => 'السجل';
+
+  @override
+  String get careerPageTitle => 'ملفك المهني';
+
+  @override
+  String get careerPageSubtitle =>
+      'احتفظ بمعلوماتك المهنية دقيقة وجاهزة للاستخدام.';
+
+  @override
+  String get activeProfile => 'ملفك الحالي';
+
+  @override
+  String get profileTruthNote =>
+      'هذا الملف هو معلوماتك المهنية. أدوات السيرة الذاتية والأقسام الأخرى غير متاحة في هذا الإصدار.';
+
+  @override
+  String get notEntered => 'لم يُدخَل';
+
+  @override
+  String get editPersonalInformation => 'تعديل المعلومات الشخصية';
+
+  @override
+  String get careerOtherSectionsUnavailable =>
+      'الأقسام المهنية الإضافية غير متاحة في هذا الإصدار.';
+
+  @override
+  String get arabicLanguage => 'العربية';
+
+  @override
+  String get englishLanguage => 'الإنجليزية';
+
+  @override
+  String get accountSection => 'الحساب';
+
+  @override
+  String get accountInformation => 'معلومات الحساب';
+
+  @override
+  String get accountInfoUnavailable => 'معلومات الحساب غير متاحة مؤقتًا.';
+
+  @override
+  String get personalInfoSettingsHint => 'تعديل معلومات التواصل المحفوظة';
+
+  @override
+  String get preferencesSection => 'التفضيلات';
+
+  @override
+  String get languageSettingsHint => 'تتحكم في لغة واجهة تطبيق Jobix';
+
+  @override
+  String get careerDataSection => 'المسيرة المهنية والبيانات';
+
+  @override
+  String get creditHistoryTitle => 'سجل الرصيد';
+
+  @override
+  String get creditHistorySubtitle =>
+      'تغييرات الرصيد المتاح المسجّلة على الخادم.';
+
+  @override
+  String get supportSection => 'الدعم';
+
+  @override
+  String get contactUs => 'تواصل معنا';
+
+  @override
+  String get serviceNotConfigured => 'لم يتم إعداد وسيلة التواصل مع الدعم بعد.';
+
+  @override
+  String get legalSection => 'الشؤون القانونية';
+
+  @override
+  String get privacyPolicy => 'سياسة الخصوصية';
+
+  @override
+  String get legalUnavailable => 'لم يتم إعداد الرابط بعد.';
+
+  @override
+  String get termsOfService => 'شروط الخدمة';
+
+  @override
+  String get accountActionsSection => 'إجراءات الحساب';
+
+  @override
+  String get settingsFooter =>
+      'يحافظ Jobix على دقة معلوماتك المهنية ويترك التحكم بها لك.';
+
+  @override
+  String get creditHistoryLoadFailed =>
+      'تعذّر تحميل سجل الرصيد. لم يتم افتراض وجود سجل فارغ.';
+
+  @override
+  String get creditHistoryEmpty => 'لا توجد معاملات رصيد لهذا الحساب حتى الآن.';
+
+  @override
+  String get moreTransactionsFailed => 'تعذّر تحميل المزيد من المعاملات.';
+
+  @override
+  String get loadMore => 'تحميل المزيد';
+
+  @override
+  String get creditTransaction => 'معاملة رصيد';
 }
