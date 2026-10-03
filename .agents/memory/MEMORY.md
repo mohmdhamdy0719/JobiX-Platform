@@ -4,3 +4,4 @@
 - [Database network access](database-network-access.md) — Supabase HTTPS reachability does not imply direct database reachability; IPv6-only endpoints may need a pooler.
 - [Policy RPC compatibility](policy-rpc-compatibility.md) — absent live policies must fail closed; SDK empty-result behavior can differ from fixtures.
 - [Dev account provisioning](dev-account-provisioning.md) — authentication alone does not prove app-account provisioning; ask before legacy backfill or retroactive credits.
+- [Completeness authority](completeness-authority.md) — Contact is 5% + 5% + 5%; preserve the 50% AI transition without an unapproved cap or new prerequisite.

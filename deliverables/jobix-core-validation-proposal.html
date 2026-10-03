@@ -20,17 +20,17 @@ th{background:#edf2f8}code{background:#edf2f8;padding:2px 5px;border-radius:4px;
 </head>
 <body><main>
 <h1>Jobix: Core Validation and Storage Matrix</h1>
-<p class="small">Prepared for owner review • October 3, 2026 • Existing native Foundation and Architecture V2 remain in place.</p>
+<p class="small">Revised for owner review • October 4, 2026 • Existing native Foundation and Architecture V2 remain in place.</p>
 <div class="status"><strong>PROPOSAL — NOT APPROVED OR IMPLEMENTED.</strong><br>
 Only the separately approved zero-credit development-account provisioning has been performed.
-Approval of this document would authorize the proposed rules below, not a new architecture, provider substitution, translation feature, or production deployment.</div>
+The owner corrected Contact scoring and rejected the proposed completeness cap. Those corrections preserve existing rules; they do not approve any remaining proposal. New behavior listed in section 7 requires explicit owner approval before implementation.</div>
 
 <h2>1. Already approved — unchanged</h2>
 <ul>
 <li>Work Experience, Summary, and Target Role are optional. Skills alone do not satisfy Minimum Meaningful Career Content (MMCC).</li>
 <li>Summary: 50–1,000 characters when used. Work Experience description: 20–1,500 characters when used.</li>
-<li>Completeness weights: Contact 15, Career Evidence 45, Skills 15, Summary 10, Languages 10, Target Role 5. First meaningful evidence item contributes 30; second contributes 15; later items add no extra weight.</li>
-<li>The first-profile AI phase ends permanently at 50% completeness; unused first-profile generations do not carry over. The next-Cairo-day Free allowance remains unchanged.</li>
+<li>Completeness weights: Contact 15, Career Evidence 45, Skills 15, Summary 10, Languages 10, Target Role 5. Contact is additive: valid full name 5%, valid email 5%, valid phone 5%, independently. First meaningful evidence item contributes 30; second contributes 15; later items add no extra weight.</li>
+<li>The first-profile AI phase ends permanently at 50% completeness or higher; unused first-profile generations do not carry over. The next-Cairo-day Free allowance remains unchanged. No additional completeness cap or new MMCC prerequisite is added to that transition.</li>
 <li>Export needs valid full name, email, phone, MMCC, and complete included sections. Low completeness or ATS readiness alone does not block export.</li>
 <li>Career Profile holds professional data. Resume language/template/visibility are presentation configuration, not extra Profiles or automatic content translation.</li>
 <li>Exactly three slots: first free, second 10 Credits, third 20 Credits. Purchased slot entitlements survive Profile deletion.</li>
@@ -59,7 +59,7 @@ Approval of this document would authorize the proposed rules below, not a new ar
 <tr><td>Projects</td><td>Project name, role, description ≥20, project month. URL optional.</td><td>Name/role 200 each; description 1,500; URL 2,048.</td><td>Yes.</td></tr>
 <tr><td>Volunteer Experience</td><td>Role, organization, start month, end month or Present, description ≥20. Location optional.</td><td>Role/organization/location 200 each; description 1,500.</td><td>Yes.</td></tr>
 <tr><td>Achievements</td><td>Title, issuer/context, achievement month, description ≥20. URL optional.</td><td>Title/issuer/context 200 each; description 1,500; URL 2,048.</td><td>Yes.</td></tr>
-<tr><td>Certifications</td><td>Name, issuer, issue month. Description and URL optional.</td><td>Name/issuer 200 each; optional description 1,500; URL 2,048.</td><td>No under this proposal; the approved evidence list explicitly names the other five categories. This is open to owner revision.</td></tr>
+<tr><td>Certifications</td><td>Name, issuer, issue month. Description and URL optional.</td><td>Name/issuer 200 each; optional description 1,500; URL 2,048.</td><td>Proposed exclusion only — pending owner approval, not an approved restriction inferred from examples of other evidence types.</td></tr>
 <tr><td>Skills</td><td>At least one meaningful skill name. Custom skills allowed; add/remove/reorder supported.</td><td>100 per skill name. No new count cap proposed.</td><td>No; Skills category only.</td></tr>
 <tr><td>Languages</td><td>Each included entry needs a language name and a selected proficiency. At least one complete entry for its completeness category.</td><td>Language name 100. Proposed proficiency choices: Basic, Conversational, Professional, Fluent, Native; localized labels with stable backend codes.</td><td>No; Languages category only.</td></tr>
 <tr><td>Target Role</td><td>Optional profile-specific free text; 2–200 characters when used. No job-category dropdown, automatic translation, or account-wide propagation.</td><td>200.</td><td>No; Target Role category only.</td></tr>
@@ -75,19 +75,19 @@ Approval of this document would authorize the proposed rules below, not a new ar
 <li><strong>Evidence duplicates:</strong> users may retain repeated content, but exact normalized duplicate evidence payloads count only once toward the 30/15 evidence contribution. Two distinct items may be in the same section; do not require employment or two different evidence categories.</li>
 </ul>
 
-<h2>5. Proposed completeness qualification</h2>
+<h2>5. Approved scoring and pending qualification details</h2>
 <div class="scroll"><table>
-<thead><tr><th>Category</th><th>Qualification</th><th>Points</th></tr></thead>
+<thead><tr><th>Category</th><th>Qualification</th><th>Points</th><th>Approval status</th></tr></thead>
 <tbody>
-<tr><td>Contact</td><td>All three core contact fields present and format-valid.</td><td>15, all or nothing</td></tr>
-<tr><td>Career Evidence</td><td>First and second distinct meaningful complete items from Experience, Education, Projects, Volunteer Experience, Achievements.</td><td>30 + 15</td></tr>
-<tr><td>Skills</td><td>At least one meaningful, valid skill.</td><td>15</td></tr>
-<tr><td>Summary</td><td>Meaningful summary within the approved 50–1,000 range.</td><td>10</td></tr>
-<tr><td>Languages</td><td>At least one complete meaningful language entry.</td><td>10</td></tr>
-<tr><td>Target Role</td><td>Meaningful nonblank role within its approved limit.</td><td>5</td></tr>
+<tr><td>Contact</td><td>Valid full name, valid email and valid phone each contribute independently. Missing or invalid fields do not erase the other valid fields' points.</td><td>5% + 5% + 5% = 15% maximum</td><td>Already approved; restored as instructed.</td></tr>
+<tr><td>Career Evidence</td><td>First and second meaningful items; proposed required fields, distinctness test and certification exclusion remain pending.</td><td>30 + 15</td><td>Points approved; new qualification details pending.</td></tr>
+<tr><td>Skills</td><td>Proposed: at least one meaningful, valid skill qualifies for the whole category.</td><td>15</td><td>Weight approved; minimum count and qualification pending.</td></tr>
+<tr><td>Summary</td><td>Approved 50–1,000 range; proposed additional meaningful-text filter.</td><td>10</td><td>Weight/range approved; additional filter pending.</td></tr>
+<tr><td>Languages</td><td>Proposed: at least one complete meaningful language entry qualifies for the whole category.</td><td>10</td><td>Weight approved; minimum count, proficiency choices and qualification pending.</td></tr>
+<tr><td>Target Role</td><td>Optional profile-specific free text; proposed 2–200 range and meaningful-text filter.</td><td>5</td><td>Weight/optional free text approved; new limit/filter pending.</td></tr>
 </tbody></table></div>
-<p><strong>MMCC guard proposal:</strong> cap the displayed/stored total at <strong>49%</strong> while no meaningful evidence item exists. The document fixes the 50% transition but not this exact cap. This prevents the other categories (which can total 55) from ending the first-profile AI phase without MMCC.</p>
-<p>An incomplete extra item does not erase valid evidence/category points. It still blocks export if its section is enabled. Incomplete content remains editable. Store the score server-side with a versioned deterministic algorithm; latch the first-profile transition atomically with the successful mutation that reaches 50%.</p>
+<p><strong>No new cap:</strong> the previously proposed cap has been withdrawn. Preserve the agreed additive completeness model and the permanent first-profile AI transition at <strong>50% or higher</strong>. Do not substitute a lower ceiling, suppress earned Contact points, or add a new transition condition. MMCC remains a separate approved export requirement.</p>
+<p>The score remains server-authoritative under Architecture V2. New minimum counts, text filters, required evidence fields and duplicate handling must be approved before being used in that score. The proposed handling of incomplete additional items retains valid earned points, but its new qualification details remain pending. Existing export rules and the 50% transition remain unchanged.</p>
 
 <h2>6. Proposed storage mapping inside Architecture V2</h2>
 <div class="scroll"><table>
@@ -100,6 +100,20 @@ Approval of this document would authorize the proposed rules below, not a new ar
 <tr><td>Resume configuration</td><td>Use <code>resume_configurations</code> for chosen language, approved template/version, section order/visibility and rendering version. Initialize its required row only when approved presentation choices can be supplied; do not invent a template or default language.</td></tr>
 <tr><td>Drafts/sync/conflicts</td><td>Extend the existing encrypted Drift store, not a parallel persistence system. Use Architecture V2 UUID outbox mutations, expected Profile versions, retry/backoff and preserved conflict snapshots. Accepted mutations increment Profile version exactly once and return authoritative data.</td></tr>
 </tbody></table></div>
-<p class="note"><strong>Approval scope:</strong> approve sections 2–6 together, or provide changes to any specific row. Existing approved rules in section 1 stay fixed. No part of this proposal has been used to change live validation, completeness, profile section storage or AI behavior.</p>
+<h2>7. Remaining new behavior — explicit owner approval required</h2>
+<p>This register flags the new details from sections 2–6, rather than treating the owner's corrections as approval of the rest. Existing required export contacts, optional Summary/Target Role, custom skills, Education's optional description, fixed weights, approved export requirements, encrypted drafts and V2 architecture remain unchanged.</p>
+<div class="scroll"><table>
+<thead><tr><th>Pending decision</th><th>New details requiring approval</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>Text limits and measurement</td><td>All newly proposed maximums/minimums in section 3, Unicode-code-point counting and outer trimming. The inherited Summary 50–1,000 and Experience description 20–1,500 limits are not up for replacement.</td><td>Pending owner approval</td></tr>
+<tr><td>Evidence completion and MMCC</td><td>Exact fields/dates needed for each evidence item, optional Experience location, Projects/Volunteer/Achievements description minimum 20, new Volunteer/Achievement/Certification field sets, placeholder/repeated-character filters, and exclusion of Certifications. Listed source fields are not automatically an approved minimum-completion test.</td><td>Pending owner approval</td></tr>
+<tr><td>Non-contact category qualification</td><td>One-item thresholds for full Skills/Language points; extra meaningful-text tests for Summary/Target Role; normalized distinctness of evidence and treatment of incomplete extra items. None changes the approved weights, additive Contact scoring or 50% AI transition.</td><td>Pending owner approval</td></tr>
+<tr><td>Language proficiency</td><td>The exact five-level set: Basic, Conversational, Professional, Fluent, Native. Language plus proficiency is already a source-defined field pair.</td><td>Pending owner approval</td></tr>
+<tr><td>Date precision and ranges</td><td>Month/year input/rendering, normalized day 01 storage, chronology validation and Present/end-date handling. No new earliest-year restriction or blanket future-date ban is proposed.</td><td>Pending owner approval</td></tr>
+<tr><td>URL and duplicate handling</td><td>HTTPS-only acceptance, bare-URL normalization, optional invalid-URL correction/clear behavior, and trimmed case-insensitive duplicate prevention for skills/languages. Evidence duplicate scoring also remains pending above.</td><td>Pending owner approval</td></tr>
+<tr><td>Draft and visibility details</td><td>Exact server-rejection/status criteria for new fields and automatically enabling a section when added. Preserving encrypted drafts and requiring complete included sections for export are already approved, not new permissions.</td><td>Pending owner approval</td></tr>
+<tr><td>Profile naming and storage details</td><td>New 1–80 name limit, user-supplied names for additional creation/copy, Target Role column mapping, Volunteer payload contract, and Resume-configuration initialization timing. Existing typed tables, optional-section mechanism, versioned mutations and encrypted outbox remain V2 constraints.</td><td>Pending owner approval</td></tr>
+</tbody></table></div>
+<p class="note"><strong>Approval boundary:</strong> only the owner's two corrections have been incorporated into this document. Every newly introduced behavior in this register remains pending explicit owner approval before implementation. No live validation, completeness, profile storage or AI behavior was changed during this revision.</p>
 <p class="small">Source authority: attached Jobix core-MVP implementation brief; Product Design; Architecture V2; Constitution; existing Flutter Foundation. Unconfigured Vertex/Gemini, AdMob/SSV, Cloud Run/private GCS, approved templates and legal destinations remain separate implementation gates.</p>
 </main></body></html>
