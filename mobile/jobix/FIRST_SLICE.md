@@ -139,10 +139,11 @@ Current execution details are in [VERIFICATION.md](VERIFICATION.md).
 Flutter tests/goldens verify native widget rendering, but are not evidence of
 an Android/iOS device, actual Keystore/Keychain integration or a signed build.
 
-- Restore genuine public development client configuration: the ignored
-  `config/dev.local.json` is absent in this checkout.
+- Genuine public development client configuration was restored for the
+  separately authorized development/debug Android review build.
 - Staging/production remain NOT_CONFIGURED; the existing three-project build
-  gate is unchanged and must not be bypassed.
+  gate is unchanged. The separately authorized dev-only review command and
+  successful APK/signature checks are recorded in VERIFICATION.md.
 - Configure and verify Supabase email confirmation, mail delivery, reset links,
   Google provider credentials and the native callback redirect allowlist.
   Provider boundaries are implemented/tested, but real Google browser/device
@@ -150,8 +151,9 @@ an Android/iOS device, actual Keystore/Keychain integration or a signed build.
 - The operational `mobile` app-policy row remains absent, as deliberately
   recorded by Foundation. Its version must be approved by administration;
   authenticated startup fails closed until it exists.
-- macOS/Xcode/CocoaPods, physical Android/iOS devices, release signing and
-  native build/storage/backup/deep-link acceptance remain unavailable.
+- Android ARM debug compilation and APK signature verification passed.
+  Physical Android visual review, native storage/backup/deep-link acceptance,
+  macOS/Xcode/CocoaPods, iOS builds and release signing remain unverified.
 
 Do not claim this source-tested slice is production-ready or use browser
 mockups as substitutes for native acceptance.

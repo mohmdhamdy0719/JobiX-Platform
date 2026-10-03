@@ -40,3 +40,11 @@ JOBIX_PROD_SUPABASE_URL = "NOT_CONFIGURED"
 JOBIX_PROD_SUPABASE_CLIENT_KEY = "NOT_CONFIGURED"
 ANDROID_HOME = "/home/runner/workspace/.local/toolchains/android-sdk"
 ANDROID_SDK_ROOT = "/home/runner/workspace/.local/toolchains/android-sdk"
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[[ports]]
+localPort = 8081
+externalPort = 8081

@@ -20,9 +20,9 @@ Copy `config/{dev,staging,prod}.example.json` to matching `.local.json` files.
 The ignored local files must contain only the public project URL and
 publishable/anon client key, environment and app version. Never use a service
 key. Obtain the public values through the workspace configuration flow.
-The three hosts must differ; builds check this. Public development configuration
-was previously supplied, but the ignored `dev.local.json` is absent in this
-checkout and must be restored from genuine public settings. Staging and production remain
+The three hosts must differ; the standard build script checks this. Ignored
+`dev.local.json` was restored from genuine existing public settings for the
+separately authorized development/debug review APK. Staging and production remain
 `NOT_CONFIGURED`; do not turn that marker into a client configuration.
 
 `APP_VERSION` must equal the built package version. The workspace configuration
@@ -139,21 +139,22 @@ The local Supabase auth fixture is never used remotely.
 
 ## Native build gates
 
-Android SDK platform 36, build tools 34.0.0/35.0.0, NDK 26.3.11579264,
-CMake 3.22.1 and command-line tools 16.0 are installed in ignored workspace
-toolchain storage. `ANDROID_HOME` and `ANDROID_SDK_ROOT` point to that location.
-JDK 17 is installed. SDK license acceptance was authorized and recorded for
-installed packages. Flutter still reports other SDK licenses unaccepted;
-unrelated license agreements have not been accepted.
+The required Android SDK/build tools, NDK 27.0.12077973 and compatible Google
+command-line tools 12.0 are installed in ignored workspace toolchain storage.
+Required license acceptance was authorized; Flutter doctor reports a healthy
+Android toolchain. JDK 17 is installed.
 
-Command-line tools are pinned because the latest tools replace `sdkmanager`
-with Android CLI, which Flutter 3.32.0 does not recognize for license checks.
-Android APK verification is still blocked by missing staging/production public
-configuration; the three-project build gate has not been bypassed.
+The separately authorized development/debug review APK successfully built with
+explicit ARM targets and the genuine dev configuration. Its signature passed
+verification. See [VERIFICATION.md](VERIFICATION.md) for the exact build command,
+APK output path and downloadable archive. The standard three-project build
+script remains unchanged; staging/production are still not configured and no
+release build or physical-device acceptance is claimed.
 
-iOS build requires macOS, Xcode and CocoaPods. The user confirms no macOS runner
-or Android/iOS physical devices are currently available. Podfile, project and
-backup bridge are present but device integration is unverified.
+iOS build requires macOS, Xcode and CocoaPods; no macOS runner is available.
+No native device is connected to this workspace. Physical Android visual review
+is pending installation of the delivered APK. Podfile, project and backup bridge
+are present but device integration is unverified.
 
 The native splash uses only DESIGN.md navy, no logo or new artwork. Flutter's
 generated icon files are scaffolding assets, not Jobix assets. The approved
