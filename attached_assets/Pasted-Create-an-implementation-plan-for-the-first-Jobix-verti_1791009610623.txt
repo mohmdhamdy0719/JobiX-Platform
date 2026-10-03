@@ -1,0 +1,63 @@
+Create an implementation plan for the first Jobix vertical slice only:
+
+Onboarding → Research Questions → Supabase Auth → automatic empty Career Profile creation → Personal Information entry.
+
+Use the existing Jobix Foundation as-is. Do not redesign or replace the Foundation architecture.
+
+The product behavior must follow the approved Jobix product decisions:
+- 3 onboarding screens with the approved copy.
+- Exactly 4 research/context questions before authentication:
+  1. Career stage
+  2. Goal
+  3. Location
+  4. Help needed (up to 3 selections)
+- No dedicated language onboarding; keep the small Arabic/English language switch.
+- After the 4 questions, proceed to Supabase Auth.
+- After successful signup, create Career Profile #1 server-side automatically.
+- The new Career Profile starts empty.
+- Open Personal Information immediately after registration, not Home.
+- The user is not forced to complete the profile and may leave.
+- Preserve unsynced local drafts according to the existing Foundation/local-draft architecture.
+- If the user leaves with unsynced local data, show Save & Continue Later / Discard.
+- Discard removes the unsynced local draft and cannot recover it.
+- App language and CV language remain separate.
+- Do not implement CV translation.
+
+Scope ONLY:
+- onboarding UI
+- research questions UI/state
+- auth UI and auth flow
+- server-side profile #1 creation
+- required database/RLS changes for this slice
+- local draft handling required by this flow
+- navigation/guards required by this slice
+- tests
+
+Do NOT implement:
+- Career Profile builder sections beyond Personal Information
+- AI
+- ATS
+- Credits
+- Daily Reward
+- Resume/PDF export
+- Cover Letter
+- Professional Email
+- sync/outbox beyond what is strictly required by this slice
+- analytics
+- premium billing
+- staging/production infrastructure
+- native device verification
+
+Do not invent missing product decisions. Flag any genuinely unresolved decision instead.
+
+Before implementation, inspect the existing Foundation and produce:
+1. exact files/modules to add/change
+2. database tables/migrations needed
+3. RLS/security implications
+4. navigation/state flow
+5. local draft behavior
+6. test plan
+7. acceptance criteria
+8. any blockers or unresolved decisions
+
+Do not modify files yet. Stop after the plan.
