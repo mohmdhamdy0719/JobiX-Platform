@@ -168,3 +168,17 @@ mtime_ms = 1791059874861
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/df746d8b-6f6e-4386-8ca2-fd194bc9c7d3/24263bed-5e49-40b3-a3ca-0ff428d81516"
 storage_version_token = "1791060172037154"
 content_type = "image/png"
+
+[[outputs]]
+id = "eUMZugKyjkCfc3YG6SKZu"
+uri = "file://deliverables/jobix-core-validation-proposal.html"
+type = "html"
+title = "Jobix — Proposed Validation and Storage Matrix"
+description = "Reviewable, printable proposal covering section fields, limits, completion/MMCC, dates, proficiency choices, completeness qualification and V2 storage mapping. Pending owner approval; not implemented."
+logical_id = "efae5ef9-cd90-45cb-99c9-c456897150cd"
+content_hash = "sha256:62cebf1c85f54f8fe4a82aa41f0efea27ecca0c0a8aef7b5166ab2a67cfbe550"
+size = 14162
+mtime_ms = 1791060824768
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/efae5ef9-cd90-45cb-99c9-c456897150cd/a6b336e4-3e08-4b97-b0df-8b3b640670a2"
+storage_version_token = "1791061108388889"
+content_type = "text/html"

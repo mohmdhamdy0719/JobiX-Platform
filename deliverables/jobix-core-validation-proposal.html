@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jobix — Core Validation and Storage Proposal</title>
+<style>
+body{margin:0;background:#f2f5f9;color:#182638;font:16px/1.65 system-ui,sans-serif}
+main{max-width:1080px;margin:32px auto;padding:32px;background:white;border:1px solid #dce3ed;border-radius:16px}
+h1,h2,h3{line-height:1.25;color:#16304d}h1{font-size:30px}h2{margin-top:36px;font-size:23px}h3{font-size:18px}
+.status{padding:18px;border-left:5px solid #2464e9;background:#edf3ff}
+.note{background:#f5f7fa;padding:14px;border-radius:8px}.small{font-size:14px;color:#4a5c70}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+th,td{padding:12px;vertical-align:top;text-align:left;border:1px solid #dce3ed}
+th{background:#edf2f8}code{background:#edf2f8;padding:2px 5px;border-radius:4px;font-size:13px}
+.scroll{overflow-x:auto}li{margin:6px 0}
+@media(max-width:600px){main{margin:0;padding:20px;border-radius:0}h1{font-size:25px}}
+@media print{body{background:white}main{border:0;margin:0;padding:0}h2{break-after:avoid}tr{break-inside:avoid}}
+</style>
+</head>
+<body><main>
+<h1>Jobix: Core Validation and Storage Matrix</h1>
+<p class="small">Prepared for owner review • October 3, 2026 • Existing native Foundation and Architecture V2 remain in place.</p>
+<div class="status"><strong>PROPOSAL — NOT APPROVED OR IMPLEMENTED.</strong><br>
+Only the separately approved zero-credit development-account provisioning has been performed.
+Approval of this document would authorize the proposed rules below, not a new architecture, provider substitution, translation feature, or production deployment.</div>
+
+<h2>1. Already approved — unchanged</h2>
+<ul>
+<li>Work Experience, Summary, and Target Role are optional. Skills alone do not satisfy Minimum Meaningful Career Content (MMCC).</li>
+<li>Summary: 50–1,000 characters when used. Work Experience description: 20–1,500 characters when used.</li>
+<li>Completeness weights: Contact 15, Career Evidence 45, Skills 15, Summary 10, Languages 10, Target Role 5. First meaningful evidence item contributes 30; second contributes 15; later items add no extra weight.</li>
+<li>The first-profile AI phase ends permanently at 50% completeness; unused first-profile generations do not carry over. The next-Cairo-day Free allowance remains unchanged.</li>
+<li>Export needs valid full name, email, phone, MMCC, and complete included sections. Low completeness or ATS readiness alone does not block export.</li>
+<li>Career Profile holds professional data. Resume language/template/visibility are presentation configuration, not extra Profiles or automatic content translation.</li>
+<li>Exactly three slots: first free, second 10 Credits, third 20 Credits. Purchased slot entitlements survive Profile deletion.</li>
+</ul>
+
+<h2>2. Proposed common rules</h2>
+<ul>
+<li><strong>Partial progress:</strong> structurally valid incomplete items can be saved and synchronized. Missing completion fields are not a reason to discard progress. They become In Progress or Needs Attention, not Complete.</li>
+<li><strong>Hard constraints:</strong> over-limit text, malformed dates/URLs, inconsistent date ranges, and invalid field types are rejected by the server. The local encrypted draft is retained for correction. Never truncate or silently rewrite existing content.</li>
+<li><strong>Text:</strong> limits count Unicode code points after trimming outer whitespace, matching PostgreSQL character length and a corresponding Flutter counter. Store original internal spacing and wording. Validate plaintext and escape it in rendering.</li>
+<li><strong>Completion:</strong> evaluate the accepted current server content only, not rejected/unaccepted AI proposals, hints, sample placeholders, or unrelated onboarding answers.</li>
+<li><strong>Meaningful-content filter:</strong> required text must contain letters or digits rather than only punctuation. Required descriptions must not consist of a single character repeated to meet their minimum length. Exact placeholder values such as “test”, “asdf”, “todo”, “tbd”, “n/a”, “example”, “placeholder”, “اختبار”, “مثال”, and “غير متوفر”, and standard lorem-ipsum filler, do not qualify. Keep such drafts but mark them Needs Attention. This is a deterministic minimum-content check, not proof of truth or an AI quality score.</li>
+<li><strong>Visibility:</strong> a section not yet added is absent. Adding it enables it; incomplete enabled sections block export until completed, removed, or explicitly disabled. Resume visibility does not manufacture or erase profile facts and does not change data completeness.</li>
+<li><strong>Minimum short text:</strong> newly defined labels require at least 1 trimmed code point when used, preserving legitimate short names and skills such as C and R. Target Role requires 2. Existing valid Personal Information format validation is preserved.</li>
+</ul>
+
+<h2>3. Proposed field and completion matrix</h2>
+<p>“Complete” means ready to include in rendering. The listed requirements are not mandatory for saving a draft or for adding an unrelated section. All new limits below are proposals; Summary and Experience description limits are inherited.</p>
+<div class="scroll"><table>
+<thead><tr><th>Section</th><th>Required to be Complete / optional fields</th><th>Proposed hard limits</th><th>MMCC evidence?</th></tr></thead>
+<tbody>
+<tr><td>Personal Information</td><td>Full name + valid email + valid phone. Country, city, LinkedIn, GitHub and portfolio optional; country/city never block export.</td><td>Full name 120; email 254; phone 32; country/city 100 each; URLs 2,048 each. Existing format validation remains; any tightening of an existing server limit is subject to this approval.</td><td>No; Contact category only.</td></tr>
+<tr><td>Summary</td><td>50–1,000 characters when enabled. Not required when unused.</td><td>1,000, inherited.</td><td>No.</td></tr>
+<tr><td>Work Experience</td><td>Job title, company, start month, end month or Present, description ≥20. Location optional.</td><td>Title/company/location 200 each; description 1,500, inherited.</td><td>Yes, when complete and meaningful.</td></tr>
+<tr><td>Education</td><td>Degree, institution, field of study, start month, end month or Present. Description/achievements optional.</td><td>Degree/institution/field of study 200 each; optional description 1,500.</td><td>Yes. A substantive description is not forced on students.</td></tr>
+<tr><td>Projects</td><td>Project name, role, description ≥20, project month. URL optional.</td><td>Name/role 200 each; description 1,500; URL 2,048.</td><td>Yes.</td></tr>
+<tr><td>Volunteer Experience</td><td>Role, organization, start month, end month or Present, description ≥20. Location optional.</td><td>Role/organization/location 200 each; description 1,500.</td><td>Yes.</td></tr>
+<tr><td>Achievements</td><td>Title, issuer/context, achievement month, description ≥20. URL optional.</td><td>Title/issuer/context 200 each; description 1,500; URL 2,048.</td><td>Yes.</td></tr>
+<tr><td>Certifications</td><td>Name, issuer, issue month. Description and URL optional.</td><td>Name/issuer 200 each; optional description 1,500; URL 2,048.</td><td>No under this proposal; the approved evidence list explicitly names the other five categories. This is open to owner revision.</td></tr>
+<tr><td>Skills</td><td>At least one meaningful skill name. Custom skills allowed; add/remove/reorder supported.</td><td>100 per skill name. No new count cap proposed.</td><td>No; Skills category only.</td></tr>
+<tr><td>Languages</td><td>Each included entry needs a language name and a selected proficiency. At least one complete entry for its completeness category.</td><td>Language name 100. Proposed proficiency choices: Basic, Conversational, Professional, Fluent, Native; localized labels with stable backend codes.</td><td>No; Languages category only.</td></tr>
+<tr><td>Target Role</td><td>Optional profile-specific free text; 2–200 characters when used. No job-category dropdown, automatic translation, or account-wide propagation.</td><td>200.</td><td>No; Target Role category only.</td></tr>
+<tr><td>Profile name</td><td>Retain the already-permitted unnamed empty first Profile. Explicit rename requires nonblank user text; additional Profile creation/copy requests require a user-supplied name. Generic localized UI labels are not silently stored as user facts.</td><td>1–80.</td><td>No.</td></tr>
+</tbody></table></div>
+
+<h2>4. Proposed dates, URLs and duplicates</h2>
+<ul>
+<li><strong>Dates:</strong> collect month/year for career sections, store a PostgreSQL date with day 01 as a normalization convention, and render month/year only. That stored day must never be presented as an asserted event day. No invented earliest-year rule or blanket future-date ban.</li>
+<li><strong>Ranges:</strong> end month cannot precede start month. Present means <code>is_current=true</code> and no end date. Missing required date components leave an item incomplete. Impossible dates are rejected.</li>
+<li><strong>URLs:</strong> accept valid HTTPS URLs; a bare web domain/path may be normalized to HTTPS. Reject unsafe schemes and embedded credentials. A nonblank malformed optional URL must be corrected or cleared. No invented allowlist of employer/institution domains.</li>
+<li><strong>Skills/languages:</strong> prevent same-profile duplicate names using trimmed, case-insensitive comparison with collapsed whitespace in the comparison key only. Preserve display wording; do not merge different real skills or languages.</li>
+<li><strong>Evidence duplicates:</strong> users may retain repeated content, but exact normalized duplicate evidence payloads count only once toward the 30/15 evidence contribution. Two distinct items may be in the same section; do not require employment or two different evidence categories.</li>
+</ul>
+
+<h2>5. Proposed completeness qualification</h2>
+<div class="scroll"><table>
+<thead><tr><th>Category</th><th>Qualification</th><th>Points</th></tr></thead>
+<tbody>
+<tr><td>Contact</td><td>All three core contact fields present and format-valid.</td><td>15, all or nothing</td></tr>
+<tr><td>Career Evidence</td><td>First and second distinct meaningful complete items from Experience, Education, Projects, Volunteer Experience, Achievements.</td><td>30 + 15</td></tr>
+<tr><td>Skills</td><td>At least one meaningful, valid skill.</td><td>15</td></tr>
+<tr><td>Summary</td><td>Meaningful summary within the approved 50–1,000 range.</td><td>10</td></tr>
+<tr><td>Languages</td><td>At least one complete meaningful language entry.</td><td>10</td></tr>
+<tr><td>Target Role</td><td>Meaningful nonblank role within its approved limit.</td><td>5</td></tr>
+</tbody></table></div>
+<p><strong>MMCC guard proposal:</strong> cap the displayed/stored total at <strong>49%</strong> while no meaningful evidence item exists. The document fixes the 50% transition but not this exact cap. This prevents the other categories (which can total 55) from ending the first-profile AI phase without MMCC.</p>
+<p>An incomplete extra item does not erase valid evidence/category points. It still blocks export if its section is enabled. Incomplete content remains editable. Store the score server-side with a versioned deterministic algorithm; latch the first-profile transition atomically with the successful mutation that reaches 50%.</p>
+
+<h2>6. Proposed storage mapping inside Architecture V2</h2>
+<div class="scroll"><table>
+<thead><tr><th>Data</th><th>Proposed mapping</th></tr></thead>
+<tbody>
+<tr><td>Target Role</td><td>Add nullable <code>career_profiles.target_role</code> TEXT with an explicit limit. Mutate through the same profile-level versioned command, not Resume configuration or onboarding context.</td></tr>
+<tr><td>Existing core sections</td><td>Use Architecture V2 typed section tables: <code>profile_summaries</code>, <code>profile_experiences</code>, <code>profile_education</code>, <code>profile_projects</code>, <code>profile_skills</code>, <code>profile_languages</code>, <code>profile_certifications</code>, <code>profile_achievements</code>. No generic editable-JSON replacement.</td></tr>
+<tr><td>Volunteer Experience</td><td>Use the already-approved optional-section mechanism: <code>profile_optional_sections</code>, type <code>VOLUNTEER_EXPERIENCE</code>, with a versioned validated payload containing only the fields in the matrix. This is the V2 exception for approved optional sections, not a new database architecture.</td></tr>
+<tr><td>Completeness and eligibility</td><td>Add the specified V2 completeness columns/version and server-side first-profile allowance transition state. Do not compute authoritative scores/allowances in Flutter.</td></tr>
+<tr><td>Resume configuration</td><td>Use <code>resume_configurations</code> for chosen language, approved template/version, section order/visibility and rendering version. Initialize its required row only when approved presentation choices can be supplied; do not invent a template or default language.</td></tr>
+<tr><td>Drafts/sync/conflicts</td><td>Extend the existing encrypted Drift store, not a parallel persistence system. Use Architecture V2 UUID outbox mutations, expected Profile versions, retry/backoff and preserved conflict snapshots. Accepted mutations increment Profile version exactly once and return authoritative data.</td></tr>
+</tbody></table></div>
+<p class="note"><strong>Approval scope:</strong> approve sections 2–6 together, or provide changes to any specific row. Existing approved rules in section 1 stay fixed. No part of this proposal has been used to change live validation, completeness, profile section storage or AI behavior.</p>
+<p class="small">Source authority: attached Jobix core-MVP implementation brief; Product Design; Architecture V2; Constitution; existing Flutter Foundation. Unconfigured Vertex/Gemini, AdMob/SSV, Cloud Run/private GCS, approved templates and legal destinations remain separate implementation gates.</p>
+</main></body></html>
