@@ -1,0 +1,25 @@
+Proceed with the approved implementation scope.
+Implement the post-auth Career/Profile journey for the first Career Profile, then Home, Career, Settings, profile editing, Resume Preview and PDF Export according to the approved Product Design and Architecture V2.
+Use the provided screenshots as the visual reference and reproduce the design language as closely as practical. Do not blindly copy screenshots when something is inconsistent; make small UX/UI corrections when clearly necessary to maintain a coherent Jobix design system.
+Keep English and Arabic as first-class experiences with proper RTL/LTR behavior. Use the approved Jobix assets unchanged. Use professional production-ready typography: Inter for English and Noto Sans Arabic for Arabic, including the Resume templates. The Resume typography must prioritize readability, professional appearance, ATS-friendly rendering, and reliable PDF output.
+Implement the approved Credits flow:
+- New account receives +5 Credits, server-authoritative.
+- PDF Resume export costs 2 Credits per new export.
+- Existing valid generated PDF downloads cost 0 Credits.
+- Daily Reward is +2 Credits through AdMob Rewarded + server-side verification, following Architecture V2.
+Implement Gemini/Vertex AI Agent Assist according to the approved AI rules: explicit user-triggered generation only, no fabrication, preserve original content, store generations, and respect the approved first-profile/daily AI allowance.
+Implement the complete flow so the user can:
+1. Create and fill the first Career Profile.
+2. Use Agent Assist where approved.
+3. Navigate/edit profile information freely.
+4. View Profile Completeness and ATS-related states where applicable.
+5. Reach the Career page after profile creation.
+6. See Home with profile status, Credits, Daily Reward and relevant next actions.
+7. Preview the Resume.
+8. Export the Resume to PDF for 2 Credits.
+9. Download existing valid exports without charging again.
+10. Access Settings and the approved settings sections.
+Build any supporting screens/components needed for these flows, while keeping them consistent with the provided design system.
+Do not implement unrelated MVP features or invent new product behavior.
+Before making a decision that is unclear from the approved Product Design, Architecture V2, or provided screenshots, stop and ask me instead of guessing. This is especially important for product rules, data behavior, Credits, AI behavior, Resume rendering, validation, or infrastructure.
+Implement in vertical slices, keep the existing Foundation/security architecture intact, and report exactly what was implemented, what remains, tests run, and any blocker requiring my decision.
