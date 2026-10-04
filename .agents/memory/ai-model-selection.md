@@ -46,13 +46,21 @@ Do not silently downgrade, upgrade or enable cross-model fallback.
 Provider-declared structured output and model-supplied fact-reference lists do
 not prove complete JSON or faithful career text. Inspect the actual generated
 text, including unsupported soft claims, and the provider's termination reason.
+Preservation of dates and numbers is insufficient: preserve the meaning of the
+action as well, such as handling tickets versus successfully resolving them.
 
 **Why:** A live Arabic evaluation produced repeated escaped characters until
 the token limit, leaving incomplete JSON. Other parseable outputs referenced
 valid source facts while adding unprovided professional qualities or purposes.
+The higher-cost full Flash candidate also produced valid JSON while upgrading
+ticket handling into ticket resolution. Higher model capability or price is not
+evidence that Jobix's factual-preservation requirement is satisfied.
 
 **How to apply:** Include Arabic degeneration/truncation and factual embellishment
 in qualification checks. Reject invalid output through the existing Architecture
 V2 failure path; do not equate HTTP 200 with a successful Jobix operation or
 self-reported references with factual verification. A small evaluation cannot
 establish a population failure rate or prove an untested alternative's Arabic quality.
+Check test fixtures for ambiguity before attributing an interpretation error to
+the model, and distinguish results for a specific prompt/configuration from
+claims about the model's general suitability.
