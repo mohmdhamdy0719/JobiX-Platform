@@ -40,3 +40,19 @@ whether architecture changes are needed. Only switch after approval.
 
 **How to apply:** Preserve the preferred model while suitability is unresolved.
 Do not silently downgrade, upgrade or enable cross-model fallback.
+
+## Qualification evidence
+
+Provider-declared structured output and model-supplied fact-reference lists do
+not prove complete JSON or faithful career text. Inspect the actual generated
+text, including unsupported soft claims, and the provider's termination reason.
+
+**Why:** A live Arabic evaluation produced repeated escaped characters until
+the token limit, leaving incomplete JSON. Other parseable outputs referenced
+valid source facts while adding unprovided professional qualities or purposes.
+
+**How to apply:** Include Arabic degeneration/truncation and factual embellishment
+in qualification checks. Reject invalid output through the existing Architecture
+V2 failure path; do not equate HTTP 200 with a successful Jobix operation or
+self-reported references with factual verification. A small evaluation cannot
+establish a population failure rate or prove an untested alternative's Arabic quality.
