@@ -64,3 +64,16 @@ establish a population failure rate or prove an untested alternative's Arabic qu
 Check test fixtures for ambiguity before attributing an interpretation error to
 the model, and distinguish results for a specific prompt/configuration from
 claims about the model's general suitability.
+
+Arabic fluency is a separate qualification gate from JSON validity and factual
+grounding. Closed-world instructions should explicitly prohibit upgrading action
+strength, inventing purposes and adding unprovided frequency or performance claims.
+
+**Why:** Clearer facts and stricter instructions improved grounding, but a grounded,
+parseable Arabic response still contained malformed professional wording. A full
+Flash response retained the facts while adding an unprovided usage frequency.
+
+**How to apply:** Review professional Modern Standard Arabic wording independently;
+do not mark a model qualified merely because its output parses and preserves
+source references. Apply the same grounding criteria to cheaper and higher-cost
+models, and do not automatically substitute models to work around one failure.
