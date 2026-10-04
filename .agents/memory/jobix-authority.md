@@ -47,6 +47,28 @@ existing drafts, RLS, server authority, versions, idempotency and conflicts.
 No invented services, scores, AI facts, entitlements or exports; stop and name
 the exact setup needed for genuinely unconfigured external services.
 
+The owner subsequently fixed the main builder at six steps: Personal
+Information; Summary; Work Experience; Education & Credentials; Skills,
+Projects & Languages; Review. Main screens use Continue (Step 5: Review
+Profile; Step 6: Preview & Export). Nested record forms use Save and return
+to their parent. Step 1 has no bottom Back action; its top exit returns Home.
+
+Uploaded Jobix screenshots and resume images are visual/UX references, not
+pixel-perfect targets. Do not copy their sample people, scores, metrics,
+verified badges or commercial claims. Infer missing screens from approved
+interaction patterns rather than requiring a screenshot for every screen.
+The owner permits an original restrained ATS-first resume layout informed by
+the references; do not copy decorative graphics or prioritize them over parsing.
+
+**Why:** The owner explicitly clarified the six-step flow, nested-record actions
+and interpretation of the newly uploaded screen and resume references.
+
+**How to apply:** Preserve the current authentication design except for the
+requested header removal, real signup repair and unchecked-by-default required
+Terms/Privacy consent with configurable placeholder destinations. Do not invent
+legal URLs or legal claims. Verify signup against real development Auth, including
+confirmation and subsequent sign-in; existing test-account login is not proof.
+
 ## Earlier authorizations and standing constraints
 
 Use “Jobix” for new user-facing copy. Do not blindly rename historical technical identifiers.
