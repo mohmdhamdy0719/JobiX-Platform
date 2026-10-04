@@ -52,6 +52,17 @@ inference. See [AI model selection](ai-model-selection.md) for the hard requirem
 of `me-central1`, or broaden IAM grants without approval. Global approval applies
 to model inference, not moving the worker/storage or other infrastructure.
 
+The owner scopes the deployer account's Service Account User grant specifically
+to `jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com`, providing
+`iam.serviceAccounts.actAs` on that account.
+
+**Why:** The owner resolved Scheduler readiness with a resource-specific grant,
+not a broad project-level Service Account User role.
+
+**How to apply:** Preserve this grant's account-level scope. Report a specific
+missing permission before requesting additional IAM access; do not broaden the
+Scheduler grant to unblock unrelated deployment requirements.
+
 ## Vertex evaluation identity and IAM boundary
 
 Use the existing backend runtime identity for Vertex evaluations, not duplicate
