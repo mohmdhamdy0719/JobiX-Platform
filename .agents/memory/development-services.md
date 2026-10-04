@@ -37,3 +37,17 @@ For Google Cloud, distinguish `SERVICE_DISABLED` from
 `IAM_PERMISSION_DENIED`; project metadata inspection is not itself a runtime
 deployment requirement. Do not request broader IAM roles just to list
 service-account identities when the owner can supply their non-secret names.
+
+Supabase's older `logs.all` API is retired. Current programmatic log reads use
+`/analytics/endpoints/logs`, the unified `logs` table, ClickHouse SQL and
+`log_attributes` rather than the old separate tables/BigQuery metadata format.
+Use explicitly bounded UTC windows under 24 hours and inspect query errors.
+
+**Why:** The retired endpoint returned HTTP 410 after valid log authorization;
+the replacement successfully returned Auth records. Twelve-hour windows with
+second-precision UTC `Z` timestamps worked for the development project.
+
+**How to apply:** Consult the current Management API schema before retrying old
+examples. Process sensitive records inside a protected runtime; expose only
+error codes, counts and non-personal structural flags. Never persist raw Auth
+log records in memory or deliverables.
