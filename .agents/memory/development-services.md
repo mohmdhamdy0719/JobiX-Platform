@@ -52,6 +52,22 @@ inference. See [AI model selection](ai-model-selection.md) for the hard requirem
 of `me-central1`, or broaden IAM grants without approval. Global approval applies
 to model inference, not moving the worker/storage or other infrastructure.
 
+## Vertex evaluation identity and IAM boundary
+
+Use the existing backend runtime identity for Vertex evaluations, not duplicate
+Vertex grants to the deployment identity. The owner reports that the backend
+already has `roles/aiplatform.user`; verify actual inference rather than treating
+that report as proof of access.
+
+**Why:** The owner explicitly requires the existing backend identity and minimum
+necessary permissions, with no broad Owner, Editor or unrelated project grants.
+
+**How to apply:** Before any IAM change, tell the owner the exact caller/prediction
+identity, exact proposed role, resource scope and whether it is temporary/removable.
+Try existing backend access first. If access fails, report the exact principal and
+missing permission before requesting another role. Keep credential-minting access
+distinct from Vertex prediction access; do not change unrelated infrastructure.
+
 Supabase management credentials may have endpoint-specific scopes. Successful
 project metadata access does not prove access to Auth configuration, Auth logs
 or Edge Functions. Check the actual endpoints before declaring access ready,
