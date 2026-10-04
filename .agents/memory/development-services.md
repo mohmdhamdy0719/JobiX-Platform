@@ -21,6 +21,35 @@ Credits or fake rewarded-ad verification. Do not substitute unrelated storage
 or AI providers, deploy into another project, or create staging/production
 resources to bypass missing access.
 
+## Owner-selected development configuration
+
+“Development only. Use Supabase's built-in email service for now. Do not
+configure an external SMTP/Resend provider yet. Production email delivery will
+be configured later with a verified Jobix domain.”
+
+**Why:** The owner explicitly overrode the external-SMTP recommendation for the
+development phase.
+
+**How to apply:** Keep email confirmation required and unverified sign-in
+disabled. Do not request or configure external email-provider credentials to
+unblock development. Built-in-mailer testing needs an owner-approved recipient
+authorized by the project team; do not present it as unrestricted public signup
+readiness, auto-confirm accounts, or weaken verification.
+
+The owner supplies backend runtime account
+`jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com` and Scheduler account
+`jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com`, approves creating the
+development Docker repository `jobix-dev` in `me-central1`, and selects Vertex
+model `gemini-3.8-flash`.
+
+**Why:** The owner explicitly selected these non-secret identities, repository
+creation and model in the development-settings form.
+
+**How to apply:** Do not substitute identities/models, move infrastructure out
+of `me-central1`, or broaden IAM grants without approval. Vertex model selection
+does not authorize a different processing location: verify its supported
+locations and obtain approval if inference cannot remain in the selected region.
+
 Supabase management credentials may have endpoint-specific scopes. Successful
 project metadata access does not prove access to Auth configuration, Auth logs
 or Edge Functions. Check the actual endpoints before declaring access ready,
