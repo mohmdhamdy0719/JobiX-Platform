@@ -40,15 +40,17 @@ The owner supplies backend runtime account
 `jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com` and Scheduler account
 `jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com`, approves creating the
 development Docker repository `jobix-dev` in `me-central1`, and selects Vertex
-model `gemini-3.8-flash`.
+preferred default model `gemini-3.5-flash-lite`, subject to its suitability,
+especially professional Arabic quality. The owner approves the global inference
+endpoint; the worker and PDF storage remain in `me-central1`.
 
 **Why:** The owner explicitly selected these non-secret identities, repository
-creation and model in the development-settings form.
+creation and subsequently replaced the model preference and approved global
+inference. See [AI model selection](ai-model-selection.md) for the hard requirements.
 
 **How to apply:** Do not substitute identities/models, move infrastructure out
-of `me-central1`, or broaden IAM grants without approval. Vertex model selection
-does not authorize a different processing location: verify its supported
-locations and obtain approval if inference cannot remain in the selected region.
+of `me-central1`, or broaden IAM grants without approval. Global approval applies
+to model inference, not moving the worker/storage or other infrastructure.
 
 Supabase management credentials may have endpoint-specific scopes. Successful
 project metadata access does not prove access to Auth configuration, Auth logs
