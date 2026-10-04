@@ -40,8 +40,8 @@ The owner supplies backend runtime account
 `jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com` and Scheduler account
 `jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com`, approves creating the
 development Docker repository `jobix-dev` in `me-central1`, and selects Vertex
-preferred default model `gemini-3.5-flash-lite`, subject to its suitability,
-especially professional Arabic quality. The owner approves the global inference
+default model `gemini-3.5-flash`, intentionally accepting higher cost for better
+Arabic quality. The owner approves the global inference
 endpoint; the worker and PDF storage remain in `me-central1`.
 
 **Why:** The owner explicitly selected these non-secret identities, repository

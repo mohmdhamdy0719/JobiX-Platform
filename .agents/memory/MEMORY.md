@@ -6,4 +6,4 @@
 - [Dev account provisioning](dev-account-provisioning.md) — authentication alone does not prove app-account provisioning; ask before legacy backfill or retroactive credits.
 - [Completeness authority](completeness-authority.md) — Contact is 5% + 5% + 5%; preserve the 50% AI transition without an unapproved cap or new prerequisite.
 - [Development service boundary](development-services.md) — owner-specified Google Cloud/AdMob resources; deployment access and pending configuration must be verified.
-- [AI model selection](ai-model-selection.md) — preferred Flash-Lite default, hard Arabic quality gate, global inference approval and no silent model substitution.
+- [AI model selection](ai-model-selection.md) — approved Flash default, Arabic quality requirement, global inference approval and no silent model substitution.

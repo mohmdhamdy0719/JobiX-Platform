@@ -31,6 +31,32 @@ approves version 1.0.0, Android application ID and iOS bundle ID
 Android compile API is 36 to match the approved target.
 No release signing configuration is supplied.
 
+### Approved server-side AI model
+
+The approved default for Jobix AI generation is **`gemini-3.5-flash`**, using
+Vertex AI's **`global`** endpoint. The owner intentionally accepts the higher
+cost for the better Arabic quality observed in the matched evaluation.
+
+This is the approved configuration decision, **not an implemented runtime
+switch**: the Jobix AI generation backend, server-side provider configuration
+and AI/model configuration tests are not yet implemented in this repository.
+The separate pnpm API starter currently exposes only a health route.
+
+When implementing the Architecture V2 AI backend:
+
+- Resolve the default and any explicitly configured model override in one
+  server-side configuration layer; do not put model selection or provider
+  credentials in Flutter, or scatter model literals across operations.
+- Preserve factual-grounding and structured JSON validation, the AI state
+  machine, allowances/quotas, idempotency, retries and UNKNOWN reconciliation.
+- Keep the approved global inference endpoint and existing operation limits.
+- Do not introduce cross-model fallback. If technically required, stop and
+  obtain owner approval before implementing it.
+
+The model decision does not authorize IAM, infrastructure, database schema,
+product behavior or architecture changes, or further model comparisons unless
+a technical issue blocks the switch.
+
 ## Verify
 
 See [VERIFICATION.md](VERIFICATION.md) for recorded local results and the

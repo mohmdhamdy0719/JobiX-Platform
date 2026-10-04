@@ -1,19 +1,24 @@
 ---
 name: AI model selection
-description: Owner's preferred Vertex model, Arabic quality gate and approval boundary for alternatives
+description: Owner-approved Vertex default, Arabic quality requirements and model-switch boundaries
 ---
 
-The owner replaces the previous Gemini 3.8 Flash plan with preferred default
-`gemini-3.5-flash-lite` for the Jobix MVP, if suitable. The global inference
-endpoint is approved; other product and Architecture V2 decisions must not change.
+The owner intentionally selects `gemini-3.5-flash` as the default Jobix AI
+generation model, replacing the previous Flash-Lite preference. The global
+inference endpoint remains approved; other product and Architecture V2 decisions
+must not change.
 
-**Why:** The owner wants reasonable MVP AI costs and potentially high-volume
-operations without sacrificing quality for Jobix's actual workloads.
+**Why:** Flash showed better Arabic quality in the matched evaluation, while
+Flash-Lite produced unsuitable Arabic phrasing in a user-facing case. The owner
+explicitly accepts the higher model cost in exchange for better quality.
 
-**How to apply:** Evaluate current Google Vertex availability, pricing,
-capabilities, lifecycle and processing-location constraints before qualifying
-the default. Keep the model ID configurable through the existing server-managed
-AI architecture so later routing/upgrades do not require rewriting the AI layer.
+**How to apply:** Use the approved default through one configurable server-side
+model selection layer; do not scatter hardcoded model IDs across the application.
+Preserve factual-grounding/structured JSON validation, the AI state machine,
+allowances/quotas, idempotency, retries and UNKNOWN reconciliation. Do not change
+generation limits, product behavior, IAM, region, infrastructure, schema or
+architecture unless strictly required for the switch. No additional model
+comparisons unless a technical issue blocks the switch.
 
 Arabic quality is a hard requirement: good generation and understanding,
 including Modern Standard Arabic and professional CV-style Arabic. Do not choose
@@ -38,8 +43,9 @@ whether architecture changes are needed. Only switch after approval.
 
 **Why:** The owner explicitly reserves approval of any alternative model.
 
-**How to apply:** Preserve the preferred model while suitability is unresolved.
-Do not silently downgrade, upgrade or enable cross-model fallback.
+**How to apply:** Preserve the owner-selected default; do not silently downgrade,
+upgrade or enable cross-model fallback. If fallback is technically necessary,
+stop and report it before implementing it.
 
 ## Qualification evidence
 
