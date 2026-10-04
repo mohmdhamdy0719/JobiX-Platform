@@ -3,7 +3,7 @@ name: AI model selection
 description: Owner-approved Vertex default, Arabic quality requirements and model-switch boundaries
 ---
 
-The owner intentionally selects `gemini-3.5-flash` as the default Jobix AI
+The owner finalizes `gemini-3.5-flash` as the default Jobix AI
 generation model, replacing the previous Flash-Lite preference. The global
 inference endpoint remains approved; other product and Architecture V2 decisions
 must not change.
@@ -12,8 +12,11 @@ must not change.
 Flash-Lite produced unsuitable Arabic phrasing in a user-facing case. The owner
 explicitly accepts the higher model cost in exchange for better quality.
 
-**How to apply:** Use the approved default through one configurable server-side
+**How to apply:** Use the finalized default through the future configurable server-side
 model selection layer; do not scatter hardcoded model IDs across the application.
+The model-selection approval itself does not authorize implementing the AI backend
+or creating placeholder/unused AI infrastructure. Do not reopen the finalized
+model decision based on the earlier evaluation findings.
 Preserve factual-grounding/structured JSON validation, the AI state machine,
 allowances/quotas, idempotency, retries and UNKNOWN reconciliation. Do not change
 generation limits, product behavior, IAM, region, infrastructure, schema or
