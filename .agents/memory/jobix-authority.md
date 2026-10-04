@@ -5,7 +5,7 @@ description: User-specified product authority and implementation boundaries
 ## Current core-MVP authorization
 
 The owner now authorizes the complete post-authentication career-building MVP
-in coherent vertical slices, including profile sections/editing/sync,
+as one coherent product journey, not a collection of isolated form slices, including profile sections/editing/sync,
 completeness, Gemini proposals, Home/Career/Settings, server-authoritative
 Credits/rewards, canonical resume preview and PDF export. Earlier
 foundation-only, first-slice-only and visual-only restrictions below describe
@@ -23,6 +23,29 @@ guessing. Never substitute mock Credits, AI, rewarded-ad verification or exports
 for real server-authoritative operations. Ask related independent dependency
 questions together. Do not create staging/production infrastructure or weaken
 security to unblock implementation.
+
+## Guided builder and screenshot-led implementation
+
+New users must enter a continuous Career Profile builder with clear step
+progress, Continue as the primary action, back/edit support and safely retained
+drafts, then Review → Preview → Export. Dedicated section editors belong to
+post-creation Career management, not the primary creation journey. Career opens
+the last-used Profile. Reuse the screenshot-led Jobix design across all screens;
+do not substitute generic Material forms. Inter and bundled Noto Sans Arabic
+remain the UI fonts. Never expose database/API/migration/research-sync details
+in product copy. Authentication is a dedicated experience, without unrelated
+application navigation; Create Account must not show Forgot Password.
+
+**Why:** The owner explicitly corrected the technically working text slice's
+UX and requested the complete coherent Career Profile → Resume MVP rather than
+another isolated slice.
+
+**How to apply:** Inspect real code, Architecture V2 and the approved screenshots
+before large changes. Confirm unclear screenshot authority and materially
+unclear product/infrastructure decisions before implementation. Preserve
+existing drafts, RLS, server authority, versions, idempotency and conflicts.
+No invented services, scores, AI facts, entitlements or exports; stop and name
+the exact setup needed for genuinely unconfigured external services.
 
 ## Earlier authorizations and standing constraints
 

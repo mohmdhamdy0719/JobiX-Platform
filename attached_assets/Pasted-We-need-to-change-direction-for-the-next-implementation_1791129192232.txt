@@ -1,0 +1,367 @@
+We need to change direction for the next implementation phase.
+The current Summary / Target Role slice is technically working, but the user experience and screen flow are not aligned with the approved Jobix product design.
+I am providing the approved reference screenshots for the Jobix screens. Treat these screenshots as the primary visual reference and design source of truth for the implemented screens.
+Do NOT simply continue the current form-based implementation.
+1. Career Profile creation must be one continuous guided journey
+When a new user signs up and enters their first Career Profile, they should NOT be dropped into a Career page where they separately edit Summary, Target Role, etc.
+Instead, create a guided profile-building journey.
+For example:
+- Step 1/6 — Personal Information
+- Step 2/6 — Professional Summary
+- Step 3/6 — Work Experience
+- Step 4/6 — Education / Projects / Career Evidence
+- Step 5/6 — Skills & Languages
+- Step 6/6 — Review / Resume Configuration
+The exact number of steps can be adjusted if necessary to match the approved product requirements, but the experience must feel like one continuous profile-building flow.
+The user should:
+1. Enter information.
+2. Tap Continue.
+3. Move to the next section.
+4. See clear progress such as 2 / 6.
+5. Be able to go back and edit previous steps.
+6. Keep all entered data safely as a draft.
+7. Eventually reach a review/preview stage.
+8. Then preview and export the CV.
+Do NOT make the user manually press "Save" after every section as the primary journey.
+Important distinction
+"Save" should not be the main UX concept for the guided builder.
+Use:
+Continue → Continue → Continue → Review → Preview → Export
+rather than:
+Save → Career Page → Edit Summary → Save → Edit Experience → Save...
+Data should still be persisted safely in the background/server/local draft architecture, but this should be invisible to the user unless necessary.
+2. Follow the provided screenshots closely
+I will provide screenshots for the relevant Jobix screens.
+Recreate them as closely as reasonably possible, including:
+- layout
+- hierarchy
+- spacing
+- typography
+- card treatment
+- button placement
+- navigation
+- progress indicators
+- section structure
+- visual density
+- empty states
+- icons
+- borders
+- radii
+- colors
+- Arabic RTL behavior
+- English LTR behavior
+- overall visual personality
+Do NOT replace the design with generic Flutter/Material UI.
+Do NOT make the application look like a generic form builder.
+Do NOT invent a completely different design system.
+However, if a tiny detail in a screenshot is clearly inconsistent with the surrounding Jobix UX, technically incorrect, or clearly a placeholder, you may improve that small detail while preserving the overall design language.
+The goal is:
+Same Jobix design language and visual structure, not a screenshot imitation that creates bad UX.
+
+3. Home Page
+Implement the Jobix Home page according to the provided reference design.
+It should act as the user's Career Command Center.
+It should surface the appropriate information including:
+- Current Career Profile
+- Profile completeness
+- ATS Readiness
+- Next recommended actions
+- Credits balance
+- Daily Reward
+- Recent resume/export information
+- Relevant Jobix services/actions
+The Home page must feel like a real production application.
+Do NOT expose technical implementation details to the user.
+For example, never show messages such as:
+"Your research data was sent to the database."
+
+That is an internal implementation detail and should never appear in the product UI.
+Use normal product language such as:
+- Continue building your profile
+- Complete your experience
+- Improve your CV
+- Your CV is ready
+- Claim today's reward
+etc., based on the actual state.
+4. Career Page
+After the Career Profile has been created, the Career tab should become the user's main profile management area.
+It should allow the user to:
+- View their Career Profile
+- See completeness
+- See ATS readiness
+- Review sections
+- Edit Personal Information
+- Edit Summary
+- Edit Experience
+- Edit Education
+- Edit Projects
+- Edit Skills
+- Edit Languages
+- Edit Certifications
+- Edit Achievements
+- Edit other approved profile sections
+- Configure the Resume
+- Preview the Resume
+- Export the Resume
+Editing individual sections can use dedicated screens/forms, but they must use the same Jobix design system as the guided creation flow.
+Do not create visually unrelated screens.
+5. Resume Builder / Preview / Export
+Complete the actual resume-building journey.
+The user should eventually be able to:
+Career Profile → Resume Configuration → Preview → Export PDF
+The Resume should support:
+- English
+- Arabic / RTL
+- approved resume template(s)
+- readable professional typography
+- A4 output
+- multi-page resumes when necessary
+- selectable text
+- ATS-friendly structure
+- preview matching the generated PDF
+Do NOT artificially force everything into one page.
+Do NOT shrink typography aggressively just to reduce page count.
+The Preview and final PDF must use the same canonical rendering representation.
+Credits
+Credits must be real and server-authoritative.
+New account:
++5 Credits
+New PDF export:
+-2 Credits
+Downloading an already-generated valid PDF:
+0 Credits
+Failed exports must not permanently consume Credits.
+Do not implement Credits as a client-only counter.
+6. Daily Reward
+Implement the Home-page Daily Reward according to the approved product behavior.
+The user can watch a Rewarded AdMob advertisement and receive:
++2 Credits
+The reward must be server-authoritative and use the approved AdMob rewarded + server-side verification architecture.
+The client must never simply grant itself Credits after watching an ad.
+The UI should make the feature feel like a normal polished product feature, not a developer/test feature.
+7. Gemini / Agent Assist
+Integrate the approved Gemini/Vertex AI architecture for Jobix Agent Assist.
+The AI should help users turn their own information into professional CV-ready content.
+Important:
+AI must NEVER invent facts.
+For example, when helping with Work Experience:
+User provides their actual responsibilities/results.
+AI can:
+- improve wording
+- make it more professional
+- improve clarity
+- structure the content
+- make it CV-ready
+- suggest improvements
+But it must not fabricate:
+- employers
+- job titles
+- dates
+- technologies
+- achievements
+- metrics
+- responsibilities
+- education
+- certifications
+If important information is missing, ask the user for it.
+AI output remains a proposal until the user accepts it.
+8. Profile-building AI experience
+Integrate Agent Assist naturally inside the profile-building journey.
+Do not make AI feel like a separate technical feature.
+For example:
+User reaches Experience.
+They can enter information in their own words.
+Then Jobix can offer:
+Improve with Jobix AI
+The AI generates a proposal.
+User can:
+- Keep Mine
+- Use This
+The accepted version becomes the current profile content.
+Preserve the original and generation history according to the existing architecture.
+9. Authentication UX
+The authentication screens must also follow the approved Jobix visual language.
+Do NOT put unnecessary application navigation on authentication screens.
+For example, do not use a normal application header with:
+- back button
+- generic navigation bar
+- unnecessary app navigation
+on Login/Create Account unless it is explicitly part of the approved design.
+Authentication should feel like a dedicated authentication experience.
+Also fix the previously identified issues:
+- Create Account must not show "Forgot password?"
+- Do not display Arabic error messages inside an English UI.
+- English and Arabic must remain internally consistent.
+- RTL must be intentional rather than automatic mirroring.
+10. Research / onboarding context
+The research questions before authentication remain part of the product flow.
+However, their implementation details must NEVER be exposed to users.
+Do not tell the user that:
+- data was sent to a database
+- a server request completed
+- a record was created
+- an API was called
+- a migration ran
+- Supabase was updated
+Those are implementation details.
+The user should only experience a polished product journey.
+11. Settings
+Implement the approved Settings structure and visual style.
+It should include the appropriate approved areas such as:
+- Account Information
+- Personal Information
+- App Language
+- Export History
+- Contact Us
+- Invite Friends
+- Follow Us
+- Terms of Service
+- Privacy Policy
+- Delete Account
+- Sign Out
+Do not invent subscription pricing, payment flows, trials, or other unapproved commercial behavior.
+12. Navigation
+The main application navigation should be:
+Home | Career | Settings
+Career is the central primary destination.
+The Career tab should open the user's last-used Career Profile by default.
+The profile-building journey is different from the normal post-creation Career management experience.
+After the profile is created, users should be able to freely navigate Home / Career / Settings.
+13. Design system
+Create a consistent Jobix design system and reuse it everywhere.
+Do not implement each screen independently.
+Shared components should cover things such as:
+- page frames
+- section headers
+- progress indicators
+- input fields
+- selection controls
+- cards
+- primary buttons
+- secondary buttons
+- chips
+- empty states
+- AI assistance components
+- profile section cards
+- loading states
+- error states
+- confirmation dialogs
+- bottom navigation
+- resume preview controls
+The visual language must remain consistent across:
+Onboarding → Authentication → Profile Builder → Home → Career → Settings → Resume Preview → Export
+14. Typography
+Typography is especially important.
+Use:
+English
+Inter
+It is already appropriate for the Jobix product UI and should remain the primary English UI font.
+Arabic
+Use Noto Sans Arabic.
+Bundle the production font properly with the Flutter application rather than relying on device/platform fallback.
+For the Resume itself, choose a professional, highly readable typography system that works well for both English and Arabic and is appropriate for ATS-friendly CVs.
+Do NOT use decorative fonts.
+Do NOT use a font simply because it looks stylish.
+Priority is:
+1. readability
+2. professional appearance
+3. Arabic/English quality
+4. ATS compatibility
+5. consistent rendering between Preview and PDF
+The Resume typography should look like a serious professional CV, not a graphic-design poster.
+15. Responsive and RTL requirements
+Every screen must work correctly in:
+- English LTR
+- Arabic RTL
+Do not simply mirror the English screen.
+Arabic should be intentionally designed.
+Pay attention to:
+- text alignment
+- icon placement
+- navigation
+- progress indicators
+- buttons
+- input fields
+- spacing
+- mixed Arabic/English text
+- dates
+- email addresses
+- phone numbers
+- resume layout
+Test both languages on realistic mobile dimensions.
+16. Existing architecture must remain authoritative
+Do NOT replace the approved Jobix Architecture V2 with a simpler architecture just because it is easier to implement.
+Continue using:
+- Flutter
+- Riverpod
+- Drift/local encrypted storage
+- Supabase
+- server-authoritative Credits
+- RLS
+- versioned profile mutations
+- idempotency
+- conflict handling
+- Cloud Run workers
+- private GCS
+- Vertex/Gemini
+- AdMob SSV
+- canonical HTML/CSS resume rendering
+Do not move business-critical logic into the client.
+Do not store authoritative Credits, rewards, exports, or entitlements only locally.
+17. Complete the MVP, not just another isolated slice
+The goal of this phase is to bring the user through the complete core Career Profile → Resume journey.
+The implementation should cover the remaining MVP pieces needed for a user to:
+Create account
+→ receive 5 Credits
+→ enter their Career Profile
+→ complete their information through a guided multi-step journey
+→ use AI assistance
+→ complete experience / education / projects / skills / languages / achievements as applicable
+→ see completeness
+→ see ATS readiness
+→ reach the completed Career page
+→ configure their Resume
+→ Preview it
+→ Export PDF for 2 Credits
+→ download the generated PDF
+Also implement:
+Home + Career + Settings
+and the Daily Reward flow according to the approved architecture.
+Do not implement fake/mock production behavior where the real architecture is already defined.
+If an external service is genuinely not configured yet, stop and clearly identify exactly what configuration is required instead of silently replacing it with fake behavior.
+18. Very important: ask before guessing
+If you encounter ANY ambiguity involving:
+- product behavior
+- UI/design
+- screenshot interpretation
+- Career Profile flow
+- Resume behavior
+- Credits
+- AI behavior
+- ATS
+- validation rules
+- database architecture
+- Supabase
+- Vertex/Gemini
+- Cloud Run
+- GCS
+- AdMob
+- PDF rendering
+- fonts
+- navigation
+ASK ME BEFORE IMPLEMENTING if the decision could materially affect the product.
+Do not invent a product rule just to keep going.
+The goal is to avoid rework and wasted implementation time.
+Definition of Done
+Do not consider this complete merely because the code compiles.
+The result should feel like a coherent, polished Jobix product.
+I will review it visually on a physical Android device.
+The final experience should feel like:
+One professional career-building journey, not a collection of unrelated forms.
+
+And the most important UX requirement is:
+New user → guided Career Profile builder with clear progress → complete profile → Preview → Export
+not:
+New user → Save → Career page → manually discover/edit every section.
+Use the screenshots I provide as the visual reference and reproduce their design language as closely as possible while fixing obvious UX inconsistencies.
+Before making large implementation changes, inspect the existing code, architecture, current slice, and provided screenshots, then proceed with the implementation. If a decision is unclear and materially affects the result, ask me first.
