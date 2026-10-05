@@ -33,6 +33,7 @@ void main() {
   );
   late Directory directory;
   late AppDatabase database;
+  late String databaseKey;
   late FakeProfileApi api;
   late DraftRepository repository;
   late FakeAuthApi auth;
@@ -42,8 +43,9 @@ void main() {
   setUpAll(loadProductionFonts);
   setUp(() async {
     directory = Directory.systemTemp.createTempSync('jobix-widget-');
+    databaseKey = generateDatabaseKey();
     database = AppDatabase(
-      encryptedDatabase(File('${directory.path}/db'), generateDatabaseKey()),
+      encryptedDatabase(File('${directory.path}/db'), databaseKey),
     );
     api = FakeProfileApi();
     repository = DraftRepository(database, api, 'user-one', () => true);
@@ -1202,6 +1204,90 @@ void main() {
       expect(find.text('Dart'), findsOneWidget);
       expect(entities.requests, isEmpty, reason: 'viewing never writes');
     });
+    testWidgets(
+      'invalid month drafts remain editable after disk reopen $locale',
+      (tester) async {
+        await pump(
+          tester,
+          state: StartupState.signedIn,
+          locale: locale,
+          size: const Size(402, 1100),
+        );
+        const cases = [
+          (EntitySection.experience, 3, 'start_month', '2024-13'),
+          (EntitySection.education, 4, 'start_month', '2024-00'),
+          (EntitySection.certification, 4, 'issue_month', '2024-13'),
+          (EntitySection.achievement, 4, 'achieved_month', '2024-00'),
+          (EntitySection.project, 5, 'project_month', '2024-13'),
+        ];
+        for (final (section, step, field, invalid) in cases) {
+          await route(tester, '/builder/$step');
+          final add = find.byKey(Key('add-${section.key}'));
+          await tester.ensureVisible(add);
+          await tester.tap(add);
+          await tester.pumpAndSettle();
+          final input = find.byKey(Key('field-$field'));
+          await tester.ensureVisible(input);
+          await tester.enterText(input, invalid);
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('editor-save')));
+          await tester.pumpAndSettle();
+          final copy = AppLocalizations.of(
+            tester.element(find.byType(Scaffold)),
+          )!;
+          expect(find.text(copy.problemMonth), findsOneWidget);
+          expect(entities.requests, isEmpty);
+          await tester.tap(find.byKey(const Key('editor-back')));
+          await tester.pumpAndSettle();
+          expect(currentPath(), '/builder/$step');
+          expect(find.text(invalid), findsWidgets);
+          expect(tester.takeException(), isNull);
+          final drafts = await EntityRepository(
+            repository,
+            entities.send,
+          ).unsavedNew(api.server, section);
+          final id = drafts.single.id;
+
+          // Close both the app and its SQLCipher connection, then open the
+          // persisted file with the same key and fresh providers.
+          await tester.pumpWidget(const SizedBox());
+          container!.dispose();
+          container = null;
+          await tester.runAsync(() async {
+            await database.close();
+            database = AppDatabase(
+              encryptedDatabase(File('${directory.path}/db'), databaseKey),
+            );
+            await database.setting('locale');
+          });
+          repository = DraftRepository(database, api, 'user-one', () => true);
+          await pump(
+            tester,
+            state: StartupState.signedIn,
+            locale: locale,
+            size: const Size(402, 1100),
+          );
+          await route(tester, '/builder/$step');
+          expect(find.text(invalid), findsWidgets);
+          expect(tester.takeException(), isNull);
+          final menu = find.byKey(Key('menu-${section.key}-$id'));
+          await tester.ensureVisible(menu);
+          await tester.tap(menu);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(copy.editAction).last);
+          await tester.pumpAndSettle();
+          expect(currentPath(), '/career/edit/${section.key}/$id');
+          expect(
+            tester
+                .widget<TextField>(find.byKey(Key('field-$field')))
+                .controller!
+                .text,
+            invalid,
+          );
+          expect(tester.takeException(), isNull);
+        }
+      },
+    );
     testWidgets('builder narrow scaled layouts $locale', (tester) async {
       seedProfile();
       tester.platformDispatcher.textScaleFactorTestValue = 1.6;

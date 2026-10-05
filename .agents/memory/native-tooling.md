@@ -112,3 +112,14 @@ shim pointed to 3.13, making successful installation look like missing packages.
 
 **How to apply:** Use the matching interpreter and its installed site-packages;
 do not repeatedly reinstall or create an unsupported virtual environment.
+
+Use a real-time Flutter test binding for opt-in host UI tests that call live
+services, rather than the default automated fake-clock binding.
+
+**Why:** Mixing real SDK networking with fake test clocks can delay response
+handling and cleanup even after server writes succeed, producing false timeouts.
+
+**How to apply:** Use LiveTestWidgetsFlutterBinding for live Flutter flows and
+settle popup animations before interacting. Keep fixture snapshots private and
+verify restoration after every live mutation pass. This is still host UI
+verification, not proof of native Keystore, email callbacks or process-death recovery.

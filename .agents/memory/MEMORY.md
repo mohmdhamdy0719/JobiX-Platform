@@ -1,6 +1,6 @@
 - [Jobix scope and authority](jobix-authority.md) — current core-MVP authorization, native stack, screenshot visual authority, and stop-on-missing-dependency rules.
 - [Secure auth startup](secure-auth-startup.md) — SDK initialization is not a session-recovery barrier; finish recovery before enabling guards or sign-out.
-- [Native tooling constraints](native-tooling.md) — Nixpkgs availability differs from the workspace index; verify the SDK manager's actual installation root.
+- [Native tooling constraints](native-tooling.md) — SDK availability/root quirks, native build limits, and real-time clocks for live Flutter UI verification.
 - [Database network access](database-network-access.md) — Supabase HTTPS reachability does not imply direct database reachability; IPv6-only endpoints may need a pooler.
 - [Policy RPC compatibility](policy-rpc-compatibility.md) — absent live policies must fail closed; SDK empty-result behavior can differ from fixtures.
 - [Dev account provisioning](dev-account-provisioning.md) — authentication alone does not prove app-account provisioning; ask before legacy backfill or retroactive credits.

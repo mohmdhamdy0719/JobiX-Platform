@@ -210,3 +210,31 @@ mtime_ms = 1791064843159
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/d0420fad-bca1-446d-bda0-ed30780b3030/33770a1b-2083-439a-9e80-e0b073d7a64e"
 storage_version_token = "1791064894621135"
 content_type = "text/html"
+
+[[outputs]]
+id = "0i-Bfnl6vrkT1Hhv0TK4C"
+uri = "file://mobile/jobix/build/verification/jobix-dev-arm64-debug.zip"
+type = "unspecified"
+title = "Jobix development APK — ARM64"
+description = "Extract the ZIP and install app-arm64-v8a-debug.apk on your Samsung. Signed development/debug build; not yet verified on a physical Android device."
+logical_id = "9a4470d8-8000-4a02-8397-336674deec48"
+content_hash = "sha256:3321dcea78d754d58ef3b7134d3b56a6ee7d86f348af5654a090b113ae1f9a00"
+size = 55858867
+mtime_ms = 1791224771341
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/9a4470d8-8000-4a02-8397-336674deec48/197dcbe8-c440-4dda-a789-24c595443705"
+storage_version_token = "1791224896188358"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "oTEQ_2ORvNRTJ_T_uyhbi"
+uri = "file://deliverables/jobix-android-verification.txt"
+type = "text"
+title = "Android verification report and commands"
+description = "Live evidence, test-only coverage, remaining email/device gates, and exact build/install commands."
+logical_id = "148c625d-2690-4f63-8a04-8c00d5a5c99b"
+content_hash = "sha256:bb1f6f692b37419630815c87ecfa9b2786d6041e563e5089ce44c534a786ce4a"
+size = 3181
+mtime_ms = 1791224860765
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/148c625d-2690-4f63-8a04-8c00d5a5c99b/c4e23770-e11d-4412-973b-184b401a7e32"
+storage_version_token = "1791224896739694"
+content_type = "text/plain"

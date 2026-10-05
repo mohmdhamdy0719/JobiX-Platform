@@ -2,7 +2,24 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current core-MVP authorization
+## Current verification milestone boundary
+
+The owner now requests real Android end-to-end verification and necessary fixes
+only, before any new feature set. Exercise genuine development Auth, Profile #1,
+the six-step builder, Review/Edit and persistence wherever the environment allows.
+Do not redesign, change Architecture V2, run additional model evaluations, or
+start AI, ATS, Credits, Daily Reward, Subscription, Cover Letter, Professional
+Email, PDF Export or a separate Volunteer Experience implementation.
+
+**Why:** The owner explicitly supplied this verification-only milestone after
+the builder implementation, distinguishing live evidence from mocks and devices.
+
+**How to apply:** Use the approved development Supabase setup without external
+SMTP/Resend, disabled confirmation or weakened RLS. Build Android when possible;
+never call a host widget render or APK build real-device verification. Report
+what requires the owner's Samsung and the exact build/setup prerequisites.
+
+## Earlier core-MVP authorization
 
 The owner now authorizes the complete post-authentication career-building MVP
 as one coherent product journey, not a collection of isolated form slices, including profile sections/editing/sync,

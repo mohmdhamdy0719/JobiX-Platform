@@ -1,5 +1,114 @@
 # Jobix verification evidence
 
+## Real-flow development verification — 2026-10-05
+
+### A. Verified live
+
+- `tool/live_builder_flow_test.dart`: actual Flutter screens against development
+  Supabase (no fake Auth/Profile/Core APIs). Confirmed test-account sign-in,
+  real startup policy, one stable Profile #1 across repeated reads, six-step
+  Continue/Back flow, personal/summary saves, saves in all seven entity sections,
+  multiple experience entries, invalid-month Save rejection without a server
+  mutation, confirmed experience deletion, Review → Edit → Save → Review, and
+  Career using the same profile.
+- A successful real mutation acknowledgement was deliberately dropped by the
+  host transport. SQLCipher was closed/reopened, the app/providers/SDK recreated,
+  and the session recovered. The persisted outbox replayed the original key:
+  server version stayed unchanged and each created item appeared exactly once.
+  This is host app reconstruction, not Android process-death verification.
+- Temporary items were deleted and original personal information, Resume
+  Language, summary and existing items restored. The first fake-clock harness
+  run required restoration from prior server acknowledgements; the final
+  real-time-binding pass completed and verified its own cleanup.
+- `tool/live_dev_redesign_test.dart`: confirmed Auth, SDK recovery/startup policy
+  and denied direct policy-table access passed.
+- `tool/live_profile_sections_test.dart`: live replay, VERSION_CONFLICT,
+  VALIDATION_FAILED, DUPLICATE_ITEM, owner B isolation and deletion passed;
+  temporary items removed, completeness and Credits unchanged.
+- Development Auth configuration was read from the Management API:
+  email enabled, signup enabled, confirmation required, built-in mailer,
+  two emails/hour and native callback allowlisted. No settings were changed.
+
+### B. Verified with host tests/mocks only
+
+- Full default Flutter suite: 145/145 passed; analyze clean; foundation
+  client-secret/layout/token/config checks passed.
+- English/Arabic invalid-month draft → Back → disk close/reopen → Edit
+  regressions cover experience, education, certification, achievement and
+  project drafts. Month labels preserve invalid/incomplete input without a crash.
+- AR/EN/RTL layouts, empty states, stale-draft choices and exhaustive Review
+  section navigation are covered by host tests, not a physical Android device.
+- Live UI test session storage is memory-only. SQLCipher is real disk storage;
+  Android Keystore and native App Links are not supplied by this host harness.
+
+### C. Fixed during this verification
+
+- Month formatting now checks the range before indexing localized month names.
+  Invalid persisted drafts remain visible/editable; Save validation remains strict.
+- Added the opt-in real-network Flutter UI/restart/fault-injection regression.
+  It uses a real-time binding and private temporary restoration snapshots.
+- No redesign, new features, architecture changes, RLS changes, auto-confirmation,
+  external SMTP, AI/model evaluation, staging or production work.
+
+### D. Still requires the Samsung and an authorized inbox
+
+- No connected Android device, installed emulator or `/dev/kvm` is available.
+  An APK build is not an installation/launch/runtime test.
+- Fresh Sign Up → delivered confirmation email → confirmation callback →
+  Sign In → first-registration Step 1 has NOT been verified end to end.
+  Existing confirmed accounts work, but that is not proof of new-user delivery.
+- Supabase's built-in mailer sends only to project-team addresses, at the current
+  two-email/hour limit. The management credential cannot read organization/team
+  membership (HTTP 403); no inbox integration is available. An owner-approved
+  unused team-member email and owner access to its inbox are needed. Do not use
+  an assumed plus alias, auto-confirm, disable confirmation or add external SMTP.
+- On the Samsung: install/launch, fresh confirmation link, actual force-stop
+  and relaunch, Keystore-backed recovery, offline/interrupted saves,
+  native Back/keyboard/scrolling and Arabic RTL must still be checked.
+- Official mailer restrictions:
+  https://supabase.com/docs/guides/auth/auth-smtp
+
+### Development APK
+
+- Built ARM64 debug APK, package `com.mhflow.jobix`, version 1.0.0 (1),
+  minimum Android API 24, target API 36; APK Signature Scheme v2 verified.
+- APK: `build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`.
+- Download: `build/verification/jobix-dev-arm64-debug.zip`. Extract first.
+  Archive integrity passed. Raw APK exceeds the Library file-size limit.
+- SHA-256:
+  `545e012cff5ed3fe5ef9604a93a049045a947396a9405690bd8bef9a9d48fe67`.
+- Exact command in this workspace:
+
+  ```sh
+  cd mobile/jobix
+  source /tmp/jobix_env.sh
+  GRADLE_USER_HOME="$PWD/../../.local/toolchains/gradle-cache" \
+    flutter build apk --debug --target-platform android-arm64 \
+    --split-per-abi --dart-define-from-file=config/dev.local.json
+  ```
+
+- Existing `config/dev.local.json`, Flutter/JDK/Android SDK and accepted licenses
+  are present here. Outside this workspace, supply the genuine development
+  configuration and equivalent build toolchain; never put privileged/test-user
+  credentials in Dart defines.
+- On the computer connected to the Samsung, after extracting the download:
+
+  ```sh
+  adb install -r app-arm64-v8a-debug.apk
+  adb shell am force-stop com.mhflow.jobix
+  adb shell monkey -p com.mhflow.jobix -c android.intent.category.LAUNCHER 1
+  ```
+
+  If installation reports a signing mismatch, do not uninstall or clear app
+  storage without first preserving data and agreeing on that destructive step.
+
+### E. Exact next recommended task
+
+Samsung acceptance of this development APK, using a fresh Supabase-team-authorized
+email: complete signup/confirmation/first entry, all six steps, Review editing,
+force-stop/session recovery and offline-save recovery. Fix only observed native
+issues. Volunteer Experience and other feature work remain subsequent tasks.
+
 ## Screenshot-inspired onboarding update — 2026-10-03
 
 Only the three existing native Flutter introduction screens were revised using

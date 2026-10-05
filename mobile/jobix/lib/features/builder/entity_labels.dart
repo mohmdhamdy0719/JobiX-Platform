@@ -88,6 +88,10 @@ int stepFor(EntitySection section) => switch (section) {
 String monthLabel(String value, String locale) {
   final match = RegExp(r'^(\d{4})-(\d{2})$').firstMatch(value);
   if (match == null) return value;
+  // Unsaved drafts may contain incomplete or invalid input. Keep that input
+  // visible and editable instead of indexing outside the month-name list.
+  final month = int.parse(match.group(2)!);
+  if (month < 1 || month > 12) return value;
   const en = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
@@ -96,8 +100,7 @@ String monthLabel(String value, String locale) {
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', //
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
   ];
-  final month = int.parse(match.group(2)!) - 1;
-  return '${(locale == 'ar' ? ar : en)[month]} ${match.group(1)}';
+  return '${(locale == 'ar' ? ar : en)[month - 1]} ${match.group(1)}';
 }
 
 String itemTitle(ProfileItem item) => switch (item.section) {

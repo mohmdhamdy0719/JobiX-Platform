@@ -1,0 +1,58 @@
+JOBIX — DEVELOPMENT ANDROID VERIFICATION — 2026-10-05
+
+A. VERIFIED LIVE
+Actual Flutter screens against development Supabase: confirmed test-account
+login, stable single Profile #1, six-step builder, personal/summary and all seven
+entity-section saves, validation, multiple entries, experience deletion and
+Review/Edit/Save/Review. SQLCipher disk reopen and SDK session recovery passed.
+A deliberately lost real-save acknowledgement replayed once without duplicate
+items or a second server-version increment. Temporary fixtures were restored.
+Additional live startup/policy, conflict/validation/duplicate/RLS-isolation checks
+passed.
+
+B. VERIFIED WITH TESTS/MOCKS ONLY
+145/145 default Flutter tests passed. Analyze and foundation checks clean.
+AR/EN/RTL layouts, empty states, stale-draft choices and exhaustive Review
+navigation are host-test coverage, not Samsung evidence.
+The live harness uses memory-only session storage and omits native App Links.
+
+C. FIXED DURING THIS TASK
+Invalid month drafts (e.g. 2024-13 or 2024-00) no longer crash builder cards.
+They stay visible/editable after disk reopen; Save validation remains strict.
+No redesign, new feature, architecture, RLS, production, external SMTP or AI change.
+
+D. STILL REQUIRES REAL ANDROID DEVICE
+No device or usable emulator was available. APK build/signature verification
+passed, but Android installation/launch did not occur.
+Fresh signup/email delivery/confirmation/first-registration Step 1 remain
+unverified. Built-in Supabase mail is team-recipient-only and currently limited
+to 2 emails/hour. An unused approved team email and owner inbox access are needed;
+management access cannot read team membership. Confirmation was NOT disabled.
+Samsung acceptance must cover the confirmation link, native keyboard/RTL/Back,
+actual force-stop/relaunch, Keystore session restore and interrupted/offline saves.
+
+APK: extract jobix-dev-arm64-debug.zip, then install app-arm64-v8a-debug.apk.
+Development/debug, ARM64, com.mhflow.jobix, v1.0.0 (1), minimum Android API 24.
+SHA-256: 545e012cff5ed3fe5ef9604a93a049045a947396a9405690bd8bef9a9d48fe67
+
+Exact build command in this Replit workspace:
+cd mobile/jobix
+source /tmp/jobix_env.sh
+GRADLE_USER_HOME="$PWD/../../.local/toolchains/gradle-cache" flutter build apk --debug --target-platform android-arm64 --split-per-abi --dart-define-from-file=config/dev.local.json
+
+Output: mobile/jobix/build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk
+Existing genuine dev.local.json and Android build toolchain are required.
+
+From a computer connected to the Samsung:
+adb install -r app-arm64-v8a-debug.apk
+adb shell am force-stop com.mhflow.jobix
+adb shell monkey -p com.mhflow.jobix -c android.intent.category.LAUNCHER 1
+
+Do not uninstall/clear app data to resolve a signing mismatch without preserving
+data and agreeing on the deletion first.
+
+E. EXACT NEXT RECOMMENDED TASK
+Samsung acceptance of this APK with a fresh Supabase-team-authorized email:
+signup/confirmation/first entry, six-step builder, Review editing, force-stop
+session recovery and offline-save recovery. Fix only observed native issues.
+Volunteer Experience and other features should follow that acceptance.
