@@ -1,0 +1,783 @@
+JOBIX — COMPLETE CAREER PROFILE BUILDER + REVIEW MILESTONE
+
+We are now moving into the main implementation milestone for Jobix.
+
+The repository audit is complete. Do NOT repeat the audit.
+
+The current project already contains:
+- Flutter foundation
+- Riverpod
+- Drift / encrypted local storage
+- Supabase integration
+- onboarding
+- research questions
+- real authentication plumbing
+- Personal Information editor
+- Professional Summary editor
+- Target Role editor
+- profile persistence for the implemented sections
+
+The repository audit also confirmed that the following are currently missing as functioning native features:
+- Work Experience
+- Education
+- Projects
+- Skills
+- Languages
+- Certifications
+- Achievements
+- Volunteer Experience
+- continuous guided Career Profile Builder
+- Review Profile
+- Review → Edit → Save → Return to Review
+- complete profile-wide persistence/synchronization
+
+This is now the primary implementation goal.
+
+==================================================
+1. PRIMARY SUCCESS CRITERION
+==================================================
+
+When this milestone is complete, a real Jobix user must be able to:
+
+Create/sign into a real Jobix account
+→ enter the first Career Profile
+→ complete the guided Career Profile builder
+→ enter real career information
+→ save the information
+→ continue through the profile
+→ reach Review Profile
+→ review the complete profile
+→ edit any section
+→ save the edit
+→ return to Review Profile
+→ leave the app
+→ reopen it
+→ find the same Career Profile with the saved data.
+
+The resulting Career Profile must be a real persistent dataset that can later become the source for Resume Preview and PDF Export.
+
+Do NOT build PDF Export in this milestone.
+
+==================================================
+2. SCREENSHOT / DESIGN AUTHORITY
+==================================================
+
+I have attached the Jobix screenshots for:
+
+- Step 1 — Personal Info & Links
+- Step 2 — Professional Summary & AI Hints
+- Step 3 — Work Experience & AI Proposal
+- Step 4 — Education & Credentials
+- Step 5 — Skills, Projects & Languages
+- Step 6 — Review & ATS Audit
+- Resume Preview & Export
+- Home
+- Career
+- Settings
+
+Use the "Recreate UI from screenshots" skill for the visual reconstruction.
+
+IMPORTANT:
+
+These screenshots are the visual/UX reference for Jobix.
+
+Do NOT blindly copy fictional data, fake metrics, fake users, fake companies, fake ATS scores, fake AI results, or unsupported product claims shown in the screenshots.
+
+Use the screenshots to reproduce:
+- layout
+- hierarchy
+- spacing
+- typography direction
+- cards
+- buttons
+- progress indicators
+- section structure
+- navigation
+- interaction patterns
+- visual language
+- component composition
+- empty states
+- edit/add/remove patterns
+- mobile behavior
+
+The screenshots are NOT permission to invent product behavior that conflicts with Product Design, Constitution, or Architecture V2.
+
+If a screenshot shows a feature that is intentionally postponed, preserve the visual language and component slot where appropriate, but do NOT implement fake functionality.
+
+Never display fabricated user data as if it were real.
+
+==================================================
+3. USE THE EXISTING JOBIX DESIGN
+==================================================
+
+Do not replace the existing Jobix design system with generic Flutter/Material screens.
+
+Extend the existing implementation.
+
+The screenshots should guide the visual reconstruction of the missing native screens.
+
+The existing Personal Information and Summary editors should be upgraded/restructured where necessary to become part of the same guided builder rather than being discarded and rebuilt as an unrelated system.
+
+Keep:
+- Jobix branding
+- current typography direction
+- blue primary action language
+- light professional cards
+- rounded containers
+- clear section hierarchy
+- mobile-first layout
+- Arabic/English readiness
+- RTL/LTR support
+- accessibility
+- responsive behavior
+
+Do not create a completely different visual system.
+
+==================================================
+4. THE SIX-STEP CAREER PROFILE BUILDER
+==================================================
+
+The primary guided flow is:
+
+STEP 1
+Personal Information
+
+STEP 2
+Professional Summary
+
+STEP 3
+Work Experience
+
+STEP 4
+Education & Credentials
+
+STEP 5
+Skills, Projects & Languages
+
+STEP 6
+Review Profile
+
+The user should see:
+- current step
+- total steps
+- progress
+- Back
+- Continue
+
+Step 1 does not need a Back button because it is the first builder step.
+
+The user must be able to navigate backward.
+
+The builder is guided, but it is NOT a locked one-way wizard.
+
+Previously completed sections must remain editable.
+
+==================================================
+5. STEP 1 — PERSONAL INFORMATION
+==================================================
+
+Use the attached Step 1 screenshot as the visual reference.
+
+This section should support the approved Personal Information data.
+
+At minimum:
+- Full Name
+- Primary Email
+- Phone
+- Country
+- City
+- professional/public links
+- optional additional links
+
+The screen may support a professional photo if the existing approved data architecture can support it safely.
+
+Do not invent unsupported verification behavior.
+
+The Resume/CV language control belongs to Resume/output configuration, not App Language.
+
+Do not put App Language selection on this page.
+
+The builder must have:
+Continue
+
+There should not be a fake Save-only standalone experience as the primary first-builder flow.
+
+Saving should still happen safely as the user progresses.
+
+==================================================
+6. STEP 2 — PROFESSIONAL SUMMARY
+==================================================
+
+Use the attached Step 2 screenshot as the visual reference.
+
+Support:
+- Professional Summary
+- character counter
+- validation
+- helpful writing hints
+- the approved summary placeholder/help text
+- expandable hint prompts
+
+The existing Summary editor should be integrated into this builder step.
+
+AI-related UI may be visually prepared for future integration, but:
+
+DO NOT implement the AI backend in this milestone.
+DO NOT fabricate AI output.
+DO NOT fabricate AI usage counts.
+DO NOT generate fake "Improve with Jobix" results.
+
+The approved first-profile AI allowance remains a future backend capability.
+
+Continue → Step 3
+Back → Step 1
+
+==================================================
+7. STEP 3 — WORK EXPERIENCE
+==================================================
+
+This is a major missing section and must be implemented.
+
+Use the attached Step 3 screenshot as the visual/UX reference.
+
+Support multiple work experience entries.
+
+Each entry should support the appropriate approved career fields, including:
+- Job title
+- Company
+- Location
+- Start date
+- End date / Present
+- Description / responsibilities / achievements
+- relevant factual career information
+
+The user must be able to:
+- Add another role
+- Edit a role
+- Remove a role
+- Save a role
+- return to the list
+- review the existing role
+- preserve original user-written text
+
+The UI pattern should reflect the screenshot:
+- role cards
+- active/current indication
+- concise summary
+- edit action
+- remove action
+- add another role
+- expandable/detail content where appropriate
+
+AI proposal UI shown in the screenshot is a FUTURE capability.
+
+Do not generate fake AI proposals.
+
+The architecture must remain ready for:
+Original
+vs
+AI Generation 1/2/...
+later.
+
+Work Experience is NOT universally required.
+
+Do not force students, recent graduates, career changers, or returning workers to fabricate experience.
+
+Continue → Step 4
+Back → Step 2
+
+==================================================
+8. STEP 4 — EDUCATION & CREDENTIALS
+==================================================
+
+Use the attached Step 4 screenshot.
+
+This section should contain:
+
+Education
+- multiple degrees/diplomas
+- institution
+- degree
+- field/focus where applicable
+- start date
+- end date
+- relevant optional details
+
+Certifications
+- multiple certifications
+- certification name
+- issuing organization
+- issue date
+- expiry date where applicable
+- credential/reference ID where applicable
+
+Achievements/Honors
+- optional entries
+- add/edit/remove
+
+The main Step 4 page should list existing entries.
+
+When the user taps:
++ Add Degree / Diploma
++ Add Certification
++ Add Honors/Achievement
+
+open a dedicated editor screen.
+
+IMPORTANT:
+These dedicated add/edit screens should NOT use Continue as the save action.
+
+They should use:
+- Back
+- Save
+
+After Save, return to Step 4.
+
+Then the user uses Continue on the Step 4 page to proceed to Step 5.
+
+This same add/edit pattern should be reused for repeatable profile entities throughout the application.
+
+==================================================
+9. STEP 5 — SKILLS, PROJECTS & LANGUAGES
+==================================================
+
+Use the attached Step 5 screenshot.
+
+This step contains three major areas.
+
+A) SKILLS
+
+Skills are edited directly on the same page.
+
+Support:
+- searchable/typeable skill input
+- add skill
+- remove skill
+- skill chips
+- custom skills where approved
+- normalized uniqueness
+- local catalog support according to Architecture V2
+
+Do not invent a massive skill dataset.
+
+AI suggestions may be represented visually for future use, but do not generate fake AI suggestions.
+
+B) KEY PROJECTS
+
+Projects are repeatable.
+
+The Step 5 page lists project cards.
+
+Each project supports:
+- title
+- role
+- description
+- relevant technologies/skills
+- measurable outcomes where the user provides them
+- optional metadata defined by Product Design
+
+The user can:
+- Add Project
+- Edit Project
+- Delete Project
+
+Adding/editing a Project opens a dedicated editor screen.
+
+That editor uses:
+Back
+Save
+
+NOT Continue.
+
+After Save → return to Step 5.
+
+C) LANGUAGES
+
+Languages can use a compact interaction such as a modal/bottom sheet.
+
+The user chooses:
+- language
+- proficiency level
+
+The user can:
+- add
+- edit
+- delete
+
+Use the three-dot action pattern from the screenshot where appropriate.
+
+Continue from Step 5 goes to:
+Review Profile
+
+==================================================
+10. REVIEW PROFILE — STEP 6
+==================================================
+
+This is a critical feature and must be a REAL screen.
+
+Use the attached Step 6 screenshot and the Career screenshot as visual references.
+
+Review Profile must be populated entirely from the user's real saved Career Profile.
+
+Do not use hardcoded sample data.
+
+Show major profile sections such as:
+- Personal Information
+- Professional Summary
+- Work Experience
+- Education & Credentials
+- Skills
+- Projects
+- Languages
+- other approved profile sections
+
+Each section needs an Edit action.
+
+The user must be able to:
+
+Review
+→ Edit
+→ Save
+→ return to Review Profile
+
+The edit screen should use:
+Save
+rather than Continue.
+
+Where useful, the Review screen can also provide a shortcut back to the corresponding builder section.
+
+The Review screen is the persistent "Career Profile management" experience.
+
+It is NOT the Resume Preview.
+
+==================================================
+11. CAREER PAGE
+==================================================
+
+Use the attached Career screenshot as the visual reference.
+
+Career is the user's persistent Career Profile management hub.
+
+It should show:
+- current profile
+- profile name
+- profile slot
+- profile completeness
+- concise section status
+- sections and counts
+- add/edit/remove access
+- Review/Edit Profile access
+- future Resume Preview / Export entry point
+- future AI Review entry point
+
+The user should be able to see at a glance:
+- how many work experiences exist
+- how many education/credentials exist
+- how many skills
+- how many projects
+- languages
+etc.
+
+When entering a section, the user can:
+- review
+- add
+- edit
+- delete
+
+Profile slot behavior should remain compatible with the approved 3-profile architecture.
+
+Do NOT implement Credits, paid profile slots, subscription, or billing in this milestone unless they are already required by existing infrastructure.
+
+Do not show fake PRO status.
+
+==================================================
+12. HOME
+==================================================
+
+Use the attached Home screenshot as visual reference.
+
+Home remains the Career Command Center.
+
+However, many Home services are intentionally postponed.
+
+For this milestone, prioritize:
+- current Career Profile
+- completion/status
+- Continue Profile
+- access to Career
+- recent relevant profile state
+
+Do not implement fake:
+- credit balances
+- Daily Reward claims
+- subscription state
+- AI services
+- Cover Letter
+- Professional Email
+- PDF export history
+
+Those are future features.
+
+Do not display fake values just because they appear in the reference screenshot.
+
+==================================================
+13. SETTINGS
+==================================================
+
+Use the attached Settings screenshot as the visual reference.
+
+Preserve the agreed Settings information architecture:
+ACCOUNT
+- Account Information
+- Personal Information
+- Subscription & Plan (future)
+- Sign Out
+- Delete Account
+
+PREFERENCES
+- App Language
+
+CAREER & DATA
+- Export History (future)
+
+SUPPORT
+- Contact Us
+- Invite Friends
+- Follow Us if configured
+
+LEGAL
+- Privacy Policy
+- Terms of Service
+
+Do not implement fake subscription state.
+
+Do not invent legal URLs.
+
+==================================================
+14. TARGET ROLE
+==================================================
+
+Target Role already exists in the current implementation and is part of the approved Career Profile model.
+
+It is optional.
+
+Do NOT create a seventh builder step just for Target Role.
+
+Keep it accessible in the Career Profile where appropriate and preserve its existing persistence behavior.
+
+It must remain compatible with future ATS/AI functionality.
+
+==================================================
+15. DATA / PERSISTENCE
+==================================================
+
+This is NOT a UI-only task.
+
+Every implemented profile section must use real persistence.
+
+Follow Architecture V2.
+
+The same Career Profile must be the source of truth for all sections.
+
+Do not create disconnected per-screen fake models.
+
+The implementation should support:
+- local draft persistence
+- acknowledged server persistence
+- profile versioning
+- idempotent saves
+- retry handling
+- conflict handling
+- safe leave/reopen behavior
+
+Extend the existing persistence architecture rather than creating a second persistence system.
+
+Do not weaken RLS.
+
+Do not place privileged Supabase credentials in Flutter.
+
+==================================================
+16. AUTHENTICATION
+==================================================
+
+The existing known issue is the generic authentication failure.
+
+Before or as part of this milestone, diagnose and fix the actual underlying failure.
+
+Do NOT simply change the error message.
+
+The successful journey must be:
+
+Signup
+→ confirmation when required
+→ authenticated session
+→ first Profile #1 available
+→ Personal Information
+→ Builder
+
+Do not create duplicate Profile #1 records.
+
+The existing server-side registration provisioning should be reused.
+
+If live authentication cannot be verified from the current environment, clearly report exactly what was verified and what still requires a real device/live Supabase test.
+
+==================================================
+17. VISUAL QUALITY
+==================================================
+
+The goal is not merely functional screens.
+
+The final UI should feel like one coherent Jobix application.
+
+Pay attention to:
+- spacing
+- typography
+- card hierarchy
+- button hierarchy
+- progress indicator
+- section headers
+- icons
+- empty states
+- edit/add/delete affordances
+- bottom navigation
+- sticky bottom actions
+- keyboard behavior
+- scrolling
+- safe areas
+- Android device dimensions
+- RTL/LTR
+- accessibility
+
+Use the screenshots to reproduce the visual hierarchy, not just the text.
+
+Do not create generic CRUD forms when the screenshot shows a polished card-based experience.
+
+==================================================
+18. IMPORTANT DEFERRED FEATURES
+==================================================
+
+Do NOT implement now:
+
+- AI backend
+- Improve with Jobix
+- AI generation execution
+- ATS engine
+- Credits
+- Daily Reward
+- Subscription/billing
+- Cover Letter
+- Professional Email
+- PDF generation/export
+- advanced Resume templates
+- paid profile slots
+
+However, keep the architecture and UI component boundaries future-ready so these features can be added without rebuilding the Career Profile.
+
+==================================================
+19. RESUME PREVIEW
+==================================================
+
+Do NOT implement the final PDF export in this milestone.
+
+However, the Career Profile data must be structured so that a future Resume Preview can consume it directly.
+
+The attached Resume Preview screenshot is a visual reference for the FUTURE output layer.
+
+Do not build a second resume-specific data model.
+
+==================================================
+20. IMPLEMENTATION PROCESS
+==================================================
+
+Before implementation:
+
+1. Inspect the existing implementation.
+2. Inspect Architecture V2.
+3. Inspect Product Design.
+4. Inspect Constitution.
+5. Inspect DESIGN.md.
+6. Inspect the existing Personal Information, Summary, and Target Role implementation.
+7. Inspect the supplied screenshot references.
+8. Use the "Recreate UI from screenshots" skill for visual reconstruction.
+9. Map each screenshot to the corresponding Flutter screen/component.
+10. Produce a concise implementation plan.
+
+Do not ask me questions about decisions already defined by the existing project documents.
+
+Only stop for a genuinely unresolved product/architecture decision.
+
+After the plan is approved, implement the milestone end-to-end.
+
+==================================================
+21. TESTING / ACCEPTANCE
+==================================================
+
+The milestone is NOT complete just because the screens render.
+
+Verify:
+
+1. Real signup/authentication path.
+2. First Profile #1 provisioning.
+3. Step 1 persistence.
+4. Step 2 persistence.
+5. Multiple Work Experience entries.
+6. Education add/edit/delete.
+7. Certifications add/edit/delete.
+8. Achievements add/edit/delete.
+9. Skills add/remove.
+10. Projects add/edit/delete.
+11. Languages add/edit/delete.
+12. Continue/Back navigation.
+13. Review Profile displays actual saved data.
+14. Edit from Review updates the same profile.
+15. Return to Review after editing.
+16. Close/reopen persistence.
+17. Validation.
+18. Arabic/English.
+19. RTL/LTR.
+20. Existing Foundation tests remain passing.
+21. flutter analyze has no new issues.
+
+Do not claim live auth/persistence works if only mocked tests passed.
+
+Report:
+- implementation completed
+- files/modules changed
+- tests passed
+- live verification performed
+- device-only limitations
+- remaining work
+
+==================================================
+22. FINAL SUCCESS CONDITION
+==================================================
+
+The final result of this milestone should let me personally do this:
+
+Open Jobix
+→ complete onboarding
+→ answer research questions
+→ create/sign in to a real account
+→ enter Personal Information
+→ Continue
+→ enter Summary
+→ Continue
+→ add/edit Work Experience
+→ Continue
+→ add/edit Education & Credentials
+→ Continue
+→ add Skills, Projects and Languages
+→ Review Profile
+→ edit any section
+→ save
+→ return to Review
+→ close/reopen the app
+→ see the same complete Career Profile.
+
+That is the milestone.
+
+Do not stop after building isolated screens.
+
+Do not implement unrelated features.
+
+Build the actual end-to-end Career Profile experience.
