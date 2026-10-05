@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../features/onboarding/research_context.dart';
 import 'tables/slice_tables.dart';
 
 part 'database.g.dart';
@@ -229,6 +230,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> clearAccount(String user) => transaction(() async {
+    final firstLaunch = ResearchProgress.decode(await onboarding());
+    if (firstLaunch.experienceComplete) {
+      await setSetting('first_launch_completed', 'true');
+    }
     await customStatement('DELETE FROM local_section_drafts WHERE user_id=?', [
       user,
     ]);
@@ -238,11 +243,21 @@ class AppDatabase extends _$AppDatabase {
     );
     await (delete(localDrafts)..where((t) => t.userId.equals(user))).go();
     await (delete(localProfiles)..where((t) => t.userId.equals(user))).go();
-    if (await setting('research_owner') == user) {
+    if (await setting('research_owner') == user ||
+        await setting('registration_user') == user) {
       await delete(localOnboarding).go();
       await removeSetting('research_owner');
     }
     await removeSetting('cities_$user');
+    await customStatement(
+      'DELETE FROM local_settings WHERE substr(key,1,?)=? OR substr(key,1,?)=?',
+      [
+        'extras:$user:'.length,
+        'extras:$user:',
+        'resume:$user:'.length,
+        'resume:$user:',
+      ],
+    );
     if (await setting('registration_user') == user) {
       await removeSetting('registration_user');
     }

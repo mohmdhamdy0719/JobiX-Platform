@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/tokens.dart';
+import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
@@ -245,6 +246,7 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
         : sections.fold<int>(0, (sum, s) => sum + profile.count(s));
     return BuilderScaffold(
       step: widget.step,
+      reviewEditor: widget.fromReview,
       busy: busy,
       meta: total > 0 ? copy.itemsAdded(total) : null,
       onBack: () => context.go(
@@ -266,7 +268,7 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                       onPressed: () => ref.invalidate(firstProfileProvider),
                       child: Text(copy.retry),
                     )
-                  : const CircularProgressIndicator(),
+                  : const FormLoadingState(),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

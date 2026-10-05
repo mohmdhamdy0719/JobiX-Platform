@@ -2,7 +2,24 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current verification milestone boundary
+## Current builder-polish and Resume foundation authorization
+
+The owner confirmed signup, confirmation email, return-to-app and authenticated
+entry work in development. Preserve that flow. The current brief authorizes
+builder UX/lifecycle fixes, IBM Plex Sans Arabic, private optional photos/custom
+links, AI proposal UI and authoritative allowance foundation, server Credits
+reservations, and Career-Profile-backed canonical HTML Resume configuration/preview.
+PDF export may proceed only where safely implementable. No Cover Letter,
+Professional Email, Subscription/Billing or advanced paid features.
+
+**Why:** The owner explicitly moved beyond verification to the two-phase
+builder-polish and Resume-building foundation milestone.
+
+**How to apply:** Follow the latest 817-line brief, retain the native stack and
+screenshot authority, never fake provider output or quotas, and report backend
+gaps separately from real Android-device acceptance.
+
+## Earlier verification milestone boundary (superseded by the above)
 
 The owner now requests real Android end-to-end verification and necessary fixes
 only, before any new feature set. Exercise genuine development Auth, Profile #1,

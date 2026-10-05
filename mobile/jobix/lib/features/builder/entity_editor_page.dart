@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
@@ -15,6 +16,8 @@ import '../career_profile/profile_sections.dart';
 import 'builder_scaffold.dart';
 import 'entity_labels.dart';
 import 'save_feedback.dart';
+import 'jobix_improvement.dart';
+import 'month_input_formatter.dart';
 
 String editorReturn(EntitySection section, EditorOrigin origin) =>
     switch (origin) {
@@ -220,7 +223,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         leading: back,
         child: failed
             ? Text(copy.profileUnavailable)
-            : const Center(child: CircularProgressIndicator()),
+            : const FormLoadingState(),
       );
     }
     return PopScope(
@@ -253,6 +256,17 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (problems.isNotEmpty) ...[
+              Semantics(
+                liveRegion: true,
+                child: saveIssueCard(
+                  copy.localeName.startsWith('ar')
+                      ? 'لا يمكن إضافة هذا العنصر بعد. راجع الحقول المحددة؛ تم الاحتفاظ بمسودتك.'
+                      : "This item can't be added yet. Check the highlighted fields; your draft is retained.",
+                ),
+              ),
+              const SizedBox(height: TokensV0.space16),
+            ],
             if (conflict != DraftConflict.none) ...[
               _ConflictCard(
                 text: conflict == DraftConflict.removed
@@ -281,7 +295,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             ],
             if (!item!.locallyComplete)
               Text(
-                copy.incompleteSaveNote,
+                copy.localeName.startsWith('ar')
+                    ? 'الحقول المميزة بـ * مطلوبة لإضافة العنصر. مراجعة الوصف الاختياري لا تمنع الحفظ.'
+                    : 'Fields marked * are required to add this item. Optional description guidance does not block Save.',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: TokensV0.textSecondary),
@@ -327,34 +343,67 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         item!.flag('is_current');
     final controller = controllers[field.name]!;
     final multiline = field.kind == FieldKind.multiline;
-    return TextField(
+    final input = TextField(
       key: key,
       controller: controller,
       enabled: !busy && !disabledEnd,
       minLines: multiline ? 4 : 1,
       maxLines: multiline ? 8 : 1,
-      maxLength: field.kind == FieldKind.list ? null : field.max,
+      maxLength: field.kind == FieldKind.list || field.kind == FieldKind.month
+          ? null
+          : field.max,
       maxLengthEnforcement: MaxLengthEnforcement.none,
       keyboardType: switch (field.kind) {
-        FieldKind.month => TextInputType.datetime,
+        FieldKind.month => TextInputType.number,
         FieldKind.url => TextInputType.url,
         FieldKind.multiline => TextInputType.multiline,
         _ => TextInputType.text,
       },
       inputFormatters: field.kind == FieldKind.month
-          ? [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9-]')),
-              LengthLimitingTextInputFormatter(7),
-            ]
+          ? [const MonthInputFormatter()]
+          : null,
+      textDirection:
+          field.kind == FieldKind.month || field.kind == FieldKind.url
+          ? TextDirection.ltr
           : null,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: field.required || (field.name == 'end_month' && !disabledEnd)
+            ? '$label *'
+            : label,
         hintText: field.kind == FieldKind.month ? copy.monthHint : null,
         helperText: multiline && field.minimum > 1
-            ? copy.descriptionMinimum
+            ? (copy.localeName.startsWith('ar')
+                  ? 'اختياري. يُنصح بـ ${field.minimum} حرفًا على الأقل؛ النص القصير لا يمنع الحفظ.'
+                  : 'Optional. Aim for at least ${field.minimum} characters; short text does not block Save.')
+            : field.kind == FieldKind.list
+            ? (copy.localeName.startsWith('ar')
+                  ? 'افصل بين العناصر بفاصلة؛ الحد الأقصى ${field.max} حرفًا لكل عنصر.'
+                  : 'Separate items with commas; ${field.max} characters per item.')
             : null,
         helperMaxLines: 2,
         errorText: _error(copy, field),
+        counterText: field.kind == FieldKind.month
+            ? ''
+            : field.kind == FieldKind.list
+            ? '${item!.list(field.name).where((v) => v.trim().isNotEmpty).length} ${copy.localeName.startsWith('ar') ? 'عناصر' : 'items'}'
+            : '${controller.text.runes.length} / ${field.max}',
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: copy.localeName.startsWith('ar')
+                    ? 'مسح الحقل'
+                    : 'Clear field',
+                icon: const Icon(Icons.clear, size: 18),
+                onPressed: busy || disabledEnd
+                    ? null
+                    : () {
+                        controller.clear();
+                        edit(
+                          field.name,
+                          field.kind == FieldKind.list ? <String>[] : '',
+                        );
+                      },
+              ),
       ),
       onChanged: (value) => edit(
         field.name,
@@ -362,6 +411,28 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             ? value.split(',').map((v) => v.trim()).toList()
             : value,
       ),
+    );
+    if (!multiline) return input;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        input,
+        if (field.minimum > 1 &&
+            controller.text.trim().runes.length < field.minimum)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: TokensV0.space8),
+            child: Text(
+              copy.localeName.startsWith('ar')
+                  ? 'يحتاج إلى مراجعة — أضف تفاصيل إن توفرت. لا يمنع الحفظ.'
+                  : 'Needs attention — add detail if available. This does not block Save.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: TokensV0.warning),
+            ),
+          ),
+        const SizedBox(height: TokensV0.space12),
+        JobixImprovement(original: controller.text),
+      ],
     );
   }
 

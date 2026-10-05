@@ -154,9 +154,12 @@ class _ResearchPageState extends ConsumerState<ResearchPage> {
                 busy: busy,
                 onPressed: !answered
                     ? null
-                    : () {
+                    : () async {
                         if (question == 3) {
-                          context.go('/auth');
+                          await ref
+                              .read(researchProvider.notifier)
+                              .finishFirstLaunch();
+                          if (context.mounted) context.go('/auth');
                         } else {
                           setState(() => current = question + 1);
                         }

@@ -18,6 +18,7 @@ import 'package:jobix/features/career_profile/text_section_repository.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
 import 'package:jobix/features/career_profile/entity_repository.dart';
 import 'package:jobix/features/career_profile/profile_sections.dart';
+import 'package:jobix/features/builder/ai_allowance.dart';
 import 'support/entity_fakes.dart';
 import 'support/slice_fakes.dart';
 import 'support/production_fonts.dart';
@@ -93,6 +94,9 @@ void main() {
           return AuthProviderSettings(googleEnabled: googleEnabled);
         }),
         draftRepositoryProvider.overrideWith((_) async => repository),
+        aiAllowanceProvider.overrideWith(
+          (_) async => throw StateError('Allowance unavailable'),
+        ),
         textSectionRepositoryProvider.overrideWith(
           (_) async => TextSectionRepository(repository, (draft) async {
             api.server = CareerProfile(
@@ -560,7 +564,14 @@ void main() {
       for (final field in personalFields.where((f) => f != 'city')) {
         expect(
           tester
-              .widget<TextFormField>(find.byKey(Key('personal-$field')))
+              .widget<TextField>(
+                field == 'country'
+                    ? find.byKey(Key('personal-$field'))
+                    : find.descendant(
+                        of: find.byKey(Key('personal-$field')),
+                        matching: find.byType(TextField),
+                      ),
+              )
               .controller!
               .text,
           isEmpty,
@@ -636,7 +647,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Confirm your email'), findsWidgets);
     expect(auth.calls, ['signup']);
-    expect(await database.setting('registration_user'), isNull);
+    expect(await database.setting('registration_user'), 'new-user');
     await route(tester, '/auth?mode=login');
     await tester.enterText(
       find.byKey(const Key('auth-email')),
@@ -815,7 +826,10 @@ void main() {
         'Local only',
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('builder-back')));
+      expect(find.byKey(const Key('builder-back')), findsNothing);
+      // Native system Back still offers safe draft retention; Step 1 has no
+      // on-screen Back affordance.
+      await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('save-later')));
       await tester.pumpAndSettle();
@@ -896,7 +910,7 @@ void main() {
           Theme.of(
             tester.element(find.byType(Scaffold)),
           ).textTheme.bodyMedium!.fontFamily,
-          locale == 'ar' ? 'Noto Sans Arabic' : 'Inter',
+          locale == 'ar' ? 'IBM Plex Sans Arabic' : 'Inter',
         );
         expect(
           tester
@@ -1652,30 +1666,28 @@ void main() {
     expect(entities.requests, hasLength(1));
   });
 
-  testWidgets('Career add returns to Career, and Review opens from Career', (
-    tester,
-  ) async {
-    seedProfile();
-    await pump(
-      tester,
-      state: StartupState.signedIn,
-      size: const Size(402, 1400),
-    );
-    await route(tester, '/career');
-    final add = find.byKey(const Key('career-add-experience'));
-    await tester.ensureVisible(add);
-    await tester.tap(add);
-    await tester.pumpAndSettle();
-    expect(currentPath(), startsWith('/career/edit/experience/'));
-    await tester.tap(find.byKey(const Key('editor-back')));
-    await tester.pumpAndSettle();
-    expect(currentPath(), '/career');
-    final review = find.byKey(const Key('career-review'));
-    await tester.ensureVisible(review);
-    await tester.tap(review);
-    await tester.pumpAndSettle();
-    expect(currentPath(), '/builder/6');
-  });
+  testWidgets(
+    'Career add returns to Career without a redundant Review action',
+    (tester) async {
+      seedProfile();
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1400),
+      );
+      await route(tester, '/career');
+      final add = find.byKey(const Key('career-add-experience'));
+      await tester.ensureVisible(add);
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      expect(currentPath(), startsWith('/career/edit/experience/'));
+      await tester.tap(find.byKey(const Key('editor-back')));
+      await tester.pumpAndSettle();
+      expect(currentPath(), '/career');
+      expect(find.byKey(const Key('career-review')), findsNothing);
+      expect(currentPath(), '/career');
+    },
+  );
 }
 
 class _CoreFixture implements CoreApi {

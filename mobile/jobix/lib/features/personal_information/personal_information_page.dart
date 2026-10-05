@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/design/app_language_button.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/providers.dart';
+import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/app_localizations_ar.dart';
 import '../../l10n/app_localizations_en.dart';
@@ -60,12 +62,29 @@ class _PersonalInformationPageState
       if (!mounted) return;
       repository = repo;
       profile = value;
+      // Initial account suggestion only: do not reinsert an intentionally
+      // cleared email from a local draft or overwrite saved profile contact.
+      final authEmail = ref
+          .read(supabaseClientProvider)
+          .valueOrNull
+          ?.auth
+          .currentUser
+          ?.email;
+      final prefillEmail =
+          local == null &&
+          (value.personal['email'] ?? '').isEmpty &&
+          !value.hasContact &&
+          value.resumeLanguage == null &&
+          authEmail != null &&
+          authEmail.isNotEmpty;
       draft =
           local ??
           PersonalDraft(
             profileId: value.id,
             baseVersion: value.version,
-            personal: value.personal,
+            personal: prefillEmail
+                ? {...value.personal, 'email': authEmail}
+                : value.personal,
             resumeLanguage: value.resumeLanguage,
           );
       for (final field in personalFields) {
@@ -73,9 +92,7 @@ class _PersonalInformationPageState
       }
       cityHistory =
           rawCities?.split('\n').where((v) => v.isNotEmpty).toList() ?? [];
-      dirty = local != null;
-      // Remove obsolete local intent metadata; routing is server-authoritative.
-      await repo.database.removeSetting('registration_user');
+      dirty = local != null || prefillEmail;
       if (!mounted) return;
       ref.read(authFlowProvider.notifier).state = const AuthFlow();
       setState(() {
@@ -316,7 +333,13 @@ class _PersonalInformationPageState
     if (dirty) await save();
     if (!mounted || dirty) return;
     allowPop = true;
-    context.go(widget.builder ? '/builder/2' : '/builder/6');
+    context.go(
+      fromReview
+          ? '/builder/6'
+          : widget.builder
+          ? '/builder/2'
+          : '/career',
+    );
   }
 
   @override
@@ -326,11 +349,13 @@ class _PersonalInformationPageState
     if (failed || draft == null) {
       return SliceScaffold(
         title: copy.personalInformation,
-        leading: IconButton(
-          tooltip: copy.backAction,
-          icon: const Icon(Icons.arrow_back),
-          onPressed: exit,
-        ),
+        leading: widget.builder && !fromReview
+            ? null
+            : IconButton(
+                tooltip: copy.backAction,
+                icon: const Icon(Icons.arrow_back),
+                onPressed: exit,
+              ),
         child: failed
             ? Column(
                 children: [
@@ -344,7 +369,7 @@ class _PersonalInformationPageState
                   ),
                 ],
               )
-            : const Center(child: CircularProgressIndicator()),
+            : const FormLoadingState(),
       );
     }
     final language = draft!.resumeLanguage;
@@ -356,11 +381,10 @@ class _PersonalInformationPageState
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) unawaited(leave());
       },
-      child: widget.builder
+      child: widget.builder && !fromReview
           ? BuilderScaffold(
               step: 1,
               busy: busy,
-              onBack: leave,
               onContinue: advance,
               child: body(copy, language, profileCopy, merge.hasError),
             )
@@ -378,7 +402,9 @@ class _PersonalInformationPageState
                   Expanded(
                     child: OutlinedButton(
                       onPressed: busy ? null : leave,
-                      child: Text(copy.leaveAction),
+                      child: Text(
+                        fromReview ? copy.backToReview : copy.leaveAction,
+                      ),
                     ),
                   ),
                   const SizedBox(width: TokensV0.space12),
@@ -429,8 +455,13 @@ class _PersonalInformationPageState
                       child: ChoiceChip(
                         key: const Key('resume-en'),
                         label: const Text('English (LTR)'),
-                        showCheckmark: false,
-                        selectedColor: TokensV0.surfaceCard,
+                        showCheckmark: true,
+                        checkmarkColor: TokensV0.onPrimary,
+                        labelStyle: TokensV0.languageChoiceLabel(
+                          languageCode: 'en',
+                          selected: language == 'en',
+                        ),
+                        selectedColor: TokensV0.primary,
                         backgroundColor: TokensV0.secondarySurface,
                         selected: language == 'en',
                         onSelected: busy
@@ -443,8 +474,13 @@ class _PersonalInformationPageState
                       child: ChoiceChip(
                         key: const Key('resume-ar'),
                         label: const Text('العربية (RTL)'),
-                        showCheckmark: false,
-                        selectedColor: TokensV0.surfaceCard,
+                        showCheckmark: true,
+                        checkmarkColor: TokensV0.onPrimary,
+                        labelStyle: TokensV0.languageChoiceLabel(
+                          languageCode: 'ar',
+                          selected: language == 'ar',
+                        ),
+                        selectedColor: TokensV0.primary,
                         backgroundColor: TokensV0.secondarySurface,
                         selected: language == 'ar',
                         onSelected: busy
@@ -473,12 +509,49 @@ class _PersonalInformationPageState
           ),
         ],
         const SizedBox(height: TokensV0.space24),
+        SliceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SectionHeading(
+                title: copy.localeName.startsWith('ar')
+                    ? 'الصورة والروابط المخصصة'
+                    : 'Photo & custom links',
+                subtitle: copy.localeName.startsWith('ar')
+                    ? 'تفاصيل اختيارية. صورتك خاصة؛ تبقى معلوماتك الشخصية الحالية في المسودة.'
+                    : 'Optional details. Your photo stays private; your current personal inputs stay in the draft.',
+              ),
+              const SizedBox(height: TokensV0.space12),
+              OutlinedButton.icon(
+                key: const Key('personal-extras'),
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: Text(
+                  copy.localeName.startsWith('ar')
+                      ? 'إدارة الصورة والروابط'
+                      : 'Manage photo & links',
+                ),
+                onPressed: busy
+                    ? null
+                    : () async {
+                        if (!await persistNow() || !mounted) return;
+                        final origin = fromReview
+                            ? 'review'
+                            : widget.builder
+                            ? 'builder'
+                            : 'career';
+                        context.go('/career/extras?origin=$origin');
+                      },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: TokensV0.space24),
         if (language == null)
           Text(copy.chooseResumeLanguage)
         else
           PersonalInformationFields(
             copy: profileCopy,
-            clearLabel: copy.discardAction,
+            clearLabel: language == 'ar' ? 'مسح الحقل' : 'Clear field',
             language: language,
             controllers: controllers,
             errors: errors,
@@ -488,8 +561,12 @@ class _PersonalInformationPageState
                 'EG',
             cityHistory: cityHistory,
             onChanged: (field, value) {
-              errors.add(field);
+              errors.remove(field);
               retain(draft!.edit(field, value));
+            },
+            onBlur: (field) {
+              if (!mounted) return;
+              setState(() => errors.add(field));
             },
           ),
       ],

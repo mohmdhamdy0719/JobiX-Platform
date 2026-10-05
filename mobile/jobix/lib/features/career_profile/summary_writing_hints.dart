@@ -11,32 +11,38 @@ class SummaryWritingHints extends StatelessWidget {
       [
         'What is your professional background?',
         'ما خلفيتك المهنية؟',
-        'I work in [your field], with experience in [your actual responsibilities].',
-        'أعمل في [مجالك]، ولدي خبرة في [مسؤولياتك الفعلية].',
+        'Software engineer with 4 years of experience building mobile and web applications.',
+        'مهندس برمجيات بخبرة 4 سنوات في تطوير تطبيقات الهاتف والويب.',
       ],
       [
-        'What are your strongest skills?',
-        'ما أبرز مهاراتك؟',
-        'My strengths include [your skills] and [a relevant example from your work].',
-        'تشمل نقاط قوتي [مهاراتك] و[مثالًا مرتبطًا بعملك].',
+        'What are your strongest skills or areas of expertise?',
+        'ما أبرز مهاراتك أو مجالات خبرتك؟',
+        'I specialize in Flutter, backend APIs, and building reliable user-focused products.',
+        'أتخصص في Flutter وواجهات برمجة التطبيقات الخلفية، وفي بناء منتجات موثوقة تركز على المستخدم.',
       ],
       [
-        'What type of work do you specialize in?',
-        'في أي نوع من العمل تتخصص؟',
-        'I focus on [your specialty] using [tools you actually use].',
-        'أركز على [تخصصك] باستخدام [أدوات تستخدمها بالفعل].',
+        'What type of work or problems are you best at solving?',
+        'ما نوع العمل الذي تتقنه أو المشكلات التي تجيد حلها؟',
+        'I enjoy turning complex business requirements into simple, scalable software.',
+        'أستمتع بتحويل متطلبات العمل المعقدة إلى برمجيات بسيطة وقابلة للتوسع.',
       ],
       [
-        'What are you currently looking for?',
-        'ما الذي تبحث عنه حاليًا؟',
-        'I am looking for [your target opportunity] where I can contribute [your strengths].',
-        'أبحث عن [فرصتك المستهدفة] حيث يمكنني تقديم [نقاط قوتك].',
+        'What are some achievements or results you are proud of?',
+        'ما بعض الإنجازات أو النتائج التي تفخر بها؟',
+        'I helped reduce application processing time by 30%.',
+        'ساهمت في تقليل وقت معالجة الطلبات بنسبة 30%.',
       ],
       [
-        'What makes you valuable in your field?',
-        'ما الذي يميزك في مجالك؟',
-        'I bring [your relevant experience] and [an achievement you can substantiate].',
-        'أقدم [خبرتك ذات الصلة] و[إنجازًا يمكنك إثباته].',
+        'What type of role or work are you looking for next?',
+        'ما نوع الدور أو العمل الذي تبحث عنه في خطوتك المقبلة؟',
+        'I am looking for a product-focused software engineering role.',
+        'أبحث عن دور في هندسة البرمجيات يركز على المنتج.',
+      ],
+      [
+        'What makes you valuable to an employer or team?',
+        'ما الذي يجعلك إضافة قيّمة لصاحب العمل أو الفريق؟',
+        'I combine technical execution with strong communication and cross-functional collaboration.',
+        'أجمع بين التنفيذ التقني والتواصل الفعّال والتعاون بين فرق متعددة التخصصات.',
       ],
     ];
     return Column(
@@ -44,6 +50,19 @@ class SummaryWritingHints extends StatelessWidget {
         for (var i = 0; i < examples.length; i++)
           ExpansionTile(
             key: Key('summary-hint-$i'),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: TokensV0.space12,
+            ),
+            collapsedBackgroundColor: TokensV0.surfaceCard,
+            backgroundColor: TokensV0.surfaceContainerLow,
+            collapsedShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(TokensV0.cardRadius),
+              side: const BorderSide(color: TokensV0.border),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(TokensV0.cardRadius),
+              side: const BorderSide(color: TokensV0.border),
+            ),
             title: Text(examples[i][ar ? 1 : 0]),
             children: [
               Padding(

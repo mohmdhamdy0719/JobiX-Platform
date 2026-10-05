@@ -176,6 +176,37 @@ void main() {
       restart.dispose();
     },
   );
+  test(
+    'first-launch completion matches durable answers and survives account wipe',
+    () async {
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWith((_) async => db)],
+      );
+      addTearDown(container.dispose);
+      await container.read(researchProvider.future);
+      final progress = const ResearchProgress(onboardingDone: true)
+          .select(0, 'graduate')
+          .select(1, 'unsure')
+          .select(2, 'remote')
+          .select(3, 'cv');
+      await container.read(researchProvider.notifier).persist(progress);
+      await container.read(researchProvider.notifier).finishFirstLaunch();
+      final completed = await container.read(researchProvider.future);
+      expect(await db.onboarding(), completed.encode());
+      await db.setSetting('registration_user', 'user-one');
+      await db.setSetting('extras:user-one:profile', 'private');
+      await db.setSetting('resume:user-one:profile', 'private');
+      await db.clearAccount('user-one');
+      expect(await db.onboarding(), isNull);
+      expect(await db.setting('extras:user-one:profile'), isNull);
+      expect(await db.setting('resume:user-one:profile'), isNull);
+      container.invalidate(researchProvider);
+      final restored = await container.read(researchProvider.future);
+      expect(restored.firstLaunchComplete, isTrue);
+      expect(restored.onboardingDone, isTrue);
+      expect(restored.complete, isFalse);
+    },
+  );
   test('Q4 never exceeds three and allows deselection and replacement', () {
     var progress = const ResearchProgress();
     for (final choice in ['cv', 'skills', 'online', 'paths']) {

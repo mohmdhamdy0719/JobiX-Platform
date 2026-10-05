@@ -149,6 +149,18 @@ final contextMergeProvider = FutureProvider<void>((ref) async {
   final user = client.auth.currentUser!.id;
   if (!progress.complete || progress.mergedUser != null) return;
   final database = await ref.read(databaseProvider.future);
+  final registeredUser = await database.setting('registration_user');
+  // A fresh-install survey is not permission to write into an existing account.
+  // Email registration is bound durably before confirmation. New OAuth
+  // registrations also need the server's one-time first-entry classification.
+  final newOAuthRegistration =
+      ref.read(authFlowProvider).registration &&
+      client.auth.currentUser?.appMetadata['provider'] == 'google' &&
+      await ref.read(firstEntryProvider.future);
+  if (registeredUser != user && !newOAuthRegistration) return;
+  if (newOAuthRegistration && registeredUser == null) {
+    await database.setSetting('registration_user', user);
+  }
   final api = await ref.watch(profileApiProvider.future);
   bool current() =>
       client.auth.currentUser?.id == user &&

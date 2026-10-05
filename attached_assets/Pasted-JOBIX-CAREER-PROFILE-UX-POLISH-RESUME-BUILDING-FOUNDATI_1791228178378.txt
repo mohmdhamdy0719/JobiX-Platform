@@ -1,0 +1,817 @@
+JOBIX — CAREER PROFILE UX POLISH + RESUME BUILDING FOUNDATION + CREDITS + AI IMPROVEMENT
+
+The previous Career Profile Builder milestone has now been tested manually.
+
+IMPORTANT:
+Real signup/authentication is working correctly in the development environment:
+- user can sign up
+- confirmation email is received
+- confirmation returns to the app
+- user enters the authenticated application successfully
+
+Do NOT regress or redesign the working authentication flow.
+
+The current six-step Career Profile Builder is now implemented.
+
+We are moving to the next implementation milestone.
+
+This task has TWO priorities:
+
+PHASE A:
+Polish and correct the Career Profile Builder based on the real manual test findings below.
+
+PHASE B:
+Begin the real Resume Building foundation, Credits system integration, and Jobix AI Improvement experience according to Architecture V2 and the already-approved product rules.
+
+Do NOT implement Cover Letter or Subscription/Billing in this task.
+
+==================================================
+PHASE A — CAREER PROFILE BUILDER FIXES
+==================================================
+
+1. STEP 1 — PERSONAL INFORMATION
+
+Step 1 is the first builder screen.
+
+There MUST NOT be a Back button on Step 1.
+
+The user should only have the forward/Continue action.
+
+### Profile photo
+
+Allow the user to optionally select/upload a profile photo from the device.
+
+Requirements:
+- optional
+- user can select an image from the device
+- user can replace/remove it
+- do not make it required
+- preserve the profile photo with the Career Profile if the current architecture supports it safely
+- do not introduce insecure public storage
+
+Use the existing architecture/security rules.
+
+### Additional links
+
+The user must be able to add links beyond the predefined suggested link types.
+
+For example:
+- LinkedIn
+- GitHub
+- Portfolio
+- Website
+
+But also:
+- Add another link
+- custom label
+- URL
+
+The UI should remain clean and professional.
+
+### Input field visibility
+
+The current text input fields are too transparent against the background.
+
+Improve the input fields so that:
+- text fields are clearly distinguishable from the page background
+- borders/surfaces have sufficient contrast
+- focused state is obvious
+- error state is obvious
+- disabled state is obvious
+- typography remains consistent with Jobix
+- the result remains visually consistent with the supplied screenshots
+
+Do not use generic Material styling if it conflicts with the Jobix visual language.
+
+### CV language indicator
+
+The Resume/CV language selector must make the current selection visually obvious.
+
+The user should immediately understand:
+- English selected
+or
+- Arabic selected
+
+Use a clear selected state, such as:
+- highlighted segmented control
+- check indicator
+- selected chip
+- flag/language marker where appropriate
+
+Do not confuse Resume language with App Language.
+
+Changing CV language changes Resume/output direction/configuration only.
+
+It does NOT translate the user's content.
+
+### Country autocomplete
+
+Country selection must support autocomplete.
+
+The country suggestions must use the selected CV language:
+
+If CV language = Arabic:
+→ country names should be presented in Arabic.
+
+If CV language = English:
+→ country names should be presented in English.
+
+Use a local/reference country dataset.
+
+Do not call an external API for basic country autocomplete.
+
+### Email autofill
+
+The email field should initially be prefilled with the authenticated account email when available.
+
+The user MUST still be able to edit it.
+
+This is convenience only.
+
+Do not treat it as verified just because it came from the auth account.
+
+### Email validation
+
+Do NOT show email format errors while the user is still typing.
+
+Validate:
+- on field blur
+- or on submit/Continue
+
+The error should appear only after the user leaves the field or attempts to continue.
+
+Do not create an annoying real-time error while typing.
+
+==================================================
+2. STEP 2 — PROFESSIONAL SUMMARY
+==================================================
+
+Keep the approved Summary constraints:
+
+- minimum 50 characters when included
+- maximum 1,000 characters
+
+Improve the guidance content.
+
+The user should see a small set of expandable questions that help them generate authentic information that can later be refined by Jobix AI.
+
+Use no more than 6 questions.
+
+Use these questions:
+
+1. What is your professional background?
+Example:
+"Software engineer with 4 years of experience building mobile and web applications."
+
+2. What are your strongest skills or areas of expertise?
+Example:
+"I specialize in Flutter, backend APIs, and building reliable user-focused products."
+
+3. What type of work or problems are you best at solving?
+Example:
+"I enjoy turning complex business requirements into simple, scalable software."
+
+4. What are some achievements or results you are proud of?
+Example:
+"I helped reduce application processing time by 30%."
+
+5. What type of role or work are you looking for next?
+Example:
+"I am looking for a product-focused software engineering role."
+
+6. What makes you valuable to an employer or team?
+Example:
+"I combine technical execution with strong communication and cross-functional collaboration."
+
+IMPORTANT:
+These are prompts/examples only.
+
+Do not populate the user's Summary automatically with these examples.
+
+Do not invent achievements.
+
+The future AI system can use the user's answers as source material.
+
+Keep the UI visually close to the supplied Summary screenshot.
+
+==================================================
+3. STEP 3 — WORK EXPERIENCE UX
+==================================================
+
+The current implementation incorrectly treats every field as if it has the same 200-character limit.
+
+Fix this.
+
+Do NOT impose one generic 200-character limit on every field.
+
+Use appropriate field constraints based on the field's purpose and Architecture/Product Design.
+
+For example:
+- Job Title → short field
+- Company → short field
+- Location → short field
+- Start Date → date input, not character-limited prose
+- End Date → date input, not character-limited prose
+- Description → meaningful longer text field
+
+Approved description range:
+20–1,500 characters.
+
+Do not display a character counter on fields where a character counter is not useful.
+
+Only show counters where they materially help the user.
+
+### Date input
+
+The current UI tells users to type:
+
+YYYY-MM
+
+but the keyboard only provides numeric input, making the "-" impossible to type.
+
+Fix this professionally.
+
+Preferred behavior:
+- use a dedicated month/year picker if appropriate
+OR
+- use a masked input that automatically inserts the "-" after the first four digits.
+
+The user should not have to fight the keyboard.
+
+The resulting stored format can remain:
+YYYY-MM
+
+but the input experience must be mobile-friendly.
+
+Validate:
+- valid year
+- valid month
+- start <= end
+- Present state where applicable
+
+### Improve with Jobix
+
+Under the experience description, reserve a polished Jobix AI Improvement component.
+
+It should visually communicate:
+- Improve with Jobix
+- future AI enhancement
+- AI-generated version will appear here
+
+For now, if the AI operation is not yet connected at that exact point, it may remain disabled/coming-soon until the AI generation flow is wired.
+
+DO NOT fake an AI result.
+
+The component must be designed so it can later display:
+- Original
+- AI Generation
+- Keep Mine
+- Use This
+- Edit Before Accepting
+
+This must be compatible with Architecture V2's AI generation/history model.
+
+==================================================
+4. REQUIRED FIELD BEHAVIOR
+==================================================
+
+For Education, Work Experience, Projects, Certifications, Achievements, Volunteer Experience and other repeatable entities:
+
+Do not allow the user to save/add an entity when required fields are missing.
+
+The UI should clearly show:
+"This item can't be added yet"
+or an equivalent localized message.
+
+Highlight the missing required fields.
+
+However:
+
+Do not block an otherwise valid entity merely because an optional descriptive field is short.
+
+For example:
+- required structural fields must be valid
+- optional description may be marked "Needs attention" if too short
+
+Use a clear distinction between:
+ERROR / BLOCKING
+and
+NEEDS ATTENTION / NON-BLOCKING
+
+Do not silently discard incomplete user input.
+
+==================================================
+5. REVIEW PROFILE
+==================================================
+
+Review Profile is the FINAL builder step.
+
+There MUST NOT be a Back button on Review Profile.
+
+The primary final action is:
+
+Done
+
+Review Profile should communicate that the user has reached the end of the builder.
+
+When the user edits something from Review:
+
+Review
+→ Edit
+→ Save
+→ Return to Review
+
+The editor should not show a normal Back/Continue builder footer when opened from Review.
+
+Use:
+- Back to Review / Cancel where appropriate
+- Save
+
+The user has already reached the final stage.
+
+Do not force them through the entire six-step flow again.
+
+==================================================
+6. CAREER PAGE
+==================================================
+
+The Career page is already the user's profile management hub.
+
+Do NOT put a "Review Profile" button at the bottom of Career.
+
+The Career page already exposes the sections directly.
+
+Users should be able to:
+- open Personal Information
+- open Summary
+- open Work Experience
+- open Education
+- open Skills
+- open Projects
+- open Languages
+- etc.
+
+Career should show useful counts/status summaries.
+
+Review Profile is a builder completion step, not a redundant bottom action on Career.
+
+The visual design should remain aligned with the supplied Career screenshot.
+
+==================================================
+7. AI GENERATION INDICATOR DURING BUILDER
+==================================================
+
+During the Career Profile Builder, show the user's available AI generation allowance near the top of the relevant builder screens.
+
+The UI should communicate something like:
+
+AI Generations
+X / 6 used
+
+or equivalent.
+
+IMPORTANT:
+
+The visual slot can be implemented now, but the underlying real AI quota must be connected to the authoritative server system when the AI backend is implemented.
+
+Do NOT create a fake client-controlled counter.
+
+The approved product rule is:
+
+First Career Profile building journey:
+6 explicit AI generations total across the entire first-profile journey.
+
+They are shared across sections.
+
+One generation = one explicit AI generation request.
+
+Unused first-profile generations do NOT stack.
+
+Once the first-profile transition is completed, the normal daily allowance rules apply.
+
+Free:
+3 generations/day/user
+
+Premium:
+10 generations/day/user
+
+The server must remain authoritative.
+
+AI failures should not unfairly consume allowance.
+
+Do not implement a fake local quota.
+
+==================================================
+8. ARABIC TYPOGRAPHY
+==================================================
+
+Use IBM Plex Sans Arabic for Arabic UI/content rendering.
+
+Make the Arabic typography first-class.
+
+Ensure:
+- Arabic headings
+- Arabic body text
+- Arabic buttons
+- Arabic inputs
+- RTL layout
+- numbers/date presentation
+- mixed Arabic/English text
+
+remain visually professional.
+
+Do not simply mirror the English layout.
+
+Use the appropriate IBM Plex Sans Arabic font weights.
+
+English should continue using the approved Latin typography.
+
+Verify both directions.
+
+==================================================
+PHASE B — RESUME BUILDING + CREDITS + AI IMPROVEMENT
+==================================================
+
+After Phase A is stable, begin the next approved Jobix product layer.
+
+Do NOT implement Cover Letter or Subscription/Billing yet.
+
+==================================================
+9. RESUME BUILDING FOUNDATION
+==================================================
+
+The Career Profile is the source dataset.
+
+Do NOT create a second independent resume data model.
+
+Build the Resume/Resume Configuration layer on top of the Career Profile.
+
+The user should eventually be able to:
+
+Career Profile
+→ Resume configuration
+→ choose CV language
+→ choose template
+→ Resume Preview
+→ Export PDF
+
+For this milestone, implement as much of the Resume Preview foundation as safely possible.
+
+The attached Resume Preview screenshot is the visual reference.
+
+Requirements:
+- professional ATS-friendly presentation
+- selectable text
+- conventional resume hierarchy
+- clear headings
+- bullets
+- readable spacing
+- no decorative elements that interfere with ATS parsing
+- Arabic RTL support
+- English LTR support
+- A4 MVP
+- multiple pages allowed
+- do NOT force everything into one page
+- do NOT silently delete content
+- do NOT shrink typography aggressively just to force one page
+
+The Preview and future PDF must share the same canonical rendering representation.
+
+Do not build a fake screenshot-based resume.
+
+==================================================
+10. RESUME TEMPLATE
+==================================================
+
+MVP should support at least:
+- one professional English template
+- one professional Arabic template/layout
+
+They should be structurally ready from day one.
+
+The Arabic version must be a real RTL resume layout, not an English template with text direction flipped at the end.
+
+Keep template selection independent from Career Profile identity.
+
+Changing template does not create another Career Profile.
+
+Changing CV language does not translate user content.
+
+==================================================
+11. CREDITS
+==================================================
+
+Begin implementing the real server-authoritative Credits foundation according to Architecture V2.
+
+Approved product rules:
+
+Signup:
++5 Credits
+
+Resume PDF export:
+2 Credits per NEW successful export
+
+Professional Email:
+1 Credit per successful use
+(future feature, do not build now)
+
+Cover Letter:
+1 Credit per NEW PDF export
+(future feature, do not build now)
+
+Profile 2:
+10 Credits once
+
+Profile 3:
+20 Credits once
+
+Daily Reward:
++2 Credits
+(future feature, do not build now)
+
+Existing valid generated PDF download:
+0 Credits
+
+Failed export:
+must not permanently consume Credits
+
+Credits must be server authoritative.
+
+Use:
+- immutable credit_transactions
+- mutable credit_reservations
+
+Do not implement client-side balance authority.
+
+Do not invent subscription pricing.
+
+Do not implement billing/subscription in this task.
+
+==================================================
+12. AI IMPROVE WITH JOBIX
+==================================================
+
+Begin implementing the Jobix AI Improvement architecture for Career Profile text.
+
+The AI must NEVER fabricate facts.
+
+AI output is always a proposal until accepted.
+
+For text fields:
+- Original
+- AI Proposal
+- Keep Mine
+- Use This
+- Edit Before Accepting
+
+When the user accepts:
+the accepted version becomes the current profile content.
+
+The original must remain preserved in AI generation history.
+
+The user must be able to distinguish:
+Original
+Generation 1
+Generation 2
+etc.
+
+For Skills:
+AI suggestions may be added by default when the AI feature is eventually enabled.
+Do not silently delete existing skills.
+
+AI must ask for missing factual information instead of inventing it.
+
+Every AI generation must store:
+- source input
+- AI output
+- profile version
+- model/configuration metadata
+- operation state
+
+Follow the Architecture V2 AI state machine.
+
+Use the approved model:
+gemini-3.5-flash
+
+through the configurable server-side AI layer.
+
+Use the existing global endpoint.
+
+No silent fallback.
+
+Do NOT put the model/API credentials in Flutter.
+
+==================================================
+13. AI UX
+==================================================
+
+The AI experience should visually match the supplied Jobix screenshots.
+
+Especially for Work Experience:
+
+Show a polished proposal interface that can eventually contain:
+- Jobix Suggestion
+- Original Draft
+- proposed text
+- factual/ATS considerations
+- Keep Mine
+- Use This Suggestion
+- Edit Before Accepting
+
+Do not show fake generated content.
+
+If the real backend is not ready for a particular screen in this task, implement the UI/state contract cleanly and report what remains.
+
+Do not fake success.
+
+==================================================
+14. UI/UX QUALITY BAR
+==================================================
+
+Every modification in this task must follow the existing Jobix visual language.
+
+Use the supplied screenshots and the "Recreate UI from screenshots" skill.
+
+Do not reproduce screenshots literally with hardcoded content.
+
+Reconstruct the design system and interaction patterns.
+
+Pay particular attention to:
+- input visibility
+- spacing
+- typography
+- hierarchy
+- button size
+- touch targets
+- error states
+- empty states
+- disabled states
+- selected states
+- loading states
+- keyboard behavior
+- bottom safe areas
+- scrolling
+- mobile ergonomics
+- RTL/LTR
+- Arabic typography
+- accessibility
+
+The final result should feel like a polished commercial product, not a collection of forms.
+
+==================================================
+15. DO NOT REGRESS CURRENT AUTH
+==================================================
+
+The real authentication flow has been manually verified as working.
+
+Do not modify it unless a regression is discovered.
+
+Preserve:
+- signup
+- email confirmation
+- return to app
+- authenticated session
+- Profile #1 provisioning
+
+==================================================
+16. ONBOARDING / RESEARCH QUESTIONS LIFECYCLE
+==================================================
+
+Fix the current lifecycle behavior.
+
+Onboarding and Research Questions are FIRST-TIME APP EXPERIENCE only.
+
+They should not appear again after Sign Out.
+
+Correct behavior:
+
+FIRST APP INSTALL / FIRST APP LAUNCH:
+Splash
+→ Onboarding
+→ Research Questions
+→ Authentication
+
+After the user has completed the first-launch experience:
+
+Sign Out
+→ Authentication screen
+
+NOT:
+Sign Out
+→ Onboarding
+→ Research Questions
+
+Research answers should be persisted to the user's account ONLY when the user creates a new account for the first time.
+
+If the user is on a fresh install, answers the research questions, and then chooses Sign In to an EXISTING account:
+do NOT write those fresh-install research answers into the existing account.
+
+The research answers should only be associated with the newly created account during first-time registration.
+
+Preserve the distinction between:
+- first-launch local context
+- account-owned onboarding context
+
+Do not overwrite existing account context during Sign In.
+
+==================================================
+17. TESTING
+==================================================
+
+After implementation:
+
+Run:
+- flutter analyze
+- full existing test suite
+- new widget tests
+- persistence tests
+- validation tests
+- Arabic/RTL tests
+- builder navigation tests
+- Review/Edit tests
+- credit transaction/reservation tests
+- AI operation/state tests where implemented
+- resume rendering tests where implemented
+
+Do not claim live Supabase/Vertex behavior unless actually verified.
+
+Perform live development verification where available.
+
+Report:
+A. Fixed
+B. Implemented
+C. Verified
+D. Not yet implemented
+E. Requires real Android device
+F. Next recommended task
+
+==================================================
+18. SCOPE PRIORITY
+==================================================
+
+Priority order:
+
+P0 — Do not regress authentication.
+
+P1 — Fix all manually observed Career Profile UX issues.
+
+P2 — Correct onboarding/research lifecycle.
+
+P3 — Arabic typography and polished bilingual UX.
+
+P4 — AI generation UI/state architecture.
+
+P5 — Credits foundation.
+
+P6 — Resume configuration + Preview foundation.
+
+P7 — PDF export foundation where safely implementable.
+
+Do NOT start:
+- Cover Letter
+- Professional Email
+- Subscription/Billing
+- advanced paid features
+
+until this milestone is stable.
+
+==================================================
+19. FINAL ACCEPTANCE
+==================================================
+
+I should be able to:
+
+1. Open Jobix for the first time.
+2. Complete onboarding/research questions.
+3. Sign up and confirm email.
+4. Enter Step 1 with no Back button.
+5. See my account email prefilled but editable.
+6. Upload an optional profile photo.
+7. Add standard and custom links.
+8. Select CV language with a clearly visible selected state.
+9. Use country autocomplete in the selected CV language.
+10. Continue to Summary.
+11. See useful Summary questions and examples.
+12. Continue to Work Experience.
+13. Enter dates without fighting the keyboard.
+14. Enter realistic long descriptions.
+15. See a future-ready Improve with Jobix component.
+16. Continue through Education, Skills, Projects and Languages.
+17. Have required-field validation.
+18. See non-blocking "Needs Attention" guidance where appropriate.
+19. Reach Review Profile with no Back button.
+20. Edit a section from Review.
+21. Save and return to Review.
+22. Open Career and manage sections directly without a redundant Review Profile button.
+23. Sign Out and return directly to Authentication.
+24. Sign back in without seeing onboarding/research again.
+25. Preserve the existing account's research context.
+26. See the AI generation allowance UI.
+27. See professional Arabic typography using IBM Plex Sans Arabic.
+28. Access the first real Resume Preview/Resume Building foundation.
+29. Have Credits handled server-side.
+30. Have Jobix AI Improvement designed and wired according to the approved anti-fabrication rules.
+
+Do not sacrifice architecture quality for speed.
+Do not invent product behavior.
+Do not fabricate AI results, ATS scores, Credits, subscription status, or user data.

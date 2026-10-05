@@ -28,7 +28,7 @@ enum EntitySection {
       'description',
       FieldKind.multiline,
       max: 1500,
-      required: true,
+      required: false,
       minimum: 20,
     ),
   ]),
@@ -58,7 +58,7 @@ enum EntitySection {
       'description',
       FieldKind.multiline,
       max: 1500,
-      required: true,
+      required: false,
       minimum: 20,
     ),
     SectionField('url', FieldKind.url, max: 2048),
@@ -71,7 +71,7 @@ enum EntitySection {
       'description',
       FieldKind.multiline,
       max: 1500,
-      required: true,
+      required: false,
       minimum: 20,
     ),
     SectionField('url', FieldKind.url, max: 2048),
@@ -108,7 +108,7 @@ const proficiencies = [
   'NATIVE',
 ];
 
-final _month = RegExp(r'^\d{4}-(0[1-9]|1[0-2])$');
+final _month = RegExp(r'^(?!0000)\d{4}-(0[1-9]|1[0-2])$');
 final _scheme = RegExp(r'^[A-Za-z][A-Za-z0-9+.-]*:');
 final _url = RegExp(r'^https://[^\s/?#@]+\.[^\s/?#@]+([/?#]\S*)?$');
 
@@ -129,8 +129,8 @@ String? normalizeUrl(String raw) {
       : null;
 }
 
-/// Field-level problems. Empty means the item can be saved; incomplete
-/// items may still be saved and earn no completeness.
+/// Blocking structural/format problems. Descriptive quality is a separate,
+/// non-blocking concern; local drafts retain every incomplete edit.
 enum FieldProblem {
   tooLong,
   invalidMonth,
@@ -229,15 +229,28 @@ class ProfileItem {
     for (final field in section.fields) {
       final value = values[field.name];
       if (field.kind == FieldKind.toggle) continue;
+      if (field.name == 'end_month' &&
+          section.hasCurrent &&
+          flag('is_current')) {
+        continue;
+      }
       if (field.kind == FieldKind.list) {
-        if (list(field.name).any((v) => v.trim().length > field.max)) {
+        if (list(field.name).any((v) => v.trim().runes.length > field.max)) {
           result[field.name] = FieldProblem.tooLong;
         }
         continue;
       }
       final s = (value as String? ?? '').trim();
-      if (s.length > field.max) result[field.name] = FieldProblem.tooLong;
-      if (s.isEmpty) continue;
+      if (s.runes.length > field.max) result[field.name] = FieldProblem.tooLong;
+      if (s.isEmpty) {
+        if (field.required ||
+            (field.name == 'end_month' &&
+                section.hasCurrent &&
+                !flag('is_current'))) {
+          result[field.name] = FieldProblem.required;
+        }
+        continue;
+      }
       if (field.kind == FieldKind.month && !_month.hasMatch(s)) {
         result[field.name] = FieldProblem.invalidMonth;
       }
@@ -269,7 +282,7 @@ class ProfileItem {
 
   /// Local estimate used only before the server acknowledges a save.
   bool get locallyComplete {
-    if (problems().isNotEmpty) return false;
+    if (problems().isNotEmpty || needsAttention) return false;
     for (final field in section.fields) {
       if (!field.required) continue;
       if (text(field.name).trim().length < field.minimum) return false;
@@ -281,4 +294,12 @@ class ProfileItem {
     }
     return true;
   }
+
+  /// Descriptive attention never blocks structurally valid saves.
+  bool get needsAttention => section.fields.any(
+    (field) =>
+        field.kind == FieldKind.multiline &&
+        field.minimum > 1 &&
+        text(field.name).trim().runes.length < field.minimum,
+  );
 }

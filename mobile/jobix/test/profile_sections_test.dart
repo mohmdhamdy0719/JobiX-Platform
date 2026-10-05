@@ -23,30 +23,40 @@ void main() {
   });
 
   group('item validation', () {
-    test('incomplete items are saveable and earn no local completeness', () {
+    test('incomplete structural items retain drafts but cannot be added', () {
       final draft = item(EntitySection.experience, {'job_title': 'Dev'});
-      expect(draft.problems(), isEmpty);
+      expect(draft.problems()['company'], FieldProblem.required);
+      expect(draft.problems()['start_month'], FieldProblem.required);
+      expect(draft.problems()['end_month'], FieldProblem.required);
       expect(draft.locallyComplete, false);
     });
 
-    test('complete experience needs end or current and a 20+ description', () {
-      final base = item(EntitySection.experience, {
-        'job_title': 'Dev',
-        'company': 'Co',
-        'start_month': '2022-03',
-        'description': 'Shipped features weekly.',
-      });
-      expect(base.locallyComplete, false, reason: 'no end and not current');
-      expect(base.copyWith('is_current', true).locallyComplete, true);
-      expect(base.copyWith('end_month', '2023-01').locallyComplete, true);
-      expect(
-        base
+    test(
+      'short description is attention only; end or current is structural',
+      () {
+        final base = item(EntitySection.experience, {
+          'job_title': 'Dev',
+          'company': 'Co',
+          'start_month': '2022-03',
+          'description': 'Shipped features weekly.',
+        });
+        expect(base.locallyComplete, false, reason: 'no end and not current');
+        expect(base.copyWith('is_current', true).locallyComplete, true);
+        expect(base.copyWith('end_month', '2023-01').locallyComplete, true);
+        expect(
+          base
+              .copyWith('is_current', true)
+              .copyWith('description', 'Too short')
+              .locallyComplete,
+          false,
+        );
+        final short = base
             .copyWith('is_current', true)
-            .copyWith('description', 'Too short')
-            .locallyComplete,
-        false,
-      );
-    });
+            .copyWith('description', 'Short');
+        expect(short.problems(), isEmpty);
+        expect(short.needsAttention, true);
+      },
+    );
 
     test('months, ranges, URLs and lengths are checked', () {
       expect(
@@ -65,6 +75,9 @@ void main() {
       // A current role ignores a stale end month.
       expect(
         item(EntitySection.education, {
+          'degree': 'BSc',
+          'institution': 'Cairo University',
+          'field_of_study': 'Engineering',
           'start_month': '2023-05',
           'end_month': '2022-01',
           'is_current': true,
@@ -86,6 +99,34 @@ void main() {
         FieldProblem.tooLong,
       );
     });
+
+    test(
+      'year zero and invalid months are rejected; current ignores stale end',
+      () {
+        expect(
+          item(EntitySection.project, {
+            'project_month': '0000-01',
+          }).problems()['project_month'],
+          FieldProblem.invalidMonth,
+        );
+        expect(
+          item(EntitySection.project, {
+            'project_month': '2024-00',
+          }).problems()['project_month'],
+          FieldProblem.invalidMonth,
+        );
+        final current = item(EntitySection.experience, {
+          'job_title': 'Developer',
+          'company': 'Jobix',
+          'start_month': '2022-01',
+          'is_current': true,
+          'end_month': 'invalid',
+        });
+        expect(current.problems(), isEmpty);
+        expect(current.needsAttention, true);
+        expect(current.payload()['end_month'], isNull);
+      },
+    );
 
     test('skills and languages require their identifying values', () {
       expect(

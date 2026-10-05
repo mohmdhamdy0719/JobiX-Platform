@@ -7,6 +7,7 @@ import '../../features/auth/auth_repository.dart';
 import '../../features/auth/auth_page.dart';
 import '../../features/boot/startup.dart';
 import '../../features/core_mvp/career_page.dart';
+import '../../features/resume/resume_page.dart';
 import '../../features/core_mvp/credits_page.dart';
 import '../../features/core_mvp/settings_page.dart';
 import '../../features/home/home_page.dart';
@@ -15,6 +16,7 @@ import '../../features/onboarding/onboarding_page.dart';
 import '../../features/onboarding/research_context.dart';
 import '../../features/onboarding/research_page.dart';
 import '../../features/personal_information/personal_information_page.dart';
+import '../../features/personal_information/profile_extras_page.dart';
 import '../../features/career_profile/profile_sections.dart';
 import '../../features/career_profile/text_section_page.dart';
 import '../../features/builder/builder_scaffold.dart';
@@ -53,6 +55,7 @@ String? sliceRedirect({
         path == '/career' ||
         path == '/settings' ||
         path == '/credits' ||
+        path == '/resume' ||
         builderPath.hasMatch(path) ||
         path.startsWith('/career/')) {
       return null;
@@ -66,17 +69,22 @@ String? sliceRedirect({
   }
   final destination = progress == null || !progress.onboardingDone
       ? '/onboarding'
-      : !progress.complete
+      : !progress.experienceComplete
       ? '/research'
       : '/auth';
-  if (path == '/auth' && progress?.complete == true) {
+  if (path == '/auth' && progress?.experienceComplete == true) {
     return null;
   }
-  if ((path == '/confirm' || path == '/forgot') && progress?.complete == true) {
+  if ((path == '/confirm' || path == '/forgot') &&
+      progress?.experienceComplete == true) {
     return null;
   }
   if (path == '/onboarding' && progress?.onboardingDone != true) return null;
-  if (path == '/research' && progress?.onboardingDone == true) return null;
+  if (path == '/research' &&
+      progress?.onboardingDone == true &&
+      progress?.firstLaunchComplete != true) {
+    return null;
+  }
   return path == destination ? null : destination;
 }
 
@@ -148,6 +156,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/home', builder: (_, __) => const HomePage()),
       GoRoute(path: '/career', builder: (_, __) => const CareerPage()),
+      GoRoute(path: '/resume', builder: (_, __) => const ResumePage()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsPage()),
       GoRoute(path: '/credits', builder: (_, __) => const CreditsPage()),
       GoRoute(
@@ -170,6 +179,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/career/personal',
         builder: (_, state) => PersonalInformationPage(
           origin: state.uri.queryParameters['origin'],
+        ),
+      ),
+      GoRoute(
+        path: '/career/extras',
+        builder: (_, state) => ProfileExtrasPage(
+          origin: state.uri.queryParameters['origin'] ?? 'career',
         ),
       ),
       GoRoute(

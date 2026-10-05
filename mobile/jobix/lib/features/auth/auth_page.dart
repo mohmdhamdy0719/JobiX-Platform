@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design/async_states.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../onboarding/onboarding_controller.dart';
 import '../personal_information/personal_information_validator.dart';
@@ -76,7 +77,13 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       container.read(authFlowProvider.notifier).state = const AuthFlow(
         registration: true,
       );
-      await api.signUp(emailValue, passwordValue);
+      final registeredUser = await api.signUp(emailValue, passwordValue);
+      // Bind first-install answers to this newly registered account only.
+      // This is lifecycle metadata, not a change to Auth or confirmation.
+      if (registeredUser != null) {
+        final database = await container.read(databaseProvider.future);
+        await database.setSetting('registration_user', registeredUser);
+      }
       container.read(pendingConfirmationEmailProvider.notifier).state =
           emailValue.trim();
       container.invalidate(firstEntryProvider);

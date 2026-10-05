@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jobix — Builder polish and Resume foundation</title>
+<style>body{font:16px/1.65 system-ui,sans-serif;max-width:880px;margin:40px auto;padding:24px;color:#17253c;background:#f6f8fc}section{background:#fff;border:1px solid #dce3ed;border-radius:12px;padding:22px;margin:20px 0}h1{line-height:1.2}h2{font-size:21px;color:#205cc4}li{margin:7px 0}strong{color:#17253c}</style>
+<h1>Jobix: Builder polish &amp; Resume foundation</h1>
+<p>Development milestone. Not a production release or real-device acceptance.</p>
+<section><h2>A. Fixed</h2><ul>
+<li>Step 1 and Review have no on-screen Back action; Review uses Done. Review-origin editors save back to Review without the normal builder footer. Removed the redundant Career Review button.</li>
+<li>Clearer input surfaces, selected CV-language indication, editable account-email suggestion, and email validation on blur/submit.</li>
+<li>Offline English/Arabic country autocomplete follows CV language. Six exact Summary guidance questions with illustrative-only examples.</li>
+<li>Mobile YYYY-MM masking, Arabic digits, date validity/order, structural-field blocking and nonblocking short-description attention.</li>
+<li>Bundled IBM Plex Sans Arabic with Inter for Latin text.</li>
+<li>First-launch completion is separate from account-owned answers. Sign-out keeps completion and clears private account drafts. Research attachment requires registration binding, not merely a signed-in account.</li>
+</ul></section>
+<section><h2>B. Implemented</h2><ul>
+<li>Optional device photo selection/replacement/removal and custom labelled HTTPS links. JPEG/PNG images are bounded to 1 MiB and stored in an owner-protected development database record, not a public bucket. This avoids repurposing the PDF-only GCS bucket.</li>
+<li>Encrypted local drafts, exact pending-request replay and explicit conflict handling for extras.</li>
+<li>Server-returned AI allowance display, first-profile allowance foundation and 50% transition latch. The proposal component supports original/proposal presentation and explicit acceptance callbacks; no generation is enabled.</li>
+<li>Worker-only Credits reservation, release and consume functions with locking, operation identity, fencing and expiration checks. Existing +5 signup behavior is preserved. Failed/released reservations do not permanently debit the wallet.</li>
+<li>Owner-scoped Resume configuration referencing the existing Career Profile, English/Arabic ATS template identifiers, canonical escaped HTML with embedded fonts, selectable text, RTL/LTR, A4 print styles and no single-page clipping.</li>
+<li>Native WebView preview screen and Career entry point. Preview does not charge Credits. Configuration retries preserve the original request; conflicts offer explicit saved-configuration reload.</li>
+</ul></section>
+<section><h2>C. Verified</h2><ul>
+<li>Flutter static analysis and the existing automated suite, including new extras, allowance and renderer coverage. Native English/Arabic widget captures were inspected. See the accompanying chat for final run counts.</li>
+<li>Actual isolated-development PostgreSQL transactional tests: structural validation, private extras access, stale versions, Resume configuration without duplicate profiles, server allowance response, Credits reserve/release/consume and duplicate-finalization protection.</li>
+<li>Additive migrations applied only to the approved development database. Test-account fixtures were rolled back. No production migration, Vertex-generation or live-device success is claimed.</li>
+</ul></section>
+<section><h2>D. Not yet implemented</h2><ul>
+<li>Live gemini-3.5-flash global-endpoint request flow; AI operation reservation/reconciliation, generation history, version-checked proposal acceptance and factual clarification. Generation stays disabled rather than returning fabricated results.</li>
+<li>Premium entitlement wiring. Existing accounts remain Free; no subscriptions or billing were introduced.</li>
+<li>Chromium PDF worker, exact paginated PDF verification, private PDF storage/download lifecycle and export-to-reservation integration. The current WebView is a continuous A4-width document; print CSS is the foundation, not proof of final PDF pagination.</li>
+<li>Profile 2/3 paid unlock flows, Cover Letter, Professional Email, rewards and advanced paid features.</li>
+<li>Photo inclusion in Resume templates. The private profile photo is managed separately; current ATS templates are text-first.</li>
+</ul></section>
+<section><h2>E. Requires real Android device</h2><p>Gallery permissions and picker recovery, photo sync after relaunch, keyboard/date behavior, WebView font rendering/zoom/selection, Android back behavior, secure-storage/process-death recovery and full email-confirmation callback regression. Host tests and APK compilation do not prove these.</p></section>
+<section><h2>F. Next recommended task</h2><p>Complete the server AI request/state/history/acceptance path against the approved global model, including quota reconciliation and failure release, before enabling Improve with Jobix. Separately validate the current Android photo and Resume-preview flows on the owner's device.</p></section></html>

@@ -25,9 +25,12 @@ class ResearchProgress {
     this.help = const [],
     this.mergedUser,
     this.commandKey,
+    this.firstLaunchComplete = false,
   });
   final int onboardingPage;
   final bool onboardingDone;
+  final bool firstLaunchComplete;
+  bool get experienceComplete => firstLaunchComplete || complete;
   final String? stage, goal, location, mergedUser, commandKey;
   final List<String> help;
   int get question => stage == null
@@ -52,6 +55,7 @@ class ResearchProgress {
     'done': onboardingDone,
     'merged': mergedUser,
     'key': commandKey,
+    'first_launch_complete': firstLaunchComplete,
   });
   factory ResearchProgress.decode(String? source) {
     if (source == null) return const ResearchProgress();
@@ -65,6 +69,7 @@ class ResearchProgress {
       help: List<String>.from(data['help_areas'] as List? ?? []),
       mergedUser: data['merged'] as String?,
       commandKey: data['key'] as String?,
+      firstLaunchComplete: data['first_launch_complete'] == true,
     );
   }
   ResearchProgress copy({
@@ -76,6 +81,7 @@ class ResearchProgress {
     List<String>? help,
     String? mergedUser,
     String? commandKey,
+    bool? firstLaunchComplete,
   }) => ResearchProgress(
     onboardingPage: page ?? onboardingPage,
     onboardingDone: done ?? onboardingDone,
@@ -85,6 +91,7 @@ class ResearchProgress {
     help: help ?? this.help,
     mergedUser: mergedUser ?? this.mergedUser,
     commandKey: commandKey ?? this.commandKey,
+    firstLaunchComplete: firstLaunchComplete ?? this.firstLaunchComplete,
   );
   ResearchProgress select(int question, String value) {
     if (!researchOptions[question].contains(value)) {

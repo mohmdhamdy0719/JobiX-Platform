@@ -8,13 +8,13 @@ abstract final class TokensV0 {
     'APPROVED_FONT_FAMILY',
     defaultValue: 'Inter',
   );
-  static const arabicFontFamily = 'Noto Sans Arabic';
+  static const arabicFontFamily = 'IBM Plex Sans Arabic';
   static const navy = Color(0xFF14243A);
   static const deepBlue = Color(0xFF203F75);
   static const primary = Color(0xFF2563EB);
   static const primaryHover = Color(0xFF3B82F6);
-  static const background = Color(0xFFFAFBFD);
-  static const canvas = Color(0xFFFAFBFD);
+  static const background = Color(0xFFF7F9FE);
+  static const canvas = Color(0xFFF7F9FE);
   static const surfaceCard = Color(0xFFFFFFFF);
   static const onPrimary = Color(0xFFFFFFFF);
   static const transparent = Color(0x00000000);
@@ -79,6 +79,15 @@ abstract final class TokensV0 {
   static const labelLargeSize = 16.0;
   static const labelMediumSize = 14.0;
   static const labelSmallSize = 12.0;
+  static TextStyle languageChoiceLabel({
+    required String languageCode,
+    required bool selected,
+  }) => TextStyle(
+    fontFamily: languageCode == 'ar' ? arabicFontFamily : fontFamily,
+    fontFamilyFallback: const [fontFamily, arabicFontFamily],
+    fontWeight: FontWeight.w600,
+    color: selected ? onPrimary : textPrimary,
+  );
 }
 
 ThemeData foundationTheme({String? languageCode}) {
@@ -285,6 +294,10 @@ ThemeData foundationTheme({String? languageCode}) {
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(TokensV0.controlRadius),
         borderSide: const BorderSide(color: TokensV0.error, width: 1.5),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(TokensV0.controlRadius),
+        borderSide: const BorderSide(color: TokensV0.surfaceContainer),
       ),
     ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),

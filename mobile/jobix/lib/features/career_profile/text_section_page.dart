@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../builder/builder_scaffold.dart';
@@ -12,6 +13,7 @@ import '../home/home_page.dart';
 import 'career_profile.dart';
 import 'text_section_repository.dart';
 import 'summary_writing_hints.dart';
+import '../builder/jobix_improvement.dart';
 
 String textSectionTitle(BuildContext context, String section) {
   final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
@@ -48,10 +50,10 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   String say(String en, String arabic) => ar ? arabic : en;
   int get maximum => widget.section == 'summary' ? 1000 : 200;
   bool get fromReview => widget.origin == 'review';
-  String get backRoute => widget.builderStep != null
-      ? '/builder/${widget.builderStep! - 1}'
-      : fromReview
+  String get backRoute => fromReview
       ? '/builder/6'
+      : widget.builderStep != null
+      ? '/builder/${widget.builderStep! - 1}'
       : '/career';
 
   Future<void> advance() async {
@@ -60,7 +62,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
     if (!mounted || dirty) return;
     allowPop = true;
     context.go(
-      widget.builderStep != null
+      !fromReview && widget.builderStep != null
           ? '/builder/${widget.builderStep! + 1}'
           : '/builder/6',
     );
@@ -313,11 +315,10 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (draft == null) ...[
-              Text(
-                failed
-                    ? copy.profileUnavailable
-                    : say('Loading…', 'جار التحميل…'),
-              ),
+              if (failed)
+                Text(copy.profileUnavailable)
+              else
+                const FormLoadingState(),
               if (failed) TextButton(onPressed: load, child: Text(copy.retry)),
             ] else ...[
               SectionHeading(
@@ -349,7 +350,20 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                                 'e.g. Senior Frontend Developer',
                                 'مثال: مطوّر واجهات أمامية أول',
                               ),
-                        counterText: '$count / $maximum',
+                        counterText:
+                            '${controller.text.runes.length} / $maximum',
+                        suffixIcon: controller.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: say('Clear field', 'مسح الحقل'),
+                                icon: const Icon(Icons.clear),
+                                onPressed: busy
+                                    ? null
+                                    : () {
+                                        controller.clear();
+                                        edit('');
+                                      },
+                              ),
                         errorText: count > maximum
                             ? say('Hard limit exceeded', 'تم تجاوز الحد الأقصى')
                             : null,
@@ -373,12 +387,14 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: TokensV0.space12),
+              JobixImprovement(original: controller.text),
               if (widget.section == 'summary') ...[
                 const SizedBox(height: TokensV0.space12),
                 const SummaryWritingHints(),
               ],
               const SizedBox(height: TokensV0.space20),
-              if (widget.builderStep == null) ...[
+              if (widget.builderStep == null || fromReview) ...[
                 PrimaryAction(
                   key: Key('save-${widget.section}'),
                   label: copy.saveAction,
@@ -387,7 +403,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 const SizedBox(height: TokensV0.space12),
                 TextButton(
                   onPressed: busy ? null : leave,
-                  child: Text(fromReview ? copy.backAction : copy.saveLater),
+                  child: Text(fromReview ? copy.backToReview : copy.saveLater),
                 ),
               ],
               if (notice != null)
@@ -400,7 +416,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   }
 
   Widget frame(AppLocalizations copy, Widget child) {
-    if (widget.builderStep != null) {
+    if (widget.builderStep != null && !fromReview) {
       return BuilderScaffold(
         step: widget.builderStep!,
         busy: busy,

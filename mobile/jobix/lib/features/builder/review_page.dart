@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
@@ -22,7 +23,6 @@ class ReviewPage extends ConsumerWidget {
     final profile = async.valueOrNull;
     return BuilderScaffold(
       step: 6,
-      onBack: () => context.go('/builder/5'),
       continueLabel: copy.doneAction,
       continueKey: const Key('review-done'),
       onContinue: () => context.go('/career'),
@@ -33,7 +33,7 @@ class ReviewPage extends ConsumerWidget {
                       onPressed: () => ref.invalidate(firstProfileProvider),
                       child: Text(copy.retry),
                     )
-                  : const CircularProgressIndicator(),
+                  : const FormLoadingState(),
             )
           : _ReviewBody(profile: profile),
     );

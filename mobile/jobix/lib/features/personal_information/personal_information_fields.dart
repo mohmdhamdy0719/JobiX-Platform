@@ -4,6 +4,7 @@ import '../../core/design/tokens.dart';
 import '../../core/localization/direction.dart';
 import '../../l10n/app_localizations.dart';
 import 'personal_information_validator.dart';
+import 'country_autocomplete.dart';
 
 class PersonalInformationFields extends StatelessWidget {
   const PersonalInformationFields({
@@ -15,6 +16,7 @@ class PersonalInformationFields extends StatelessWidget {
     required this.errors,
     required this.regionEgypt,
     required this.cityHistory,
+    this.onBlur,
     this.enabled = true,
     super.key,
   });
@@ -23,6 +25,7 @@ class PersonalInformationFields extends StatelessWidget {
   final String language;
   final Map<String, TextEditingController> controllers;
   final void Function(String field, String value) onChanged;
+  final ValueChanged<String>? onBlur;
   final Set<String> errors;
   final bool regionEgypt, enabled;
   final List<String> cityHistory;
@@ -76,37 +79,43 @@ class PersonalInformationFields extends StatelessWidget {
                         label,
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
-                      TextFormField(
-                        key: Key('personal-$key'),
-                        controller: controllers[key],
-                        enabled: enabled,
-                        keyboardType: TextInputType.url,
-                        textDirection: TextDirection.ltr,
-                        decoration: InputDecoration(
-                          hintText: hint,
-                          errorText: error(key),
-                          isDense: true,
-                          filled: false,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 4,
+                      Focus(
+                        onFocusChange: (focused) {
+                          if (!focused) onBlur?.call(key);
+                        },
+                        child: TextFormField(
+                          key: Key('personal-$key'),
+                          controller: controllers[key],
+                          enabled: enabled,
+                          keyboardType: TextInputType.url,
+                          textDirection: TextDirection.ltr,
+                          decoration: InputDecoration(
+                            hintText: hint,
+                            errorText: error(key),
+                            isDense: true,
+                            filled: false,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 4,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            suffixIcon: controllers[key]!.text.isEmpty
+                                ? null
+                                : IconButton(
+                                    tooltip: clearLabel,
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: enabled
+                                        ? () {
+                                            controllers[key]!.clear();
+                                            onChanged(key, '');
+                                          }
+                                        : null,
+                                  ),
                           ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          suffixIcon: controllers[key]!.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  tooltip: clearLabel,
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: enabled
-                                      ? () {
-                                          controllers[key]!.clear();
-                                          onChanged(key, '');
-                                        }
-                                      : null,
-                                ),
+                          onChanged: (value) => onChanged(key, value),
+                          onFieldSubmitted: (_) => onBlur?.call(key),
                         ),
-                        onChanged: (value) => onChanged(key, value),
                       ),
                     ],
                   ),
@@ -123,47 +132,49 @@ class PersonalInformationFields extends StatelessWidget {
           children: [
             Text(label, style: Theme.of(context).textTheme.labelMedium),
             const SizedBox(height: 6),
-            TextFormField(
-              key: Key('personal-$key'),
-              controller: controllers[key],
-              enabled: enabled,
-              keyboardType: keyboard,
-              textAlign: TextAlign.start,
-              textDirection:
-                  key == 'email' || key == 'phone' || key.endsWith('_url')
-                  ? TextDirection.ltr
-                  : contentDirection(controllers[key]!.text, direction),
-              textCapitalization:
-                  key == 'full_name' || key == 'city' || key == 'country'
-                  ? TextCapitalization.words
-                  : TextCapitalization.none,
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 13,
+            Focus(
+              onFocusChange: (focused) {
+                if (!focused) onBlur?.call(key);
+              },
+              child: TextFormField(
+                key: Key('personal-$key'),
+                controller: controllers[key],
+                enabled: enabled,
+                keyboardType: keyboard,
+                textAlign: TextAlign.start,
+                textDirection:
+                    key == 'email' || key == 'phone' || key.endsWith('_url')
+                    ? TextDirection.ltr
+                    : contentDirection(controllers[key]!.text, direction),
+                textCapitalization:
+                    key == 'full_name' || key == 'city' || key == 'country'
+                    ? TextCapitalization.words
+                    : TextCapitalization.none,
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 13,
+                  ),
+                  hintText: hint,
+                  errorText: error(key),
+                  prefixIcon: Icon(icon),
+                  suffixIcon: controllers[key]!.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: clearLabel,
+                          icon: const Icon(Icons.clear),
+                          onPressed: enabled
+                              ? () {
+                                  controllers[key]!.clear();
+                                  onChanged(key, '');
+                                }
+                              : null,
+                        ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                hintText: hint,
-                errorText: error(key),
-                prefixIcon: Icon(icon),
-                suffixIcon: controllers[key]!.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: clearLabel,
-                        icon: const Icon(Icons.clear),
-                        onPressed: enabled
-                            ? () {
-                                controllers[key]!.clear();
-                                onChanged(key, '');
-                              }
-                            : null,
-                      ),
+                onChanged: (value) => onChanged(key, value),
+                onFieldSubmitted: (_) => onBlur?.call(key),
               ),
-              onChanged: (value) => onChanged(key, value),
             ),
           ],
         ),
@@ -172,134 +183,145 @@ class PersonalInformationFields extends StatelessWidget {
 
     return Directionality(
       textDirection: direction,
-      child: Column(
-        children: [
-          SliceCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SectionHeading(
-                  title: copy.contactHeading,
-                  subtitle: copy.exportRequiredHint,
-                ),
-                const SizedBox(height: TokensV0.space16),
-                field(
-                  'full_name',
-                  copy.fullName,
-                  copy.nameExample,
-                  Icons.badge_outlined,
-                ),
-                field(
-                  'email',
-                  copy.emailLabel,
-                  copy.emailExample,
-                  Icons.mail_outline,
-                  keyboard: TextInputType.emailAddress,
-                ),
-                field(
-                  'phone',
-                  copy.phoneLabel,
-                  copy.phoneExample,
-                  Icons.phone_outlined,
-                  keyboard: TextInputType.phone,
-                ),
-                Text(
-                  copy.phoneValidationHint,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: TokensV0.space16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final country = field(
-                      'country',
-                      copy.countryLabel,
-                      copy.countryExample,
-                      Icons.public,
-                    );
-                    final city = Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          copy.cityLabel,
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        const SizedBox(height: 6),
-                        _CityAutocomplete(
-                          controller: controllers['city']!,
-                          history: cityHistory,
-                          direction: direction,
-                          copy: copy,
-                          enabled: enabled,
-                          onChanged: (value) => onChanged('city', value),
-                        ),
-                      ],
-                    );
-                    // HTML's two-column location grid adapts for enlarged text.
-                    if (constraints.maxWidth < 280 ||
-                        MediaQuery.textScalerOf(context).scale(14) > 18) {
-                      return Column(children: [country, city]);
-                    }
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: country),
-                        const SizedBox(width: 8),
-                        Expanded(child: city),
-                      ],
-                    );
-                  },
-                ),
-                if (regionEgypt && controllers['country']!.text.isEmpty)
-                  TextButton(
-                    key: const Key('use-egypt'),
-                    onPressed: enabled
-                        ? () {
-                            final value = language == 'ar' ? 'مصر' : 'Egypt';
-                            controllers['country']!.text = value;
-                            onChanged('country', value);
-                          }
-                        : null,
-                    child: Text(copy.useEgypt),
+      child: Theme(
+        data: foundationTheme(languageCode: language),
+        child: Column(
+          children: [
+            SliceCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SectionHeading(
+                    title: copy.contactHeading,
+                    subtitle: copy.exportRequiredHint,
                   ),
-                Text(
-                  copy.locationDataMissing,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+                  const SizedBox(height: TokensV0.space16),
+                  field(
+                    'full_name',
+                    copy.fullName,
+                    copy.nameExample,
+                    Icons.badge_outlined,
+                  ),
+                  field(
+                    'email',
+                    copy.emailLabel,
+                    copy.emailExample,
+                    Icons.mail_outline,
+                    keyboard: TextInputType.emailAddress,
+                  ),
+                  field(
+                    'phone',
+                    copy.phoneLabel,
+                    copy.phoneExample,
+                    Icons.phone_outlined,
+                    keyboard: TextInputType.phone,
+                  ),
+                  Text(
+                    copy.phoneValidationHint,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: TokensV0.space16),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final country = Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            copy.countryLabel,
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          const SizedBox(height: 6),
+                          CountryAutocomplete(
+                            controller: controllers['country']!,
+                            language: language,
+                            hint: copy.countryExample,
+                            clearLabel: clearLabel,
+                            enabled: enabled,
+                            onChanged: (value) => onChanged('country', value),
+                          ),
+                        ],
+                      );
+                      final city = Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            copy.cityLabel,
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                          const SizedBox(height: 6),
+                          _CityAutocomplete(
+                            controller: controllers['city']!,
+                            history: cityHistory,
+                            direction: direction,
+                            copy: copy,
+                            enabled: enabled,
+                            onChanged: (value) => onChanged('city', value),
+                          ),
+                        ],
+                      );
+                      // HTML's two-column location grid adapts for enlarged text.
+                      if (constraints.maxWidth < 280 ||
+                          MediaQuery.textScalerOf(context).scale(14) > 18) {
+                        return Column(children: [country, city]);
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: country),
+                          const SizedBox(width: 8),
+                          Expanded(child: city),
+                        ],
+                      );
+                    },
+                  ),
+                  if (regionEgypt && controllers['country']!.text.isEmpty)
+                    TextButton(
+                      key: const Key('use-egypt'),
+                      onPressed: enabled
+                          ? () {
+                              final value = language == 'ar' ? 'مصر' : 'Egypt';
+                              controllers['country']!.text = value;
+                              onChanged('country', value);
+                            }
+                          : null,
+                      child: Text(copy.useEgypt),
+                    ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: TokensV0.space24),
-          SliceCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SectionHeading(title: copy.optionalHeading),
-                const SizedBox(height: TokensV0.space16),
-                field(
-                  'linkedin_url',
-                  copy.linkedInLabel,
-                  'https://linkedin.com/in/…',
-                  Icons.work_outline,
-                  keyboard: TextInputType.url,
-                ),
-                field(
-                  'github_url',
-                  copy.githubLabel,
-                  'https://github.com/…',
-                  Icons.code,
-                  keyboard: TextInputType.url,
-                ),
-                field(
-                  'portfolio_url',
-                  copy.portfolioLabel,
-                  'https://…',
-                  Icons.link,
-                  keyboard: TextInputType.url,
-                ),
-              ],
+            const SizedBox(height: TokensV0.space24),
+            SliceCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SectionHeading(title: copy.optionalHeading),
+                  const SizedBox(height: TokensV0.space16),
+                  field(
+                    'linkedin_url',
+                    copy.linkedInLabel,
+                    'https://linkedin.com/in/…',
+                    Icons.work_outline,
+                    keyboard: TextInputType.url,
+                  ),
+                  field(
+                    'github_url',
+                    copy.githubLabel,
+                    'https://github.com/…',
+                    Icons.code,
+                    keyboard: TextInputType.url,
+                  ),
+                  field(
+                    'portfolio_url',
+                    copy.portfolioLabel,
+                    'https://…',
+                    Icons.link,
+                    keyboard: TextInputType.url,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -355,11 +377,21 @@ class _CityAutocompleteState extends State<_CityAutocomplete> {
           horizontal: 12,
           vertical: 13,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
         prefixIcon: const Icon(Icons.location_on_outlined),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: widget.copy.localeName.startsWith('ar')
+                    ? 'مسح الحقل'
+                    : 'Clear field',
+                onPressed: widget.enabled
+                    ? () {
+                        controller.clear();
+                        widget.onChanged('');
+                      }
+                    : null,
+                icon: const Icon(Icons.clear),
+              ),
       ),
       onChanged: widget.onChanged,
     ),

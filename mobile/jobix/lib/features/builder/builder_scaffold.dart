@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
+import 'jobix_improvement.dart';
 
 const builderSteps = 6;
 
@@ -40,6 +41,7 @@ class BuilderScaffold extends StatelessWidget {
     this.busy = false,
     this.continueLabel,
     this.continueKey,
+    this.reviewEditor = false,
     super.key,
   });
   final int step;
@@ -48,15 +50,47 @@ class BuilderScaffold extends StatelessWidget {
   final VoidCallback? onContinue;
   final String? meta, continueLabel;
   final bool busy;
+  final bool reviewEditor;
   final Key? continueKey;
 
   @override
   Widget build(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
     final title = stepTitle(copy, step);
+    if (reviewEditor) {
+      return SliceScaffold(
+        title: title,
+        leading: IconButton(
+          key: const Key('builder-back'),
+          tooltip: copy.backToReview,
+          icon: const BackButtonIcon(),
+          onPressed: busy ? null : onBack,
+        ),
+        bottom: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: busy ? null : onBack,
+                child: Text(copy.backToReview),
+              ),
+            ),
+            const SizedBox(width: TokensV0.space12),
+            Expanded(
+              child: PrimaryAction(
+                key: continueKey ?? const Key('builder-continue'),
+                label: copy.saveAction,
+                busy: busy,
+                onPressed: onContinue,
+              ),
+            ),
+          ],
+        ),
+        child: child,
+      );
+    }
     return SliceScaffold(
       title: title,
-      leading: onBack == null
+      leading: onBack == null || step == 1 || step == 6
           ? null
           : IconButton(
               tooltip: copy.backAction,
@@ -81,7 +115,7 @@ class BuilderScaffold extends StatelessWidget {
                     key: const Key('builder-step-label'),
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: TokensV0.textSecondary,
-                      letterSpacing: 0.6,
+                      letterSpacing: copy.localeName.startsWith('ar') ? 0 : 0.6,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -107,12 +141,13 @@ class BuilderScaffold extends StatelessWidget {
                 backgroundColor: TokensV0.surfaceContainer,
               ),
             ),
+            if (step >= 2 && step <= 5) const JobixAllowance(),
           ],
         ),
       ),
       bottom: Row(
         children: [
-          if (onBack != null) ...[
+          if (onBack != null && step != 1 && step != 6) ...[
             OutlinedButton.icon(
               key: const Key('builder-back'),
               onPressed: busy ? null : onBack,

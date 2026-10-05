@@ -238,3 +238,31 @@ mtime_ms = 1791224860765
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/148c625d-2690-4f63-8a04-8c00d5a5c99b/c4e23770-e11d-4412-973b-184b401a7e32"
 storage_version_token = "1791224896739694"
 content_type = "text/plain"
+
+[[outputs]]
+id = "cc_cJ-45TBTfLZ8Oq1ZTw"
+uri = "file://deliverables/jobix-builder-resume-foundation-report.html"
+type = "html"
+title = "Jobix — Builder polish & Resume foundation report"
+description = "Completed work, verification evidence, backend gaps and Android-device checks, organized A–F."
+logical_id = "ac5a7024-150e-4c9a-be4d-e32d1bcc6ede"
+content_hash = "sha256:0f7dc802c1da2b962911792841860a2e5b3c2ee06fef7e3b4afd9bc02214767d"
+size = 5310
+mtime_ms = 1791230311257
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/ac5a7024-150e-4c9a-be4d-e32d1bcc6ede/f9aca72d-0d79-4b10-b590-deec7abf68a7"
+storage_version_token = "1791230430993191"
+content_type = "text/html"
+
+[[outputs]]
+id = "q1cu7JHM_WR-WKxKeYKuN"
+uri = "file://deliverables/jobix-builder-resume-foundation-arm64-dev.zip"
+type = "unspecified"
+title = "Jobix Android — Builder polish & Resume foundation"
+description = "Verified ARM64 development APK in a 54.2 MiB ZIP. Extract jobix-arm64-dev.apk before installing. APK signature and archive integrity verified; physical-device acceptance remains outstanding."
+logical_id = "53858bc3-3af4-40be-88ea-8fb794f05857"
+content_hash = "sha256:f331890f145f839851558c53253a93466c001bcc60fc58240c187e9649ebf16f"
+size = 56796590
+mtime_ms = 1791230664889
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/53858bc3-3af4-40be-88ea-8fb794f05857/ed83bc66-25af-4637-a862-cb41448e9505"
+storage_version_token = "1791230672443557"
+content_type = "application/octet-stream"

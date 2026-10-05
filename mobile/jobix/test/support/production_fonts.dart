@@ -15,9 +15,9 @@ Future<void> loadProductionFonts() async {
   ).parent.parent.path;
   final families = {
     'Inter': ['assets/fonts/Inter.ttf'],
-    'Noto Sans Arabic': [
+    'IBM Plex Sans Arabic': [
       for (final weight in ['Regular', 'Medium', 'SemiBold', 'Bold'])
-        'assets/fonts/NotoSansArabic-$weight.ttf',
+        'assets/fonts/IBMPlexSansArabic-$weight.ttf',
     ],
     'MaterialIcons': [
       '$sdk/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',

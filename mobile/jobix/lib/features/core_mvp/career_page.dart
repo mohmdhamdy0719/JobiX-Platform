@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../builder/builder_scaffold.dart';
@@ -27,7 +28,7 @@ class CareerPage extends ConsumerWidget {
       actions: const [CreditsPill()],
       bottom: const AuthenticatedNavigation(selected: 1),
       child: profile.when(
-        loading: () => const _CareerLoading(),
+        loading: () => const FormLoadingState(),
         error: (_, __) => SliceCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,6 +112,15 @@ class _CareerBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        PrimaryAction(
+          key: const Key('career-resume'),
+          label: Localizations.localeOf(context).languageCode == 'ar'
+              ? 'إنشاء السيرة الذاتية'
+              : 'Build resume',
+          icon: Icons.description_outlined,
+          onPressed: () => context.go('/resume'),
+        ),
+        const SizedBox(height: TokensV0.space16),
         SliceCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,13 +320,6 @@ class _CareerBody extends StatelessWidget {
                       .join(' · '),
                 ),
         ),
-        const SizedBox(height: TokensV0.space8),
-        PrimaryAction(
-          key: const Key('career-review'),
-          label: copy.stepReview,
-          icon: Icons.fact_check_outlined,
-          onPressed: () => context.go('/builder/6'),
-        ),
       ],
     );
   }
@@ -442,15 +445,4 @@ class _Tag extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CareerLoading extends StatelessWidget {
-  const _CareerLoading();
-  @override
-  Widget build(BuildContext context) => const SliceCard(
-    child: SizedBox(
-      height: 96,
-      child: Center(child: CircularProgressIndicator()),
-    ),
-  );
 }
