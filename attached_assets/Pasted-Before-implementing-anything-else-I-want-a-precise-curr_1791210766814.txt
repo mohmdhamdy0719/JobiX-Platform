@@ -1,0 +1,190 @@
+Before implementing anything else, I want a precise current-state audit of the Jobix project.
+
+DO NOT modify code.
+DO NOT create files.
+DO NOT change configuration.
+DO NOT deploy anything.
+DO NOT fix anything yet.
+
+I want you to inspect the current repository and answer the following questions based ONLY on what actually exists in the codebase and project files.
+
+### 1. Current implementation
+
+What is actually implemented right now?
+
+Separate the answer into:
+
+A. Fully implemented and connected
+B. UI exists but functionality is incomplete/disconnected
+C. Placeholder/mock implementation
+D. Not implemented
+
+Specifically audit:
+- Splash
+- Onboarding
+- Research Questions
+- Sign Up
+- Sign In
+- Email confirmation
+- Password reset
+- Google OAuth
+- Auth session restoration
+- Personal Information
+- Career Profile Builder
+- Summary
+- Work Experience
+- Education
+- Projects
+- Skills
+- Languages
+- Certifications
+- Achievements
+- Volunteer Experience
+- Review Profile
+- Edit Profile
+- Profile persistence
+- Local draft persistence
+- Supabase synchronization
+
+### 2. Authentication problem
+
+The current known problem is:
+
+"Authentication failed"
+
+Find the exact code path that produces this error.
+
+Answer:
+- Where does the error originate?
+- Is it a Supabase error, client-side error mapping, configuration issue, routing issue, or something else?
+- What Supabase endpoint/configuration is actually being used?
+- Is the current signup calling real Supabase Auth or a mock/local implementation?
+- What happens after signup succeeds?
+- Is an authenticated session actually established?
+- Is email confirmation handled?
+- Is Google OAuth actually wired?
+- Is the native callback actually handled by the Flutter app?
+- What part is verified by tests versus only present in code?
+
+Do NOT fix it yet. I only want the diagnosis.
+
+### 3. First Career Profile creation
+
+Determine exactly what happens after a NEW user successfully registers.
+
+Answer:
+- Is a Career Profile automatically created?
+- Where is it created?
+- Is it server-side or client-side?
+- Which database table is used?
+- Is creation idempotent?
+- Can retries create duplicate profiles?
+- Does the user enter Personal Information automatically after registration?
+- Or are they currently redirected somewhere else?
+
+### 4. Career Profile Builder
+
+Inspect the existing implementation and tell me exactly which profile sections currently have:
+
+- UI
+- validation
+- local persistence
+- Supabase persistence
+- navigation
+- Continue/Back behavior
+- edit behavior
+
+Create a table like:
+
+| Section | UI | Validation | Local save | Supabase save | Continue flow | Edit flow | Status |
+|---|---|---|---|---|---|---|---|
+
+Do not assume something is implemented just because a screen/file exists.
+
+### 5. Review Profile
+
+Does a real Review Profile screen currently exist?
+
+If yes:
+- What sections does it show?
+- Are the values coming from the actual saved Career Profile?
+- Can every section be edited?
+- Does saving an edit update the same profile?
+- Does it return to Review Profile correctly?
+
+If not, explicitly say it is not implemented.
+
+### 6. Persistence
+
+I want to know whether I can currently do this:
+
+Create account
+→ enter profile information
+→ close app
+→ reopen app
+→ sign in/session restored
+→ find the same Career Profile
+→ edit it
+→ save it
+→ reopen again
+→ still have the updated data
+
+Tell me exactly which parts of this scenario currently work and which do not.
+
+### 7. Screenshots / design references
+
+Identify which of the previously supplied Jobix screenshots/design references are actually available to you in the current workspace/repository.
+
+Do NOT invent missing screens.
+
+For each major existing screen, tell me whether:
+- it appears to follow the supplied design reference,
+- it is only partially implemented,
+- or no reference was available.
+
+### 8. Architecture compliance
+
+Check the current implementation against:
+- Architecture V2
+- Constitution
+- Product Design
+- DESIGN.md
+- existing Foundation implementation
+
+Report only actual deviations you can verify.
+
+Do not propose a redesign yet.
+
+### 9. Exact next implementation scope
+
+After the audit, give me the smallest concrete implementation scope needed to reach this milestone:
+
+"User can create/sign into a real Jobix account, enter a complete Career Profile through the guided Continue/Back builder, reach Review Profile, edit any section, leave/reopen the app, and retain the same profile."
+
+Separate:
+- Already done
+- Must be fixed
+- Must be implemented
+- Can safely be postponed
+
+### 10. Most important
+
+Do NOT start implementation after this audit.
+
+Do NOT make any changes.
+
+Do NOT spend time on:
+- AI
+- Credits
+- Daily Reward
+- ATS
+- Subscription
+- Cover Letter
+- Professional Email
+- PDF Export
+
+Those are intentionally postponed.
+
+At the end, give me a concise "CURRENT STATE" summary and a "NEXT STEP" recommendation.
+
+I will review the audit before giving you the implementation command.
