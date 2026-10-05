@@ -1,0 +1,142 @@
+Now proceed to the next milestone: REAL ANDROID END-TO-END VERIFICATION AND FIXES.
+
+Do not start a new feature set yet.
+
+The previous Career Profile Builder task completed with:
+- 142/142 tests passing
+- flutter analyze clean
+- the six-step Career Profile Builder implemented
+- Review/Edit flow implemented
+- local/server persistence implemented
+
+I now need you to verify that the implemented experience actually works for a real Jobix user.
+
+IMPORTANT:
+Do not just run mocks or repository tests.
+Perform the strongest real verification available in the current environment.
+
+### 1. Real authentication
+
+Verify the real development Supabase flow:
+
+New user
+→ Sign Up
+→ confirmation email when required
+→ confirm account
+→ Sign In
+→ authenticated session
+→ Profile #1
+→ Step 1 Personal Information
+
+The original problem was "Authentication failed".
+
+Confirm that the underlying authentication problem is actually fixed.
+
+If confirmation email delivery/configuration is preventing the flow, diagnose and fix the development configuration using the already-approved Supabase setup.
+
+Do not add external SMTP/Resend.
+
+Do not change the production architecture.
+
+Do not weaken RLS.
+
+### 2. Profile #1
+
+Verify:
+- Profile #1 is created exactly once
+- no duplicate profile is created on retry/sign-in
+- the authenticated user reaches Step 1
+- the same profile is used throughout the application
+
+### 3. Complete Builder
+
+Verify the real six-step flow:
+
+Step 1 — Personal Information
+→ Step 2 — Professional Summary
+→ Step 3 — Work Experience
+→ Step 4 — Education & Credentials
+→ Step 5 — Skills / Projects / Languages
+→ Step 6 — Review Profile
+
+Verify:
+- Continue
+- Back
+- Add
+- Edit
+- Delete
+- Save
+- validation
+- empty states
+- multiple entries
+- Review → Edit → Save → Review
+
+### 4. Persistence
+
+Perform an actual persistence test:
+
+Create/edit profile data
+→ save
+→ leave the screen
+→ close/restart the app
+→ restore the session
+→ reopen Career Profile
+→ verify the same data is still present.
+
+Also verify that interrupted saves do not silently lose data.
+
+### 5. Android device verification
+
+If the Replit environment can build/run the Flutter Android app, build and test it.
+
+If a real physical Android device is required and cannot be accessed from Replit, do NOT pretend that the test passed.
+
+Instead report exactly:
+- what was verified in the environment
+- what requires my Samsung Android device
+- the exact APK/build command I should use
+- any remaining setup required
+
+### 6. Fix only what is necessary
+
+If you find real issues during this verification, fix them.
+
+Prioritize:
+1. Authentication
+2. Profile #1 provisioning
+3. Builder navigation
+4. Persistence
+5. Review/Edit flow
+6. Android runtime issues
+
+Do not start:
+- AI
+- ATS
+- Credits
+- Daily Reward
+- Subscription
+- Cover Letter
+- Professional Email
+- PDF Export
+
+### 7. Volunteer Experience
+
+Do NOT start a separate Volunteer Experience implementation in this task unless it is already part of the current code and only requires a small correction.
+
+We will handle Volunteer Experience as a separate focused task after the current real-flow verification.
+
+### 8. Final report
+
+When finished, give me a concise verification report containing:
+
+A. VERIFIED LIVE
+B. VERIFIED WITH TESTS/MOCKS ONLY
+C. FIXED DURING THIS TASK
+D. STILL REQUIRES REAL ANDROID DEVICE
+E. EXACT NEXT RECOMMENDED TASK
+
+Do not claim real-device verification unless a real Android device was actually used.
+
+Do not redesign the application in this task.
+Do not change Architecture V2.
+Do not run additional model evaluations.
