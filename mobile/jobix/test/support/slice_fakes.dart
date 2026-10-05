@@ -66,6 +66,7 @@ class FakeAuthApi implements AuthApi {
   final List<String> calls = [];
   bool confirmed = false, googleOpened = true;
   void Function()? onSignedIn;
+  Object? signInError;
   @override
   Future<String?> signUp(String email, String password) async {
     calls.add('signup');
@@ -75,6 +76,7 @@ class FakeAuthApi implements AuthApi {
   @override
   Future<void> signIn(String email, String password) async {
     calls.add('signin');
+    if (signInError case final Object error) throw error;
     if (!confirmed) throw const AuthException('EMAIL_CONFIRMATION_REQUIRED');
     onSignedIn?.call();
   }
@@ -88,6 +90,11 @@ class FakeAuthApi implements AuthApi {
   @override
   Future<void> reset(String email) async {
     calls.add('reset');
+  }
+
+  @override
+  Future<void> resendConfirmation(String email) async {
+    calls.add('resend');
   }
 
   @override

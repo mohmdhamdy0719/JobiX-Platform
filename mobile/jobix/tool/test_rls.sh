@@ -23,7 +23,8 @@ psql -X -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/maintenance/provision_dev_test_accounts_zero.sql \
   -f supabase/tests/dev_backfill.sql
 psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
-  -f supabase/migrations/202610040006_profile_text.sql -f supabase/tests/profile_text.sql
+  -f supabase/migrations/202610040006_profile_text.sql -f supabase/tests/profile_text.sql \
+  -f supabase/migrations/202610050007_profile_sections.sql -f supabase/tests/profile_sections.sql
 if PGOPTIONS="-c jobix.authorized_dev_project=lmouxhbjhtqdtiqijcee -c jobix.dev_backfill_actor_ids=61000000-0000-0000-0000-000000000001,69000000-0000-0000-0000-000000000099" \
   psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
     -f supabase/maintenance/provision_dev_test_accounts_zero.sql >/dev/null 2>&1; then

@@ -14,6 +14,7 @@ abstract interface class AuthApi {
   Future<void> signIn(String email, String password);
   Future<bool> google();
   Future<void> reset(String email);
+  Future<void> resendConfirmation(String email);
   Future<void> updatePassword(String password);
   Future<void> callback(Uri uri);
   Future<void> signOut();
@@ -29,7 +30,23 @@ class SupabaseAuthApi implements AuthApi {
       password: password,
       emailRedirectTo: authRedirectUri,
     );
+    // A confirmed address returns an obfuscated user with no identities.
+    if (result.user != null && (result.user!.identities?.isEmpty ?? false)) {
+      throw const AuthException(
+        'user_already_exists',
+        code: 'user_already_exists',
+      );
+    }
     return result.user?.id;
+  }
+
+  @override
+  Future<void> resendConfirmation(String email) async {
+    await client.auth.resend(
+      type: OtpType.signup,
+      email: email.trim(),
+      emailRedirectTo: authRedirectUri,
+    );
   }
 
   @override
@@ -40,7 +57,10 @@ class SupabaseAuthApi implements AuthApi {
     );
     if (!sessionIsConfirmed(result.session)) {
       await client.auth.signOut(scope: SignOutScope.local);
-      throw const AuthException('EMAIL_CONFIRMATION_REQUIRED');
+      throw const AuthException(
+        'EMAIL_CONFIRMATION_REQUIRED',
+        code: 'email_not_confirmed',
+      );
     }
   }
 

@@ -7,3 +7,4 @@
 - [Completeness authority](completeness-authority.md) — Contact is 5% + 5% + 5%; preserve the 50% AI transition without an unapproved cap or new prerequisite.
 - [Development service boundary](development-services.md) — owner-specified Google Cloud/AdMob resources; deployment access and pending configuration must be verified.
 - [AI model selection](ai-model-selection.md) — approved Flash default, Arabic quality requirement, global inference approval and no silent model substitution.
+- [Flutter layout quirks](flutter-layout-quirks.md) — themed buttons have infinite min width; override minimumSize inside Rows.

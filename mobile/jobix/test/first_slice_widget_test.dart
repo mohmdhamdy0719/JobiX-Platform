@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import 'package:jobix/app.dart';
 import 'package:jobix/core/database/database.dart';
 import 'package:jobix/core/database/encryption.dart';
@@ -15,6 +16,9 @@ import 'package:jobix/features/career_profile/career_profile_repository.dart';
 import 'package:jobix/features/core_mvp/core_api.dart';
 import 'package:jobix/features/career_profile/text_section_repository.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
+import 'package:jobix/features/career_profile/entity_repository.dart';
+import 'package:jobix/features/career_profile/profile_sections.dart';
+import 'support/entity_fakes.dart';
 import 'support/slice_fakes.dart';
 import 'support/production_fonts.dart';
 import 'package:jobix/l10n/app_localizations.dart';
@@ -33,6 +37,7 @@ void main() {
   late DraftRepository repository;
   late FakeAuthApi auth;
   late _CoreFixture core;
+  late FakeEntityServer entities;
   ProviderContainer? container;
   setUpAll(loadProductionFonts);
   setUp(() async {
@@ -44,6 +49,7 @@ void main() {
     repository = DraftRepository(database, api, 'user-one', () => true);
     auth = FakeAuthApi();
     core = _CoreFixture();
+    entities = FakeEntityServer(api);
     await database.setting(
       'locale',
     ); // Open the actual encrypted engine outside the widget flow.
@@ -104,6 +110,9 @@ void main() {
             return api.server;
           }),
         ),
+        entityRepositoryProvider.overrideWith(
+          (_) async => EntityRepository(repository, entities.send),
+        ),
         firstEntryProvider.overrideWith((_) async => newEntry),
         contextMergeProvider.overrideWith((_) async {}),
       ],
@@ -159,7 +168,6 @@ void main() {
       'executive search',
       'gulf',
       'gcc',
-      'step 1 of 6',
       '0/6 ai uses',
       'ats match',
       '94% strong',
@@ -327,7 +335,7 @@ void main() {
     core.bootstrapFails = false;
     await tester.tap(find.byTooltip(copy.retry).first);
     await tester.pumpAndSettle();
-    expect(find.text('5'), findsOneWidget);
+    expect(find.text(copy.creditsCount(5)), findsOneWidget);
   });
   testWidgets('credit history failure is not a fabricated empty ledger', (
     tester,
@@ -574,11 +582,18 @@ void main() {
       );
       expect(api.server.personal, isEmpty);
       expect(api.requests, isEmpty);
-      await tester.tap(find.byKey(const Key('save-personal')));
+      await tester.tap(find.byKey(const Key('builder-continue')));
       await tester.pumpAndSettle();
       expect(api.server.resumeLanguage, 'en');
       expect(api.server.personal.values.every((v) => v.isEmpty), true);
       expect(api.requests.single.frozen!['personal'], isEmpty);
+      // Continue moves on only after the acknowledged save.
+      expect(
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/builder/2',
+      );
+      container!.read(routerProvider).go('/builder/1');
+      await tester.pumpAndSettle();
       // Accepting a suggestion remains local until a separate explicit Save.
       await tester.tap(find.byKey(const Key('use-egypt')));
       await tester.pumpAndSettle();
@@ -631,14 +646,17 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('auth-submit')));
     await tester.pumpAndSettle();
-    expect(
-      find.textContaining('could not complete authentication'),
-      findsOneWidget,
-    );
+    // Unconfirmed login stays signed out and lands on the confirm step.
     expect(
       container!.read(routerProvider).routeInformationProvider.value.uri.path,
-      '/auth',
+      '/confirm',
     );
+    expect(auth.calls, ['signup', 'signin']);
+    await tester.tap(find.byKey(const Key('resend-confirmation')));
+    await tester.pumpAndSettle();
+    expect(auth.calls.last, 'resend');
+    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(copy.confirmationResent), findsOneWidget);
   });
   testWidgets(
     'Google and forgot-password boundaries use real controller calls, with explicit failures',
@@ -735,7 +753,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Full Name'), findsNothing);
       expect(find.text('الاسم الكامل'), findsOneWidget);
-      expect(find.text('Save'), findsOneWidget);
+      // App-language chrome (Step 1 of the builder) stays English.
+      expect(find.text('Continue'), findsOneWidget);
       expect(
         Directionality.of(tester.element(find.byType(Scaffold))),
         TextDirection.ltr,
@@ -766,8 +785,10 @@ void main() {
       );
       expect(find.text('Full Name'), findsOneWidget);
       expect(await database.setting('locale'), 'en');
+      // Step 1 has no App Language control; it lives in Settings.
+      expect(find.byKey(const Key('app-language')), findsNothing);
       noUnsupportedContent(tester);
-      await tester.tap(find.byKey(const Key('app-language')));
+      await container!.read(localeProvider.notifier).setOverride('ar');
       await tester.pumpAndSettle();
       expect(await database.setting('locale'), 'ar');
       expect((await repository.draft(api.server))!.resumeLanguage, 'en');
@@ -776,7 +797,8 @@ void main() {
         'مهندس Flutter',
       );
       expect(find.text('Full Name'), findsOneWidget);
-      expect(find.text('حفظ'), findsOneWidget);
+      final ar = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+      expect(find.text(ar.continueAction), findsOneWidget);
       noUnsupportedContent(tester);
     },
   );
@@ -791,7 +813,7 @@ void main() {
         'Local only',
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('leave-personal')));
+      await tester.tap(find.byKey(const Key('builder-back')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('save-later')));
       await tester.pumpAndSettle();
@@ -803,11 +825,18 @@ void main() {
         (await repository.draft(api.server))!.personal['full_name'],
         'Local only',
       );
+      // Home resumes the first unfinished builder step with the local draft.
       await tester.tap(find.byKey(const Key('continue-career')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('save-personal')));
+      await tester.tap(find.byKey(const Key('builder-continue')));
       await tester.pumpAndSettle();
       expect(api.server.personal['full_name'], 'Local only');
+      expect(
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/builder/2',
+      );
+      container!.read(routerProvider).go('/career/personal');
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('personal-full_name')),
         'Discard this',
@@ -1016,6 +1045,11 @@ void main() {
     tester,
   ) async {
     await pump(tester, progress: complete);
+    auth.signInError = const AuthException(
+      'Invalid login credentials',
+      statusCode: '400',
+      code: 'invalid_credentials',
+    );
     await route(tester, '/auth?mode=login');
     await tester.enterText(
       find.byKey(const Key('auth-email')),
@@ -1024,18 +1058,13 @@ void main() {
     await tester.enterText(find.byKey(const Key('auth-password')), 'example');
     await tester.tap(find.byKey(const Key('auth-submit')));
     await tester.pumpAndSettle();
-    expect(
-      find.textContaining('could not complete authentication'),
-      findsOneWidget,
-    );
+    final en = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(en.authInvalidCredentials), findsOneWidget);
     await container!.read(localeProvider.notifier).setOverride('ar');
     await tester.pumpAndSettle();
     final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
-    expect(find.text(copy.authError), findsOneWidget);
-    expect(
-      find.textContaining('could not complete authentication'),
-      findsNothing,
-    );
+    expect(find.text(copy.authInvalidCredentials), findsOneWidget);
+    expect(find.text(en.authInvalidCredentials), findsNothing);
     expect(
       tester
           .widget<TextFormField>(find.byKey(const Key('auth-email')))
@@ -1095,6 +1124,472 @@ void main() {
       );
     }
   }
+
+  // ---- Guided builder (steps 3-6), editors and Review ----
+  const experienceId = '0b8f3c1e-5d2a-4c7e-9f10-2a3b4c5d6e7f';
+  const seededExperience = ProfileItem(
+    id: experienceId,
+    section: EntitySection.experience,
+    version: 1,
+    complete: true,
+    values: {
+      'job_title': 'Flutter Developer',
+      'company': 'First Co',
+      'start_month': '2023-01',
+      'is_current': true,
+      'description': 'Built and shipped the mobile app end to end.',
+    },
+  );
+  void seedProfile() {
+    api.server = const CareerProfile(
+      id: 'profile-one',
+      version: 1,
+      resumeLanguage: 'en',
+      completeness: 45,
+      items: {
+        EntitySection.experience: [seededExperience],
+        EntitySection.skill: [
+          ProfileItem(
+            id: '1c2d3e4f-0000-4000-8000-000000000001',
+            section: EntitySection.skill,
+            version: 1,
+            complete: true,
+            values: {'name': 'Dart'},
+          ),
+        ],
+        EntitySection.language: [
+          ProfileItem(
+            id: '1c2d3e4f-0000-4000-8000-000000000002',
+            section: EntitySection.language,
+            version: 1,
+            complete: true,
+            values: {'name': 'Arabic', 'proficiency': 'NATIVE'},
+          ),
+        ],
+      },
+    );
+  }
+
+  String currentPath() =>
+      container!.read(routerProvider).routeInformationProvider.value.uri.path;
+
+  for (final locale in ['en', 'ar']) {
+    testWidgets('builder steps and Review native captures $locale', (
+      tester,
+    ) async {
+      seedProfile();
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        locale: locale,
+        size: const Size(402, 1100),
+      );
+      for (final step in [3, 4, 5, 6]) {
+        await route(tester, '/builder/$step');
+        expect(tester.takeException(), isNull, reason: 'step $step');
+        expect(
+          Directionality.of(tester.element(find.byType(Scaffold).first)),
+          locale == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+        );
+        expect(find.byKey(const Key('builder-progress')), findsOneWidget);
+        noUnsupportedContent(tester);
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile('goldens/builder_step${step}_$locale.png'),
+        );
+      }
+      expect(find.byKey(Key('review-experience-$experienceId')), findsOne);
+      expect(find.text('Dart'), findsOneWidget);
+      expect(entities.requests, isEmpty, reason: 'viewing never writes');
+    });
+    testWidgets('builder narrow scaled layouts $locale', (tester) async {
+      seedProfile();
+      tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        locale: locale,
+        size: const Size(320, 740),
+      );
+      for (final path in [
+        '/builder/3',
+        '/builder/4',
+        '/builder/5',
+        '/builder/6',
+        '/career/edit/experience/$experienceId',
+      ]) {
+        await route(tester, path);
+        expect(tester.takeException(), isNull, reason: '$locale $path');
+      }
+    });
+  }
+
+  testWidgets('Review -> Edit -> Save -> Review persists across restart', (
+    tester,
+  ) async {
+    seedProfile();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/builder/6');
+    final entry = find.byKey(const Key('review-experience-$experienceId'));
+    await tester.ensureVisible(entry);
+    await tester.tap(entry);
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/career/edit/experience/$experienceId');
+    await tester.enterText(find.byKey(const Key('field-company')), 'Edited Co');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('editor-save')));
+    await tester.pumpAndSettle();
+    // The editor returns to its origin only after the server acknowledged.
+    expect(currentPath(), '/builder/6');
+    expect(entities.requests.single.type, 'upsert_item');
+    expect(
+      api.server.of(EntitySection.experience).single.text('company'),
+      'Edited Co',
+    );
+    expect(find.textContaining('Edited Co'), findsWidgets);
+    // Restart: a fresh app reads the acknowledged snapshot again.
+    await tester.pumpWidget(const SizedBox());
+    container!.dispose();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/builder/6');
+    expect(find.textContaining('Edited Co'), findsWidgets);
+    expect(find.textContaining('First Co'), findsNothing);
+  });
+
+  testWidgets(
+    'adding from a builder step returns there; remove needs confirmation',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(tester, '/builder/3');
+      await tester.tap(find.byKey(const Key('add-experience')));
+      await tester.pumpAndSettle();
+      expect(currentPath(), startsWith('/career/edit/experience/'));
+      const values = {
+        'job_title': 'Mobile Engineer',
+        'company': 'New Co',
+        'start_month': '2021-04',
+        'end_month': '2023-02',
+        'description': 'Owned releases and the design system rollout.',
+      };
+      for (final entry in values.entries) {
+        final field = find.byKey(Key('field-${entry.key}'));
+        await tester.ensureVisible(field);
+        await tester.enterText(field, entry.value);
+      }
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      expect(currentPath(), '/builder/3');
+      final saved = api.server.of(EntitySection.experience).single;
+      expect(saved.text('company'), 'New Co');
+      expect(saved.complete, true);
+      // Client-generated ids are UUIDs, not the literal 'new'.
+      expect(saved.id, isNot('new'));
+      expect(saved.id, matches(RegExp(r'^[0-9a-f-]{36}$')));
+      expect(find.byKey(Key('card-experience-${saved.id}')), findsOneWidget);
+      await tester.tap(find.byKey(Key('menu-experience-${saved.id}')));
+      await tester.pumpAndSettle();
+      final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+      await tester.tap(find.text(copy.removeAction).last);
+      await tester.pumpAndSettle();
+      // Cancelling keeps the item.
+      await tester.tap(find.text(copy.cancelAction));
+      await tester.pumpAndSettle();
+      expect(api.server.of(EntitySection.experience), hasLength(1));
+      await tester.tap(find.byKey(Key('menu-experience-${saved.id}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(copy.removeAction).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('confirm-remove')));
+      await tester.pumpAndSettle();
+      expect(api.server.of(EntitySection.experience), isEmpty);
+      expect(entities.requests.map((r) => r.type), [
+        'upsert_item',
+        'delete_item',
+      ]);
+    },
+  );
+
+  String currentLocation() => container!
+      .read(routerProvider)
+      .routeInformationProvider
+      .value
+      .uri
+      .toString();
+
+  void bumpServerExperience(String company) {
+    final current = api.server;
+    api.server = CareerProfile(
+      id: current.id,
+      version: current.version + 1,
+      resumeLanguage: current.resumeLanguage,
+      completeness: current.completeness,
+      items: {
+        ...current.items,
+        EntitySection.experience: [
+          seededExperience.rebased(2).copyWith('company', company),
+        ],
+      },
+    );
+  }
+
+  for (final choice in ['local', 'server']) {
+    testWidgets('a stale draft asks before saving: keep $choice', (
+      tester,
+    ) async {
+      seedProfile();
+      // A draft started from item version 1, then another device saved v2
+      // before this app started again.
+      await EntityRepository(repository, entities.send).retainDraft(
+        api.server.id,
+        seededExperience.copyWith('company', 'Local Co'),
+      );
+      bumpServerExperience('Other device Co');
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(
+        tester,
+        '/career/edit/experience/$experienceId?origin=review',
+      );
+      expect(find.byKey(const Key('draft-conflict')), findsOneWidget);
+      // Save is blocked until the user chooses.
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      expect(entities.requests, isEmpty);
+      expect(currentPath(), '/career/edit/experience/$experienceId');
+      if (choice == 'local') {
+        await tester.tap(find.byKey(const Key('conflict-keep-local')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('draft-conflict')), findsNothing);
+        await tester.tap(find.byKey(const Key('editor-save')));
+        await tester.pumpAndSettle();
+        expect(currentPath(), '/builder/6');
+        final saved = api.server.of(EntitySection.experience).single;
+        expect(saved.text('company'), 'Local Co');
+        expect(saved.version, 3);
+      } else {
+        await tester.tap(find.byKey(const Key('conflict-keep-server')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('draft-conflict')), findsNothing);
+        expect(
+          tester
+              .widget<EditableText>(
+                find.descendant(
+                  of: find.byKey(const Key('field-company')),
+                  matching: find.byType(EditableText),
+                ),
+              )
+              .controller
+              .text,
+          'Other device Co',
+        );
+        expect(entities.requests, isEmpty);
+        expect(
+          await EntityRepository(
+            repository,
+            entities.send,
+          ).draft(api.server.id, EntitySection.experience, experienceId),
+          isNull,
+        );
+      }
+    });
+  }
+
+  testWidgets('Reload after a conflict asks when the item itself changed', (
+    tester,
+  ) async {
+    seedProfile();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/career/edit/experience/$experienceId?origin=review');
+    await tester.enterText(find.byKey(const Key('field-company')), 'Mine Co');
+    await tester.pumpAndSettle();
+    bumpServerExperience('Theirs Co');
+    await tester.tap(find.byKey(const Key('editor-save')));
+    await tester.pumpAndSettle();
+    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(copy.saveConflict), findsOneWidget);
+    expect(
+      api.server.of(EntitySection.experience).single.text('company'),
+      'Theirs Co',
+    );
+    await tester.tap(find.text(copy.reloadAction));
+    await tester.pumpAndSettle();
+    // Not silently rebased: the user must pick a version.
+    expect(find.byKey(const Key('draft-conflict')), findsOneWidget);
+    expect(find.text(copy.itemChangedElsewhere), findsOneWidget);
+  });
+
+  testWidgets('every Review section Edit returns to Review', (tester) async {
+    seedProfile();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    for (final section in EntitySection.values) {
+      await route(tester, '/builder/6');
+      final edit = find.byKey(Key('review-edit-${section.key}'));
+      await tester.ensureVisible(edit);
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
+      expect(currentLocation(), contains('origin=review'), reason: section.key);
+      final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+      expect(find.text(copy.backToReview), findsOneWidget);
+      await tester.tap(find.byKey(const Key('builder-continue')));
+      await tester.pumpAndSettle();
+      expect(currentPath(), '/builder/6', reason: section.key);
+      await tester.ensureVisible(edit);
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('builder-back')));
+      await tester.pumpAndSettle();
+      expect(currentPath(), '/builder/6', reason: '${section.key} back');
+    }
+    // Section Edit -> item editor -> Save -> Review.
+    await tester.tap(find.byKey(const Key('review-edit-experience')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('menu-experience-$experienceId')));
+    await tester.pumpAndSettle();
+    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    await tester.tap(find.text(copy.editAction).last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('field-company')),
+      'Via Section',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('editor-save')));
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/builder/6');
+    expect(find.textContaining('Via Section'), findsWidgets);
+    // Inline skills from Review: add, then return to Review showing it.
+    final skills = find.byKey(const Key('review-edit-skill'));
+    await tester.ensureVisible(skills);
+    await tester.tap(skills);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('skill-input')), 'Kotlin');
+    await tester.tap(find.byKey(const Key('skill-add')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('builder-continue')));
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/builder/6');
+    expect(find.text('Kotlin'), findsOneWidget);
+  });
+
+  testWidgets('an offline editor save keeps the draft and says so', (
+    tester,
+  ) async {
+    seedProfile();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/career/edit/experience/$experienceId?origin=review');
+    await tester.enterText(
+      find.byKey(const Key('field-company')),
+      'Offline Co',
+    );
+    await tester.pumpAndSettle();
+    entities.offline = true;
+    await tester.tap(find.byKey(const Key('editor-save')));
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/career/edit/experience/$experienceId');
+    expect(find.byKey(const Key('save-issue')), findsOneWidget);
+    expect(
+      api.server.of(EntitySection.experience).single.text('company'),
+      'First Co',
+    );
+    entities.offline = false;
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('save-issue')),
+        matching: find.byType(TextButton),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      api.server.of(EntitySection.experience).single.text('company'),
+      'Offline Co',
+    );
+    // Retried with the original command key; never duplicated.
+    expect(entities.requests.map((r) => r.key).toSet(), hasLength(1));
+  });
+
+  testWidgets('skills are added once; normalized duplicates are refused', (
+    tester,
+  ) async {
+    seedProfile();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/builder/5');
+    await tester.enterText(find.byKey(const Key('skill-input')), 'Flutter');
+    await tester.tap(find.byKey(const Key('skill-add')));
+    await tester.pumpAndSettle();
+    expect(api.server.of(EntitySection.skill).map((s) => s.text('name')), [
+      'Dart',
+      'Flutter',
+    ]);
+    await tester.enterText(find.byKey(const Key('skill-input')), '  dart ');
+    await tester.tap(find.byKey(const Key('skill-add')));
+    await tester.pumpAndSettle();
+    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(copy.duplicateItem), findsOneWidget);
+    expect(entities.requests, hasLength(1));
+    // Steps 3-5 Continue only navigates.
+    await tester.tap(find.byKey(const Key('builder-continue')));
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/builder/6');
+    expect(entities.requests, hasLength(1));
+  });
+
+  testWidgets('Career add returns to Career, and Review opens from Career', (
+    tester,
+  ) async {
+    seedProfile();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1400),
+    );
+    await route(tester, '/career');
+    final add = find.byKey(const Key('career-add-experience'));
+    await tester.ensureVisible(add);
+    await tester.tap(add);
+    await tester.pumpAndSettle();
+    expect(currentPath(), startsWith('/career/edit/experience/'));
+    await tester.tap(find.byKey(const Key('editor-back')));
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/career');
+    final review = find.byKey(const Key('career-review'));
+    await tester.ensureVisible(review);
+    await tester.tap(review);
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/builder/6');
+  });
 }
 
 class _CoreFixture implements CoreApi {

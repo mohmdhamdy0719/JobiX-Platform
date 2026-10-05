@@ -8,7 +8,74 @@ import '../../core/design/tokens.dart';
 import '../../core/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
+import '../builder/entity_labels.dart';
 import 'authenticated_navigation.dart';
+
+/// Real name (Career Profile) and sign-in email; nothing invented.
+class _AccountHeader extends ConsumerWidget {
+  const _AccountHeader();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final name =
+        ref
+            .watch(firstProfileProvider)
+            .valueOrNull
+            ?.personal['full_name']
+            ?.trim() ??
+        '';
+    final email =
+        ref
+            .watch(supabaseClientProvider)
+            .valueOrNull
+            ?.auth
+            .currentUser
+            ?.email ??
+        '';
+    if (name.isEmpty && email.isEmpty) return const SizedBox.shrink();
+    return SliceCard(
+      key: const Key('settings-account-header'),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: TokensV0.surfaceContainerLow,
+            foregroundColor: TokensV0.deepBlue,
+            child: name.isEmpty
+                ? const Icon(Icons.person_outline)
+                : Text(
+                    initials(name),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+          ),
+          const SizedBox(width: TokensV0.space12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (name.isNotEmpty)
+                  Text(
+                    name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                if (email.isNotEmpty)
+                  Text(
+                    email,
+                    textDirection: TextDirection.ltr,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: TokensV0.textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -23,7 +90,7 @@ class SettingsPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeading(title: copy.settingsNav),
+          const _AccountHeader(),
           const SizedBox(height: TokensV0.space20),
           _SettingsGroup(
             title: copy.accountSection,

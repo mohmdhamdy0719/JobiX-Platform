@@ -47,6 +47,9 @@ class AuthFlow {
 }
 
 final authFlowProvider = StateProvider<AuthFlow>((ref) => const AuthFlow());
+
+/// Address awaiting confirmation, kept in memory only for the resend action.
+final pendingConfirmationEmailProvider = StateProvider<String?>((ref) => null);
 final firstEntryProvider = FutureProvider<bool>((ref) async {
   ref.watch(authSessionProvider);
   final client = await ref.watch(supabaseClientProvider.future);

@@ -136,7 +136,9 @@
   "researchStep": "STEP {number} OF 4",
   "@researchStep": {
     "placeholders": {
-      "number": { "type": "int" }
+      "number": {
+        "type": "int"
+      }
     }
   },
   "locationDataMissing": "Enter a city, or choose one you have saved before.",
@@ -178,5 +180,177 @@
   "creditHistoryEmpty": "No credit transactions are available for this account yet.",
   "moreTransactionsFailed": "More transactions could not be loaded.",
   "loadMore": "Load more",
-  "creditTransaction": "Credit transaction"
+  "creditTransaction": "Credit transaction",
+  "stepOf": "Step {step} of {total}",
+  "@stepOf": {
+    "placeholders": {
+      "step": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "stepPersonal": "Personal Info & Links",
+  "stepSummary": "Professional Summary",
+  "stepExperience": "Work Experience",
+  "stepEducation": "Education & Credentials",
+  "stepSkills": "Skills, Projects & Languages",
+  "stepReview": "Review Profile",
+  "skipAction": "Skip for now",
+  "itemsAdded": "{count} added",
+  "@itemsAdded": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "addRole": "Add Role",
+  "addEducation": "Add Education",
+  "addCertification": "Add Certification",
+  "addAchievement": "Add Achievement",
+  "addProject": "Add Project",
+  "addLanguage": "Add Language",
+  "sectionEducation": "Education",
+  "sectionCertifications": "Certifications",
+  "sectionAchievements": "Achievements",
+  "sectionSkills": "Skills",
+  "sectionProjects": "Projects",
+  "sectionLanguages": "Languages",
+  "emptyExperience": "No roles added yet. Add one now or skip this step.",
+  "emptySection": "Nothing added yet.",
+  "presentLabel": "Present",
+  "currentRole": "I currently work here",
+  "currentStudy": "I currently study here",
+  "itemIncomplete": "Needs details",
+  "itemComplete": "Complete",
+  "editAction": "Edit",
+  "removeAction": "Remove",
+  "moreActions": "More actions",
+  "removeTitle": "Remove this item?",
+  "removeBody": "It will be removed from your profile.",
+  "cancelAction": "Cancel",
+  "fieldJobTitle": "Job title",
+  "fieldCompany": "Company",
+  "fieldLocation": "Location (optional)",
+  "fieldStartMonth": "Start month",
+  "fieldEndMonth": "End month",
+  "fieldDescription": "Description",
+  "fieldDescriptionOptional": "Description (optional)",
+  "fieldDegree": "Degree",
+  "fieldInstitution": "Institution",
+  "fieldStudy": "Field of study",
+  "fieldName": "Name",
+  "fieldIssuer": "Issuer",
+  "fieldIssueMonth": "Issue month",
+  "fieldExpiryMonth": "Expiry month (optional)",
+  "fieldCredential": "Credential ID (optional)",
+  "fieldUrl": "Link (optional)",
+  "fieldTitle": "Title",
+  "fieldMonth": "Month",
+  "fieldRole": "Your role",
+  "fieldTechnologies": "Technologies (comma separated)",
+  "fieldLanguage": "Language",
+  "fieldProficiency": "Proficiency",
+  "monthHint": "YYYY-MM",
+  "problemTooLong": "This is too long.",
+  "problemMonth": "Use the format YYYY-MM.",
+  "problemUrl": "Enter a secure https link.",
+  "problemEndBeforeStart": "The end must be after the start.",
+  "problemRequired": "This is required.",
+  "descriptionMinimum": "Write at least 20 characters for this to count toward completeness.",
+  "incompleteSaveNote": "You can save now and finish the details later; incomplete items don't count toward completeness.",
+  "profBasic": "Basic",
+  "profConversational": "Conversational",
+  "profProfessional": "Professional",
+  "profFluent": "Fluent",
+  "profNative": "Native",
+  "skillHint": "Type a skill",
+  "addAction": "Add",
+  "duplicateItem": "This is already in your list.",
+  "suggestedSkills": "Suggestions",
+  "saveConflict": "This profile changed on another device. Reload to see the latest version; your edits stay on this device.",
+  "reloadAction": "Reload",
+  "savePending": "A previous save hasn't been confirmed yet.",
+  "retrySave": "Retry save",
+  "itemNotFound": "This item no longer exists.",
+  "reviewIntro": "Check each section. Tap Edit to change anything.",
+  "doneAction": "Done",
+  "completenessLabel": "Profile completeness",
+  "aiAuditSoon": "ATS and AI review aren't available yet.",
+  "aiSoon": "Improve with JobiX isn't available yet.",
+  "targetRoleOptional": "Target role (optional)",
+  "notProvided": "Not added",
+  "profileSlot": "Profile {slot}",
+  "@profileSlot": {
+    "placeholders": {
+      "slot": {
+        "type": "Object"
+      }
+    }
+  },
+  "continueProfile": "Continue Profile",
+  "sectionStatusCount": "{complete} of {total} complete",
+  "@sectionStatusCount": {
+    "placeholders": {
+      "complete": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "contactSection": "Contact",
+  "authRateLimited": "Too many emails were requested. Wait a while, then try again.",
+  "authNotConfirmed": "Confirm your email first. Check your inbox or resend the link.",
+  "authInvalidCredentials": "Email or password is incorrect.",
+  "authWeakPassword": "Choose a stronger password (at least 8 characters).",
+  "authInvalidEmail": "Enter a valid email address.",
+  "authUserExists": "An account already exists for this email. Sign in instead.",
+  "authNetwork": "No connection. Check your internet and try again.",
+  "resendConfirmation": "Resend confirmation email",
+  "confirmationResent": "A new confirmation email was sent.",
+  "notSavedYet": "Not saved yet",
+  "reviewPersonalMissing": "Add your name, email and phone to export a resume later.",
+  "welcomeBack": "Welcome back, {name}",
+  "@welcomeBack": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeOverview": "Here is your career overview.",
+  "creditsCount": "{count} credits",
+  "@creditsCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "moreCount": "+{count} more",
+  "@moreCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "sectionsRemaining": "{count} sections to finish",
+  "@sectionsRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemChangedElsewhere": "This item was changed on another device after you started editing. Choose which version to keep.",
+  "itemRemovedElsewhere": "This item was removed on another device after you started editing. Choose whether to keep it removed or add it back with your changes.",
+  "keepServerVersion": "Use the latest version",
+  "reapplyMyChanges": "Keep my changes",
+  "backToReview": "Back to Review"
 }

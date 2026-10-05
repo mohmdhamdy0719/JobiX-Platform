@@ -35,17 +35,23 @@ class SupabaseProfileApi implements ProfileApi {
     final frozen = draft.frozen!;
     final row = await client
         .rpc(
-          'save_personal_information',
+          'profile_mutate',
           params: {
             'command_key': draft.commandKey,
             'requested_profile': draft.profileId,
-            'expected_version': frozen['version'],
-            'personal': frozen['personal'],
-            'resume_language': frozen['language'],
+            'expected_profile_version': frozen['version'],
+            'mutation': {
+              'type': 'upsert_item',
+              'section': 'personal',
+              'value': {
+                'personal': frozen['personal'],
+                'resume_language': frozen['language'],
+              },
+            },
           },
         )
         .timeout(const Duration(seconds: 15));
-    return CareerProfile.fromJson(Map<String, dynamic>.from(row as Map));
+    return acknowledgedProfile(row);
   }
 
   @override
@@ -71,6 +77,17 @@ class SupabaseProfileApi implements ProfileApi {
         )
         .timeout(const Duration(seconds: 15));
   }
+}
+
+/// Reads a profile_mutate acknowledgement; anything but SUCCEEDED is unconfirmed.
+CareerProfile acknowledgedProfile(Object? response) {
+  final envelope = Map<String, dynamic>.from(response as Map);
+  if (envelope['state'] != 'SUCCEEDED' || envelope['data'] is! Map) {
+    throw StateError('SAVE_NOT_CONFIRMED');
+  }
+  return CareerProfile.fromJson(
+    Map<String, dynamic>.from(envelope['data'] as Map),
+  );
 }
 
 class DraftRepository {

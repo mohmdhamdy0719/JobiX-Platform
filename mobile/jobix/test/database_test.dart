@@ -25,7 +25,7 @@ void main() {
   tearDown(() => directory.deleteSync(recursive: true));
 
   test(
-    'encrypted v0 -> v3 creates infrastructure and real slice storage',
+    'encrypted v0 -> v4 creates infrastructure and real slice storage',
     () async {
       final db = AppDatabase(encryptedDatabase(file, key));
       await db.setSetting('locale', 'ar');
@@ -39,6 +39,7 @@ void main() {
         'infrastructure_metadata',
         'local_drafts',
         'local_onboarding',
+        'local_pending_mutations',
         'local_profiles',
         'local_section_drafts',
         'local_settings',
@@ -48,11 +49,11 @@ void main() {
             .data
             .values
             .single,
-        3,
+        4,
       );
       expect(
         (await db.select(db.infrastructureMetadata).getSingle()).value,
-        '3',
+        '4',
       );
       await db.close();
       expect(
@@ -61,6 +62,24 @@ void main() {
       );
     },
   );
+  test('v3 -> v4 keeps drafts and adds the pending-save store', () async {
+    final db = AppDatabase(encryptedDatabase(file, key));
+    await db.retainSection('u1', 'p1', 'summary', '{"text":"kept"}');
+    await db.customStatement('DROP TABLE local_pending_mutations');
+    await db.customStatement('PRAGMA user_version = 3');
+    await db.close();
+    final upgraded = AppDatabase(encryptedDatabase(file, key));
+    expect(
+      await upgraded.sectionDraft('u1', 'p1', 'summary'),
+      '{"text":"kept"}',
+    );
+    await upgraded.retainPendingMutation('u1', 'p1', '{"key":"k"}');
+    expect(await upgraded.pendingMutation('u1', 'p1'), '{"key":"k"}');
+    await upgraded.clearAccount('u1');
+    expect(await upgraded.pendingMutation('u1', 'p1'), isNull);
+    expect(await upgraded.sectionDraft('u1', 'p1', 'summary'), isNull);
+    await upgraded.close();
+  });
   test('correct key reopens settings without repeating migration', () async {
     final db = AppDatabase(encryptedDatabase(file, key));
     await db.setSetting('locale', 'ar');

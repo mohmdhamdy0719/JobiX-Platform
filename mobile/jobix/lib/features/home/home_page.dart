@@ -7,6 +7,8 @@ import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
 import '../core_mvp/authenticated_navigation.dart';
+import '../builder/builder_scaffold.dart';
+import '../builder/profile_overview.dart';
 import '../core_mvp/core_api.dart';
 
 final unfinishedDraftProvider = FutureProvider.family<bool, String>((
@@ -25,10 +27,17 @@ class HomePage extends ConsumerWidget {
     final copy = AppLocalizations.of(context)!;
     final profile = ref.watch(firstProfileProvider);
     final merge = ref.watch(contextMergeProvider);
+    final balance = ref.watch(coreSummaryProvider);
+    final theme = Theme.of(context);
+    final name = (profile.valueOrNull?.personal['full_name'] ?? '')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .first;
     return SliceScaffold(
       title: copy.appTitle,
       leading: const BrandMark(size: 40),
       actions: [
+        const CreditsPill(),
         IconButton(
           tooltip: copy.signOut,
           key: const Key('sign-out'),
@@ -68,81 +77,31 @@ class HomePage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: TokensV0.space16),
-          SectionHeading(title: copy.homeTitle, subtitle: copy.homeSubtitle),
-          const SizedBox(height: TokensV0.space24),
-          ref
-              .watch(coreSummaryProvider)
-              .when(
-                loading: () => const SliceCard(
-                  child: Row(
-                    children: [
-                      _BalanceSkeletonIcon(),
-                      SizedBox(width: TokensV0.space12),
-                      Expanded(child: _BalanceSkeleton()),
-                    ],
+          Text(
+            name.isEmpty ? copy.homeTitle : copy.welcomeBack(name),
+            key: const Key('home-welcome'),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: TokensV0.space4),
+          Text(copy.homeOverview, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: TokensV0.space20),
+          if (balance.hasError) ...[
+            SliceCard(
+              child: Row(
+                children: [
+                  Expanded(child: Text(copy.balanceUnavailable)),
+                  IconButton(
+                    tooltip: copy.retry,
+                    onPressed: () => ref.invalidate(coreSummaryProvider),
+                    icon: const Icon(Icons.refresh),
                   ),
-                ),
-                error: (_, __) => SliceCard(
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.account_balance_wallet_outlined,
-                        color: TokensV0.deepBlue,
-                      ),
-                      const SizedBox(width: TokensV0.space12),
-                      Expanded(child: Text(copy.balanceUnavailable)),
-                      IconButton(
-                        tooltip: copy.retry,
-                        onPressed: () => ref.invalidate(coreSummaryProvider),
-                        icon: const Icon(Icons.refresh),
-                      ),
-                    ],
-                  ),
-                ),
-                data: (summary) => SliceCard(
-                  padding: const EdgeInsetsDirectional.all(TokensV0.space16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: TokensV0.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(
-                            TokensV0.controlRadius,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.account_balance_wallet_outlined,
-                          color: TokensV0.deepBlue,
-                        ),
-                      ),
-                      const SizedBox(width: TokensV0.space12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              copy.availableCredits,
-                              style: Theme.of(context).textTheme.labelMedium,
-                            ),
-                            Text(
-                              '${summary.balance.available}',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => context.go('/credits'),
-                        child: Text(copy.viewHistory),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
-          const SizedBox(height: TokensV0.space16),
+            ),
+            const SizedBox(height: TokensV0.space16),
+          ],
           if (merge.hasError) ...[
             SliceCard(
               child: Column(
@@ -171,89 +130,106 @@ class HomePage extends ConsumerWidget {
                 ],
               ),
             ),
-            data: (CareerProfile value) => SliceCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    copy.careerTitle,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: TokensV0.space16),
-                  Text(
-                    copy.nextAction,
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                  const SizedBox(height: TokensV0.space8),
-                  Text(
-                    copy.personalInformation,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  if (ref
-                          .watch(unfinishedDraftProvider(value.id))
-                          .valueOrNull ==
-                      true) ...[
-                    const SizedBox(height: TokensV0.space12),
-                    Text(copy.draftAvailable),
+            data: (CareerProfile value) {
+              final remaining = sectionsRemaining(value);
+              return SliceCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: TokensV0.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(
+                              TokensV0.controlRadius,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.badge_outlined,
+                            color: TokensV0.deepBlue,
+                          ),
+                        ),
+                        const SizedBox(width: TokensV0.space12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                value.targetRole.trim().isEmpty
+                                    ? copy.careerTitle
+                                    : value.targetRole.trim(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                copy.profileSlot(value.slot),
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: TokensV0.space16),
+                    Row(
+                      children: [
+                        CompletenessRing(percent: value.completeness ?? 0),
+                        const SizedBox(width: TokensV0.space16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                copy.completenessLabel,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (remaining > 0)
+                                Text(
+                                  copy.sectionsRemaining(remaining),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: TokensV0.warning,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (ref
+                            .watch(unfinishedDraftProvider(value.id))
+                            .valueOrNull ==
+                        true) ...[
+                      const SizedBox(height: TokensV0.space12),
+                      Text(copy.draftAvailable),
+                    ],
+                    const SizedBox(height: TokensV0.space16),
+                    InactiveSlot(
+                      label: copy.aiAuditSoon,
+                      icon: Icons.fact_check_outlined,
+                    ),
+                    const SizedBox(height: TokensV0.space16),
+                    PrimaryAction(
+                      key: const Key('continue-career'),
+                      label: copy.continueProfile,
+                      icon: Icons.arrow_forward,
+                      onPressed: () =>
+                          context.go('/builder/${nextBuilderStep(value)}'),
+                    ),
                   ],
-                  const SizedBox(height: TokensV0.space24),
-                  PrimaryAction(
-                    key: const Key('continue-career'),
-                    label: copy.continueCareer,
-                    icon: Icons.arrow_forward,
-                    onPressed: () => context.go('/career/personal'),
-                  ),
-                  const SizedBox(height: TokensV0.space16),
-                  Text(
-                    copy.moreStepsLater,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
-}
-
-class _BalanceSkeleton extends StatelessWidget {
-  const _BalanceSkeleton();
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Container(
-        width: 120,
-        height: 12,
-        decoration: BoxDecoration(
-          color: TokensV0.surfaceContainer,
-          borderRadius: BorderRadius.circular(TokensV0.chipRadius),
-        ),
-      ),
-      const SizedBox(height: TokensV0.space8),
-      Container(
-        width: 64,
-        height: 18,
-        decoration: BoxDecoration(
-          color: TokensV0.surfaceContainer,
-          borderRadius: BorderRadius.circular(TokensV0.chipRadius),
-        ),
-      ),
-    ],
-  );
-}
-
-class _BalanceSkeletonIcon extends StatelessWidget {
-  const _BalanceSkeletonIcon();
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 44,
-    height: 44,
-    decoration: BoxDecoration(
-      color: TokensV0.surfaceContainer,
-      borderRadius: BorderRadius.circular(TokensV0.controlRadius),
-    ),
-  );
 }

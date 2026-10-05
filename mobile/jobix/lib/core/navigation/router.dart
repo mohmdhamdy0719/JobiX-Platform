@@ -15,7 +15,12 @@ import '../../features/onboarding/onboarding_page.dart';
 import '../../features/onboarding/research_context.dart';
 import '../../features/onboarding/research_page.dart';
 import '../../features/personal_information/personal_information_page.dart';
+import '../../features/career_profile/profile_sections.dart';
 import '../../features/career_profile/text_section_page.dart';
+import '../../features/builder/builder_scaffold.dart';
+import '../../features/builder/builder_steps_page.dart';
+import '../../features/builder/entity_editor_page.dart';
+import '../../features/builder/review_page.dart';
 import '../../features/shell/foundation_page.dart';
 import '../providers.dart';
 
@@ -26,6 +31,8 @@ String routeFor(StartupState state) => switch (state) {
   StartupState.updateRequired => '/update-required',
   StartupState.failed => '/startup-failed',
 };
+
+final builderPath = RegExp(r'^/builder/[1-6]$');
 
 /// Pure guard contract shared by native navigation and tests.
 String? sliceRedirect({
@@ -46,15 +53,14 @@ String? sliceRedirect({
         path == '/career' ||
         path == '/settings' ||
         path == '/credits' ||
-        path == '/career/personal' ||
-        path == '/career/summary' ||
-        path == '/career/target-role') {
+        builderPath.hasMatch(path) ||
+        path.startsWith('/career/')) {
       return null;
     }
     final destination = entryLoading
         ? '/boot'
         : firstEntry
-        ? '/career/personal'
+        ? '/builder/1'
         : '/home';
     return path == destination ? null : destination;
   }
@@ -145,16 +151,55 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (_, __) => const SettingsPage()),
       GoRoute(path: '/credits', builder: (_, __) => const CreditsPage()),
       GoRoute(
+        path: '/builder/:step',
+        builder: (_, state) {
+          final step = int.tryParse(state.pathParameters['step']!) ?? 1;
+          return switch (step) {
+            1 => const PersonalInformationPage(builder: true),
+            2 => const TextSectionPage(section: 'summary', builderStep: 2),
+            3 || 4 || 5 => BuilderSectionsStep(
+              key: ValueKey('$step-${state.uri.queryParameters['origin']}'),
+              step: step,
+              origin: EditorOrigin.parse(state.uri.queryParameters['origin']),
+            ),
+            _ => const ReviewPage(),
+          };
+        },
+      ),
+      GoRoute(
         path: '/career/personal',
-        builder: (_, __) => const PersonalInformationPage(),
+        builder: (_, state) => PersonalInformationPage(
+          origin: state.uri.queryParameters['origin'],
+        ),
       ),
       GoRoute(
         path: '/career/summary',
-        builder: (_, __) => const TextSectionPage(section: 'summary'),
+        builder: (_, state) => TextSectionPage(
+          section: 'summary',
+          origin: state.uri.queryParameters['origin'],
+        ),
       ),
       GoRoute(
         path: '/career/target-role',
-        builder: (_, __) => const TextSectionPage(section: 'target_role'),
+        builder: (_, state) => TextSectionPage(
+          section: 'target_role',
+          origin: state.uri.queryParameters['origin'],
+        ),
+      ),
+      GoRoute(
+        path: '/career/edit/:section/:id',
+        builder: (_, state) {
+          final section = EntitySection.values
+              .where((s) => s.key == state.pathParameters['section'])
+              .firstOrNull;
+          if (section == null) return const ReviewPage();
+          return EntityEditorPage(
+            key: ValueKey(state.uri.toString()),
+            section: section,
+            itemId: state.pathParameters['id']!,
+            origin: EditorOrigin.parse(state.uri.queryParameters['origin']),
+          );
+        },
       ),
     ],
   );

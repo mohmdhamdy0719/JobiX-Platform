@@ -51,8 +51,17 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     });
     try {
       await operation();
-    } catch (_) {
-      if (mounted) setState(() => notice = AuthNoticeKind.failure);
+    } catch (error) {
+      final kind = authNoticeFor(error);
+      if (!mounted) return;
+      if (kind == AuthNoticeKind.notConfirmed && widget.mode == 'login') {
+        // The account exists but is unconfirmed: offer the resend path.
+        ref.read(pendingConfirmationEmailProvider.notifier).state = email.text
+            .trim();
+        context.go('/confirm');
+        return;
+      }
+      setState(() => notice = kind);
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -68,6 +77,8 @@ class _AuthPageState extends ConsumerState<AuthPage> {
         registration: true,
       );
       await api.signUp(emailValue, passwordValue);
+      container.read(pendingConfirmationEmailProvider.notifier).state =
+          emailValue.trim();
       container.invalidate(firstEntryProvider);
       if (mounted) context.go('/confirm');
     } else if (widget.mode == 'forgot') {
@@ -82,6 +93,11 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       await api.signIn(emailValue, passwordValue);
       container.invalidate(firstEntryProvider);
     }
+  });
+
+  Future<void> resend(String address) => run(() async {
+    await (await ref.read(authApiProvider.future)).resendConfirmation(address);
+    if (mounted) setState(() => notice = AuthNoticeKind.confirmationResent);
   });
 
   Future<void> google() => run(() async {
@@ -122,6 +138,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
         ? copy.loginSubtitle
         : copy.authSubtitle;
     final flow = ref.watch(authFlowProvider);
+    final pending = ref.watch(pendingConfirmationEmailProvider);
     final settings = ref.watch(authProviderSettingsProvider);
     final googleEnabled = settings.maybeWhen(
       data: (value) => value.googleEnabled,
@@ -151,7 +168,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                 bottom: TokensV0.space16,
               ),
               child: NoticePanel(
-                error: notice != AuthNoticeKind.resetSent,
+                error: notice?.isError ?? true,
                 message: (notice ?? AuthNoticeKind.failure).localized(copy),
               ),
             ),
@@ -179,6 +196,14 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               label: copy.loginAction,
               onPressed: () => context.go('/auth?mode=login'),
             ),
+            if (pending != null && pending.isNotEmpty) ...[
+              const SizedBox(height: TokensV0.space12),
+              OutlinedButton(
+                key: const Key('resend-confirmation'),
+                onPressed: busy ? null : () => resend(pending),
+                child: Text(copy.resendConfirmation),
+              ),
+            ],
           ] else
             Form(
               key: form,

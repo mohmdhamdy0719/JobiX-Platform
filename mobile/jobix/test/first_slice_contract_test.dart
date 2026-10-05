@@ -124,7 +124,7 @@ void main() {
   );
 
   test(
-    'v1 -> v3 upgrades real encrypted storage without losing settings',
+    'v1 -> v4 upgrades real encrypted storage without losing settings',
     () async {
       await db.close();
       final file = File('${directory.path}/v1.db');
@@ -147,7 +147,7 @@ void main() {
       );
       expect(
         (await db.select(db.infrastructureMetadata).getSingle()).value,
-        '3',
+        '4',
       );
     },
   );
@@ -247,7 +247,7 @@ void main() {
     );
   });
   test(
-    'Home first on returning launch; new signup goes directly to Personal Information',
+    'Home first on returning launch; new signup goes directly to builder Step 1',
     () {
       String? guard({
         required String path,
@@ -262,8 +262,12 @@ void main() {
         recovery: recovery,
       );
       expect(guard(path: '/boot'), '/home');
-      expect(guard(path: '/boot', newEntry: true), '/career/personal');
+      expect(guard(path: '/boot', newEntry: true), '/builder/1');
+      expect(guard(path: '/builder/1'), isNull);
+      expect(guard(path: '/builder/6'), isNull);
+      expect(guard(path: '/builder/7'), '/home');
       expect(guard(path: '/career/personal'), isNull);
+      expect(guard(path: '/career/edit/experience/new'), isNull);
       expect(guard(path: '/home'), isNull);
       expect(guard(path: '/home', recovery: true), '/recovery');
     },
@@ -278,6 +282,8 @@ void main() {
           '/forgot',
           '/confirm',
           '/career/personal',
+          '/builder/1',
+          '/career/edit/skill/new',
         ]) {
           expect(
             sliceRedirect(

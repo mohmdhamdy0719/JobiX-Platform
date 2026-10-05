@@ -7,6 +7,7 @@ import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
+import '../builder/builder_scaffold.dart';
 import '../home/home_page.dart';
 import 'career_profile.dart';
 import 'text_section_repository.dart';
@@ -20,8 +21,17 @@ String textSectionTitle(BuildContext context, String section) {
 }
 
 class TextSectionPage extends ConsumerStatefulWidget {
-  const TextSectionPage({required this.section, super.key});
+  const TextSectionPage({
+    required this.section,
+    this.builderStep,
+    this.origin,
+    super.key,
+  });
   final String section;
+  // Non-null when shown as a guided builder step.
+  final int? builderStep;
+  // 'review' returns to Review after Back or a successful save.
+  final String? origin;
   @override
   ConsumerState<TextSectionPage> createState() => _TextSectionPageState();
 }
@@ -37,6 +47,25 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   bool get ar => AppLocalizations.of(context)!.localeName.startsWith('ar');
   String say(String en, String arabic) => ar ? arabic : en;
   int get maximum => widget.section == 'summary' ? 1000 : 200;
+  bool get fromReview => widget.origin == 'review';
+  String get backRoute => widget.builderStep != null
+      ? '/builder/${widget.builderStep! - 1}'
+      : fromReview
+      ? '/builder/6'
+      : '/career';
+
+  Future<void> advance() async {
+    if (busy || draft == null) return;
+    if (dirty) await save();
+    if (!mounted || dirty) return;
+    allowPop = true;
+    context.go(
+      widget.builderStep != null
+          ? '/builder/${widget.builderStep! + 1}'
+          : '/builder/6',
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -261,7 +290,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
     if (mounted) {
       if (profile != null) ref.invalidate(unfinishedDraftProvider(profile!.id));
       setState(() => allowPop = true);
-      context.go('/career');
+      context.go(backRoute);
     }
   }
 
@@ -278,14 +307,9 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) unawaited(leave());
       },
-      child: SliceScaffold(
-        title: textSectionTitle(context, widget.section),
-        leading: IconButton(
-          onPressed: busy ? null : leave,
-          icon: const Icon(Icons.arrow_back),
-          tooltip: copy.backAction,
-        ),
-        child: Column(
+      child: frame(
+        copy,
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (draft == null) ...[
@@ -354,22 +378,45 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 const SummaryWritingHints(),
               ],
               const SizedBox(height: TokensV0.space20),
-              PrimaryAction(
-                key: Key('save-${widget.section}'),
-                label: copy.saveAction,
-                onPressed: busy ? null : save,
-              ),
-              const SizedBox(height: TokensV0.space12),
-              TextButton(
-                onPressed: busy ? null : leave,
-                child: Text(copy.saveLater),
-              ),
+              if (widget.builderStep == null) ...[
+                PrimaryAction(
+                  key: Key('save-${widget.section}'),
+                  label: copy.saveAction,
+                  onPressed: busy ? null : (fromReview ? advance : save),
+                ),
+                const SizedBox(height: TokensV0.space12),
+                TextButton(
+                  onPressed: busy ? null : leave,
+                  child: Text(fromReview ? copy.backAction : copy.saveLater),
+                ),
+              ],
               if (notice != null)
                 Text(notice!, key: const Key('section-notice')),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget frame(AppLocalizations copy, Widget child) {
+    if (widget.builderStep != null) {
+      return BuilderScaffold(
+        step: widget.builderStep!,
+        busy: busy,
+        onBack: leave,
+        onContinue: draft == null ? null : advance,
+        child: child,
+      );
+    }
+    return SliceScaffold(
+      title: textSectionTitle(context, widget.section),
+      leading: IconButton(
+        onPressed: busy ? null : leave,
+        icon: const Icon(Icons.arrow_back),
+        tooltip: copy.backAction,
+      ),
+      child: child,
     );
   }
 }

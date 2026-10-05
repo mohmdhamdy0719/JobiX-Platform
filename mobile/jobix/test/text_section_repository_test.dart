@@ -107,7 +107,9 @@ void main() {
   test('v2 upgrade preserves existing personal drafts and settings', () async {
     await db.setSetting('locale', 'ar');
     await db.saveDraft('one', profile.id, 'retained');
+    // A real v2 file has neither v3 section drafts nor the v4 outbox.
     await db.customStatement('DROP TABLE local_section_drafts');
+    await db.customStatement('DROP TABLE local_pending_mutations');
     await db.customStatement('PRAGMA user_version = 2');
     await db.close();
     db = AppDatabase(encryptedDatabase(File('${directory.path}/db'), key));

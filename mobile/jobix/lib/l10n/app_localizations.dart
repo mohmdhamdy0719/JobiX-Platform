@@ -1141,6 +1141,666 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Credit transaction'**
   String get creditTransaction;
+
+  /// No description provided for @stepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {total}'**
+  String stepOf(Object step, Object total);
+
+  /// No description provided for @stepPersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Info & Links'**
+  String get stepPersonal;
+
+  /// No description provided for @stepSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional Summary'**
+  String get stepSummary;
+
+  /// No description provided for @stepExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Work Experience'**
+  String get stepExperience;
+
+  /// No description provided for @stepEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Education & Credentials'**
+  String get stepEducation;
+
+  /// No description provided for @stepSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills, Projects & Languages'**
+  String get stepSkills;
+
+  /// No description provided for @stepReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Profile'**
+  String get stepReview;
+
+  /// No description provided for @skipAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get skipAction;
+
+  /// No description provided for @itemsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} added'**
+  String itemsAdded(Object count);
+
+  /// No description provided for @addRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Role'**
+  String get addRole;
+
+  /// No description provided for @addEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Education'**
+  String get addEducation;
+
+  /// No description provided for @addCertification.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Certification'**
+  String get addCertification;
+
+  /// No description provided for @addAchievement.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Achievement'**
+  String get addAchievement;
+
+  /// No description provided for @addProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Project'**
+  String get addProject;
+
+  /// No description provided for @addLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Language'**
+  String get addLanguage;
+
+  /// No description provided for @sectionEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get sectionEducation;
+
+  /// No description provided for @sectionCertifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Certifications'**
+  String get sectionCertifications;
+
+  /// No description provided for @sectionAchievements.
+  ///
+  /// In en, this message translates to:
+  /// **'Achievements'**
+  String get sectionAchievements;
+
+  /// No description provided for @sectionSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills'**
+  String get sectionSkills;
+
+  /// No description provided for @sectionProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get sectionProjects;
+
+  /// No description provided for @sectionLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages'**
+  String get sectionLanguages;
+
+  /// No description provided for @emptyExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles added yet. Add one now or skip this step.'**
+  String get emptyExperience;
+
+  /// No description provided for @emptySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing added yet.'**
+  String get emptySection;
+
+  /// No description provided for @presentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Present'**
+  String get presentLabel;
+
+  /// No description provided for @currentRole.
+  ///
+  /// In en, this message translates to:
+  /// **'I currently work here'**
+  String get currentRole;
+
+  /// No description provided for @currentStudy.
+  ///
+  /// In en, this message translates to:
+  /// **'I currently study here'**
+  String get currentStudy;
+
+  /// No description provided for @itemIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs details'**
+  String get itemIncomplete;
+
+  /// No description provided for @itemComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get itemComplete;
+
+  /// No description provided for @editAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editAction;
+
+  /// No description provided for @removeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeAction;
+
+  /// No description provided for @moreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get moreActions;
+
+  /// No description provided for @removeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this item?'**
+  String get removeTitle;
+
+  /// No description provided for @removeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will be removed from your profile.'**
+  String get removeBody;
+
+  /// No description provided for @cancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelAction;
+
+  /// No description provided for @fieldJobTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Job title'**
+  String get fieldJobTitle;
+
+  /// No description provided for @fieldCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get fieldCompany;
+
+  /// No description provided for @fieldLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location (optional)'**
+  String get fieldLocation;
+
+  /// No description provided for @fieldStartMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Start month'**
+  String get fieldStartMonth;
+
+  /// No description provided for @fieldEndMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'End month'**
+  String get fieldEndMonth;
+
+  /// No description provided for @fieldDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get fieldDescription;
+
+  /// No description provided for @fieldDescriptionOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get fieldDescriptionOptional;
+
+  /// No description provided for @fieldDegree.
+  ///
+  /// In en, this message translates to:
+  /// **'Degree'**
+  String get fieldDegree;
+
+  /// No description provided for @fieldInstitution.
+  ///
+  /// In en, this message translates to:
+  /// **'Institution'**
+  String get fieldInstitution;
+
+  /// No description provided for @fieldStudy.
+  ///
+  /// In en, this message translates to:
+  /// **'Field of study'**
+  String get fieldStudy;
+
+  /// No description provided for @fieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get fieldName;
+
+  /// No description provided for @fieldIssuer.
+  ///
+  /// In en, this message translates to:
+  /// **'Issuer'**
+  String get fieldIssuer;
+
+  /// No description provided for @fieldIssueMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue month'**
+  String get fieldIssueMonth;
+
+  /// No description provided for @fieldExpiryMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiry month (optional)'**
+  String get fieldExpiryMonth;
+
+  /// No description provided for @fieldCredential.
+  ///
+  /// In en, this message translates to:
+  /// **'Credential ID (optional)'**
+  String get fieldCredential;
+
+  /// No description provided for @fieldUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Link (optional)'**
+  String get fieldUrl;
+
+  /// No description provided for @fieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get fieldTitle;
+
+  /// No description provided for @fieldMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get fieldMonth;
+
+  /// No description provided for @fieldRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Your role'**
+  String get fieldRole;
+
+  /// No description provided for @fieldTechnologies.
+  ///
+  /// In en, this message translates to:
+  /// **'Technologies (comma separated)'**
+  String get fieldTechnologies;
+
+  /// No description provided for @fieldLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get fieldLanguage;
+
+  /// No description provided for @fieldProficiency.
+  ///
+  /// In en, this message translates to:
+  /// **'Proficiency'**
+  String get fieldProficiency;
+
+  /// No description provided for @monthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'YYYY-MM'**
+  String get monthHint;
+
+  /// No description provided for @problemTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'This is too long.'**
+  String get problemTooLong;
+
+  /// No description provided for @problemMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the format YYYY-MM.'**
+  String get problemMonth;
+
+  /// No description provided for @problemUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a secure https link.'**
+  String get problemUrl;
+
+  /// No description provided for @problemEndBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'The end must be after the start.'**
+  String get problemEndBeforeStart;
+
+  /// No description provided for @problemRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This is required.'**
+  String get problemRequired;
+
+  /// No description provided for @descriptionMinimum.
+  ///
+  /// In en, this message translates to:
+  /// **'Write at least 20 characters for this to count toward completeness.'**
+  String get descriptionMinimum;
+
+  /// No description provided for @incompleteSaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can save now and finish the details later; incomplete items don\'t count toward completeness.'**
+  String get incompleteSaveNote;
+
+  /// No description provided for @profBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic'**
+  String get profBasic;
+
+  /// No description provided for @profConversational.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversational'**
+  String get profConversational;
+
+  /// No description provided for @profProfessional.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional'**
+  String get profProfessional;
+
+  /// No description provided for @profFluent.
+  ///
+  /// In en, this message translates to:
+  /// **'Fluent'**
+  String get profFluent;
+
+  /// No description provided for @profNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Native'**
+  String get profNative;
+
+  /// No description provided for @skillHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a skill'**
+  String get skillHint;
+
+  /// No description provided for @addAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addAction;
+
+  /// No description provided for @duplicateItem.
+  ///
+  /// In en, this message translates to:
+  /// **'This is already in your list.'**
+  String get duplicateItem;
+
+  /// No description provided for @suggestedSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions'**
+  String get suggestedSkills;
+
+  /// No description provided for @saveConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'This profile changed on another device. Reload to see the latest version; your edits stay on this device.'**
+  String get saveConflict;
+
+  /// No description provided for @reloadAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get reloadAction;
+
+  /// No description provided for @savePending.
+  ///
+  /// In en, this message translates to:
+  /// **'A previous save hasn\'t been confirmed yet.'**
+  String get savePending;
+
+  /// No description provided for @retrySave.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry save'**
+  String get retrySave;
+
+  /// No description provided for @itemNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This item no longer exists.'**
+  String get itemNotFound;
+
+  /// No description provided for @reviewIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Check each section. Tap Edit to change anything.'**
+  String get reviewIntro;
+
+  /// No description provided for @doneAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneAction;
+
+  /// No description provided for @completenessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile completeness'**
+  String get completenessLabel;
+
+  /// No description provided for @aiAuditSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'ATS and AI review aren\'t available yet.'**
+  String get aiAuditSoon;
+
+  /// No description provided for @aiSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Improve with JobiX isn\'t available yet.'**
+  String get aiSoon;
+
+  /// No description provided for @targetRoleOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Target role (optional)'**
+  String get targetRoleOptional;
+
+  /// No description provided for @notProvided.
+  ///
+  /// In en, this message translates to:
+  /// **'Not added'**
+  String get notProvided;
+
+  /// No description provided for @profileSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile {slot}'**
+  String profileSlot(Object slot);
+
+  /// No description provided for @continueProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Profile'**
+  String get continueProfile;
+
+  /// No description provided for @sectionStatusCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{complete} of {total} complete'**
+  String sectionStatusCount(Object complete, Object total);
+
+  /// No description provided for @contactSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contactSection;
+
+  /// No description provided for @authRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many emails were requested. Wait a while, then try again.'**
+  String get authRateLimited;
+
+  /// No description provided for @authNotConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your email first. Check your inbox or resend the link.'**
+  String get authNotConfirmed;
+
+  /// No description provided for @authInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or password is incorrect.'**
+  String get authInvalidCredentials;
+
+  /// No description provided for @authWeakPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a stronger password (at least 8 characters).'**
+  String get authWeakPassword;
+
+  /// No description provided for @authInvalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get authInvalidEmail;
+
+  /// No description provided for @authUserExists.
+  ///
+  /// In en, this message translates to:
+  /// **'An account already exists for this email. Sign in instead.'**
+  String get authUserExists;
+
+  /// No description provided for @authNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection. Check your internet and try again.'**
+  String get authNetwork;
+
+  /// No description provided for @resendConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend confirmation email'**
+  String get resendConfirmation;
+
+  /// No description provided for @confirmationResent.
+  ///
+  /// In en, this message translates to:
+  /// **'A new confirmation email was sent.'**
+  String get confirmationResent;
+
+  /// No description provided for @notSavedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved yet'**
+  String get notSavedYet;
+
+  /// No description provided for @reviewPersonalMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your name, email and phone to export a resume later.'**
+  String get reviewPersonalMissing;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, {name}'**
+  String welcomeBack(Object name);
+
+  /// No description provided for @homeOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Here is your career overview.'**
+  String get homeOverview;
+
+  /// No description provided for @creditsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} credits'**
+  String creditsCount(Object count);
+
+  /// No description provided for @moreCount.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String moreCount(Object count);
+
+  /// No description provided for @sectionsRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sections to finish'**
+  String sectionsRemaining(Object count);
+
+  /// No description provided for @itemChangedElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'This item was changed on another device after you started editing. Choose which version to keep.'**
+  String get itemChangedElsewhere;
+
+  /// No description provided for @itemRemovedElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'This item was removed on another device after you started editing. Choose whether to keep it removed or add it back with your changes.'**
+  String get itemRemovedElsewhere;
+
+  /// No description provided for @keepServerVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the latest version'**
+  String get keepServerVersion;
+
+  /// No description provided for @reapplyMyChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep my changes'**
+  String get reapplyMyChanges;
+
+  /// No description provided for @backToReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Review'**
+  String get backToReview;
 }
 
 class _AppLocalizationsDelegate

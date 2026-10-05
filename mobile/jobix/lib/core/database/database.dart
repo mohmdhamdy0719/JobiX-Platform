@@ -30,19 +30,20 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       await _createSectionDrafts();
+      await _createPendingMutations();
       await into(infrastructureMetadata).insert(
-        InfrastructureMetadataCompanion.insert(key: 'schema', value: '3'),
+        InfrastructureMetadataCompanion.insert(key: 'schema', value: '4'),
       );
     },
     onUpgrade: (m, from, to) async {
-      if (from < 1 || from > 2 || to != 3) {
+      if (from < 1 || from > 3 || to != 4) {
         throw StateError('Unsupported database migration $from -> $to');
       }
       if (from == 1) {
@@ -50,9 +51,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(localProfiles);
         await m.createTable(localDrafts);
       }
-      await _createSectionDrafts();
+      if (from < 3) await _createSectionDrafts();
+      await _createPendingMutations();
       await into(infrastructureMetadata).insertOnConflictUpdate(
-        InfrastructureMetadataCompanion.insert(key: 'schema', value: '3'),
+        InfrastructureMetadataCompanion.insert(key: 'schema', value: '4'),
       );
     },
   );
@@ -64,6 +66,52 @@ class AppDatabase extends _$AppDatabase {
       draft TEXT NOT NULL, PRIMARY KEY(user_id,profile_id,section)
     )
   ''');
+  // At most one unacknowledged profile command per profile. It keeps its
+  // idempotency key across restarts and shares the account wipe boundary.
+  Future<void> _createPendingMutations() => customStatement('''
+    CREATE TABLE local_pending_mutations (
+      user_id TEXT NOT NULL, profile_id TEXT NOT NULL, request TEXT NOT NULL,
+      PRIMARY KEY(user_id,profile_id)
+    )
+  ''');
+
+  Future<String?> pendingMutation(
+    String user,
+    String profile,
+  ) async => (await customSelect(
+    'SELECT request FROM local_pending_mutations WHERE user_id=? AND profile_id=?',
+    variables: [Variable(user), Variable(profile)],
+  ).getSingleOrNull())?.read<String>('request');
+  Future<void> retainPendingMutation(
+    String user,
+    String profile,
+    String request,
+  ) => customStatement(
+    'INSERT INTO local_pending_mutations VALUES(?,?,?) ON CONFLICT(user_id,profile_id) DO UPDATE SET request=excluded.request',
+    [user, profile, request],
+  );
+  Future<void> discardPendingMutation(String user, String profile) =>
+      customStatement(
+        'DELETE FROM local_pending_mutations WHERE user_id=? AND profile_id=?',
+        [user, profile],
+      );
+  Future<List<String>> sectionDraftKeys(
+    String user,
+    String profile,
+    String prefix,
+  ) async => [
+    for (final row in await customSelect(
+      'SELECT section FROM local_section_drafts WHERE user_id=? AND profile_id=? AND substr(section,1,?)=?',
+      variables: [
+        Variable(user),
+        Variable(profile),
+        Variable(prefix.length),
+        Variable(prefix),
+      ],
+    ).get())
+      row.read<String>('section'),
+  ];
+
   Future<String?> sectionDraft(
     String user,
     String profile,
@@ -184,6 +232,10 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('DELETE FROM local_section_drafts WHERE user_id=?', [
       user,
     ]);
+    await customStatement(
+      'DELETE FROM local_pending_mutations WHERE user_id=?',
+      [user],
+    );
     await (delete(localDrafts)..where((t) => t.userId.equals(user))).go();
     await (delete(localProfiles)..where((t) => t.userId.equals(user))).go();
     if (await setting('research_owner') == user) {

@@ -583,4 +583,361 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get creditTransaction => 'Credit transaction';
+
+  @override
+  String stepOf(Object step, Object total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String get stepPersonal => 'Personal Info & Links';
+
+  @override
+  String get stepSummary => 'Professional Summary';
+
+  @override
+  String get stepExperience => 'Work Experience';
+
+  @override
+  String get stepEducation => 'Education & Credentials';
+
+  @override
+  String get stepSkills => 'Skills, Projects & Languages';
+
+  @override
+  String get stepReview => 'Review Profile';
+
+  @override
+  String get skipAction => 'Skip for now';
+
+  @override
+  String itemsAdded(Object count) {
+    return '$count added';
+  }
+
+  @override
+  String get addRole => 'Add Role';
+
+  @override
+  String get addEducation => 'Add Education';
+
+  @override
+  String get addCertification => 'Add Certification';
+
+  @override
+  String get addAchievement => 'Add Achievement';
+
+  @override
+  String get addProject => 'Add Project';
+
+  @override
+  String get addLanguage => 'Add Language';
+
+  @override
+  String get sectionEducation => 'Education';
+
+  @override
+  String get sectionCertifications => 'Certifications';
+
+  @override
+  String get sectionAchievements => 'Achievements';
+
+  @override
+  String get sectionSkills => 'Skills';
+
+  @override
+  String get sectionProjects => 'Projects';
+
+  @override
+  String get sectionLanguages => 'Languages';
+
+  @override
+  String get emptyExperience =>
+      'No roles added yet. Add one now or skip this step.';
+
+  @override
+  String get emptySection => 'Nothing added yet.';
+
+  @override
+  String get presentLabel => 'Present';
+
+  @override
+  String get currentRole => 'I currently work here';
+
+  @override
+  String get currentStudy => 'I currently study here';
+
+  @override
+  String get itemIncomplete => 'Needs details';
+
+  @override
+  String get itemComplete => 'Complete';
+
+  @override
+  String get editAction => 'Edit';
+
+  @override
+  String get removeAction => 'Remove';
+
+  @override
+  String get moreActions => 'More actions';
+
+  @override
+  String get removeTitle => 'Remove this item?';
+
+  @override
+  String get removeBody => 'It will be removed from your profile.';
+
+  @override
+  String get cancelAction => 'Cancel';
+
+  @override
+  String get fieldJobTitle => 'Job title';
+
+  @override
+  String get fieldCompany => 'Company';
+
+  @override
+  String get fieldLocation => 'Location (optional)';
+
+  @override
+  String get fieldStartMonth => 'Start month';
+
+  @override
+  String get fieldEndMonth => 'End month';
+
+  @override
+  String get fieldDescription => 'Description';
+
+  @override
+  String get fieldDescriptionOptional => 'Description (optional)';
+
+  @override
+  String get fieldDegree => 'Degree';
+
+  @override
+  String get fieldInstitution => 'Institution';
+
+  @override
+  String get fieldStudy => 'Field of study';
+
+  @override
+  String get fieldName => 'Name';
+
+  @override
+  String get fieldIssuer => 'Issuer';
+
+  @override
+  String get fieldIssueMonth => 'Issue month';
+
+  @override
+  String get fieldExpiryMonth => 'Expiry month (optional)';
+
+  @override
+  String get fieldCredential => 'Credential ID (optional)';
+
+  @override
+  String get fieldUrl => 'Link (optional)';
+
+  @override
+  String get fieldTitle => 'Title';
+
+  @override
+  String get fieldMonth => 'Month';
+
+  @override
+  String get fieldRole => 'Your role';
+
+  @override
+  String get fieldTechnologies => 'Technologies (comma separated)';
+
+  @override
+  String get fieldLanguage => 'Language';
+
+  @override
+  String get fieldProficiency => 'Proficiency';
+
+  @override
+  String get monthHint => 'YYYY-MM';
+
+  @override
+  String get problemTooLong => 'This is too long.';
+
+  @override
+  String get problemMonth => 'Use the format YYYY-MM.';
+
+  @override
+  String get problemUrl => 'Enter a secure https link.';
+
+  @override
+  String get problemEndBeforeStart => 'The end must be after the start.';
+
+  @override
+  String get problemRequired => 'This is required.';
+
+  @override
+  String get descriptionMinimum =>
+      'Write at least 20 characters for this to count toward completeness.';
+
+  @override
+  String get incompleteSaveNote =>
+      'You can save now and finish the details later; incomplete items don\'t count toward completeness.';
+
+  @override
+  String get profBasic => 'Basic';
+
+  @override
+  String get profConversational => 'Conversational';
+
+  @override
+  String get profProfessional => 'Professional';
+
+  @override
+  String get profFluent => 'Fluent';
+
+  @override
+  String get profNative => 'Native';
+
+  @override
+  String get skillHint => 'Type a skill';
+
+  @override
+  String get addAction => 'Add';
+
+  @override
+  String get duplicateItem => 'This is already in your list.';
+
+  @override
+  String get suggestedSkills => 'Suggestions';
+
+  @override
+  String get saveConflict =>
+      'This profile changed on another device. Reload to see the latest version; your edits stay on this device.';
+
+  @override
+  String get reloadAction => 'Reload';
+
+  @override
+  String get savePending => 'A previous save hasn\'t been confirmed yet.';
+
+  @override
+  String get retrySave => 'Retry save';
+
+  @override
+  String get itemNotFound => 'This item no longer exists.';
+
+  @override
+  String get reviewIntro => 'Check each section. Tap Edit to change anything.';
+
+  @override
+  String get doneAction => 'Done';
+
+  @override
+  String get completenessLabel => 'Profile completeness';
+
+  @override
+  String get aiAuditSoon => 'ATS and AI review aren\'t available yet.';
+
+  @override
+  String get aiSoon => 'Improve with JobiX isn\'t available yet.';
+
+  @override
+  String get targetRoleOptional => 'Target role (optional)';
+
+  @override
+  String get notProvided => 'Not added';
+
+  @override
+  String profileSlot(Object slot) {
+    return 'Profile $slot';
+  }
+
+  @override
+  String get continueProfile => 'Continue Profile';
+
+  @override
+  String sectionStatusCount(Object complete, Object total) {
+    return '$complete of $total complete';
+  }
+
+  @override
+  String get contactSection => 'Contact';
+
+  @override
+  String get authRateLimited =>
+      'Too many emails were requested. Wait a while, then try again.';
+
+  @override
+  String get authNotConfirmed =>
+      'Confirm your email first. Check your inbox or resend the link.';
+
+  @override
+  String get authInvalidCredentials => 'Email or password is incorrect.';
+
+  @override
+  String get authWeakPassword =>
+      'Choose a stronger password (at least 8 characters).';
+
+  @override
+  String get authInvalidEmail => 'Enter a valid email address.';
+
+  @override
+  String get authUserExists =>
+      'An account already exists for this email. Sign in instead.';
+
+  @override
+  String get authNetwork => 'No connection. Check your internet and try again.';
+
+  @override
+  String get resendConfirmation => 'Resend confirmation email';
+
+  @override
+  String get confirmationResent => 'A new confirmation email was sent.';
+
+  @override
+  String get notSavedYet => 'Not saved yet';
+
+  @override
+  String get reviewPersonalMissing =>
+      'Add your name, email and phone to export a resume later.';
+
+  @override
+  String welcomeBack(Object name) {
+    return 'Welcome back, $name';
+  }
+
+  @override
+  String get homeOverview => 'Here is your career overview.';
+
+  @override
+  String creditsCount(Object count) {
+    return '$count credits';
+  }
+
+  @override
+  String moreCount(Object count) {
+    return '+$count more';
+  }
+
+  @override
+  String sectionsRemaining(Object count) {
+    return '$count sections to finish';
+  }
+
+  @override
+  String get itemChangedElsewhere =>
+      'This item was changed on another device after you started editing. Choose which version to keep.';
+
+  @override
+  String get itemRemovedElsewhere =>
+      'This item was removed on another device after you started editing. Choose whether to keep it removed or add it back with your changes.';
+
+  @override
+  String get keepServerVersion => 'Use the latest version';
+
+  @override
+  String get reapplyMyChanges => 'Keep my changes';
+
+  @override
+  String get backToReview => 'Back to Review';
 }

@@ -10,6 +10,7 @@ class SliceScaffold extends StatelessWidget {
     this.actions,
     this.bottom,
     this.header,
+    this.subheader,
     this.canvasColor = TokensV0.canvas,
     this.fillViewport = false,
     super.key,
@@ -20,6 +21,8 @@ class SliceScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final Widget? bottom;
   final Widget? header;
+  // Rendered under the standard title row (e.g. builder progress).
+  final Widget? subheader;
   final Color canvasColor;
   final bool fillViewport;
 
@@ -36,6 +39,7 @@ class SliceScaffold extends StatelessWidget {
               header!
             else if (hasHeader)
               _SliceHeader(title: title, leading: leading, actions: actions),
+            if (subheader != null) subheader!,
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {

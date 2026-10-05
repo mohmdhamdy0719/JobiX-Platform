@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'profile_sections.dart';
+
 const personalFields = [
   'full_name',
   'email',
@@ -32,6 +34,9 @@ class CareerProfile {
     this.completeness,
     this.summaryState,
     this.targetRoleState,
+    this.slot = 1,
+    this.algorithm,
+    this.items = const {},
   });
   final String id;
   final int version;
@@ -39,7 +44,18 @@ class CareerProfile {
   final Map<String, String> personal;
   final String summary, targetRole;
   final double? completeness;
-  final String? summaryState, targetRoleState;
+  final String? summaryState, targetRoleState, algorithm;
+  final int slot;
+  final Map<EntitySection, List<ProfileItem>> items;
+  List<ProfileItem> of(EntitySection section) => items[section] ?? const [];
+  int count(EntitySection section) => of(section).length;
+  int completeCount(EntitySection section) =>
+      of(section).where((i) => i.complete).length;
+  bool get hasContact => [
+    'full_name',
+    'email',
+    'phone',
+  ].any((field) => (personal[field] ?? '').trim().isNotEmpty);
   factory CareerProfile.fromJson(Map<String, dynamic> json) {
     final data = Map<String, dynamic>.from(json['personal'] as Map? ?? {});
     return CareerProfile(
@@ -51,6 +67,15 @@ class CareerProfile {
       completeness: (json['completeness_percent'] as num?)?.toDouble(),
       summaryState: json['summary_state'] as String?,
       targetRoleState: json['target_role_state'] as String?,
+      slot: (json['slot_number'] as num?)?.toInt() ?? 1,
+      algorithm: json['completeness_algorithm_version'] as String?,
+      items: {
+        for (final section in EntitySection.values)
+          section: [
+            for (final item in (json[section.listKey] as List? ?? const []))
+              ProfileItem.fromJson(section, item as Map),
+          ],
+      },
       personal: {
         for (final field in personalFields) field: data[field] as String? ?? '',
       },
@@ -66,6 +91,10 @@ class CareerProfile {
     'completeness_percent': completeness,
     'summary_state': summaryState,
     'target_role_state': targetRoleState,
+    'slot_number': slot,
+    'completeness_algorithm_version': algorithm,
+    for (final section in EntitySection.values)
+      section.listKey: [for (final item in of(section)) item.toJson()],
   };
   String encode() => jsonEncode(toJson());
 }

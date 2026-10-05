@@ -573,4 +573,361 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get creditTransaction => 'معاملة رصيد';
+
+  @override
+  String stepOf(Object step, Object total) {
+    return 'الخطوة $step من $total';
+  }
+
+  @override
+  String get stepPersonal => 'المعلومات الشخصية والروابط';
+
+  @override
+  String get stepSummary => 'الملخص المهني';
+
+  @override
+  String get stepExperience => 'الخبرة العملية';
+
+  @override
+  String get stepEducation => 'التعليم والشهادات';
+
+  @override
+  String get stepSkills => 'المهارات والمشاريع واللغات';
+
+  @override
+  String get stepReview => 'مراجعة الملف';
+
+  @override
+  String get skipAction => 'تخطي الآن';
+
+  @override
+  String itemsAdded(Object count) {
+    return 'تمت إضافة $count';
+  }
+
+  @override
+  String get addRole => 'إضافة دور';
+
+  @override
+  String get addEducation => 'إضافة تعليم';
+
+  @override
+  String get addCertification => 'إضافة شهادة';
+
+  @override
+  String get addAchievement => 'إضافة إنجاز';
+
+  @override
+  String get addProject => 'إضافة مشروع';
+
+  @override
+  String get addLanguage => 'إضافة لغة';
+
+  @override
+  String get sectionEducation => 'التعليم';
+
+  @override
+  String get sectionCertifications => 'الشهادات المهنية';
+
+  @override
+  String get sectionAchievements => 'الإنجازات';
+
+  @override
+  String get sectionSkills => 'المهارات';
+
+  @override
+  String get sectionProjects => 'المشاريع';
+
+  @override
+  String get sectionLanguages => 'اللغات';
+
+  @override
+  String get emptyExperience =>
+      'لم تتم إضافة أي دور بعد. أضف دورًا الآن أو تخطَّ هذه الخطوة.';
+
+  @override
+  String get emptySection => 'لم تتم إضافة شيء بعد.';
+
+  @override
+  String get presentLabel => 'حتى الآن';
+
+  @override
+  String get currentRole => 'أعمل هنا حاليًا';
+
+  @override
+  String get currentStudy => 'أدرس هنا حاليًا';
+
+  @override
+  String get itemIncomplete => 'يحتاج إلى تفاصيل';
+
+  @override
+  String get itemComplete => 'مكتمل';
+
+  @override
+  String get editAction => 'تعديل';
+
+  @override
+  String get removeAction => 'إزالة';
+
+  @override
+  String get moreActions => 'إجراءات أخرى';
+
+  @override
+  String get removeTitle => 'إزالة هذا العنصر؟';
+
+  @override
+  String get removeBody => 'ستتم إزالته من ملفك.';
+
+  @override
+  String get cancelAction => 'إلغاء';
+
+  @override
+  String get fieldJobTitle => 'المسمى الوظيفي';
+
+  @override
+  String get fieldCompany => 'الشركة';
+
+  @override
+  String get fieldLocation => 'الموقع (اختياري)';
+
+  @override
+  String get fieldStartMonth => 'شهر البدء';
+
+  @override
+  String get fieldEndMonth => 'شهر الانتهاء';
+
+  @override
+  String get fieldDescription => 'الوصف';
+
+  @override
+  String get fieldDescriptionOptional => 'الوصف (اختياري)';
+
+  @override
+  String get fieldDegree => 'الدرجة العلمية';
+
+  @override
+  String get fieldInstitution => 'المؤسسة التعليمية';
+
+  @override
+  String get fieldStudy => 'التخصص';
+
+  @override
+  String get fieldName => 'الاسم';
+
+  @override
+  String get fieldIssuer => 'الجهة المانحة';
+
+  @override
+  String get fieldIssueMonth => 'شهر الإصدار';
+
+  @override
+  String get fieldExpiryMonth => 'شهر انتهاء الصلاحية (اختياري)';
+
+  @override
+  String get fieldCredential => 'رقم الاعتماد (اختياري)';
+
+  @override
+  String get fieldUrl => 'الرابط (اختياري)';
+
+  @override
+  String get fieldTitle => 'العنوان';
+
+  @override
+  String get fieldMonth => 'الشهر';
+
+  @override
+  String get fieldRole => 'دورك';
+
+  @override
+  String get fieldTechnologies => 'التقنيات (مفصولة بفواصل)';
+
+  @override
+  String get fieldLanguage => 'اللغة';
+
+  @override
+  String get fieldProficiency => 'مستوى الإتقان';
+
+  @override
+  String get monthHint => 'YYYY-MM';
+
+  @override
+  String get problemTooLong => 'النص طويل جدًا.';
+
+  @override
+  String get problemMonth => 'استخدم الصيغة YYYY-MM.';
+
+  @override
+  String get problemUrl => 'أدخل رابطًا آمنًا يبدأ بـ https.';
+
+  @override
+  String get problemEndBeforeStart => 'يجب أن يكون الانتهاء بعد البدء.';
+
+  @override
+  String get problemRequired => 'هذا الحقل مطلوب.';
+
+  @override
+  String get descriptionMinimum =>
+      'اكتب 20 حرفًا على الأقل ليُحتسب ضمن اكتمال الملف.';
+
+  @override
+  String get incompleteSaveNote =>
+      'يمكنك الحفظ الآن وإكمال التفاصيل لاحقًا؛ العناصر غير المكتملة لا تُحتسب ضمن اكتمال الملف.';
+
+  @override
+  String get profBasic => 'أساسي';
+
+  @override
+  String get profConversational => 'محادثة';
+
+  @override
+  String get profProfessional => 'مهني';
+
+  @override
+  String get profFluent => 'طلاقة';
+
+  @override
+  String get profNative => 'اللغة الأم';
+
+  @override
+  String get skillHint => 'اكتب مهارة';
+
+  @override
+  String get addAction => 'إضافة';
+
+  @override
+  String get duplicateItem => 'هذا موجود بالفعل في قائمتك.';
+
+  @override
+  String get suggestedSkills => 'اقتراحات';
+
+  @override
+  String get saveConflict =>
+      'تم تغيير هذا الملف على جهاز آخر. أعد التحميل لرؤية أحدث نسخة؛ تبقى تعديلاتك على هذا الجهاز.';
+
+  @override
+  String get reloadAction => 'إعادة التحميل';
+
+  @override
+  String get savePending => 'لم يتم تأكيد حفظ سابق بعد.';
+
+  @override
+  String get retrySave => 'إعادة محاولة الحفظ';
+
+  @override
+  String get itemNotFound => 'هذا العنصر لم يعد موجودًا.';
+
+  @override
+  String get reviewIntro => 'راجع كل قسم. اضغط تعديل لتغيير أي شيء.';
+
+  @override
+  String get doneAction => 'تم';
+
+  @override
+  String get completenessLabel => 'اكتمال الملف';
+
+  @override
+  String get aiAuditSoon => 'مراجعة ATS والذكاء الاصطناعي غير متاحة بعد.';
+
+  @override
+  String get aiSoon => 'ميزة التحسين مع JobiX غير متاحة بعد.';
+
+  @override
+  String get targetRoleOptional => 'الدور المستهدف (اختياري)';
+
+  @override
+  String get notProvided => 'غير مضاف';
+
+  @override
+  String profileSlot(Object slot) {
+    return 'الملف $slot';
+  }
+
+  @override
+  String get continueProfile => 'متابعة الملف';
+
+  @override
+  String sectionStatusCount(Object complete, Object total) {
+    return '$complete من $total مكتمل';
+  }
+
+  @override
+  String get contactSection => 'بيانات التواصل';
+
+  @override
+  String get authRateLimited =>
+      'تم طلب عدد كبير من الرسائل. انتظر قليلًا ثم حاول مرة أخرى.';
+
+  @override
+  String get authNotConfirmed =>
+      'أكّد بريدك الإلكتروني أولًا. تحقق من صندوق الوارد أو أعد إرسال الرابط.';
+
+  @override
+  String get authInvalidCredentials =>
+      'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+
+  @override
+  String get authWeakPassword => 'اختر كلمة مرور أقوى (8 أحرف على الأقل).';
+
+  @override
+  String get authInvalidEmail => 'أدخل بريدًا إلكترونيًا صالحًا.';
+
+  @override
+  String get authUserExists =>
+      'يوجد حساب بهذا البريد بالفعل. سجّل الدخول بدلًا من ذلك.';
+
+  @override
+  String get authNetwork => 'لا يوجد اتصال. تحقق من الإنترنت وحاول مرة أخرى.';
+
+  @override
+  String get resendConfirmation => 'إعادة إرسال رسالة التأكيد';
+
+  @override
+  String get confirmationResent => 'تم إرسال رسالة تأكيد جديدة.';
+
+  @override
+  String get notSavedYet => 'لم يُحفظ بعد';
+
+  @override
+  String get reviewPersonalMissing =>
+      'أضف اسمك وبريدك الإلكتروني ورقم هاتفك لتتمكن من تصدير السيرة الذاتية لاحقًا.';
+
+  @override
+  String welcomeBack(Object name) {
+    return 'مرحبًا بعودتك، $name';
+  }
+
+  @override
+  String get homeOverview => 'هذه نظرة عامة على مسارك المهني.';
+
+  @override
+  String creditsCount(Object count) {
+    return 'الرصيد: $count';
+  }
+
+  @override
+  String moreCount(Object count) {
+    return '+$count أخرى';
+  }
+
+  @override
+  String sectionsRemaining(Object count) {
+    return 'أقسام متبقية: $count';
+  }
+
+  @override
+  String get itemChangedElsewhere =>
+      'تم تغيير هذا العنصر على جهاز آخر بعد أن بدأت التعديل. اختر النسخة التي تريد الاحتفاظ بها.';
+
+  @override
+  String get itemRemovedElsewhere =>
+      'تمت إزالة هذا العنصر على جهاز آخر بعد أن بدأت التعديل. اختر إبقاءه محذوفًا أو إضافته مجددًا بتعديلاتك.';
+
+  @override
+  String get keepServerVersion => 'استخدام أحدث نسخة';
+
+  @override
+  String get reapplyMyChanges => 'الاحتفاظ بتعديلاتي';
+
+  @override
+  String get backToReview => 'العودة إلى المراجعة';
 }

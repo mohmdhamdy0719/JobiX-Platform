@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/app_localizations_ar.dart';
 import '../../l10n/app_localizations_en.dart';
 import '../auth/auth_controller.dart';
+import '../builder/builder_scaffold.dart';
 import '../career_profile/career_profile.dart';
 import '../career_profile/career_profile_repository.dart';
 import '../home/home_page.dart';
@@ -17,7 +18,11 @@ import 'personal_information_fields.dart';
 import 'personal_information_validator.dart';
 
 class PersonalInformationPage extends ConsumerStatefulWidget {
-  const PersonalInformationPage({super.key});
+  const PersonalInformationPage({this.builder = false, this.origin, super.key});
+  // Step 1 of the guided builder (no app-language control here).
+  final bool builder;
+  // 'review' returns to Review after Back or a successful save.
+  final String? origin;
   @override
   ConsumerState<PersonalInformationPage> createState() =>
       _PersonalInformationPageState();
@@ -296,10 +301,22 @@ class _PersonalInformationPageState
     }
   }
 
+  bool get fromReview => widget.origin == 'review';
+
   void exit() {
     allowPop = true;
     if (profile != null) ref.invalidate(unfinishedDraftProvider(profile!.id));
-    context.go('/home');
+    context.go(fromReview ? '/builder/6' : '/home');
+  }
+
+  /// Continue (builder) / Save (from Review): save only when edited, and
+  /// move on only after the server acknowledged the save.
+  Future<void> advance() async {
+    if (busy || draft == null) return;
+    if (dirty) await save();
+    if (!mounted || dirty) return;
+    allowPop = true;
+    context.go(widget.builder ? '/builder/2' : '/builder/6');
   }
 
   @override
@@ -339,132 +356,143 @@ class _PersonalInformationPageState
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) unawaited(leave());
       },
-      child: SliceScaffold(
-        title: copy.personalInformation,
-        leading: IconButton(
-          key: const Key('leave-personal'),
-          tooltip: copy.backAction,
-          icon: const Icon(Icons.arrow_back),
-          onPressed: busy ? null : leave,
-        ),
-        actions: const [AppLanguageButton()],
-        bottom: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
+      child: widget.builder
+          ? BuilderScaffold(
+              step: 1,
+              busy: busy,
+              onBack: leave,
+              onContinue: advance,
+              child: body(copy, language, profileCopy, merge.hasError),
+            )
+          : SliceScaffold(
+              title: copy.personalInformation,
+              leading: IconButton(
+                key: const Key('leave-personal'),
+                tooltip: copy.backAction,
+                icon: const Icon(Icons.arrow_back),
                 onPressed: busy ? null : leave,
-                child: Text(copy.leaveAction),
               ),
-            ),
-            const SizedBox(width: TokensV0.space12),
-            Expanded(
-              child: PrimaryAction(
-                key: const Key('save-personal'),
-                label: copy.saveAction,
-                busy: busy,
-                onPressed: save,
-              ),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(copy.personalIntro),
-            const SizedBox(height: TokensV0.space24),
-            SliceCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              actions: const [AppLanguageButton()],
+              bottom: Row(
                 children: [
-                  SectionHeading(
-                    title: copy.resumeLanguage,
-                    subtitle: copy.resumeLanguageHint,
-                  ),
-                  const SizedBox(height: TokensV0.space16),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: TokensV0.secondarySurface,
-                      borderRadius: BorderRadius.circular(
-                        TokensV0.controlRadius,
-                      ),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: busy ? null : leave,
+                      child: Text(copy.leaveAction),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: ChoiceChip(
-                            key: const Key('resume-en'),
-                            label: const Text('English (LTR)'),
-                            showCheckmark: false,
-                            selectedColor: TokensV0.surfaceCard,
-                            backgroundColor: TokensV0.secondarySurface,
-                            selected: language == 'en',
-                            onSelected: busy
-                                ? null
-                                : (_) => retain(draft!.language('en')),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: ChoiceChip(
-                            key: const Key('resume-ar'),
-                            label: const Text('العربية (RTL)'),
-                            showCheckmark: false,
-                            selectedColor: TokensV0.surfaceCard,
-                            backgroundColor: TokensV0.secondarySurface,
-                            selected: language == 'ar',
-                            onSelected: busy
-                                ? null
-                                : (_) => retain(draft!.language('ar')),
-                          ),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(width: TokensV0.space12),
+                  Expanded(
+                    child: PrimaryAction(
+                      key: const Key('save-personal'),
+                      label: copy.saveAction,
+                      busy: busy,
+                      onPressed: fromReview ? advance : save,
                     ),
                   ),
                 ],
               ),
+              child: body(copy, language, profileCopy, merge.hasError),
             ),
-            if (merge.hasError) ...[
+    );
+  }
+
+  Widget body(
+    AppLocalizations copy,
+    String? language,
+    AppLocalizations profileCopy,
+    bool mergeFailed,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(copy.personalIntro),
+        const SizedBox(height: TokensV0.space24),
+        SliceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SectionHeading(
+                title: copy.resumeLanguage,
+                subtitle: copy.resumeLanguageHint,
+              ),
               const SizedBox(height: TokensV0.space16),
-              Text(copy.contextPending),
-              TextButton(
-                onPressed: () => ref.invalidate(contextMergeProvider),
-                child: Text(copy.retry),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: TokensV0.secondarySurface,
+                  borderRadius: BorderRadius.circular(TokensV0.controlRadius),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        key: const Key('resume-en'),
+                        label: const Text('English (LTR)'),
+                        showCheckmark: false,
+                        selectedColor: TokensV0.surfaceCard,
+                        backgroundColor: TokensV0.secondarySurface,
+                        selected: language == 'en',
+                        onSelected: busy
+                            ? null
+                            : (_) => retain(draft!.language('en')),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: ChoiceChip(
+                        key: const Key('resume-ar'),
+                        label: const Text('العربية (RTL)'),
+                        showCheckmark: false,
+                        selectedColor: TokensV0.surfaceCard,
+                        backgroundColor: TokensV0.secondarySurface,
+                        selected: language == 'ar',
+                        onSelected: busy
+                            ? null
+                            : (_) => retain(draft!.language('ar')),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
-            if (notice != null || storageFailed) ...[
-              const SizedBox(height: TokensV0.space16),
-              SliceCard(
-                child: Text(storageFailed ? copy.localWriteError : notice!),
-              ),
-            ],
-            const SizedBox(height: TokensV0.space24),
-            if (language == null)
-              Text(copy.chooseResumeLanguage)
-            else
-              PersonalInformationFields(
-                copy: profileCopy,
-                clearLabel: copy.discardAction,
-                language: language,
-                controllers: controllers,
-                errors: errors,
-                enabled: !busy,
-                regionEgypt:
-                    WidgetsBinding
-                        .instance
-                        .platformDispatcher
-                        .locale
-                        .countryCode ==
-                    'EG',
-                cityHistory: cityHistory,
-                onChanged: (field, value) {
-                  errors.add(field);
-                  retain(draft!.edit(field, value));
-                },
-              ),
-          ],
+          ),
         ),
-      ),
+        if (mergeFailed) ...[
+          const SizedBox(height: TokensV0.space16),
+          Text(copy.contextPending),
+          TextButton(
+            onPressed: () => ref.invalidate(contextMergeProvider),
+            child: Text(copy.retry),
+          ),
+        ],
+        if (notice != null || storageFailed) ...[
+          const SizedBox(height: TokensV0.space16),
+          SliceCard(
+            child: Text(storageFailed ? copy.localWriteError : notice!),
+          ),
+        ],
+        const SizedBox(height: TokensV0.space24),
+        if (language == null)
+          Text(copy.chooseResumeLanguage)
+        else
+          PersonalInformationFields(
+            copy: profileCopy,
+            clearLabel: copy.discardAction,
+            language: language,
+            controllers: controllers,
+            errors: errors,
+            enabled: !busy,
+            regionEgypt:
+                WidgetsBinding.instance.platformDispatcher.locale.countryCode ==
+                'EG',
+            cityHistory: cityHistory,
+            onChanged: (field, value) {
+              errors.add(field);
+              retain(draft!.edit(field, value));
+            },
+          ),
+      ],
     );
   }
 }
