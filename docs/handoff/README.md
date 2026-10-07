@@ -19,6 +19,12 @@ project documentation and this workspace's verified results.
 12. [Non-negotiable decisions](12_DO_NOT_CHANGE.md)
 13. [Repository/file map](13_FILE_MAP.md)
 
+Supporting evidence: [security/publication audit](SECURITY_AUDIT.md),
+[accessible Git log](history/GIT_HISTORY.md), and
+[preserved HTML inventory](history/HTML_INVENTORY.md). Historical full task
+plans are preserved under `history/`; their acceptance criteria are not
+implementation evidence.
+
 The root contains a Replit pnpm template as well as the Jobix Flutter app. The
 root workflows for `artifacts/api-server` and `artifacts/mockup-sandbox` are not
 the Jobix application. Do not mistake an API health response or component mockup

@@ -9,3 +9,4 @@
 - [AI model selection](ai-model-selection.md) — approved Flash default, Arabic quality requirement, global inference approval and no silent model substitution.
 - [Flutter layout quirks](flutter-layout-quirks.md) — themed buttons have infinite min width; override minimumSize inside Rows.
 - [First-launch lifecycle](first-launch-lifecycle.md) — completion survives account cleanup; persist final Continue and answer snapshot together.
+- [GitHub history transfer](github-history-transfer.md) — API access does not prove native Git transport; preserve both commit graphs and verify LFS separately.

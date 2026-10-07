@@ -1,0 +1,32 @@
+# Preserved HTML inventory
+
+Tracked HTML paths at the handoff audit. Runtime-generated Resume HTML is not a standalone tracked file; see resume_render.dart.
+
+```text
+artifacts/mockup-sandbox/index.html
+artifacts/mockup-sandbox/public/native-proof/profile-text-review.html
+artifacts/mockup-sandbox/public/native-proof/validation-proposal.html
+attached_assets/jobix_auth_entry_gateway_1791015087826.html
+attached_assets/jobix_career_profile_builder_refined_1791015153061.html
+attached_assets/jobix_home_option_1_executive_command_1791015153062.html
+attached_assets/jobix_onboarding_1_ats_friendly_cv_1791015087827.html
+attached_assets/jobix_onboarding_2_ai_assistance_1791015087827.html
+attached_assets/jobix_onboarding_3_export_update_1791015099711.html
+attached_assets/jobix_research_q1_career_stage_1791015099712.html
+attached_assets/jobix_research_q2_primary_goal_1791015099712.html
+attached_assets/jobix_research_q3_location_1791015099712.html
+attached_assets/jobix_research_q4_what_would_help_you_most_1791015099713.html
+attached_assets/jobix_resume_preview_export_1791015112654.html
+attached_assets/jobix_settings_1791015153063.html
+attached_assets/jobix_splash_screen_1791013447502.html
+attached_assets/jobix_step_1_personal_info_links_1791015087825.html
+attached_assets/jobix_step_2_summary_ai_hints_1791015112655.html
+attached_assets/jobix_step_3_experience_ai_proposal_1791015112656.html
+attached_assets/jobix_step_4_education_credentials_1791015112656.html
+attached_assets/jobix_step_5_skills_projects_languages_1791015153063.html
+attached_assets/jobix_step_6_review_ats_audit_1791015112656.html
+deliverables/jobix-builder-resume-foundation-report.html
+deliverables/jobix-core-validation-proposal.html
+deliverables/jobix-profile-text/native-review.html
+
+```

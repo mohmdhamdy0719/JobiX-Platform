@@ -23,3 +23,13 @@ Statuses distinguish owner-approved rules from components that merely exist.
 Where a later architecture document conflicts with one of these summaries, read
 the authoritative source and preserve an explicit owner-approved resolution;
 mark unprovided behavior UNRESOLVED rather than inventing it.
+
+## Approved completeness weights
+
+The persisted builder specification records Contact 15% (Name 5%, Email 5%,
+Phone 5%), Evidence 45% (first distinct complete eligible item 30%, second 15%),
+Skills 15%, Summary 10%, Languages 10%, and Target Role 5%. Certifications do
+not count as evidence in that specification. Exact normalized duplicate
+evidence counts once. Existing validation thresholds and algorithm version
+must remain authoritative; preserve the approved 50% AI transition without
+adding an arbitrary cap or new prerequisite.

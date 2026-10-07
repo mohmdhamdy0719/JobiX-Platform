@@ -47,3 +47,13 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Never publish local environment or signing credentials.
+.env
+.env.*
+!.env.example
+!.env.template
+*.keystore
+*.jks
+*.p12
+*.pfx
