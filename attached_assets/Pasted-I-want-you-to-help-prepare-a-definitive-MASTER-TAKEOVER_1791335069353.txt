@@ -1,0 +1,167 @@
+I want you to help prepare a definitive MASTER TAKEOVER PROMPT for another Replit Agent session that will continue the Jobix project.
+
+Do NOT implement anything.
+
+Do NOT modify source code, database, Git history, configuration, or project behavior.
+
+Your only job is to deeply inspect the CURRENT repository and create the strongest possible prompt that another AI agent can use to fully take over this project and continue implementation correctly.
+
+This is a real existing project, not a greenfield project.
+
+First, deeply inspect the entire repository and actual current implementation.
+
+You MUST inspect:
+
+1. All root documentation.
+2. PROJECT_HANDOFF.md.
+3. docs/handoff/ and every handoff document.
+4. Architecture documentation.
+5. Product decisions.
+6. Constitution/security principles if present.
+7. Implementation history.
+8. Task history.
+9. Current roadmap.
+10. Remaining work.
+11. Known issues.
+12. Testing status.
+13. Environment/setup documentation.
+14. Git history and current branch/commit.
+15. Flutter application under mobile/jobix/.
+16. Backend/server code.
+17. Supabase migrations, schemas, RLS policies, RPCs and database code.
+18. Drift/local database implementation.
+19. Authentication/session implementation.
+20. AI implementation.
+21. ATS implementation.
+22. Credits implementation.
+23. Resume/PDF implementation.
+24. Sync/outbox/conflict handling.
+25. Localization and Arabic RTL.
+26. Existing UI/design implementation.
+27. Existing tests.
+28. Existing HTML/design prototypes and relevant assets.
+29. Replit configuration and project tooling.
+30. Any plans or task files that explain unfinished work.
+
+Do not assume documentation equals implementation.
+
+For every major feature, determine whether it is:
+
+- Fully implemented
+- Partially implemented
+- Planned only
+- Missing
+- Blocked
+- Needs product decision
+
+Reconcile documentation against actual code and tests.
+
+Identify discrepancies between:
+- product requirements
+- architecture
+- implementation
+- tests
+- current Git state
+
+Do not silently resolve discrepancies.
+
+Do not invent product decisions.
+
+Do not rewrite the architecture.
+
+Do not propose unnecessary refactors.
+
+Do not remove existing functionality.
+
+Do not perform destructive Git operations.
+
+After the investigation, write a SINGLE, SELF-CONTAINED MASTER TAKEOVER PROMPT.
+
+The prompt must be written so that a future Replit Agent can receive ONLY that prompt and the existing repository and immediately understand:
+
+1. What Jobix is.
+2. The product vision.
+3. The approved MVP scope.
+4. The architecture.
+5. The technology stack.
+6. The important business rules.
+7. The database architecture.
+8. Authentication.
+9. Security and RLS.
+10. Local storage and sync.
+11. Credits.
+12. AI.
+13. ATS.
+14. Career Profiles.
+15. Resume generation.
+16. PDF/export.
+17. Arabic/English and RTL/LTR.
+18. Onboarding.
+19. Current implementation status.
+20. What is actually working.
+21. What is partially working.
+22. What is missing.
+23. Known bugs.
+24. Known architecture deviations.
+25. Testing status.
+26. Environment/deployment status.
+27. Design/UI requirements.
+28. What must NOT be changed.
+29. What work is intentionally deferred.
+30. The exact recommended next implementation sequence.
+
+The MASTER TAKEOVER PROMPT must explicitly instruct the future agent to:
+
+- inspect the repository before coding
+- trust actual implementation evidence over assumptions
+- preserve approved product decisions
+- preserve architecture unless explicitly changed
+- never fabricate user data
+- never weaken RLS/security
+- never put secrets in the client
+- keep server-authoritative state server-authoritative
+- preserve idempotency and concurrency protections
+- preserve Arabic/RTL quality
+- preserve existing tests
+- add tests for new behavior
+- implement feature-by-feature using vertical slices
+- verify every feature before moving to the next
+- never perform destructive Git operations
+- never silently change product behavior
+- ask for clarification when a genuine product decision is missing
+
+The prompt must contain a clear "CURRENT STATE" section based on your actual inspection.
+
+It must contain a clear "REMAINING WORK" section based on actual evidence.
+
+It must contain a clear "DO NOT CHANGE" section.
+
+It must contain a clear "IMPLEMENTATION ORDER" section.
+
+It must contain a clear "FIRST TASK" section.
+
+It must NOT contain guessed information.
+
+If something cannot be verified from the repository, explicitly label it as:
+"UNVERIFIED — REQUIRES CONFIRMATION"
+
+The final output should contain ONLY:
+
+# JOBIX MASTER TAKEOVER PROMPT
+
+[The complete self-contained prompt]
+
+Then, after the prompt, provide a short separate section:
+
+# AUDIT NOTES
+
+List:
+- important discrepancies discovered
+- important missing information
+- assumptions that could not be verified
+- risks that the future agent should know about
+
+Do not implement anything.
+Do not modify files.
+Do not push anything.
+Do not change Git history.
