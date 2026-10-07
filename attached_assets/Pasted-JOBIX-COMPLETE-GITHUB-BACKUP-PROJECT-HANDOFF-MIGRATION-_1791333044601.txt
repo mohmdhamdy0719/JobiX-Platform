@@ -1,0 +1,934 @@
+JOBIX — COMPLETE GITHUB BACKUP + PROJECT HANDOFF / MIGRATION PACKAGE
+
+I need you to prepare this entire Jobix project for migration to another Replit account.
+
+The GitHub repository is already linked:
+
+https://github.com/mohmdhamdy0719/jobix
+
+Your job is NOT just to push the current source code.
+
+I want a complete, organized, self-contained project handoff so that another developer/AI/Replit account can clone the repository and understand:
+
+- what Jobix is
+- what has been decided
+- what architecture was approved
+- what has actually been implemented
+- what was tested
+- what changed over time
+- what tasks/plans were completed
+- what remains unfinished
+- what is currently blocked
+- what should be implemented next
+- which files are important
+- which product decisions must NOT be changed
+- which features are intentionally deferred
+
+The goal is:
+
+A new Replit account should be able to open this GitHub repository and continue development without needing the old Replit conversation to understand the project.
+
+==================================================
+1. FIRST: AUDIT THE ENTIRE PROJECT
+==================================================
+
+Before pushing anything, inspect the entire repository/workspace.
+
+Do not only inspect the Flutter/mobile folder.
+
+Look for:
+
+- Flutter source
+- Supabase migrations
+- SQL
+- configuration files
+- architecture documents
+- product/design documents
+- Markdown files
+- HTML files
+- JSON
+- YAML
+- scripts
+- tests
+- generated project documentation
+- implementation plans
+- task plans
+- review reports
+- design specifications
+- screenshots/references if they are actually stored in the project
+- prototype files
+- README files
+- environment/configuration templates
+- any other project-related artifacts created during development
+
+Find all important files that have been created or modified during the Jobix development process.
+
+Do not delete useful historical documentation just because it is not required by the current runtime.
+
+==================================================
+2. PRESERVE THE ACTUAL APPLICATION
+==================================================
+
+Push the complete current application source code.
+
+The GitHub repository must contain everything required to continue development.
+
+Include:
+
+- mobile/jobix/
+- Flutter source
+- tests
+- Supabase migrations
+- configuration
+- scripts
+- documentation
+- assets that are actually part of the project
+- all relevant project files
+
+Do NOT upload:
+
+- passwords
+- private keys
+- service-account JSON credentials
+- Supabase personal access tokens
+- API secrets
+- OAuth secrets
+- Replit secrets
+- production credentials
+- .env files containing secrets
+- private certificates
+
+Before committing, inspect the repository for accidentally exposed credentials.
+
+If secrets are found:
+- DO NOT commit them.
+- Remove them from the Git commit.
+- Add/update .gitignore where appropriate.
+- Preserve only safe environment templates such as .env.example.
+
+Do not expose secrets in documentation either.
+
+==================================================
+3. CREATE A DEDICATED DOCUMENTATION / HANDOFF AREA
+==================================================
+
+Create a clean documentation structure.
+
+Preferred structure:
+
+docs/
+  handoff/
+    00_PROJECT_OVERVIEW.md
+    01_PROJECT_STATUS.md
+    02_ARCHITECTURE.md
+    03_PRODUCT_DECISIONS.md
+    04_IMPLEMENTATION_HISTORY.md
+    05_TASK_HISTORY.md
+    06_CURRENT_ROADMAP.md
+    07_REMAINING_WORK.md
+    08_TESTING_STATUS.md
+    09_ENVIRONMENT_AND_SETUP.md
+    10_MIGRATION_GUIDE.md
+    11_KNOWN_ISSUES.md
+    12_DO_NOT_CHANGE.md
+    13_FILE_MAP.md
+
+If some of these documents already exist elsewhere, do not unnecessarily duplicate them.
+
+Instead:
+- preserve the original authoritative document
+- reference it from the handoff documentation
+- copy only when necessary for migration clarity
+
+Also create:
+
+docs/handoff/README.md
+
+This is the first document a new developer/AI should read.
+
+==================================================
+4. PROJECT OVERVIEW
+==================================================
+
+Create:
+
+docs/handoff/00_PROJECT_OVERVIEW.md
+
+Explain clearly:
+
+- What Jobix is
+- Who it is for
+- What problem it solves
+- Current MVP scope
+- Current product direction
+- Main user journey
+- Main application areas
+- Current technology stack
+- Backend architecture
+- AI architecture
+- Resume architecture
+- Current development status
+
+Keep this factual.
+
+Do not invent features that have not been implemented or approved.
+
+Clearly distinguish:
+
+IMPLEMENTED
+PLANNED
+DEFERRED
+FUTURE
+
+==================================================
+5. ARCHITECTURE
+==================================================
+
+Find the authoritative Jobix architecture documents.
+
+Especially:
+
+- Architecture V2
+- Constitution
+- Product Design
+- DESIGN.md
+- implementation plans
+- architecture review/reconciliation documents
+- any architecture patches/ADRs
+
+Preserve them in the repository.
+
+If they currently exist outside the ideal documentation structure, keep the originals and create references in the handoff docs.
+
+Create:
+
+docs/handoff/02_ARCHITECTURE.md
+
+This should explain where the authoritative architecture documents are located and summarize the current approved architecture.
+
+Important:
+
+DO NOT rewrite or silently alter the authoritative architecture.
+
+If there are multiple versions:
+- identify which one is authoritative
+- identify older versions
+- preserve historical versions where available
+- clearly mark superseded documents
+
+The new developer must know which document is the source of truth.
+
+==================================================
+6. PRODUCT DECISIONS
+==================================================
+
+Create:
+
+docs/handoff/03_PRODUCT_DECISIONS.md
+
+Collect the important approved product decisions from the available project documentation/history.
+
+Examples include:
+
+- Career Profile vs Resume separation
+- 3 Career Profiles
+- Profile slot pricing
+- Profile completeness
+- ATS readiness
+- AI generation rules
+- first-profile 6 AI generations
+- daily AI allowance
+- Credits
+- Daily Reward
+- Resume language behavior
+- Arabic/English behavior
+- PDF export rules
+- Resume templates
+- Cover Letter scope
+- Professional Email scope
+- onboarding behavior
+- research question behavior
+- authentication behavior
+- deletion behavior
+- local drafts
+- sync behavior
+- server-authoritative data
+- AI anti-fabrication rules
+
+For every important decision, indicate its status where possible:
+
+APPROVED
+IMPLEMENTED
+PARTIALLY IMPLEMENTED
+DEFERRED
+FUTURE
+UNRESOLVED
+
+Do not invent decisions.
+
+If an important decision is missing or genuinely unresolved, explicitly mark it as:
+
+UNRESOLVED
+
+==================================================
+7. COMPLETE DEVELOPMENT HISTORY
+==================================================
+
+This is extremely important.
+
+Create:
+
+docs/handoff/04_IMPLEMENTATION_HISTORY.md
+
+Reconstruct the chronological history of the project from all information actually available in the repository/workspace/Replit project history.
+
+Include:
+
+- dates
+- milestone/task numbers when available
+- task names
+- plan names
+- major implementation changes
+- architecture changes
+- important fixes
+- testing milestones
+- major decisions
+- blockers
+- infrastructure work
+- Supabase work
+- Google Cloud work
+- authentication work
+- Career Profile work
+- Resume work
+- AI work
+- UI/UX work
+
+Use a chronological timeline.
+
+Example format:
+
+## 2026-XX-XX — Task #X — Foundation
+- ...
+- ...
+- Tests:
+- Result:
+- Files:
+
+## 2026-XX-XX — Task #Y — Career Profile Builder
+- ...
+- ...
+- Tests:
+- Result:
+
+IMPORTANT:
+
+Use only history that can actually be recovered from:
+- Replit task history
+- Replit plans
+- checkpoints
+- repository history
+- Markdown documentation
+- existing project files
+- available workspace history
+
+DO NOT fabricate dates, task numbers, or events.
+
+If exact dates are unavailable, say:
+
+"Exact date not available from the accessible project history."
+
+==================================================
+8. TASK / PLAN HISTORY
+==================================================
+
+Create:
+
+docs/handoff/05_TASK_HISTORY.md
+
+Document every major Replit task/plan that can be recovered.
+
+For each task:
+
+- Task number
+- Task name
+- Date/date range if available
+- Objective
+- Plan summary
+- What was actually implemented
+- What was intentionally excluded
+- Verification/testing
+- Final status
+- Important files
+- Known remaining work
+
+Pay special attention to Task #9:
+
+Career Profile Builder and Review
+
+Document its plan and actual outcome separately.
+
+Do NOT assume that everything written in a plan was actually implemented.
+
+Clearly distinguish:
+
+PLANNED
+vs
+ACTUALLY IMPLEMENTED
+
+==================================================
+9. CURRENT ROADMAP
+==================================================
+
+Create:
+
+docs/handoff/06_CURRENT_ROADMAP.md
+
+Based on the current actual state, define the logical next milestones.
+
+For example, if supported by the current project state:
+
+1. Career Profile polish
+2. Resume configuration
+3. Resume Preview
+4. PDF rendering/export
+5. Credits
+6. AI Improvement
+7. Cover Letter
+8. Professional Email
+9. Subscription/Billing
+10. Production hardening
+
+But DO NOT blindly use this example.
+
+Derive the roadmap from the actual project state and approved documents.
+
+For each milestone:
+
+- Goal
+- Current state
+- Dependencies
+- What is already done
+- What remains
+- Important architecture constraints
+
+==================================================
+10. REMAINING WORK
+==================================================
+
+Create:
+
+docs/handoff/07_REMAINING_WORK.md
+
+This must be brutally honest.
+
+Divide into:
+
+### Blocking
+Things that prevent the next major milestone.
+
+### High Priority
+Important implementation work.
+
+### Medium Priority
+Important but not immediately blocking.
+
+### Future
+Explicitly deferred features.
+
+### Unknown / Needs Decision
+Things that genuinely require a product/technical decision.
+
+Do not call something "done" merely because a UI exists.
+
+For example, distinguish:
+
+UI exists
+vs
+backend exists
+vs
+database exists
+vs
+integration exists
+vs
+live-tested
+
+==================================================
+11. TESTING STATUS
+==================================================
+
+Create:
+
+docs/handoff/08_TESTING_STATUS.md
+
+Document:
+
+- flutter analyze
+- unit tests
+- widget tests
+- golden tests
+- Supabase live tests
+- local/mock tests
+- authentication tests
+- persistence tests
+- Arabic/RTL tests
+- Android verification
+- iOS verification
+- AI tests
+- Resume rendering tests
+- PDF tests
+- security tests
+
+For every category:
+
+PASS
+PARTIAL
+NOT TESTED
+BLOCKED
+
+Do not claim real-device testing if it was not performed.
+
+Clearly identify what was tested using mocks/stand-ins versus real infrastructure.
+
+==================================================
+12. ENVIRONMENT AND SETUP
+==================================================
+
+Create:
+
+docs/handoff/09_ENVIRONMENT_AND_SETUP.md
+
+Document how a new developer should understand/setup:
+
+- Flutter
+- Android
+- iOS
+- Supabase
+- Google Cloud
+- Cloud Run
+- Artifact Registry
+- Vertex AI
+- GCS
+- Scheduler
+- AdMob
+
+Only document configuration values that are safe to expose.
+
+NEVER put actual secrets into this document.
+
+Use placeholders such as:
+
+<JOBIX_DEV_SUPABASE_URL>
+<JOBIX_DEV_SUPABASE_CLIENT_KEY>
+<JOBIX_GCP_PROJECT_ID>
+
+Explain which values are required as Replit Secrets/environment variables.
+
+Also explain which infrastructure already exists and which infrastructure is still pending.
+
+==================================================
+13. MIGRATION GUIDE
+==================================================
+
+Create:
+
+docs/handoff/10_MIGRATION_GUIDE.md
+
+This document is specifically for moving Jobix from the current Replit account to another Replit account.
+
+Include:
+
+1. Clone GitHub repository.
+2. Open project in new Replit account.
+3. Verify Flutter project.
+4. Verify repository structure.
+5. Configure environment variables/secrets.
+6. Connect Supabase development project.
+7. Configure Google Cloud credentials safely.
+8. Verify migrations.
+9. Run tests.
+10. Run flutter analyze.
+11. Run application.
+12. Verify authentication.
+13. Verify Career Profile.
+14. Verify current milestone.
+15. Continue from the roadmap.
+
+Explain what the new account MUST NOT recreate unnecessarily.
+
+The goal is to avoid duplicating infrastructure or changing existing architecture.
+
+==================================================
+14. KNOWN ISSUES
+==================================================
+
+Create:
+
+docs/handoff/11_KNOWN_ISSUES.md
+
+List every known issue that is still present.
+
+For each:
+
+- Issue
+- Severity
+- Area
+- Current workaround
+- Root cause if known
+- Recommended fix
+- Related files/task
+
+Do not hide known problems.
+
+==================================================
+15. DO NOT CHANGE
+==================================================
+
+Create:
+
+docs/handoff/12_DO_NOT_CHANGE.md
+
+Document architectural/product rules that a future Replit agent must not casually change.
+
+Examples:
+
+- server-authoritative Credits
+- RLS
+- no secrets in Flutter
+- AI anti-fabrication
+- Career Profile as source dataset
+- Resume as presentation/configuration
+- Arabic/English first-class support
+- preview/PDF shared rendering representation
+- no silent AI fallback
+- no fake AI results
+- no silent data deletion
+- no weakening RLS
+- no client-side credit authority
+- no arbitrary product behavior changes
+
+Again, derive this from the actual authoritative project documents.
+
+==================================================
+16. FILE MAP
+==================================================
+
+Create:
+
+docs/handoff/13_FILE_MAP.md
+
+Explain the important project folders/files.
+
+For example:
+
+mobile/jobix/
+  lib/
+  test/
+  supabase/
+  ...
+
+Explain what each important directory is responsible for.
+
+Also list important Markdown documents and explain which ones are authoritative.
+
+==================================================
+17. HTML FILES
+==================================================
+
+Find ALL relevant HTML files in the project/workspace.
+
+Do not delete them.
+
+If they are prototypes, design references, resume prototypes, screenshots converted to HTML, UI experiments, or rendering experiments, preserve them.
+
+Organize them if necessary under an appropriate directory such as:
+
+docs/prototypes/
+docs/design/
+docs/experiments/
+
+BUT:
+
+Do not break references/imports/builds.
+
+If an HTML file is required by the application, leave it in its required runtime location.
+
+Document each important HTML file in the File Map.
+
+==================================================
+18. MARKDOWN FILES
+==================================================
+
+Find all important Markdown files created during Jobix development.
+
+Do not blindly move every Markdown file if that could break tooling.
+
+Preserve all important documents.
+
+Important examples may include:
+
+- Architecture
+- Product Design
+- Constitution
+- DESIGN.md
+- implementation plans
+- review/reconciliation documents
+- task plans
+- final reports
+- decision records
+- testing reports
+
+If there are duplicates or superseded versions:
+- keep them when they contain historical value
+- clearly label their status
+- do not let a future developer mistake an old document for the current source of truth
+
+==================================================
+19. GIT HISTORY
+==================================================
+
+Inspect the existing Git history.
+
+Preserve the existing commit history.
+
+Do NOT squash the entire project history into one commit.
+
+Do NOT force-push or destroy existing history.
+
+If there are meaningful existing commits, preserve them.
+
+If there are current uncommitted changes, organize them into a clean commit structure if safe.
+
+Use meaningful commit messages.
+
+If the repository already has important branches/tags, do not delete them.
+
+Before pushing, report:
+
+- current branch
+- remote
+- latest commit
+- number of commits if available
+- uncommitted changes
+- files to be committed
+
+==================================================
+20. REPLIT HISTORY VS GIT HISTORY
+==================================================
+
+These are different.
+
+Preserve Git history through Git itself.
+
+For Replit task/plan/checkpoint history:
+
+Replit's internal history may not be exportable as actual Git commits.
+
+Therefore:
+
+- reconstruct the accessible Replit history into Markdown documentation
+- include task numbers and dates where available
+- include plan names
+- include outcomes
+- explicitly say when something could not be recovered
+
+Do NOT pretend Replit internal history is Git history.
+
+==================================================
+21. CREATE A MASTER HANDOFF DOCUMENT
+==================================================
+
+Create:
+
+PROJECT_HANDOFF.md
+
+at the repository root.
+
+This must be the first document a new Replit account reads.
+
+It should contain:
+
+# Jobix Project Handoff
+
+## Current Status
+What is working now.
+
+## Current Milestone
+What was most recently completed.
+
+## Next Milestone
+What should be done next.
+
+## Architecture Source of Truth
+Exact file paths.
+
+## Product Source of Truth
+Exact file paths.
+
+## Current Known Issues
+Short list.
+
+## Important Decisions
+Short list.
+
+## Important Credentials/Secrets
+DO NOT store them.
+Explain which environment variables/secrets are required.
+
+## How to Run
+Short setup instructions.
+
+## Testing
+Current verified status.
+
+## Migration
+Where to read the full migration guide.
+
+## Full Documentation
+Links/paths to docs/handoff/*.
+
+Make this document extremely clear for an AI coding agent.
+
+==================================================
+22. UPDATE ROOT README
+==================================================
+
+Review the existing README.
+
+Update it if necessary so that it points to:
+
+PROJECT_HANDOFF.md
+
+and the main authoritative documentation.
+
+Do not turn README into a huge history dump.
+
+Keep README concise.
+
+==================================================
+23. FINAL REPOSITORY STRUCTURE
+==================================================
+
+Before pushing, verify that the repository is clean and logically organized.
+
+The structure should make sense to a new developer.
+
+Do not create unnecessary duplication.
+
+Do not delete useful historical artifacts.
+
+==================================================
+24. GITHUB PUSH
+==================================================
+
+After completing the audit and documentation:
+
+Push the complete project to:
+
+https://github.com/mohmdhamdy0719/jobix
+
+The repository is already linked.
+
+Do NOT create a new repository.
+
+Do NOT force-push.
+
+Do NOT overwrite unrelated existing work without checking it first.
+
+If the remote contains commits that are not present locally:
+
+- inspect them
+- preserve them
+- merge/reconcile safely
+
+Do not destroy remote history.
+
+==================================================
+25. FINAL VERIFICATION
+==================================================
+
+Before pushing:
+
+Run appropriate checks, including where applicable:
+
+- git status
+- git diff --check
+- flutter analyze
+- relevant tests
+- repository secret scan
+- verify .gitignore
+- verify no credentials are committed
+- verify all important documentation is present
+- verify the project can be understood from PROJECT_HANDOFF.md
+
+==================================================
+26. FINAL REPORT
+==================================================
+
+After pushing, provide a final report containing:
+
+### Repository
+- GitHub repository
+- branch pushed
+- latest commit
+- commit message
+- push result
+
+### Project
+- current implementation status
+- current milestone
+
+### Documentation
+List every major handoff document created.
+
+### History
+Explain what historical information was recovered and what could not be recovered.
+
+### Important Files
+List the main architecture/product/source files.
+
+### Remaining Work
+Give a prioritized list.
+
+### Known Issues
+Give the current known issues.
+
+### Migration Readiness
+Answer:
+
+"Can another Replit account continue development from this repository without access to the old Replit conversation?"
+
+Answer honestly:
+YES / PARTIALLY / NO
+
+If not YES, explain exactly what information is still missing.
+
+### Security
+Confirm that:
+- no private keys were committed
+- no tokens were committed
+- no passwords were committed
+- no secret environment files were committed
+
+Do NOT print any secret values in the final report.
+
+==================================================
+IMPORTANT RULES
+==================================================
+
+1. Do not fabricate history.
+2. Do not fabricate dates.
+3. Do not fabricate task numbers.
+4. Do not fabricate implementation status.
+5. Do not claim a planned feature is implemented.
+6. Do not delete useful historical files.
+7. Do not commit secrets.
+8. Do not force-push.
+9. Do not destroy Git history.
+10. Do not change product architecture as part of this task.
+11. Do not refactor application code unnecessarily.
+12. Do not spend time implementing new product features.
+13. This task is documentation, preservation, organization, verification, and GitHub migration preparation.
+14. Preserve the current working application exactly as much as safely possible.
+15. If something cannot be recovered from the available Replit/project history, explicitly document that limitation.
+
+The final repository should be a professional "source of truth + historical record + migration package" for Jobix.
