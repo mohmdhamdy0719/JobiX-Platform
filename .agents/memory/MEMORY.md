@@ -10,3 +10,4 @@
 - [Flutter layout quirks](flutter-layout-quirks.md) — themed buttons have infinite min width; override minimumSize inside Rows.
 - [First-launch lifecycle](first-launch-lifecycle.md) — completion survives account cleanup; persist final Continue and answer snapshot together.
 - [GitHub history transfer](github-history-transfer.md) — API access does not prove native Git transport; preserve both commit graphs and verify LFS separately.
+- [Imported workflow readiness](imported-workflows.md) — artifact services may register after initial inspection; verify their startup separately from Flutter tests.

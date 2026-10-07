@@ -64,6 +64,20 @@ Do not fabricate staging/production configuration or release signing. The
 standard Android build script deliberately requires all three environments to
 be configured; follow the documented development-only build path where approved.
 
+## Supporting web services
+
+Restore their dependencies from the workspace root with
+`pnpm install --frozen-lockfile`, then start the existing managed workflows:
+
+- `artifacts/api-server: API Server` — health endpoint `/api/healthz`.
+- `artifacts/mockup-sandbox: Component Preview Server` — canvas service
+  `/__mockup/`; its landing page is not the Jobix mobile UI.
+
+`pnpm run typecheck` checks these workspace packages. Express uses a scoped
+`proxy-addr` patch override because the originally locked version is blocked
+by the package firewall. On 2026-10-07 both services started successfully,
+the API returned `{"status":"ok"}`, and the canvas landing page rendered.
+
 ## Constraints
 
 Preserve the native Flutter/Supabase architecture and existing project structure.
