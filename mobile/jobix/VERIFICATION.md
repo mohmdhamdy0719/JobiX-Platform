@@ -1,5 +1,39 @@
 # Jobix verification evidence
 
+## ARM64 review build and Android access check — 2026-10-07
+
+- Recreated the ignored development-only `config/dev.local.json` from the
+  approved public workspace settings. `dart tool/check_foundation.dart
+  config/dev.local.json` passed. Staging and production remain unconfigured.
+- Installed Google command-line tools 12.0, Android platform 36, build tools
+  35.0.0, NDK 27.0.12077973 and CMake 3.22.1 under ignored workspace storage.
+  Android licenses were accepted; Flutter reports the Android toolchain ready.
+  Flutter's license check emitted a non-fatal SDK XML version warning.
+- `flutter pub get` passed. From `mobile/jobix`, this ARM64 development build
+  passed:
+
+  ```sh
+  GRADLE_USER_HOME="$PWD/../../.local/toolchains/gradle-cache" \
+    flutter build apk --debug --target-platform android-arm64 --split-per-abi \
+    --dart-define-from-file=config/dev.local.json
+  ```
+
+- APK: `mobile/jobix/build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`
+  (97,380,913 bytes), package `com.mhflow.jobix`, version 1.0.0 (1), minimum
+  Android API 24, target/compile API 36. The packaged Flutter engine is ARM64.
+  APK signature verification passed using APK Signature Scheme v2.
+- SHA-256:
+  `5b91498893ed9467c2b9c56c1c8b03ba9a58af3cf112f4d354c68099d155d2b7`
+- **Physical-device acceptance remains blocked.** `adb devices -l` returned no
+  Android devices and Flutter lists only the Linux host. No installation or
+  Android launch occurred. Signup email delivery/callback, Keystore-backed
+  persistence, Career Profile editing and Resume preview therefore remain
+  unverified on a phone. An authorized Android device and, for signup, an
+  owner-approved test inbox are still required. An APK build is not device
+  verification.
+- No product code, database, RLS, Auth settings, staging or production settings
+  were changed.
+
 ## Real-flow development verification — 2026-10-05
 
 ### A. Verified live
