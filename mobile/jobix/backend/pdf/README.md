@@ -3,8 +3,10 @@
 **Rollout is closed.** No live migrations, IAM/provisioning, Cloud Run/Scheduler
 start, object upload/signing, live Credits or deployment was performed.
 Native tooling/signing/APK/device verification is not part of this implementation.
-The account/profile-deletion and associated snapshot-retention decisions remain
-unresolved; their policy is deliberately not implemented.
+The deletion/retention product decision is now approved and recorded exactly in
+[the Phase 3 ADR](ADR-retention-deletion.md). Current authorization is recording
+only: do not implement or deploy yet. Snapshot purge/final deletion verification
+remain unimplemented; approval does not open any remote gate.
 
 ## Local code boundaries
 
@@ -83,11 +85,19 @@ for a timeout alone never proves that an in-flight remote write has stopped.
 Cleanup deletes/verifies exact generations and catches replacement/late-write
 races. Without a configured verifier, it remains DELETION_PENDING.
 Even after object verification it stays DELETION_PENDING with
-`snapshot_policy: APPROVAL_REQUIRED`. No snapshot purge period, Auth rewrite,
-physical account/profile deletion or deletion-complete claim is implemented.
-Snapshot/FK/purge semantics must be resolved against the owner's existing contract
-before rollout. Seven-day PDF-only expiry preserves snapshots, history, logical
-receipts and the original completed charge.
+`snapshot_policy: APPROVAL_REQUIRED`, an unchanged implementation placeholder,
+not a still-pending product decision. Snapshot/related-export-data purge and final
+deletion verification are not implemented and must not be implemented under the
+current recording-only instruction. No Auth rewrite or deletion-complete claim
+is implemented.
+
+The approved ADR requires profile/account deletion to remove its export-related
+objects, snapshots and related export data and verify no active export
+objects/snapshots remain, with late/stale-worker protection. PDF expiry alone
+does not require immediate snapshot/canonical-HTML deletion. Existing expiry
+fixtures preserve history/replay and completed charges; this must not be confused
+with the required removal of export data during profile/account deletion.
+No additional snapshot/history retention period is authorized.
 
 Source-only and HTML passes share a single thirty-second preparation budget.
 Normalized 200KB validation happens before HTML/font rendering. Snapshot manifests
@@ -95,8 +105,10 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ## Closed readiness/approval gates
 
-1. Owner-approved deletion/snapshot/retention behavior and seven-day GCS lifecycle
-   configuration, including orphan handling and existing soft-delete settings.
+1. Deletion/retention product behavior is approved in the ADR. Further
+   implementation authorization, its purge/barrier/final-verification evidence,
+   and approved seven-day GCS lifecycle verification/configuration remain closed
+   gates, including orphan handling and existing soft-delete settings.
 2. Owner-approved development migration, restricted runtime LOGIN with only
    `jobix_export_gateway`/`jobix_export_worker` membership, public CA certificate
    and verify-full TLS. Never fall back to the administrator/deployer DSN.

@@ -2,7 +2,26 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: Phase 3 local implementation and tests only
+## Current authorization: Phase 3 deletion/retention decision recording only
+
+The owner approved the exact deletion/retention contract recorded in
+[the Phase 3 ADR](../../mobile/jobix/backend/pdf/ADR-retention-deletion.md).
+PDF expiry alone does not require immediate snapshot/HTML deletion;
+profile/account deletion must remove its export objects/snapshots/related data
+and verify no active export objects/snapshots remain, including late/stale-worker
+protection. No additional retention period or changes outside PDF/export deletion
+integration are approved.
+
+**Why:** The owner explicitly approved this product decision but said
+"Do not implement or deploy yet."
+
+**How to apply:** Record documentation and only necessary local test/contract
+updates, then stop. Do not implement purge or alter implementation guards.
+Do not run remote migrations, deploy, modify IAM/GCS/Scheduler/Cloud Run/Supabase/
+live Credits, start the production worker, or touch production/staging.
+The policy is settled; implementation/runtime/remote gates are not.
+
+## Earlier authorization: Phase 3 local implementation and tests only
 
 The owner now specifies PDF Resume Export + server-authoritative Credits before
 the AI operation/history/acceptance milestone. Phase 1/2 are accepted from the
@@ -16,7 +35,9 @@ the owner selected “Local implementation and tests” while remote gates stay 
 **How to apply:** Local native/backend source, forward-only migration files and
 disposable tests are authorized. Keep exports disabled by default. No live
 migrations, deployments, IAM changes, Cloud Run starts, GCS writes or real Credit
-operations. Do not implement the unresolved deletion policy or start AI work.
+operations. Do not implement deletion policy without separate authorization or
+start AI work. The subsequently approved ADR/current recording-only scope above
+supersedes the earlier unresolved-policy status.
 Surface missing dependencies/configuration; don't repair unrelated supporting
 services. Past Volunteer rollout approval does not authorize PDF rollout.
 
@@ -60,7 +81,8 @@ read-only readiness report.
 
 **How to apply:** Do not reopen settled decisions or infer Build permission.
 Flag PDF/account/profile deletion-policy integration for separate owner
-approval, audit dev access read-only, report missing prerequisites and stop.
+implementation authorization, audit dev access only when separately authorized,
+report missing prerequisites and stop. The policy itself is now approved above.
 
 The owner authorized secure development-access setup and read-only access
 verification. This does not authorize IAM/resource changes, migrations,
@@ -71,7 +93,7 @@ these limits were stated.
 
 **How to apply:** Collect existing development credentials only through secure
 tooling, verify the approved targets read-only, and stop at missing permissions
-or the remaining deletion-policy approval. Never request secret values in chat.
+or the remaining implementation/runtime approvals. Never request secret values in chat.
 
 ## Earlier authorization: bounded Phase 2 scope
 

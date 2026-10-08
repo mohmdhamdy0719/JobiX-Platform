@@ -4,8 +4,29 @@
 
 **Status: PARTIALLY VERIFIED; rollout remains blocked and disabled.**
 No live migrations, deployment/IAM/Scheduler/Cloud Run changes, GCS writes/signing
-or real Credit operations. Unresolved deletion/snapshot policy was not implemented.
+or real Credit operations. Deletion/snapshot policy was not implemented in the
+preceding local pass; its product contract is now approved as recorded below.
 No signing/APK/build-environment changes or AI work.
+
+### Approved deletion/retention decision — recording only
+
+The exact owner-approved ten-point contract and current restrictions are recorded
+in `backend/pdf/ADR-retention-deletion.md`. Product approval is not implementation,
+deployment or live-test authorization. All remote gates remain closed.
+
+PDF objects retain the approved seven-day logical lifetime; expiry/missing
+downloads never silently regenerate or charge again. Expiry alone does not require
+immediate snapshot/canonical-HTML deletion. Explicit Export Again uses current
+profile data and costs two Credits. Profile/account deletion must freeze new
+export work, invalidate leases, release pending reservations, prevent usable
+late/stale objects, remove its export objects/snapshots/related export data and
+verify no active export objects/snapshots remain before completion.
+
+No additional retention period or change outside PDF/export deletion integration
+is approved. No implementation or test behavior was changed for this record.
+Existing fixtures intentionally describe the current incomplete purge path,
+not satisfaction of the newly approved full-deletion contract. No tests/builds,
+migrations, worker starts, live operations or deployments were run for this update.
 
 ### Additional authorized local pipeline/recovery step
 
@@ -23,8 +44,9 @@ No signing/APK/build-environment changes or AI work.
 - Private freeze hooks consume an **already DELETING** account/profile state,
   invalidate job leases and release only pending reservations. They never modify
   Auth or mark account deletion complete. Object cleanup requires an explicit
-  quiescence verifier and generation checks. Snapshot purge policy is still
-  unapproved, so snapshots/history/dedupe are not purged.
+  quiescence verifier and generation checks. In that local pass the snapshot
+  policy was unapproved; purge remains unimplemented despite the subsequent ADR
+  approval. Current instructions permit recording only.
 - Seven-day expiry cleanup preserves completed charges, history and replay;
   verification markers prevent repeatedly scanning already-cleaned objects.
   Private recovery is wired to the approved PDF-only expiry cleanup hook.
