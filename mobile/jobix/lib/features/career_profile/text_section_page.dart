@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/navigation/back_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -45,6 +46,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   TextSectionDraft? draft;
   Future<void> writes = Future.value();
   bool busy = false, failed = false, dirty = false, allowPop = false;
+  String? qualitySnapshot;
   String? notice;
   bool get ar => AppLocalizations.of(context)!.localeName.startsWith('ar');
   String say(String en, String arabic) => ar ? arabic : en;
@@ -111,6 +113,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   }
 
   void edit(String value) {
+    qualitySnapshot = null;
     final next = draft!.edit(value);
     setState(() {
       draft = next;
@@ -140,6 +143,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   }
 
   Future<void> save() async {
+    qualitySnapshot = controller.text;
     if (busy) return;
     setState(() {
       busy = true;
@@ -269,24 +273,19 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
               onPressed: () => Navigator.pop(context, 'discard'),
               child: Text(copy.discardAction),
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'retain'),
-              child: Text(copy.saveLater),
-            ),
           ],
         ),
       );
       if (choice == null || choice == 'stay' || !mounted) return;
+      setState(() => busy = true);
       try {
         await writes;
-        if (choice == 'retain') {
-          if (!await persist()) return;
-        } else {
-          await repository!.discard(profile!, widget.section);
-        }
+        await repository!.discard(profile!, widget.section);
       } catch (_) {
         if (mounted) setState(() => notice = copy.outcomeUnknown);
         return;
+      } finally {
+        if (mounted) setState(() => busy = false);
       }
     }
     if (mounted) {
@@ -304,11 +303,13 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
     final state = widget.section == 'summary'
         ? profile?.summaryState
         : profile?.targetRoleState;
-    return PopScope(
-      canPop: allowPop,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) unawaited(leave());
-      },
+    final savedText = widget.section == 'summary'
+        ? profile?.summary
+        : profile?.targetRole;
+    final qualityEligible =
+        controller.text == qualitySnapshot || controller.text == savedText;
+    return JobixBackHandler(
+      onBack: leave,
       child: frame(
         copy,
         Column(
@@ -373,8 +374,9 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                     Text(
                       count == 0
                           ? say('Not used', 'غير مستخدم')
-                          : count < minimum ||
-                                (!dirty && state == 'NEEDS_ATTENTION')
+                          : qualityEligible &&
+                                (count < minimum ||
+                                    (!dirty && state == 'NEEDS_ATTENTION'))
                           ? say(
                               'Needs Attention — minimum $minimum characters',
                               'يحتاج إلى مراجعة — الحد الأدنى $minimum حرفًا',
@@ -402,8 +404,8 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 ),
                 const SizedBox(height: TokensV0.space12),
                 TextButton(
-                  onPressed: busy ? null : leave,
-                  child: Text(fromReview ? copy.backToReview : copy.saveLater),
+                  onPressed: busy ? null : () => requestJobixBack(context),
+                  child: Text(fromReview ? copy.backToReview : copy.backAction),
                 ),
               ],
               if (notice != null)
@@ -428,7 +430,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
     return SliceScaffold(
       title: textSectionTitle(context, widget.section),
       leading: IconButton(
-        onPressed: busy ? null : leave,
+        onPressed: busy ? null : () => requestJobixBack(context),
         icon: const Icon(Icons.arrow_back),
         tooltip: copy.backAction,
       ),

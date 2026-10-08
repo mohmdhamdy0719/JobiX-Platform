@@ -23,6 +23,31 @@ void main() {
   });
 
   group('item validation', () {
+    test('empty optional prose stays quiet without changing completeness', () {
+      for (final section in [
+        EntitySection.experience,
+        EntitySection.project,
+        EntitySection.achievement,
+      ]) {
+        expect(item(section, {'description': ''}).needsAttention, false);
+        expect(item(section, {'description': '   '}).needsAttention, false);
+        expect(item(section, {'description': 'Short'}).needsAttention, true);
+        expect(item(section, {'description': 'a' * 20}).needsAttention, false);
+        expect(
+          section.fields.firstWhere((f) => f.name == 'description').max,
+          1500,
+        );
+      }
+      final noDescription = item(EntitySection.experience, {
+        'job_title': 'Developer',
+        'company': 'Jobix',
+        'start_month': '2024-01',
+        'is_current': true,
+      });
+      expect(noDescription.problems(), isEmpty);
+      expect(noDescription.needsAttention, false);
+      expect(noDescription.locallyComplete, false);
+    });
     test('incomplete structural items retain drafts but cannot be added', () {
       final draft = item(EntitySection.experience, {'job_title': 'Dev'});
       expect(draft.problems()['company'], FieldProblem.required);
@@ -123,7 +148,7 @@ void main() {
           'end_month': 'invalid',
         });
         expect(current.problems(), isEmpty);
-        expect(current.needsAttention, true);
+        expect(current.needsAttention, false);
         expect(current.payload()['end_month'], isNull);
       },
     );

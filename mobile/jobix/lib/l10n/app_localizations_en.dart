@@ -9,6 +9,22 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get exitTitle => 'Exit Jobix?';
+
+  @override
+  String get exitMessage => 'Do you want to close Jobix?';
+
+  @override
+  String get exitAction => 'Exit';
+
+  @override
+  String get itemSaved => 'Saved';
+
+  @override
+  String get pendingBackWarning =>
+      'The earlier Save may already have reached the server. Back discards only unsubmitted edits, not that request. Its exact request is retained for Retry; no new Save will be sent.';
+
+  @override
   String get appTitle => 'Jobix';
 
   @override

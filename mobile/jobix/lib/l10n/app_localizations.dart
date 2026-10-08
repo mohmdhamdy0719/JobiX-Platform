@@ -98,6 +98,36 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @exitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit Jobix?'**
+  String get exitTitle;
+
+  /// No description provided for @exitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to close Jobix?'**
+  String get exitMessage;
+
+  /// No description provided for @exitAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get exitAction;
+
+  /// No description provided for @itemSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get itemSaved;
+
+  /// No description provided for @pendingBackWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'The earlier Save may already have reached the server. Back discards only unsubmitted edits, not that request. Its exact request is retained for Retry; no new Save will be sent.'**
+  String get pendingBackWarning;
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:

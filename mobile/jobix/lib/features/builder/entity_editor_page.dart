@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/form_loading_state.dart';
+import '../../core/navigation/back_policy.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
@@ -48,6 +50,12 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   Map<String, FieldProblem> problems = {};
   bool busy = false, failed = false;
   SaveIssue? issue;
+  Future<void> writes = Future.value();
+  bool leaving = false, saveAttempted = false;
+  bool get dirty =>
+      item != null &&
+      (serverItem == null ||
+          jsonEncode(item!.payload()) != jsonEncode(serverItem!.payload()));
 
   /// Set while the draft's baseline differs from the server item; Save is
   /// blocked until the user picks a version.
@@ -71,8 +79,14 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   Future<void> load() async {
     try {
       final value = await ref.read(firstProfileProvider.future);
+      if (!mounted) return;
       final repository = await ref.read(entityRepositoryProvider.future);
-      final id = widget.itemId == 'new' ? newCommandKey() : widget.itemId;
+      final recovered = widget.itemId == 'new'
+          ? (await repository.unsavedNew(value, widget.section)).firstOrNull
+          : null;
+      final id = widget.itemId == 'new'
+          ? recovered?.id ?? newCommandKey()
+          : widget.itemId;
       final saved = value
           .of(widget.section)
           .where((i) => i.id == id)
@@ -80,8 +94,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       final local = await repository.draft(value.id, widget.section, id);
       final current =
           local ?? saved ?? ProfileItem(id: id, section: widget.section);
-      _fill(current);
       if (!mounted) return;
+      _fill(current);
       setState(() {
         profile = value;
         item = current;
@@ -96,17 +110,79 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   }
 
   Future<void> edit(String field, Object? value) async {
+    if (busy || leaving || item == null) return;
     final next = item!.copyWith(field, value);
     setState(() {
       item = next;
       problems = {};
       issue = null;
+      saveAttempted = false;
     });
-    final repository = await ref.read(entityRepositoryProvider.future);
-    await repository.retainDraft(profile!.id, next);
+    final repositoryFuture = ref.read(entityRepositoryProvider.future);
+    final profileId = profile!.id;
+    writes = writes
+        .then((_) async {
+          final repository = await repositoryFuture;
+          await repository.retainDraft(profileId, next);
+        })
+        .catchError((Object error) {
+          if (mounted) setState(() => issue = saveIssue(error));
+        });
+    await writes;
   }
 
   void close() => context.go(editorReturn(widget.section, widget.origin));
+
+  Future<void> leave() async {
+    if (busy || leaving) return;
+    leaving = true;
+    try {
+      final repository = item != null && profile != null
+          ? await ref.read(entityRepositoryProvider.future)
+          : null;
+      final pending = repository == null
+          ? null
+          : await repository.pending(profile!.id);
+      if (!mounted) return;
+      final pendingItem = pending?.itemId == item?.id && pending != null;
+      if (item != null && (pendingItem || serverItem != null && dirty)) {
+        final copy = AppLocalizations.of(context)!;
+        final discard = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(copy.leaveTitle),
+            content: Text(
+              pendingItem ? copy.pendingBackWarning : copy.discardWarning,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(copy.stayAction),
+              ),
+              TextButton(
+                key: const Key('discard-entity'),
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(pendingItem ? copy.backAction : copy.discardAction),
+              ),
+            ],
+          ),
+        );
+        if (discard != true || !mounted) return;
+      }
+      // Drain every queued local edit before deleting its scoped draft.
+      // The frozen pending command is intentionally a separate outbox entry.
+      await writes;
+      if (!mounted) return;
+      if (profile != null && item != null) {
+        await repository!.discardDraft(profile!.id, widget.section, item!.id);
+      }
+      if (mounted) close();
+    } catch (error) {
+      if (mounted) setState(() => issue = saveIssue(error));
+    } finally {
+      leaving = false;
+    }
+  }
 
   void _fill(ProfileItem source) {
     for (final field in widget.section.fields) {
@@ -121,6 +197,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   /// Discards local edits in favour of the server copy (or leaves when the
   /// item was removed elsewhere).
   Future<void> keepServer() async {
+    await writes;
+    if (!mounted) return;
     final repository = await ref.read(entityRepositoryProvider.future);
     await repository.discardDraft(profile!.id, widget.section, item!.id);
     final server = serverItem;
@@ -128,8 +206,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       if (mounted) close();
       return;
     }
-    _fill(server);
     if (mounted) {
+      _fill(server);
       setState(() {
         item = server;
         conflict = DraftConflict.none;
@@ -140,6 +218,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
 
   /// Keeps local edits on top of the latest server baseline, by choice.
   Future<void> reapplyLocal() async {
+    await writes;
+    if (!mounted) return;
     final next = item!.rebased(serverItem?.version ?? 0);
     final repository = await ref.read(entityRepositoryProvider.future);
     await repository.retainDraft(profile!.id, next);
@@ -152,8 +232,11 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   }
 
   Future<void> save() async {
-    if (conflict != DraftConflict.none) return;
+    if (busy || leaving || item == null || conflict != DraftConflict.none) {
+      return;
+    }
     final copy = item!;
+    setState(() => saveAttempted = true);
     final found = copy.problems();
     if (found.isNotEmpty) {
       setState(() => problems = found);
@@ -161,6 +244,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     }
     setState(() => busy = true);
     try {
+      await writes;
+      if (!mounted) return;
       final repository = await ref.read(entityRepositoryProvider.future);
       await repository.retainDraft(profile!.id, copy);
       await repository.upsert(profile!, copy);
@@ -215,22 +300,22 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       key: const Key('editor-back'),
       tooltip: copy.backAction,
       icon: const BackButtonIcon(),
-      onPressed: busy ? null : close,
+      onPressed: busy ? null : () => requestJobixBack(context),
     );
     if (item == null) {
-      return SliceScaffold(
-        title: title,
-        leading: back,
-        child: failed
-            ? Text(copy.profileUnavailable)
-            : const FormLoadingState(),
+      return JobixBackHandler(
+        onBack: leave,
+        child: SliceScaffold(
+          title: title,
+          leading: back,
+          child: failed
+              ? Text(copy.profileUnavailable)
+              : const FormLoadingState(),
+        ),
       );
     }
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && !busy) close();
-      },
+    return JobixBackHandler(
+      onBack: leave,
       child: SliceScaffold(
         title: title,
         leading: back,
@@ -238,7 +323,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: busy ? null : close,
+                onPressed: busy ? null : () => requestJobixBack(context),
                 child: Text(copy.backAction),
               ),
             ),
@@ -418,6 +503,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       children: [
         input,
         if (field.minimum > 1 &&
+            (saveAttempted || !dirty && serverItem != null) &&
+            controller.text.trim().isNotEmpty &&
             controller.text.trim().runes.length < field.minimum)
           Padding(
             padding: const EdgeInsetsDirectional.only(top: TokensV0.space8),

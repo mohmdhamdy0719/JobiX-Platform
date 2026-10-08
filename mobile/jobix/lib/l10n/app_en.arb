@@ -1,4 +1,9 @@
 {
+  "exitTitle": "Exit Jobix?",
+  "exitMessage": "Do you want to close Jobix?",
+  "exitAction": "Exit",
+  "itemSaved": "Saved",
+  "pendingBackWarning": "The earlier Save may already have reached the server. Back discards only unsubmitted edits, not that request. Its exact request is retained for Retry; no new Save will be sent.",
   "@@locale": "en",
   "appTitle": "Jobix",
   "boot": "Starting Jobix",

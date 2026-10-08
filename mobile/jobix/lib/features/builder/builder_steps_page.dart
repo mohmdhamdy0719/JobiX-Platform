@@ -14,8 +14,8 @@ import '../career_profile/profile_sections.dart';
 import 'builder_scaffold.dart';
 import 'entity_cards.dart';
 import 'entity_editor_page.dart';
-import 'entity_labels.dart';
 import 'save_feedback.dart';
+import 'language_editor_sheet.dart';
 
 /// Small local catalog for type-to-add. Custom skills are always allowed.
 const skillCatalog = [
@@ -60,7 +60,6 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
   SaveIssue? issue;
   final skillController = TextEditingController();
   final skillFocus = FocusNode();
-  Map<EntitySection, List<ProfileItem>> unsaved = {};
 
   @override
   void dispose() {
@@ -74,15 +73,10 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
     resumed = true;
     try {
       final repository = await ref.read(entityRepositoryProvider.future);
-      final drafts = {
-        for (final s in stepSections[widget.step]!)
-          if (s != EntitySection.skill && s != EntitySection.language)
-            s: await repository.unsavedNew(profile, s),
-      };
-      if (mounted) setState(() => unsaved = drafts);
-      // An interrupted save is retried with its original key.
-      if (await repository.resume(profile.id) != null) {
-        ref.invalidate(firstProfileProvider);
+      // Navigating Back must not submit anything. Preserve interrupted Save
+      // identity and let the explicit Retry action reconcile its outcome.
+      if (await repository.pending(profile.id) != null && mounted) {
+        setState(() => issue = SaveIssue.pending);
       }
     } catch (error) {
       if (mounted) setState(() => issue = saveIssue(error));
@@ -92,6 +86,7 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
   Future<void> run(
     Future<CareerProfile> Function(EntityRepository repository) action,
   ) async {
+    if (!mounted || busy) return;
     setState(() {
       busy = true;
       issue = null;
@@ -99,7 +94,7 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
     try {
       final repository = await ref.read(entityRepositoryProvider.future);
       await action(repository);
-      ref.invalidate(firstProfileProvider);
+      if (mounted) ref.invalidate(firstProfileProvider);
     } catch (error) {
       if (mounted) setState(() => issue = saveIssue(error));
     } finally {
@@ -122,7 +117,7 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
   }
 
   void openEditor(EntitySection section, String id) => context.go(
-    '/career/edit/${section.key}/$id?origin=${widget.fromReview ? 'review' : 'builder'}',
+    '/career/edit/${section.key}/$id?origin=${widget.origin.name}',
   );
 
   Future<void> remove(CareerProfile profile, ProfileItem item) async {
@@ -156,69 +151,15 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
     CareerProfile profile, [
     ProfileItem? existing,
   ]) async {
-    final copy = AppLocalizations.of(context)!;
-    final name = TextEditingController(text: existing?.text('name') ?? '');
-    var level = existing?.text('proficiency');
     final result = await showModalBottomSheet<ProfileItem>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheet) => Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(
-            TokensV0.pageGutter,
-            0,
-            TokensV0.pageGutter,
-            MediaQuery.viewInsetsOf(context).bottom + TokensV0.space24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                existing == null ? copy.addLanguage : copy.editAction,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: TokensV0.space16),
-              TextField(
-                key: const Key('language-name'),
-                controller: name,
-                maxLength: 100,
-                decoration: InputDecoration(labelText: copy.fieldLanguage),
-              ),
-              DropdownButtonFormField<String>(
-                key: const Key('language-level'),
-                value: level,
-                decoration: InputDecoration(labelText: copy.fieldProficiency),
-                items: [
-                  for (final p in proficiencies)
-                    DropdownMenuItem(
-                      value: p,
-                      child: Text(proficiencyLabel(copy, p)),
-                    ),
-                ],
-                onChanged: (v) => setSheet(() => level = v),
-              ),
-              const SizedBox(height: TokensV0.space16),
-              FilledButton(
-                key: const Key('language-save'),
-                onPressed: () {
-                  final item = ProfileItem(
-                    id: existing?.id ?? newCommandKey(),
-                    section: EntitySection.language,
-                    values: {'name': name.text, 'proficiency': level},
-                  );
-                  if (item.problems().isEmpty) Navigator.pop(context, item);
-                },
-                child: Text(copy.saveAction),
-              ),
-            ],
-          ),
-        ),
-      ),
+      isDismissible: false,
+      enableDrag: false,
+      builder: (_) => LanguageEditorSheet(existing: existing),
     );
-    name.dispose();
-    if (result == null) return;
+    if (result == null || !mounted) return;
     final duplicate = profile
         .of(EntitySection.language)
         .any(
@@ -250,7 +191,11 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
       busy: busy,
       meta: total > 0 ? copy.itemsAdded(total) : null,
       onBack: () => context.go(
-        widget.fromReview ? '/builder/6' : '/builder/${widget.step - 1}',
+        widget.fromReview
+            ? '/builder/6'
+            : widget.origin == EditorOrigin.career
+            ? '/career'
+            : '/builder/${widget.step - 1}',
       ),
       onContinue: profile == null
           ? null
@@ -295,7 +240,6 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                     EntityCardList(
                       section: section,
                       items: profile.of(section),
-                      unsaved: unsaved[section] ?? const [],
                       enabled: !busy,
                       showHeading: sections.length > 1,
                       onAdd: section == EntitySection.language
@@ -381,7 +325,8 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                         !taken.contains(nameKey(s)),
                   );
                 },
-                onSelected: (value) => addSkill(profile, value),
+                // Selection edits the input; only Add/submit commits it.
+                onSelected: (value) => skillController.text = value,
                 fieldViewBuilder: (context, controller, focus, submit) {
                   return TextField(
                     key: const Key('skill-input'),

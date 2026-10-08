@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../core/navigation/back_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -169,13 +170,27 @@ class _ResumePageState extends ConsumerState<ResumePage> {
 
   @override
   Widget build(BuildContext context) {
+    return JobixBackHandler(
+      onBack: () {
+        if (busy) return;
+        if (preview != null) {
+          setState(() => preview = null);
+        } else {
+          context.go('/career');
+        }
+      },
+      child: frame(context),
+    );
+  }
+
+  Widget frame(BuildContext context) {
     if (preview != null) {
       return Scaffold(
         appBar: AppBar(
           title: Text(t('Resume Preview', 'معاينة السيرة الذاتية')),
           leading: IconButton(
             icon: const BackButtonIcon(),
-            onPressed: () => setState(() => preview = null),
+            onPressed: () => requestJobixBack(context),
           ),
         ),
         body: SafeArea(child: WebViewWidget(controller: preview!)),
@@ -196,7 +211,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
       title: t('Build your resume', 'إنشاء سيرتك الذاتية'),
       leading: IconButton(
         icon: const BackButtonIcon(),
-        onPressed: () => context.go('/career'),
+        onPressed: () => requestJobixBack(context),
       ),
       child: profile == null
           ? failed

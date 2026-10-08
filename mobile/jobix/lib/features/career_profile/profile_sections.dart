@@ -282,7 +282,17 @@ class ProfileItem {
 
   /// Local estimate used only before the server acknowledges a save.
   bool get locallyComplete {
-    if (problems().isNotEmpty || needsAttention) return false;
+    // Completeness is unchanged. Empty optional prose no longer produces a
+    // quality warning, but that does not award its existing completeness.
+    if (problems().isNotEmpty ||
+        section.fields.any(
+          (f) =>
+              f.kind == FieldKind.multiline &&
+              f.minimum > 1 &&
+              text(f.name).trim().runes.length < f.minimum,
+        )) {
+      return false;
+    }
     for (final field in section.fields) {
       if (!field.required) continue;
       if (text(field.name).trim().length < field.minimum) return false;
@@ -300,6 +310,7 @@ class ProfileItem {
     (field) =>
         field.kind == FieldKind.multiline &&
         field.minimum > 1 &&
+        text(field.name).trim().isNotEmpty &&
         text(field.name).trim().runes.length < field.minimum,
   );
 }

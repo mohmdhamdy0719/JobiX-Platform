@@ -19,6 +19,15 @@ Experience/resume refinements,
 server AI operations/history/acceptance, real AI UI enablement, then private PDF
 export. Preserve the native stack, six-step builder and existing security rules.
 
+Restoring the existing locked Flutter/Dart package cache is authorized for this
+native bug-fix phase; package upgrades and Android SDK installation are not.
+
+**Why:** The owner explicitly approved "Restore locked packages and continue"
+after the missing cache prevented the regression test from compiling.
+
+**How to apply:** Enforce the existing lockfile; ask before any additional
+toolchain/configuration installation and do not repair supporting services.
+
 The new product rules supersede earlier unsaved-item continuation behavior:
 opening/editing a repeatable record is not Save; explicit Back discards
 unsubmitted edits, with appropriate existing-record confirmation, and does not

@@ -1,5 +1,88 @@
 # Jobix verification evidence
 
+## Native bug-fix phase — 2026-10-08
+
+**Status: BLOCKED / PARTIALLY VERIFIED.** The approved five-bug native changes
+are implemented and host-verified. Real Android acceptance remains open. This
+is not a claim that the reported opening-time phone crash has been reproduced
+or fixed on Android.
+
+### Reproduction and lifecycle evidence
+
+- Flutter 3.32.0 host widget test, using an existing Arabic/NATIVE language
+  fixture: open its Edit menu, change proficiency to FLUENT, Save, reopen the
+  editor, then dismiss with system Back.
+- Opening and the first Save did not fail in this reproduction. On dismissal,
+  the original implementation produced `A TextEditingController was used after
+  being disposed`, followed by an overflow and the reported
+  `framework.dart:6161` / `_dependents.isEmpty` assertion. The complete pre-fix
+  output is retained in `docs/verification/language-dismissal-before.txt`.
+- The modal pop-result future completed before route unmount, while the
+  caller immediately disposed the controller. The sheet now owns its state
+  and disposes the controller at widget teardown. Assertions are not hidden
+  or suppressed; dependency versions were not changed.
+- The regression now passes for opening, proficiency selection, Save,
+  reopening, dropdown dismissal, Stay/Discard, sheet Back and parent Back.
+  The owner's original Android opening-time stack is still needed to confirm
+  whether it has the same primary failure.
+
+### Implemented boundaries
+
+- Central modern Back handling provides meaningful parent destinations,
+  keyboard/modal precedence, reentrancy protection and localized EN/AR root
+  exit confirmation. Editor overrides cover loading/error branches and block
+  leaving during an active Save. Resume preview Back closes preview state
+  before returning to Career; its renderer/configuration is unchanged.
+- New repeatable drafts remain editor-only. Back drains queued local writes
+  before scoped discard; existing-record edits offer Stay/Discard and retain
+  the saved baseline. Explicit Add can resume an interrupted editor-only
+  draft without showing it as a saved parent-list record.
+- Skill suggestion selection only edits the input. Explicit Add/submit commits
+  a skill. Language edits use explicit Save; Back does not submit them.
+- Unknown Save outcomes retain their exact frozen outbox request and explain
+  that an already-sent Save cannot be undone by Back. Parent-list navigation
+  does not automatically replay it; explicit Retry remains available.
+- Empty/whitespace optional prose is quiet. Non-empty short prose receives
+  quality guidance only after explicit Save activity or saved reopening.
+  Existing field limits and completeness calculations remain unchanged.
+- Only the Country/City leading icons were removed. Suggestions, clear
+  controls, selection and existing field behavior remain in place.
+
+### Completed local checks
+
+- Locked Dart/Flutter packages restored with `dart pub get --enforce-lockfile`,
+  after explicit owner approval. `pubspec.yaml` and `pubspec.lock` are unchanged.
+- `flutter analyze`: **PASS, no issues**.
+- Full `flutter test --reporter expanded`: **PASS, 195 tests**. Includes EN/AR
+  narrow layouts, all seven existing repeatable editor patterns, delayed local
+  write/discard, unresolved Save preservation, explicit skill submission,
+  modal/dropdown/root Back, keyboard-first Back, error-state Back and busy Save.
+- A final saved-empty-description check also passes in both the parent list
+  and Review. Review's descriptive badge is separated from server completeness;
+  its existing golden and edit-navigation checks still pass.
+- `dart tool/check_foundation.dart`: **PASS**.
+- `bash tool/test_rls.sh`: **PASS**, disposable local PostgreSQL only, not live
+  Supabase. No migration, schema, Auth, RLS or remote configuration was changed.
+- Three golden baselines were updated only for the requested Country/City
+  icon removal and replacing the obsolete Save & Continue Later control with
+  Back. The final full suite compares successfully against those baselines.
+
+### Remaining native gate and preserved work
+
+The current workspace lacks the Android SDK directory and the ignored native
+development define file. An authorized Android device/emulator and required
+development configuration were not supplied for this phase. No SDK/tooling was
+installed, APK rebuilt/installed, live account used or Android launch performed.
+Physical IME/gesture/predictive Back and the actual Android language-edit crash
+remain unverified; Resume WebView native Back also needs device acceptance.
+
+Earlier ARM64 build evidence below and existing distribution APK/ZIP files are
+preserved as historical results, not builds of these changes. Supporting
+Node/browser/API services, their dependencies, Auth flows, Supabase/database/RLS,
+scoring, architecture and later feature phases remain outside this work.
+No Git reset, rebase, force push or history rewrite was performed. Stop here;
+no new or archived follow-up task is started.
+
 ## ARM64 review build and Android access check — 2026-10-07
 
 - Recreated the ignored development-only `config/dev.local.json` from the

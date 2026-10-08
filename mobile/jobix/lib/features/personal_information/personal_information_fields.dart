@@ -377,7 +377,6 @@ class _CityAutocompleteState extends State<_CityAutocomplete> {
           horizontal: 12,
           vertical: 13,
         ),
-        prefixIcon: const Icon(Icons.location_on_outlined),
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(

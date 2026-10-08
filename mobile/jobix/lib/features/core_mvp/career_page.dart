@@ -235,7 +235,7 @@ class _CareerBody extends StatelessWidget {
           title: copy.stepExperience,
           badge: count(EntitySection.experience),
           done: profile.completeCount(EntitySection.experience) > 0,
-          onTap: () => context.go('/builder/3'),
+          onTap: () => context.go('/builder/3?origin=career'),
           trailing: TextButton.icon(
             key: const Key('career-add-experience'),
             onPressed: () =>
@@ -251,7 +251,7 @@ class _CareerBody extends StatelessWidget {
           title: copy.stepEducation,
           badge: count(EntitySection.education),
           done: profile.completeCount(EntitySection.education) > 0,
-          onTap: () => context.go('/builder/4'),
+          onTap: () => context.go('/builder/4?origin=career'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -278,7 +278,7 @@ class _CareerBody extends StatelessWidget {
           title: copy.sectionSkills,
           badge: count(EntitySection.skill),
           done: skills.isNotEmpty,
-          onTap: () => context.go('/builder/5'),
+          onTap: () => context.go('/builder/5?origin=career'),
           child: skills.isEmpty
               ? empty()
               : Wrap(
@@ -299,7 +299,7 @@ class _CareerBody extends StatelessWidget {
           icon: Icons.folder_outlined,
           title: copy.sectionProjects,
           badge: count(EntitySection.project),
-          onTap: () => context.go('/builder/5'),
+          onTap: () => context.go('/builder/5?origin=career'),
           child: lines(EntitySection.project),
         ),
         _SectionCard(
@@ -308,7 +308,7 @@ class _CareerBody extends StatelessWidget {
           title: copy.sectionLanguages,
           badge: count(EntitySection.language),
           done: languages.isNotEmpty,
-          onTap: () => context.go('/builder/5'),
+          onTap: () => context.go('/builder/5?origin=career'),
           child: languages.isEmpty
               ? empty()
               : Text(

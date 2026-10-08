@@ -9,6 +9,22 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get exitTitle => 'الخروج من Jobix؟';
+
+  @override
+  String get exitMessage => 'هل تريد إغلاق Jobix؟';
+
+  @override
+  String get exitAction => 'خروج';
+
+  @override
+  String get itemSaved => 'محفوظ';
+
+  @override
+  String get pendingBackWarning =>
+      'قد يكون طلب الحفظ السابق قد وصل إلى الخادم. الرجوع يلغي التعديلات غير المرسلة فقط، وليس ذلك الطلب. سنحتفظ بالطلب نفسه لإعادة المحاولة، ولن نرسل طلب حفظ جديدًا.';
+
+  @override
   String get appTitle => 'Jobix';
 
   @override

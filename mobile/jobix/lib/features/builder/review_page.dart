@@ -210,9 +210,13 @@ class _ReviewBody extends StatelessWidget {
                           ),
                           if (!item.complete)
                             Text(
-                              copy.itemIncomplete,
+                              item.needsAttention
+                                  ? copy.itemIncomplete
+                                  : copy.itemSaved,
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: TokensV0.warning,
+                                color: item.needsAttention
+                                    ? TokensV0.warning
+                                    : TokensV0.textSecondary,
                               ),
                             ),
                         ],

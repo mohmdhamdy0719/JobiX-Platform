@@ -38,13 +38,12 @@ class EntityCardList extends StatelessWidget {
     required this.onAdd,
     required this.onEdit,
     required this.onRemove,
-    this.unsaved = const [],
     this.showHeading = true,
     this.enabled = true,
     super.key,
   });
   final EntitySection section;
-  final List<ProfileItem> items, unsaved;
+  final List<ProfileItem> items;
   final VoidCallback onAdd;
   final ValueChanged<ProfileItem> onEdit, onRemove;
   final bool showHeading, enabled;
@@ -79,7 +78,7 @@ class EntityCardList extends StatelessWidget {
               ],
             ),
           ),
-        if (items.isEmpty && unsaved.isEmpty)
+        if (items.isEmpty)
           Padding(
             padding: const EdgeInsetsDirectional.only(bottom: TokensV0.space8),
             child: Text(
@@ -93,18 +92,11 @@ class EntityCardList extends StatelessWidget {
           ),
         for (final item in items)
           _EntityCard(
+            key: ValueKey('${item.section.key}-${item.id}'),
             item: item,
             enabled: enabled,
             onEdit: () => onEdit(item),
             onRemove: () => onRemove(item),
-          ),
-        for (final item in unsaved)
-          _EntityCard(
-            item: item,
-            enabled: enabled,
-            unsaved: true,
-            onEdit: () => onEdit(item),
-            onRemove: null,
           ),
         const SizedBox(height: TokensV0.space4),
         OutlinedButton.icon(
@@ -130,12 +122,12 @@ class _EntityCard extends StatefulWidget {
     required this.onEdit,
     required this.onRemove,
     required this.enabled,
-    this.unsaved = false,
+    super.key,
   });
   final ProfileItem item;
   final VoidCallback onEdit;
   final VoidCallback? onRemove;
-  final bool enabled, unsaved;
+  final bool enabled;
   @override
   State<_EntityCard> createState() => _EntityCardState();
 }
@@ -151,7 +143,7 @@ class _EntityCardState extends State<_EntityCard> {
     final title = itemTitle(item);
     final subtitle = itemSubtitle(copy, item, locale);
     final description = item.text('description');
-    final complete = widget.unsaved ? false : item.complete;
+    final complete = item.complete;
     final current = item.section.hasCurrent && item.flag('is_current');
     return Card(
       key: Key('card-${item.section.key}-${item.id}'),
@@ -219,12 +211,16 @@ class _EntityCardState extends State<_EntityCard> {
                           ),
                         const SizedBox(height: TokensV0.space4),
                         _Badge(
-                          label: widget.unsaved
-                              ? copy.notSavedYet
-                              : complete
+                          label: complete
                               ? copy.itemComplete
-                              : copy.itemIncomplete,
-                          color: complete ? TokensV0.success : TokensV0.warning,
+                              : item.needsAttention
+                              ? copy.itemIncomplete
+                              : copy.itemSaved,
+                          color: complete
+                              ? TokensV0.success
+                              : item.needsAttention
+                              ? TokensV0.warning
+                              : TokensV0.textSecondary,
                         ),
                       ],
                     ),

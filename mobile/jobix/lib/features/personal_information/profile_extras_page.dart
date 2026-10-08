@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/navigation/back_policy.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -423,15 +424,12 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
   @override
   Widget build(BuildContext context) {
     final pending = draft?.pending != null;
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && !busy) unawaited(leave());
-      },
+    return JobixBackHandler(
+      onBack: leave,
       child: SliceScaffold(
         title: say('Photo & custom links', 'الصورة والروابط المخصصة'),
         leading: IconButton(
-          onPressed: busy ? null : leave,
+          onPressed: busy ? null : () => requestJobixBack(context),
           tooltip: say(
             'Back to Personal Information',
             'العودة إلى المعلومات الشخصية',

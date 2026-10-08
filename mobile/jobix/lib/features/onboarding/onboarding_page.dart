@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import 'onboarding_controller.dart';
 import 'onboarding_illustrations.dart';
 import 'research_context.dart';
+import '../../core/navigation/back_policy.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
@@ -81,84 +82,91 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
           copy.onboardingBodyThree,
         ];
 
-        return SliceScaffold(
-          fillViewport: true,
-          header: _OnboardingHeader(
-            page: page,
-            skipLabel: copy.skipOnboarding,
-            skipShort: copy.skipShort,
-            backLabel: copy.backAction,
-            busy: busy,
-            showBack: page > 0,
-            onBack: () => advance(progress, back: true),
-            onSkip: () => advance(progress, skip: true),
-          ),
-          bottom: PrimaryAction(
-            key: const Key('onboarding-continue'),
-            label: copy.continueAction,
-            busy: busy,
-            onPressed: () => advance(progress),
-            icon: Icons.arrow_forward,
-          ),
-          child: LayoutBuilder(
-            builder: (context, _) {
-              final screenHeight = MediaQuery.sizeOf(context).height;
-              final illustrationHeight = screenHeight < 700
-                  ? 248.0
-                  : switch (page) {
-                      0 => 330.0,
-                      1 => 350.0,
-                      _ => 270.0,
-                    };
-              final isSecond = page == 1;
-              final title = page == 0
-                  ? titles[page].replaceFirst(', ', ',\n')
-                  : page == 2
-                  ? titles[page].replaceFirst('. ', '.\n')
-                  : titles[page];
-              return Column(
-                mainAxisAlignment: screenHeight >= 1000
-                    ? MainAxisAlignment.center
-                    : MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  OnboardingIllustration(
-                    page: page,
-                    height: illustrationHeight,
-                  ),
-                  SizedBox(height: screenHeight < 700 ? 24 : 32),
-                  AnimatedSwitcher(
-                    duration: motionDuration(context, TokensV0.motionContent),
-                    child: Column(
-                      key: ValueKey<int>(page),
-                      crossAxisAlignment: isSecond
-                          ? CrossAxisAlignment.start
-                          : CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          title,
-                          semanticsLabel: titles[page],
-                          key: Key('onboarding-title-$page'),
-                          textAlign: isSecond
-                              ? TextAlign.start
-                              : TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineLarge,
-                        ),
-                        const SizedBox(height: TokensV0.space12),
-                        Text(
-                          bodies[page],
-                          textAlign: isSecond
-                              ? TextAlign.start
-                              : TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: TokensV0.space16),
-                      ],
+        return JobixBackHandler(
+          onBack: busy
+              ? () {}
+              : page == 0
+              ? null
+              : () => advance(progress, back: true),
+          child: SliceScaffold(
+            fillViewport: true,
+            header: _OnboardingHeader(
+              page: page,
+              skipLabel: copy.skipOnboarding,
+              skipShort: copy.skipShort,
+              backLabel: copy.backAction,
+              busy: busy,
+              showBack: page > 0,
+              onBack: () => requestJobixBack(context),
+              onSkip: () => advance(progress, skip: true),
+            ),
+            bottom: PrimaryAction(
+              key: const Key('onboarding-continue'),
+              label: copy.continueAction,
+              busy: busy,
+              onPressed: () => advance(progress),
+              icon: Icons.arrow_forward,
+            ),
+            child: LayoutBuilder(
+              builder: (context, _) {
+                final screenHeight = MediaQuery.sizeOf(context).height;
+                final illustrationHeight = screenHeight < 700
+                    ? 248.0
+                    : switch (page) {
+                        0 => 330.0,
+                        1 => 350.0,
+                        _ => 270.0,
+                      };
+                final isSecond = page == 1;
+                final title = page == 0
+                    ? titles[page].replaceFirst(', ', ',\n')
+                    : page == 2
+                    ? titles[page].replaceFirst('. ', '.\n')
+                    : titles[page];
+                return Column(
+                  mainAxisAlignment: screenHeight >= 1000
+                      ? MainAxisAlignment.center
+                      : MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    OnboardingIllustration(
+                      page: page,
+                      height: illustrationHeight,
                     ),
-                  ),
-                ],
-              );
-            },
+                    SizedBox(height: screenHeight < 700 ? 24 : 32),
+                    AnimatedSwitcher(
+                      duration: motionDuration(context, TokensV0.motionContent),
+                      child: Column(
+                        key: ValueKey<int>(page),
+                        crossAxisAlignment: isSecond
+                            ? CrossAxisAlignment.start
+                            : CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            semanticsLabel: titles[page],
+                            key: Key('onboarding-title-$page'),
+                            textAlign: isSecond
+                                ? TextAlign.start
+                                : TextAlign.center,
+                            style: Theme.of(context).textTheme.headlineLarge,
+                          ),
+                          const SizedBox(height: TokensV0.space12),
+                          Text(
+                            bodies[page],
+                            textAlign: isSecond
+                                ? TextAlign.start
+                                : TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                          const SizedBox(height: TokensV0.space16),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         );
       },

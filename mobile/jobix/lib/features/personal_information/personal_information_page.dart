@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/navigation/back_policy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -293,23 +294,14 @@ class _PersonalInformationPageState
             onPressed: () => Navigator.pop(context, 'discard'),
             child: Text(copy.discardAction),
           ),
-          TextButton(
-            key: const Key('save-later'),
-            onPressed: () => Navigator.pop(context, 'save'),
-            child: Text(copy.saveLater),
-          ),
         ],
       ),
     );
     if (!mounted || choice == null || choice == 'stay') return;
     setState(() => busy = true);
     try {
-      if (choice == 'save') {
-        if (!await persistNow()) return;
-      } else {
-        await writes;
-        await repository!.discard(profile!.id);
-      }
+      await writes;
+      await repository!.discard(profile!.id);
       if (mounted) exit();
     } catch (_) {
       if (mounted) setState(() => notice = copy.outcomeUnknown);
@@ -323,7 +315,13 @@ class _PersonalInformationPageState
   void exit() {
     allowPop = true;
     if (profile != null) ref.invalidate(unfinishedDraftProvider(profile!.id));
-    context.go(fromReview ? '/builder/6' : '/home');
+    context.go(
+      fromReview
+          ? '/builder/6'
+          : widget.builder
+          ? '/home'
+          : '/career',
+    );
   }
 
   /// Continue (builder) / Save (from Review): save only when edited, and
@@ -347,40 +345,40 @@ class _PersonalInformationPageState
     final copy = AppLocalizations.of(context)!;
     final merge = ref.watch(contextMergeProvider);
     if (failed || draft == null) {
-      return SliceScaffold(
-        title: copy.personalInformation,
-        leading: widget.builder && !fromReview
-            ? null
-            : IconButton(
-                tooltip: copy.backAction,
-                icon: const Icon(Icons.arrow_back),
-                onPressed: exit,
-              ),
-        child: failed
-            ? Column(
-                children: [
-                  Text(copy.profileUnavailable),
-                  TextButton(
-                    onPressed: () {
-                      ref.invalidate(firstProfileProvider);
-                      load();
-                    },
-                    child: Text(copy.retry),
-                  ),
-                ],
-              )
-            : const FormLoadingState(),
+      return JobixBackHandler(
+        onBack: leave,
+        child: SliceScaffold(
+          title: copy.personalInformation,
+          leading: widget.builder && !fromReview
+              ? null
+              : IconButton(
+                  tooltip: copy.backAction,
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => requestJobixBack(context),
+                ),
+          child: failed
+              ? Column(
+                  children: [
+                    Text(copy.profileUnavailable),
+                    TextButton(
+                      onPressed: () {
+                        ref.invalidate(firstProfileProvider);
+                        load();
+                      },
+                      child: Text(copy.retry),
+                    ),
+                  ],
+                )
+              : const FormLoadingState(),
+        ),
       );
     }
     final language = draft!.resumeLanguage;
     final profileCopy = language == 'ar'
         ? AppLocalizationsAr()
         : AppLocalizationsEn();
-    return PopScope(
-      canPop: allowPop,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) unawaited(leave());
-      },
+    return JobixBackHandler(
+      onBack: leave,
       child: widget.builder && !fromReview
           ? BuilderScaffold(
               step: 1,
@@ -394,14 +392,14 @@ class _PersonalInformationPageState
                 key: const Key('leave-personal'),
                 tooltip: copy.backAction,
                 icon: const Icon(Icons.arrow_back),
-                onPressed: busy ? null : leave,
+                onPressed: busy ? null : () => requestJobixBack(context),
               ),
               actions: const [AppLanguageButton()],
               bottom: Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: busy ? null : leave,
+                      onPressed: busy ? null : () => requestJobixBack(context),
                       child: Text(
                         fromReview ? copy.backToReview : copy.leaveAction,
                       ),

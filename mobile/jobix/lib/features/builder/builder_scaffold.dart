@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/navigation/back_policy.dart';
 
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
@@ -55,6 +56,13 @@ class BuilderScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return JobixBackHandler(
+      onBack: busy ? () {} : onBack,
+      child: frame(context),
+    );
+  }
+
+  Widget frame(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
     final title = stepTitle(copy, step);
     if (reviewEditor) {
@@ -64,13 +72,13 @@ class BuilderScaffold extends StatelessWidget {
           key: const Key('builder-back'),
           tooltip: copy.backToReview,
           icon: const BackButtonIcon(),
-          onPressed: busy ? null : onBack,
+          onPressed: busy ? null : () => requestJobixBack(context),
         ),
         bottom: Row(
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: busy ? null : onBack,
+                onPressed: busy ? null : () => requestJobixBack(context),
                 child: Text(copy.backToReview),
               ),
             ),
@@ -95,7 +103,7 @@ class BuilderScaffold extends StatelessWidget {
           : IconButton(
               tooltip: copy.backAction,
               icon: const BackButtonIcon(),
-              onPressed: busy ? null : onBack,
+              onPressed: busy ? null : () => requestJobixBack(context),
             ),
       subheader: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(
@@ -150,7 +158,7 @@ class BuilderScaffold extends StatelessWidget {
           if (onBack != null && step != 1 && step != 6) ...[
             OutlinedButton.icon(
               key: const Key('builder-back'),
-              onPressed: busy ? null : onBack,
+              onPressed: busy ? null : () => requestJobixBack(context),
               // The theme default is full-width; Back stays compact here.
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 50)),
               icon: const BackButtonIcon(),

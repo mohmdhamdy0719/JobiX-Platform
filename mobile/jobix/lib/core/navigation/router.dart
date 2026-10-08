@@ -25,6 +25,7 @@ import '../../features/builder/entity_editor_page.dart';
 import '../../features/builder/review_page.dart';
 import '../../features/shell/foundation_page.dart';
 import '../providers.dart';
+import 'back_policy.dart';
 
 String routeFor(StartupState state) => switch (state) {
   StartupState.boot => '/boot',
@@ -123,100 +124,133 @@ final routerProvider = Provider<GoRouter>((ref) {
         recovery: flow.recovery,
       );
     },
-    routes: [
-      for (final route in [
-        StartupState.boot,
-        StartupState.failed,
-        StartupState.updateRequired,
-      ])
-        GoRoute(
-          path: routeFor(route),
-          builder: (context, state) => FoundationPage(state: route),
-        ),
-      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingPage()),
-      GoRoute(path: '/research', builder: (_, __) => const ResearchPage()),
-      GoRoute(
-        path: '/auth',
-        builder: (_, state) => AuthPage(
-          key: ValueKey(state.uri.toString()),
-          mode: state.uri.queryParameters['mode'] ?? 'gateway',
-        ),
-      ),
-      GoRoute(
-        path: '/confirm',
-        builder: (_, __) => const AuthPage(mode: 'confirm'),
-      ),
-      GoRoute(
-        path: '/forgot',
-        builder: (_, __) => const AuthPage(mode: 'forgot'),
-      ),
-      GoRoute(
-        path: '/recovery',
-        builder: (_, __) => const AuthPage(mode: 'recovery'),
-      ),
-      GoRoute(path: '/home', builder: (_, __) => const HomePage()),
-      GoRoute(path: '/career', builder: (_, __) => const CareerPage()),
-      GoRoute(path: '/resume', builder: (_, __) => const ResumePage()),
-      GoRoute(path: '/settings', builder: (_, __) => const SettingsPage()),
-      GoRoute(path: '/credits', builder: (_, __) => const CreditsPage()),
-      GoRoute(
-        path: '/builder/:step',
-        builder: (_, state) {
-          final step = int.tryParse(state.pathParameters['step']!) ?? 1;
-          return switch (step) {
-            1 => const PersonalInformationPage(builder: true),
-            2 => const TextSectionPage(section: 'summary', builderStep: 2),
-            3 || 4 || 5 => BuilderSectionsStep(
-              key: ValueKey('$step-${state.uri.queryParameters['origin']}'),
-              step: step,
-              origin: EditorOrigin.parse(state.uri.queryParameters['origin']),
-            ),
-            _ => const ReviewPage(),
-          };
-        },
-      ),
-      GoRoute(
-        path: '/career/personal',
-        builder: (_, state) => PersonalInformationPage(
-          origin: state.uri.queryParameters['origin'],
-        ),
-      ),
-      GoRoute(
-        path: '/career/extras',
-        builder: (_, state) => ProfileExtrasPage(
-          origin: state.uri.queryParameters['origin'] ?? 'career',
-        ),
-      ),
-      GoRoute(
-        path: '/career/summary',
-        builder: (_, state) => TextSectionPage(
-          section: 'summary',
-          origin: state.uri.queryParameters['origin'],
-        ),
-      ),
-      GoRoute(
-        path: '/career/target-role',
-        builder: (_, state) => TextSectionPage(
-          section: 'target_role',
-          origin: state.uri.queryParameters['origin'],
-        ),
-      ),
-      GoRoute(
-        path: '/career/edit/:section/:id',
-        builder: (_, state) {
-          final section = EntitySection.values
-              .where((s) => s.key == state.pathParameters['section'])
-              .firstOrNull;
-          if (section == null) return const ReviewPage();
-          return EntityEditorPage(
-            key: ValueKey(state.uri.toString()),
-            section: section,
-            itemId: state.pathParameters['id']!,
-            origin: EditorOrigin.parse(state.uri.queryParameters['origin']),
-          );
-        },
-      ),
-    ],
+    routes:
+        [
+              for (final route in [
+                StartupState.boot,
+                StartupState.failed,
+                StartupState.updateRequired,
+              ])
+                GoRoute(
+                  path: routeFor(route),
+                  builder: (context, state) => FoundationPage(state: route),
+                ),
+              GoRoute(
+                path: '/onboarding',
+                builder: (_, __) => const OnboardingPage(),
+              ),
+              GoRoute(
+                path: '/research',
+                builder: (_, __) => const ResearchPage(),
+              ),
+              GoRoute(
+                path: '/auth',
+                builder: (_, state) => AuthPage(
+                  key: ValueKey(state.uri.toString()),
+                  mode: state.uri.queryParameters['mode'] ?? 'gateway',
+                ),
+              ),
+              GoRoute(
+                path: '/confirm',
+                builder: (_, __) => const AuthPage(mode: 'confirm'),
+              ),
+              GoRoute(
+                path: '/forgot',
+                builder: (_, __) => const AuthPage(mode: 'forgot'),
+              ),
+              GoRoute(
+                path: '/recovery',
+                builder: (_, __) => const AuthPage(mode: 'recovery'),
+              ),
+              GoRoute(path: '/home', builder: (_, __) => const HomePage()),
+              GoRoute(path: '/career', builder: (_, __) => const CareerPage()),
+              GoRoute(path: '/resume', builder: (_, __) => const ResumePage()),
+              GoRoute(
+                path: '/settings',
+                builder: (_, __) => const SettingsPage(),
+              ),
+              GoRoute(
+                path: '/credits',
+                builder: (_, __) => const CreditsPage(),
+              ),
+              GoRoute(
+                path: '/builder/:step',
+                builder: (_, state) {
+                  final step = int.tryParse(state.pathParameters['step']!) ?? 1;
+                  return switch (step) {
+                    1 => const PersonalInformationPage(builder: true),
+                    2 => const TextSectionPage(
+                      section: 'summary',
+                      builderStep: 2,
+                    ),
+                    3 || 4 || 5 => BuilderSectionsStep(
+                      key: ValueKey(
+                        '$step-${state.uri.queryParameters['origin']}',
+                      ),
+                      step: step,
+                      origin: EditorOrigin.parse(
+                        state.uri.queryParameters['origin'],
+                      ),
+                    ),
+                    _ => const ReviewPage(),
+                  };
+                },
+              ),
+              GoRoute(
+                path: '/career/personal',
+                builder: (_, state) => PersonalInformationPage(
+                  origin: state.uri.queryParameters['origin'],
+                ),
+              ),
+              GoRoute(
+                path: '/career/extras',
+                builder: (_, state) => ProfileExtrasPage(
+                  origin: state.uri.queryParameters['origin'] ?? 'career',
+                ),
+              ),
+              GoRoute(
+                path: '/career/summary',
+                builder: (_, state) => TextSectionPage(
+                  section: 'summary',
+                  origin: state.uri.queryParameters['origin'],
+                ),
+              ),
+              GoRoute(
+                path: '/career/target-role',
+                builder: (_, state) => TextSectionPage(
+                  section: 'target_role',
+                  origin: state.uri.queryParameters['origin'],
+                ),
+              ),
+              GoRoute(
+                path: '/career/edit/:section/:id',
+                builder: (_, state) {
+                  final section = EntitySection.values
+                      .where((s) => s.key == state.pathParameters['section'])
+                      .firstOrNull;
+                  if (section == null) return const ReviewPage();
+                  return EntityEditorPage(
+                    key: ValueKey(state.uri.toString()),
+                    section: section,
+                    itemId: state.pathParameters['id']!,
+                    origin: EditorOrigin.parse(
+                      state.uri.queryParameters['origin'],
+                    ),
+                  );
+                },
+              ),
+            ]
+            .map(
+              (route) => GoRoute(
+                path: route.path,
+                builder: (context, state) => JobixBackBoundary(
+                  key: ValueKey(state.uri.toString()),
+                  uri: state.uri,
+                  child: route.builder!(context, state),
+                ),
+              ),
+            )
+            .toList(),
   );
   ref.onDispose(() {
     router.dispose();

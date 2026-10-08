@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +9,7 @@ import 'package:jobix/app.dart';
 import 'package:jobix/core/database/database.dart';
 import 'package:jobix/core/database/encryption.dart';
 import 'package:jobix/core/navigation/router.dart';
+import 'package:jobix/core/navigation/back_policy.dart';
 import 'package:jobix/core/providers.dart';
 import 'package:jobix/features/auth/auth_controller.dart';
 import 'package:jobix/features/auth/provider_settings.dart';
@@ -72,6 +75,7 @@ void main() {
     bool googleEnabled = true,
     bool providerFailure = false,
     Size size = const Size(402, 874),
+    EntityRepository? entityOverride,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -117,7 +121,8 @@ void main() {
           }),
         ),
         entityRepositoryProvider.overrideWith(
-          (_) async => EntityRepository(repository, entities.send),
+          (_) async =>
+              entityOverride ?? EntityRepository(repository, entities.send),
         ),
         firstEntryProvider.overrideWith((_) async => newEntry),
         contextMergeProvider.overrideWith((_) async {}),
@@ -816,7 +821,7 @@ void main() {
     },
   );
   testWidgets(
-    'Save & Continue Later allows incomplete content, and Discard never deletes saved data',
+    'Back discards local Personal edits; explicit Continue saves incomplete content',
     (tester) async {
       await pump(tester, state: StartupState.signedIn, newEntry: true);
       await tester.tap(find.byKey(const Key('resume-en')));
@@ -827,22 +832,28 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('builder-back')), findsNothing);
-      // Native system Back still offers safe draft retention; Step 1 has no
+      // Native system Back offers Stay/Discard; Step 1 has no
       // on-screen Back affordance.
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('save-later')));
+      expect(find.byKey(const Key('save-later')), findsNothing);
+      await tester.tap(find.byKey(const Key('discard-draft')));
       await tester.pumpAndSettle();
       expect(
         container!.read(routerProvider).routeInformationProvider.value.uri.path,
         '/home',
       );
-      expect(
-        (await repository.draft(api.server))!.personal['full_name'],
+      expect(await repository.draft(api.server), isNull);
+      expect(api.server.personal['full_name'], isNot('Local only'));
+      // Starting again and explicitly continuing is the save boundary.
+      await tester.tap(find.byKey(const Key('continue-career')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('resume-en')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('personal-full_name')),
         'Local only',
       );
-      // Home resumes the first unfinished builder step with the local draft.
-      await tester.tap(find.byKey(const Key('continue-career')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('builder-continue')));
       await tester.pumpAndSettle();
@@ -1193,17 +1204,27 @@ void main() {
     tester,
   ) async {
     seedProfile();
-    await pump(tester, state: StartupState.signedIn, size: const Size(402, 1100));
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
     await route(tester, '/builder/5');
     const id = '1c2d3e4f-0000-4000-8000-000000000002';
     final menu = find.byKey(const Key('menu-language-$id'));
     await tester.ensureVisible(menu);
     await tester.tap(menu);
     await tester.pumpAndSettle();
-    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
+    final copy = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    )!;
     await tester.tap(find.text(copy.editAction).last);
     await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull, reason: 'opening an existing record');
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: 'opening an existing record',
+    );
     await tester.tap(find.byKey(const Key('language-level')));
     await tester.pumpAndSettle();
     await tester.tap(find.text(copy.profFluent).last);
@@ -1213,7 +1234,10 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'saving and dismissing');
-    expect(api.server.of(EntitySection.language).single.text('proficiency'), 'FLUENT');
+    expect(
+      api.server.of(EntitySection.language).single.text('proficiency'),
+      'FLUENT',
+    );
     await tester.ensureVisible(menu);
     await tester.tap(menu);
     await tester.pumpAndSettle();
@@ -1225,6 +1249,481 @@ void main() {
     expect(entities.requests, hasLength(1));
     expect(tester.takeException(), isNull, reason: 'reopening and system Back');
   });
+
+  for (final locale in ['en', 'ar']) {
+    testWidgets(
+      'Back discards editor-only new drafts for every section $locale',
+      (tester) async {
+        await pump(
+          tester,
+          state: StartupState.signedIn,
+          locale: locale,
+          size: const Size(360, 900),
+        );
+        final repo = EntityRepository(repository, entities.send);
+        for (final section in EntitySection.values) {
+          await route(tester, '/career/edit/${section.key}/new?origin=career');
+          final field = find.byKey(Key('field-${section.fields.first.name}'));
+          await tester.ensureVisible(field);
+          await tester.enterText(field, 'Unsubmitted');
+          // Back while the local write is still in progress.
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          expect(currentPath(), '/career');
+          expect(api.server.of(section), isEmpty);
+          expect(await repo.unsavedNew(api.server, section), isEmpty);
+          expect(entities.requests, isEmpty);
+          expect(tester.takeException(), isNull, reason: section.key);
+        }
+      },
+    );
+
+    testWidgets('existing drafts offer Stay then discard, never Save $locale', (
+      tester,
+    ) async {
+      api.server = CareerProfile(
+        id: 'profile-one',
+        version: 1,
+        resumeLanguage: 'en',
+        items: {
+          for (final section in EntitySection.values)
+            section: [
+              ProfileItem(
+                id: '${section.key}-saved',
+                section: section,
+                version: 1,
+                complete: true,
+                values: {
+                  for (final field in section.fields)
+                    field.name: switch (field.kind) {
+                      FieldKind.toggle => true,
+                      FieldKind.list => ['Dart'],
+                      FieldKind.month => '2024-01',
+                      FieldKind.url => 'https://example.com',
+                      FieldKind.multiline =>
+                        'Enough saved descriptive detail to meet the existing minimum.',
+                      _ => field.name == 'proficiency' ? 'NATIVE' : 'Original',
+                    },
+                },
+              ),
+            ],
+        },
+      );
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        locale: locale,
+        size: const Size(360, 900),
+      );
+      final repo = EntityRepository(repository, entities.send);
+      for (final section in EntitySection.values) {
+        final id = '${section.key}-saved';
+        final path = '/career/edit/${section.key}/$id?origin=review';
+        await route(tester, path);
+        await tester.enterText(
+          find.byKey(Key('field-${section.fields.first.name}')),
+          'Changed',
+        );
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        final copy = AppLocalizations.of(
+          tester.element(find.byType(Scaffold).first),
+        )!;
+        await tester.tap(find.text(copy.stayAction));
+        await tester.pumpAndSettle();
+        expect(currentPath(), '/career/edit/${section.key}/$id');
+        await tester.tap(find.byKey(const Key('editor-back')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('discard-entity')));
+        await tester.pumpAndSettle();
+        expect(currentPath(), '/builder/6');
+        expect(
+          api.server.of(section).single.text(section.fields.first.name),
+          'Original',
+        );
+        expect(await repo.draft(api.server.id, section, id), isNull);
+        expect(entities.requests, isEmpty);
+        await route(tester, path);
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(Key('field-${section.fields.first.name}')),
+              )
+              .controller!
+              .text,
+          'Original',
+        );
+        expect(tester.takeException(), isNull, reason: section.key);
+      }
+    });
+
+    testWidgets(
+      'root Back requires localized confirmation and only Exit closes $locale',
+      (tester) async {
+        var exits = 0;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'SystemNavigator.pop') exits++;
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await pump(tester, state: StartupState.signedIn, locale: locale);
+        for (final root in ['/home', '/career', '/settings']) {
+          await route(tester, root);
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          final copy = AppLocalizations.of(
+            tester.element(find.byType(Scaffold).first),
+          )!;
+          expect(find.text(copy.exitTitle), findsOneWidget);
+          expect(exits, 0);
+          // Back while a dialog is open dismisses the dialog, not the app.
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          expect(currentPath(), root);
+          expect(find.text(copy.exitTitle), findsNothing);
+          // Visible controls and system Back use this same entry point.
+          unawaited(
+            requestJobixBack(tester.element(find.byType(Scaffold).first)),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('stay-in-jobix')));
+          await tester.pumpAndSettle();
+        }
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('exit-jobix')));
+        await tester.pumpAndSettle();
+        expect(exits, 1);
+        expect(entities.requests, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'language dropdown and sheet Back precede parent navigation $locale',
+      (tester) async {
+        seedProfile();
+        await pump(
+          tester,
+          state: StartupState.signedIn,
+          locale: locale,
+          size: const Size(360, 900),
+        );
+        await route(tester, '/builder/5');
+        const id = '1c2d3e4f-0000-4000-8000-000000000002';
+        final menu = find.byKey(const Key('menu-language-$id'));
+        await tester.ensureVisible(menu);
+        await tester.tap(menu);
+        await tester.pumpAndSettle();
+        final copy = AppLocalizations.of(
+          tester.element(find.byType(Scaffold).first),
+        )!;
+        await tester.tap(find.text(copy.editAction).last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('language-level')));
+        await tester.pumpAndSettle();
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('language-name')), findsOneWidget);
+        await tester.enterText(
+          find.byKey(const Key('language-name')),
+          'Changed',
+        );
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        expect(currentPath(), '/builder/5');
+        await tester.tap(find.text(copy.stayAction));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('language-back')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('discard-language')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('language-name')), findsNothing);
+        expect(
+          api.server.of(EntitySection.language).single.text('name'),
+          'Arabic',
+        );
+        expect(entities.requests, isEmpty);
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+        expect(currentPath(), '/builder/4');
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'discard waits for a delayed local write and cannot resurrect it',
+    (tester) async {
+      final gate = Completer<void>();
+      final slow = _DelayedEntityRepository(
+        repository,
+        entities.send,
+        gate.future,
+      );
+      await pump(tester, state: StartupState.signedIn, entityOverride: slow);
+      await route(tester, '/career/edit/education/new?origin=career');
+      await tester.enterText(find.byKey(const Key('field-degree')), 'BSc');
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('field-institution')),
+        'Local school',
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(currentPath(), '/career/edit/education/new');
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(currentPath(), '/career');
+      expect(
+        await slow.unsavedNew(api.server, EntitySection.education),
+        isEmpty,
+      );
+      expect(entities.requests, isEmpty);
+    },
+  );
+
+  testWidgets('keyboard Back is consumed before editor discard', (
+    tester,
+  ) async {
+    await pump(tester, state: StartupState.signedIn);
+    await route(tester, '/career/edit/education/new?origin=career');
+    await tester.enterText(find.byKey(const Key('field-degree')), 'BSc');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 220);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/career/edit/education/new');
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const Key('field-degree')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .focusNode
+          .hasFocus,
+      false,
+    );
+    tester.view.resetViewInsets();
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/career');
+    expect(
+      await EntityRepository(
+        repository,
+        entities.send,
+      ).unsavedNew(api.server, EntitySection.education),
+      isEmpty,
+    );
+  });
+
+  testWidgets('error-state editor Back still returns to its parent', (
+    tester,
+  ) async {
+    api.loadError = StateError('Fixture load failure');
+    await pump(tester, state: StartupState.signedIn);
+    await route(tester, '/career/edit/education/new?origin=career');
+    final copy = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    )!;
+    expect(find.text(copy.profileUnavailable), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/career');
+    expect(entities.requests, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('selecting a skill suggestion is not Save', (tester) async {
+    await pump(tester, state: StartupState.signedIn);
+    await route(tester, '/builder/5');
+    await tester.enterText(find.byKey(const Key('skill-input')), 'Commun');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Communication').last);
+    await tester.pumpAndSettle();
+    expect(api.server.of(EntitySection.skill), isEmpty);
+    expect(entities.requests, isEmpty);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/builder/4');
+    await route(tester, '/builder/5');
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('skill-input')))
+          .controller!
+          .text,
+      isEmpty,
+    );
+  });
+
+  testWidgets('Back cannot interrupt an in-flight explicit Save', (
+    tester,
+  ) async {
+    seedProfile();
+    final gate = Completer<void>();
+    final delayed = EntityRepository(repository, (request) async {
+      await gate.future;
+      return entities.send(request);
+    });
+    await pump(tester, state: StartupState.signedIn, entityOverride: delayed);
+    await route(tester, '/career/edit/experience/$experienceId?origin=career');
+    await tester.enterText(
+      find.byKey(const Key('field-company')),
+      'Acknowledged',
+    );
+    await tester.tap(find.byKey(const Key('editor-save')));
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(currentPath(), '/career/edit/experience/$experienceId');
+    expect(
+      tester.widget<IconButton>(find.byKey(const Key('editor-back'))).onPressed,
+      isNull,
+    );
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/career');
+    expect(
+      api.server.of(EntitySection.experience).single.text('company'),
+      'Acknowledged',
+    );
+    expect(entities.requests, hasLength(1));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('saved empty descriptions stay quiet in list and Review', (
+    tester,
+  ) async {
+    api.server = CareerProfile(
+      id: 'profile-one',
+      version: 1,
+      resumeLanguage: 'en',
+      items: {
+        EntitySection.experience: [
+          ProfileItem(
+            id: experienceId,
+            section: EntitySection.experience,
+            version: 1,
+            complete: false,
+            values: {...seededExperience.values, 'description': '   '},
+          ),
+        ],
+      },
+    );
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    final copy = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    )!;
+    for (final path in ['/builder/3', '/builder/6']) {
+      await route(tester, path);
+      expect(find.text(copy.itemIncomplete), findsNothing);
+      expect(find.text(copy.itemSaved), findsOneWidget);
+      expect(api.server.of(EntitySection.experience).single.complete, false);
+    }
+    expect(entities.requests, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Back preserves an unknown Save command but never retries it', (
+    tester,
+  ) async {
+    seedProfile();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/career/edit/experience/$experienceId?origin=builder');
+    await tester.enterText(
+      find.byKey(const Key('field-company')),
+      'Saved but response lost',
+    );
+    entities.loseNextResponse = true;
+    await tester.tap(find.byKey(const Key('editor-save')));
+    await tester.pumpAndSettle();
+    final repo = EntityRepository(repository, entities.send);
+    final pending = (await repo.pending(api.server.id))!;
+    await tester.tap(find.byKey(const Key('editor-back')));
+    await tester.pumpAndSettle();
+    final copy = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    )!;
+    expect(find.text(copy.pendingBackWarning), findsOneWidget);
+    await tester.tap(find.byKey(const Key('discard-entity')));
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/builder/3');
+    expect((await repo.pending(api.server.id))!.key, pending.key);
+    expect(entities.requests, hasLength(1));
+    expect(
+      api.server.of(EntitySection.experience).single.text('company'),
+      'Saved but response lost',
+    );
+  });
+
+  testWidgets(
+    'description quality is gated by explicit Save; empty remains quiet',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      for (final section in [EntitySection.experience, EntitySection.project]) {
+        await route(tester, '/career/edit/${section.key}/new?origin=career');
+        final description = find.byKey(const Key('field-description'));
+        await tester.ensureVisible(description);
+        expect(find.textContaining('Needs attention —'), findsNothing);
+        await tester.enterText(description, 'Short');
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Needs attention —'), findsNothing);
+        await tester.tap(find.byKey(const Key('editor-save')));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Needs attention —'), findsOneWidget);
+        await tester.enterText(description, '   ');
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('editor-save')));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Needs attention —'), findsNothing);
+      }
+      await route(tester, '/career/summary');
+      expect(find.textContaining('Needs Attention —'), findsNothing);
+      await tester.enterText(find.byKey(const Key('editor-summary')), 'Short');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Needs Attention —'), findsNothing);
+      await tester.ensureVisible(find.byKey(const Key('save-summary')));
+      await tester.tap(find.byKey(const Key('save-summary')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Needs Attention — minimum 50'),
+        findsOneWidget,
+      );
+      await route(tester, '/career/summary');
+      expect(
+        find.textContaining('Needs Attention — minimum 50'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.byKey(const Key('editor-summary')), '   ');
+      await tester.ensureVisible(find.byKey(const Key('save-summary')));
+      await tester.tap(find.byKey(const Key('save-summary')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Needs Attention —'), findsNothing);
+    },
+  );
 
   for (final locale in ['en', 'ar']) {
     testWidgets('builder steps and Review native captures $locale', (
@@ -1288,11 +1787,6 @@ void main() {
           )!;
           expect(find.text(copy.problemMonth), findsOneWidget);
           expect(entities.requests, isEmpty);
-          await tester.tap(find.byKey(const Key('editor-back')));
-          await tester.pumpAndSettle();
-          expect(currentPath(), '/builder/$step');
-          expect(find.text(invalid), findsWidgets);
-          expect(tester.takeException(), isNull);
           final drafts = await EntityRepository(
             repository,
             entities.send,
@@ -1319,15 +1813,14 @@ void main() {
             size: const Size(402, 1100),
           );
           await route(tester, '/builder/$step');
-          expect(find.text(invalid), findsWidgets);
+          expect(find.text(invalid), findsNothing);
+          expect(find.byKey(Key('card-${section.key}-$id')), findsNothing);
           expect(tester.takeException(), isNull);
-          final menu = find.byKey(Key('menu-${section.key}-$id'));
-          await tester.ensureVisible(menu);
-          await tester.tap(menu);
+          // Explicit Add resumes the editor-only recovery draft without
+          // representing it as an acknowledged record in the parent list.
+          await tester.tap(find.byKey(Key('add-${section.key}')));
           await tester.pumpAndSettle();
-          await tester.tap(find.text(copy.editAction).last);
-          await tester.pumpAndSettle();
-          expect(currentPath(), '/career/edit/${section.key}/$id');
+          expect(currentPath(), '/career/edit/${section.key}/new');
           expect(
             tester
                 .widget<TextField>(find.byKey(Key('field-$field')))
@@ -1725,6 +2218,16 @@ void main() {
       expect(currentPath(), '/career');
     },
   );
+}
+
+class _DelayedEntityRepository extends EntityRepository {
+  _DelayedEntityRepository(super.parent, super.send, this.gate);
+  final Future<void> gate;
+  @override
+  Future<void> retainDraft(String profile, ProfileItem item) async {
+    await gate;
+    await super.retainDraft(profile, item);
+  }
 }
 
 class _CoreFixture implements CoreApi {

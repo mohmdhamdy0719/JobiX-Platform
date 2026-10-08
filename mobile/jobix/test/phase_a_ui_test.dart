@@ -184,6 +184,13 @@ void main() {
       );
       await tester.pumpAndSettle();
       final query = locale == 'ar' ? 'مصر' : 'Egypt';
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('personal-country')))
+            .decoration!
+            .prefixIcon,
+        isNull,
+      );
       await tester.enterText(find.byKey(const Key('personal-country')), query);
       await tester.pumpAndSettle();
       expect(find.text(query), findsWidgets);
@@ -262,6 +269,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('personal-city')))
+            .decoration!
+            .prefixIcon,
+        isNull,
+      );
       await tester.enterText(
         find.byKey(const Key('personal-email')),
         'invalid-email',
