@@ -81,8 +81,9 @@ directory; only synthetic, explicitly labelled fixture data is used.
 
 1. **Development rollout:** the configured public development project is
    `lmouxhbjhtqdtiqijcee`. No live schema/read/write check or migration execution
-   occurred. Explicit target/execution approval and secure administrative
-   access are required; `JOBIX_DEV_DATABASE_URL` is absent. No matching
+   occurred. The owner subsequently approved this target, the Volunteer
+   migration and isolated live checks. Secure administrative access is still
+   required; `JOBIX_DEV_DATABASE_URL` is absent. No matching
    migration integration was found. Use the existing certificate-validating
    pooler approach, verify the installed baseline, apply only this additive
    migration, and authorize isolated live checks separately. Never apply

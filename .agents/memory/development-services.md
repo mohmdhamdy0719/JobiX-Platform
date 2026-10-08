@@ -23,6 +23,19 @@ resources to bypass missing access.
 
 ## Owner-selected development configuration
 
+The owner approved the Phase 2 Volunteer migration and isolated live checks
+on the existing Jobix development Supabase project `lmouxhbjhtqdtiqijcee`.
+
+**Why:** The owner selected "Approve development migration and isolated live
+checks" for that explicitly identified development target.
+
+**How to apply:** Verify the installed baseline and use certificate-validated
+secure administrative access before applying only the additive Volunteer
+migration. Preserve existing profile, completeness and AI states. Keep live
+fixtures isolated and reversible; never apply disposable local Auth/role
+fixtures to Supabase, replay older migrations, change Auth configuration or
+touch staging/production to bypass missing access.
+
 “Development only. Use Supabase's built-in email service for now. Do not
 configure an external SMTP/Resend provider yet. Production email delivery will
 be configured later with a verified Jobix domain.”
