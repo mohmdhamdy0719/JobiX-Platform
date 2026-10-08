@@ -1,0 +1,743 @@
+JOBIX — ANDROID BUG FIX + PRE-IMPLEMENTATION AUDIT + NEXT FEATURE PLANNING
+
+You are continuing the existing Jobix project from a previous Replit workspace/account.
+
+This is NOT a greenfield project.
+
+The current repository contains the existing Jobix Flutter application, architecture, backend foundations, product decisions, implementation history, tests, resume preview, credits foundation, and AI foundations.
+
+Your job in this phase is to deeply inspect the current project and prepare the safest implementation plan for the next stage.
+
+DO NOT start implementation yet.
+
+We will approve the plan first.
+
+==================================================
+1. FIRST: READ THE PROJECT BEFORE CHANGING ANYTHING
+==================================================
+
+Before planning, inspect the actual current repository.
+
+Read and reconcile:
+
+- PROJECT_HANDOFF.md
+- docs/handoff/*
+- README.md
+- architecture documentation
+- product decisions
+- constitution/security documentation
+- implementation history
+- task history
+- current roadmap
+- remaining work
+- known issues
+- testing status
+- environment/setup documentation
+- all relevant *.plan.md files
+- mobile/jobix/README.md
+- mobile/jobix/VERIFICATION.md
+- actual Flutter source code
+- Supabase/database migrations
+- RLS policies
+- backend/server code
+- AI code
+- Credits code
+- Resume configuration/rendering code
+- tests
+- localization
+- navigation/routing
+- Drift/local persistence
+- sync/outbox/conflict handling
+- existing HTML/CSS resume rendering
+- available screenshots/design references
+
+IMPORTANT:
+
+Do NOT assume that something is implemented because documentation says it is.
+
+Verify it against actual code and tests.
+
+Do NOT silently change product requirements.
+
+Do NOT rewrite the architecture.
+
+Do NOT introduce unrelated features.
+
+==================================================
+2. CURRENT REAL-DEVICE BUGS — P0/P1
+==================================================
+
+The following issues were found by testing the actual Android APK on a real Android phone.
+
+Treat these as real bugs that must be investigated from root cause.
+
+------------------------------------------
+BUG 1 — LANGUAGE EDIT CAUSES FLUTTER RED SCREEN
+------------------------------------------
+
+When opening Languages in the Career Profile builder and then editing an existing Language entry, the application crashes into Flutter's red error screen.
+
+The captured error is:
+
+'package:flutter/src/widgets/framework.dart':
+Failed assertion:
+line 6161 pos 14:
+'_dependents.isEmpty': is not true.
+
+See also:
+https://docs.flutter.dev/testing/errors
+
+This is a REAL runtime crash.
+
+Do NOT merely hide the error.
+
+Do NOT add a broad try/catch around the UI.
+
+Do NOT suppress Flutter assertions.
+
+Investigate the actual widget lifecycle/navigation/state-management cause.
+
+Inspect the complete stack trace and reproduce the issue.
+
+Determine:
+- which widget triggers the assertion
+- which route/screen is involved
+- whether a provider/controller/notifier is being disposed incorrectly
+- whether an InheritedWidget/InheritedElement dependency survives disposal
+- whether the language editor uses a modal/bottom-sheet/route incorrectly
+- whether Riverpod providers/controllers are being disposed/reused incorrectly
+- whether a TextEditingController/FocusNode/ScrollController or similar object has incorrect lifecycle management
+- whether the issue is caused by rebuilding/navigation while the editor is being dismissed
+- whether there is a duplicate widget key or dependency lifecycle issue
+- whether the bug is Android-specific or platform-independent
+
+Use the actual stack trace and reproduction steps to identify the root cause.
+
+Then design a minimal architecture-consistent fix.
+
+Add a regression test that reproduces the relevant lifecycle behavior.
+
+Do not mark this fixed until the actual edit-language flow is verified.
+
+------------------------------------------
+BUG 2 — BACK BUTTON MUST NEVER RANDOMLY EXIT THE APP
+------------------------------------------
+
+Current behavior is unacceptable:
+
+Pressing Back can exit the application instead of navigating back within the Jobix navigation flow.
+
+We need a consistent Jobix navigation policy.
+
+Required behavior:
+
+A. Inside a nested screen/editor:
+- Back returns to the previous Jobix screen.
+- It must NOT exit the app.
+
+B. Inside a repeatable entity editor:
+- Back returns to its parent list/editor.
+- It must NOT save unsaved data.
+
+C. If the user has unsaved changes:
+- Back should discard the unsaved draft/edit.
+- For existing records with modified unsaved data, use an appropriate "Discard changes?" confirmation if needed.
+- Do NOT silently save.
+
+D. On a true root-level screen where there is no previous in-app destination:
+- Do NOT immediately exit.
+- Show a polished Jobix confirmation dialog such as:
+  "Exit Jobix?"
+  with appropriate secondary/primary actions.
+- The exact wording should follow the established Jobix design system and app language.
+- English and Arabic must both be supported.
+- The dialog should feel native to the application and not like a browser alert.
+
+E. Android system Back and in-app AppBar Back must follow the same navigation policy.
+
+F. Do not create a patch that only fixes one screen.
+
+Inspect the current GoRouter/navigation architecture and implement a centralized, predictable Back behavior.
+
+Use the correct Flutter modern navigation APIs rather than deprecated APIs.
+
+Add tests covering:
+- nested navigation
+- root navigation
+- editor navigation
+- unsaved new entity
+- unsaved existing entity
+- root exit confirmation
+- Android back behavior
+- Arabic/English dialog direction
+
+Do not allow the Back button to become a hidden Save operation.
+
+------------------------------------------
+BUG 3 — UNSAVED NEW EDUCATION/ENTITY MUST NOT PERSIST
+------------------------------------------
+
+Current bug:
+
+The user opens "Add Education", changes some fields, then presses Back without pressing Save.
+
+The education entry still appears in the parent list.
+
+This violates the required Jobix data semantics.
+
+IMPORTANT RULE:
+
+OPEN / EDIT ≠ SAVE
+
+Only explicit Save may commit an entity.
+
+Required behavior:
+
+NEW ENTITY:
+- Opening Add Education creates only an in-memory/local draft.
+- Editing fields changes only the draft.
+- Pressing Back without Save discards the draft.
+- The parent list must NOT show the new entity.
+- Pressing Save validates and commits the entity.
+- Only after successful Save should it appear in the parent list.
+
+EXISTING ENTITY:
+- Opening an existing record loads an editable draft.
+- Editing changes the draft.
+- Pressing Back does not commit changes.
+- If appropriate, show "Discard changes?" before leaving.
+- Pressing Save commits changes.
+
+This rule applies consistently to:
+- Education
+- Certifications
+- Achievements
+- Work Experience
+- Projects
+- Languages
+- Volunteer Experience
+- any future repeatable entity editor
+
+Inspect the current repository/mutation flow carefully.
+
+Do not fix only Education.
+
+Determine whether the bug is caused by:
+- parent list state mutation
+- shared mutable objects
+- optimistic persistence
+- Drift writes
+- provider state
+- route arguments
+- draft initialization
+- autosave
+- repository behavior
+- profile.mutate being called too early
+
+Implement the correct draft/commit boundary.
+
+Add regression tests for every repeatable editor pattern.
+
+------------------------------------------
+BUG 4 — "NEEDS ATTENTION" APPEARS TOO EARLY
+------------------------------------------
+
+Current behavior:
+
+A new empty Description immediately displays:
+
+"Needs attention"
+
+This is wrong.
+
+Required behavior:
+
+EMPTY DESCRIPTION:
+- No "Needs attention" warning immediately after opening.
+- Empty optional description is allowed.
+- User should be able to leave it empty without an immediate warning.
+
+SHORT DESCRIPTION:
+- If the user actually enters text,
+- then presses Save,
+- and the text is below the minimum recommended length,
+- the saved entity may show:
+  "Needs attention"
+- and below Description:
+  an explanation that the description needs more detail.
+
+This is a post-save/content-quality state, not an empty-field live error.
+
+The exact threshold must follow the existing approved field-specific rules:
+- Work Experience description: 20–1500 characters
+- Project description: 20–1500 characters
+- Summary: 50–1000 characters
+
+Do not turn optional fields into required fields.
+
+Do not show warnings before the user has meaningful content and an explicit Save attempt.
+
+Apply the correct semantics consistently.
+
+Add tests.
+
+------------------------------------------
+BUG 5 — COUNTRY/CITY INPUT ICONS
+------------------------------------------
+
+On Personal Information:
+
+Remove the leading icons inside the Country and City input fields.
+
+The goal is to give the fields more usable horizontal space and make text entry clearer.
+
+Preserve:
+- clear/remove control if appropriate
+- autocomplete
+- selected state
+- accessibility
+- Arabic/English behavior
+
+Do not remove useful functionality.
+
+Verify the fields on narrow Android screens.
+
+------------------------------------------
+3. VOLUNTEER EXPERIENCE
+==========================================
+
+Add Volunteer Experience to the Career Profile.
+
+Do NOT put it inside Education as a fake credential.
+
+Do NOT force it into paid Work Experience.
+
+Product/HR/UX decision:
+
+Implement it as a dedicated repeatable "Volunteer Experience" section.
+
+Rationale:
+- volunteer work can be relevant professional evidence
+- it can be especially valuable for students, recent graduates, career changers, and people with limited paid experience
+- it may demonstrate leadership, communication, project coordination, technical skills, responsibility and measurable outcomes
+- sometimes highly relevant volunteer work can be treated alongside professional experience, but the underlying data should remain distinguishable as volunteer experience
+
+The data model should therefore remain separate even if a future resume template chooses to render highly relevant volunteer roles near professional experience.
+
+Use a structure consistent with Work Experience where appropriate:
+- Organization
+- Role/Title
+- Location (optional)
+- Start month
+- End month
+- Currently volunteering toggle
+- Description
+- potentially relevant links only if justified by the existing product design
+
+Follow the same:
+- draft/save semantics
+- validation
+- edit/delete
+- needs-attention behavior
+- localization
+- RTL/LTR
+- sync/conflict
+- server persistence
+- review screen
+- completeness/ATS integration
+
+Do not create a seventh builder step.
+
+Integrate it into the existing appropriate Career Profile section/navigation without breaking the six-step builder.
+
+Update:
+- Review Profile
+- Profile completeness
+- ATS inputs where appropriate
+- Resume rendering
+- local persistence
+- server schema
+- RLS
+- tests
+
+Do not silently give volunteer experience the same semantics as paid employment in analytics or scoring unless the approved architecture explicitly supports it.
+
+==================================================
+4. RESUME PREVIEW — VISUAL/PAGINATION IMPROVEMENTS
+==================================================
+
+The current Resume Preview is already considered visually strong and professional.
+
+DO NOT redesign it from scratch.
+
+Make targeted improvements only.
+
+Requested improvements:
+
+A. Skills
+Improve Skills layout to use space more efficiently.
+
+Consider:
+- compact grouping
+- inline/chip-like or structured presentation where ATS-safe
+- reduced unnecessary vertical spacing
+- good scanability
+
+But preserve conventional ATS-readable text.
+
+Do not turn Skills into graphics that could harm parsing.
+
+B. Bullet points
+Where content is currently rendered as plain paragraphs but semantically represents responsibilities/achievements, render them as clean bullet points where appropriate.
+
+Do not invent bullet points.
+
+Do not split arbitrary text into bullets without a clear semantic basis.
+
+Preserve user-authored structure.
+
+C. Personal information
+Explore centering the personal header/contact information if it improves professional hierarchy.
+
+This must remain:
+- ATS-readable
+- conventional
+- visually balanced
+- consistent in English and Arabic
+- compatible with the existing canonical HTML/CSS architecture
+
+Do not create separate preview-only rendering logic.
+
+Remember:
+WebView preview and Chromium PDF must use the same canonical HTML/CSS representation.
+
+Before changing the template, compare the current output with the existing design and preserve what is already strong.
+
+==================================================
+5. AI — NEXT MAJOR FEATURE
+==================================================
+
+After the above P0/P1 bugs are resolved and verified, prepare to implement the next major backend feature:
+
+Complete the server AI operation/history/acceptance flow BEFORE enabling "Improve with Jobix".
+
+This is the recommended next major feature.
+
+The architecture must preserve:
+
+- explicit user-triggered generation
+- server-authoritative AI allowance
+- generation history
+- source input snapshot
+- generated output
+- profile version
+- model information
+- prompt/version information
+- operation state
+- idempotency
+- reconciliation for ambiguous provider outcomes
+- anti-fabrication validation
+- acceptance workflow
+- Original vs Generation 1/2/etc.
+- user approval before applying generated content
+
+The AI provider must remain configurable server-side.
+
+Current approved model direction:
+Gemini 3.5 Flash.
+
+Do not silently change providers/models.
+
+Do not enable fake UI success while backend generation is unavailable.
+
+Do not fabricate AI output.
+
+Do not consume generation allowance on confirmed failures.
+
+Investigate the current AI backend and identify exactly what is already implemented versus missing.
+
+==================================================
+6. AI SECRETS / PERMISSIONS / ENVIRONMENT
+==================================================
+
+This is a NEW Replit account/workspace.
+
+Before implementation, audit required credentials/configuration.
+
+Do NOT ask me to paste secrets into chat.
+
+Do NOT print secrets.
+
+Do NOT commit secrets.
+
+Use Replit Secrets / secure environment configuration where appropriate.
+
+Determine whether the current project is missing any of:
+
+- Supabase URL
+- Supabase publishable/client key
+- Supabase server-side credentials where required
+- Google Cloud project configuration
+- Vertex AI configuration
+- service account access
+- Cloud Run deployment credentials
+- Google Cloud Scheduler configuration
+- GCS bucket configuration
+- AdMob SSV configuration
+- any AI provider configuration
+- Android signing/debug configuration
+- other environment variables required by the existing architecture
+
+For every required credential/configuration, report:
+
+NAME
+PURPOSE
+WHERE IT IS USED
+WHETHER IT EXISTS
+WHETHER IT IS SAFE/APPROPRIATE FOR THIS ENVIRONMENT
+WHETHER USER ACTION IS REQUIRED
+
+If something is missing, STOP BEFORE implementation and ask me for the exact setup action required.
+
+Never invent a credential.
+
+Never downgrade security just because a credential is missing.
+
+==================================================
+7. CREDITS / PDF EXPORT — AFTER AI
+==================================================
+
+Do NOT implement PDF export before the AI operation flow is correctly designed and verified unless the existing implementation plan shows a dependency that requires otherwise.
+
+The intended sequence is:
+
+PHASE 1
+Fix all real-device bugs and regressions.
+
+PHASE 2
+Complete Volunteer Experience and Resume Preview refinements.
+
+PHASE 3
+Complete server AI operation/history/acceptance flow.
+
+PHASE 4
+Enable Improve with Jobix only after the backend flow is real and verified.
+
+PHASE 5
+Complete Chromium PDF export + private PDF storage/download + export charging.
+
+PDF export must preserve:
+
+- 2 Credits per NEW PDF export
+- 0 Credits for downloading an existing valid PDF
+- reservation before charge
+- consume only on successful completion
+- release on confirmed failure
+- immutable export snapshot
+- private GCS objects
+- authenticated download authorization
+- expiration/lifecycle
+- idempotency
+- retry/recovery
+- canonical HTML/CSS shared with preview
+- A4
+- multi-page
+- Arabic RTL / English LTR
+- selectable text
+- no silent content deletion
+- no arbitrary one-page forcing
+
+Do not implement billing/subscription pricing.
+
+==================================================
+8. TESTING REQUIREMENTS
+==================================================
+
+Every bug fix must include regression coverage.
+
+Minimum:
+
+- Flutter analyze
+- full test suite
+- targeted navigation tests
+- repeatable-editor draft/save tests
+- language edit regression test
+- Android back behavior tests
+- Arabic/English tests
+- Volunteer Experience tests
+- Resume rendering tests
+- AI state-machine tests where AI work begins
+- idempotency tests
+- allowance tests
+- RLS/database tests
+- relevant integration tests
+
+For the Flutter crash, the fix is NOT accepted until the actual user flow can be reproduced without the assertion.
+
+Do not claim real-device verification unless a real device or supported emulator actually executed the flow.
+
+==================================================
+9. IMPORTANT PRODUCT RULES TO PRESERVE
+==================================================
+
+Preserve all existing approved Jobix rules.
+
+In particular:
+
+- Jobix brand spelling.
+- Flutter architecture.
+- Supabase backend.
+- Career Profile as the source dataset.
+- Resume as presentation/configuration derived from Career Profile.
+- Six-step builder.
+- Target Role remains optional and is not a seventh step.
+- AI never fabricates facts.
+- AI output remains a proposal until accepted.
+- First profile AI allowance = 6 total explicit generations.
+- Later Free = 3/day/user.
+- Premium = 10/day/user.
+- Server authoritative AI allowance.
+- ATS separate from Profile Completeness.
+- ATS cannot block export.
+- Credits are server authoritative.
+- Credits use immutable transactions + reservations.
+- PDF export = 2 Credits.
+- Existing valid PDF download = 0 Credits.
+- Arabic/English are first-class.
+- Arabic uses IBM Plex Sans Arabic.
+- CV language is independent from app language.
+- Changing CV language does not translate content.
+- Translation is not MVP.
+- RLS remains mandatory.
+- No secrets in Flutter.
+- Private PDF storage.
+- Preview/PDF share canonical representation.
+- No silent content deletion.
+- No fake AI.
+- No client-side credit granting.
+
+==================================================
+10. DESIGN / UX PRINCIPLES
+==================================================
+
+Use the existing Jobix design system.
+
+Do not redesign unrelated screens.
+
+For every change:
+- preserve current visual language
+- preserve spacing/radius/typography tokens
+- preserve English and Arabic
+- preserve RTL/LTR
+- preserve accessibility
+- preserve mobile usability
+- support narrow screens
+- use polished empty/loading/error/success states
+- avoid browser-like dialogs
+- use Jobix-native confirmation UI
+
+For Arabic:
+- do not merely mirror English blindly
+- verify hierarchy, alignment and spacing
+- use IBM Plex Sans Arabic
+- verify mixed Arabic/English content
+
+==================================================
+11. GIT SAFETY
+==================================================
+
+Do not:
+- force push
+- reset --hard
+- rewrite history
+- rebase existing shared history
+- delete branches
+- overwrite GitHub
+- commit secrets
+
+Make small reviewable commits.
+
+Do not modify unrelated files.
+
+==================================================
+12. THIS SESSION — PLAN ONLY
+==================================================
+
+IMPORTANT:
+
+DO NOT IMPLEMENT THE ABOVE FEATURES YET.
+
+For this session:
+
+1. Audit the current repository.
+2. Inspect the real implementation of the affected areas.
+3. Reproduce/analyze the Language crash if possible.
+4. Trace the Back/navigation behavior.
+5. Trace the draft/save/persistence bug.
+6. Trace the Needs Attention logic.
+7. Inspect Personal Information layout.
+8. Inspect current Volunteer Experience support/schema/UI.
+9. Inspect Resume Preview implementation.
+10. Inspect current AI backend/operation/history implementation.
+11. Audit environment variables/secrets/permissions.
+12. Determine exactly what is missing in this new Replit account.
+13. Create a detailed implementation plan.
+
+DO NOT change source code during this planning phase unless a completely harmless inspection-only artifact is required.
+
+If a required secret/permission/configuration is missing, explicitly ask me BEFORE implementation.
+
+==================================================
+13. REQUIRED OUTPUT
+==================================================
+
+Return a detailed:
+
+# JOBIX NEXT-STAGE IMPLEMENTATION PLAN
+
+Include:
+
+## A. Repository State
+## B. Current Commit / Branch
+## C. What Is Actually Implemented
+## D. Language Crash Root Cause Analysis
+## E. Back Navigation Root Cause Analysis
+## F. Draft/Save Persistence Root Cause Analysis
+## G. Needs Attention Root Cause Analysis
+## H. Personal Information UI Change
+## I. Volunteer Experience Design Decision
+## J. Resume Preview Improvements
+## K. AI Backend Current State
+## L. Missing AI Components
+## M. Secrets/Permissions/Environment Audit
+## N. Database Changes Required
+## O. Backend Changes Required
+## P. Flutter Changes Required
+## Q. Tests Required
+## R. Implementation Order
+## S. Risks
+## T. Questions / Decisions Required From Me
+
+Most importantly:
+
+For each requested fix, clearly identify:
+
+- ROOT CAUSE
+- FILES/MODULES AFFECTED
+- PROPOSED FIX
+- TEST PLAN
+- WHETHER DATABASE MIGRATION IS REQUIRED
+- WHETHER BACKEND CHANGE IS REQUIRED
+- WHETHER A SECRET/PERMISSION IS REQUIRED
+
+Do not say "we can fix it" without explaining how.
+
+Do not claim a bug is understood if the repository evidence does not support the conclusion.
+
+If something cannot be verified, explicitly label it:
+
+UNVERIFIED — REQUIRES CONFIRMATION
+
+STOP after producing the plan.
+
+Do not implement until I approve the plan.

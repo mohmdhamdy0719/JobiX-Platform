@@ -2,6 +2,39 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
+## Current next-stage brief: audit and plan only
+
+The owner requests a read-only next-stage audit and approval-first implementation
+plan. Earlier implementation authorizations below do not authorize starting this
+stage. Do not resume archived follow-ups or repair supporting Node/browser/API
+services as native Jobix work.
+
+**Why:** The owner explicitly stopped unauthorized supporting-service work and
+then supplied a new planning-only brief before approving native bug fixes and
+later features.
+
+**How to apply:** Wait for explicit plan approval and a Build-mode assignment.
+The sequence is native bug fixes, Volunteer Experience/resume refinements,
+server AI operations/history/acceptance, real AI UI enablement, then private PDF
+export. Preserve the native stack, six-step builder and existing security rules.
+
+The new product rules supersede earlier unsaved-item continuation behavior:
+opening/editing a repeatable record is not Save; explicit Back discards
+unsubmitted edits, with appropriate existing-record confirmation, and does not
+silently save. Root Back requires a localized exit confirmation. Empty optional
+descriptions must not immediately show Needs attention; non-empty short prose
+gets post-Save quality guidance without becoming required. Volunteer Experience
+is requested as its own repeatable section, distinct from Education and paid
+employment, without adding a seventh builder step.
+
+**Why:** These are explicit requirements in the owner's next-stage brief,
+following real Android bug reports, not behavior inferred from old tests.
+
+**How to apply:** Keep restart recovery and already-submitted ambiguous Save
+reconciliation safe while changing intentional exit behavior. Do not silently
+alter completeness weights or volunteer scoring; approval of the plan is still
+required before implementation.
+
 ## Current builder-polish and Resume foundation authorization
 
 The owner confirmed signup, confirmation email, return-to-app and authenticated
