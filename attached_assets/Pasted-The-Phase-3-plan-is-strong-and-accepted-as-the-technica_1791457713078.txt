@@ -1,0 +1,105 @@
+The Phase 3 plan is strong and accepted as the technical direction, but DO NOT start Build yet.
+
+First, convert the remaining Architecture Decision Required items into a short owner-decision checklist and stop.
+
+Use these decisions unless a conflict with the existing approved Architecture/Product Design makes them impossible:
+
+1. Canonical renderer:
+Use the existing pure-Dart Resume renderer as the single canonical document generator.
+The server must generate/freeze the authoritative HTML document.
+Flutter WebView Preview and Chromium PDF must consume the same canonical representation.
+No second PDF template or renderer.
+
+2. Export eligibility:
+Create a dedicated structural export-validity predicate.
+Do NOT reuse Profile Completeness scoring or descriptive-quality flags.
+Volunteer Experience can satisfy meaningful career evidence where structurally valid.
+Optional empty/short descriptions must not automatically block export.
+Invalid included sections must be explicitly fixed or hidden; never silently delete content.
+
+3. CANCELLED:
+Do not implement CANCELLED.
+Do not create export.cancel.
+Use QUEUED/CLAIMED/GENERATING/UPLOADING/COMPLETED plus retryable/terminal/expired/missing-object lifecycle states already defined by the approved architecture.
+
+4. Credit reservation:
+Keep the existing immutable credit ledger and reservation architecture.
+Do not rebuild the wallet.
+Add job-aware fencing so an export job is the authoritative owner of its reservation.
+Never double-consume or double-release.
+
+5. Reservation deadline:
+Keep the current bounded 30-minute reservation lifetime for the first implementation.
+Do not silently extend it indefinitely.
+The worker must respect the remaining operation deadline and may terminate/recover rather than assume three full attempts are always available.
+
+6. Profile photo:
+Do NOT include profile photos in Phase 3 PDF output.
+Keep Preview and PDF parity exact.
+Photo support can be a later renderer extension.
+
+7. Download:
+Use a short-lived authenticated/generation-bound signed URL.
+Do not persist signed URLs.
+Existing valid completed PDF download costs 0 Credits.
+A missing/expired PDF never silently regenerates; Export Again costs 2 Credits.
+
+8. Retention:
+Keep the approved 7-day PDF retention policy.
+Preserve export history metadata after expiration.
+Do not invent a new retention policy.
+Flag any deletion-policy dependency that requires separate owner approval.
+
+9. Configuration:
+Preserve existing template IDs and default output.
+Add only the minimum configuration metadata required for deterministic Preview/PDF parity and concurrency safety.
+No drag-and-drop or broad Resume customization redesign.
+
+10. Safety limits:
+Keep the approved 20-page and 200KB normalized-text safety limits.
+Do not turn them into arbitrary product restrictions.
+Validate normalized document content before rendering and final PDF page count before completion/charge.
+
+11. Security:
+No production resources.
+No service-role credentials in Flutter.
+No client-side Credit mutation.
+No public GCS objects.
+No secrets in Git.
+Use least-privilege server/runtime identities.
+
+12. AI:
+Do NOT implement or enable any AI functionality in this phase.
+
+After recording these decisions, perform ONLY a READ-ONLY readiness check for:
+- Supabase
+- JOBIX_DEV_DATABASE_URL
+- Edge deployment access
+- GCP project mhflow-jobix
+- Cloud Run
+- Artifact Registry jobix-dev
+- GCS bucket mhflow-jobix-dev-pdfs
+- Scheduler
+- runtime service account
+- signing permissions
+- required Secret Manager/runtime bindings
+
+For every missing permission/secret, report:
+
+MISSING — OWNER ACTION REQUIRED
+NAME
+PURPOSE
+WHERE USED
+EXACT REQUIRED ACTION
+
+Do not ask me to paste secrets into chat.
+
+Do not implement code.
+Do not create migrations.
+Do not deploy anything.
+Do not modify GCP resources.
+Do not modify Supabase.
+Do not start Cloud Run.
+Do not charge Credits.
+
+Stop after the readiness report and final implementation prerequisites.

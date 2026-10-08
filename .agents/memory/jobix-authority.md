@@ -20,6 +20,35 @@ operations or supporting-service work is authorized by this planning request.
 Missing new-account credentials/permissions must be surfaced before execution;
 past Volunteer rollout approval does not authorize PDF rollout.
 
+### Accepted Phase 3 product decisions
+The owner accepted the technical direction but explicitly said not to start
+Build. Use the existing pure-Dart generator with server-frozen authoritative
+HTML shared by Preview/PDF; no second renderer. Export validity is structural,
+not percentage or descriptive-quality scoring. Valid Volunteer can satisfy
+meaningful career evidence; optional empty/short descriptions do not
+automatically block export. Invalid included sections require explicit fix/hide.
+
+Do not implement CANCELLED/export.cancel. Preserve the existing wallet/ledger,
+add job-aware reservation fencing, and keep the bounded 30-minute deadline.
+Exclude photos, preserve template IDs/default output, and add only minimum
+configuration metadata for parity/concurrency. Validate approved 200KB normalized
+text before rendering and final 20-page maximum before completion/charge.
+
+Downloads use short-lived generation-bound URLs issued after authentication,
+never persisted. Valid download costs zero; missing/expired files never
+silently regenerate; Export Again costs two. Keep seven-day PDFs and history
+metadata after expiry; do not invent snapshot/deletion retention periods.
+Use development-only least-privilege identities, no secrets in Git/Flutter,
+client Credit mutation or public objects. AI remains excluded.
+
+**Why:** The owner explicitly confirmed these twelve product decisions and
+requested only their recording, a short remaining-decision checklist and a
+read-only readiness report.
+
+**How to apply:** Do not reopen settled decisions or infer Build permission.
+Flag PDF/account/profile deletion-policy integration for separate owner
+approval, audit dev access read-only, report missing prerequisites and stop.
+
 ## Earlier authorization: bounded Phase 2 scope
 
 The owner accepted Phase 1 and approved the Phase 2 plan for Volunteer
