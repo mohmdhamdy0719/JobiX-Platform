@@ -148,3 +148,15 @@ settings supplied avoided that lookup.
 
 **How to apply:** This is a formatting-only workaround for pure-Dart tools.
 It does not prove Flutter analysis/tests pass or replace their dependencies.
+
+Native-only merges must not trigger the supporting Node workspace's dependency
+installation or an automatic database push. Non-native setup must fail closed
+until its scope is explicitly authorized.
+
+**Why:** The generic post-merge hook attempted an unrelated Node install after
+a native print-test merge and failed on a registry denial. It also contained an
+unconditional database push, contrary to the owner's native/service boundary.
+
+**How to apply:** Keep post-merge setup scope-aware. Test a native no-op hook
+directly if the combined setup runner would restart unauthorized supporting
+workflows; do not claim workflow reconciliation has been verified in that case.
