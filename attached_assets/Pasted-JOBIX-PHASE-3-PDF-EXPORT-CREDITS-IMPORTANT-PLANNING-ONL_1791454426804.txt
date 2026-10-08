@@ -1,0 +1,775 @@
+JOBIX — PHASE 3: PDF EXPORT + CREDITS
+
+IMPORTANT: PLANNING ONLY — DO NOT IMPLEMENT YET.
+
+Phase 1 and Phase 2 are complete from the implementation/testing perspective.
+
+The next major milestone is:
+
+PDF Resume Export + server-authoritative Credits integration.
+
+We deliberately want to complete the Resume → PDF → Credits pipeline BEFORE starting the AI operation/history/acceptance milestone.
+
+Do not implement AI in this phase.
+
+==================================================
+1. FIRST: AUDIT THE ACTUAL PROJECT
+==================================================
+
+Before creating the plan, inspect the current repository and actual implementation.
+
+Read and reconcile:
+
+- PROJECT_HANDOFF.md
+- docs/handoff/*
+- Architecture V2
+- Product decisions
+- Constitution/security documentation
+- current roadmap
+- current Phase 1/Phase 2 plans and results
+- current Git state
+- Flutter application
+- Resume configuration
+- Resume renderer
+- canonical HTML/CSS
+- WebView preview
+- existing PDF/Chromium-related code
+- export-related database tables/migrations
+- Credits tables/migrations
+- reservations
+- idempotency
+- profile versioning
+- backend/server code
+- Cloud Run configuration
+- GCS configuration
+- Scheduler configuration
+- RLS
+- local Drift/outbox/conflict handling
+- tests
+- current development environment/secrets
+
+Do NOT assume documentation equals implementation.
+
+For every PDF/Credits component determine whether it is:
+
+- implemented
+- partially implemented
+- planned only
+- missing
+- blocked
+- requires owner decision
+
+Do not silently reconcile conflicting documentation and implementation.
+
+==================================================
+2. CORE PRODUCT FLOW
+==================================================
+
+The target flow is:
+
+Career Profile
+→ Resume Configuration
+→ Canonical HTML/CSS
+→ Resume Preview
+→ Create PDF Export
+→ Reserve 2 Credits
+→ Durable Export Job
+→ Chromium rendering
+→ Upload private PDF to GCS
+→ Mark export COMPLETED
+→ Consume 2 Credits
+→ Allow authenticated download
+
+The existing Preview and final PDF MUST use the same canonical HTML/CSS representation.
+
+Do not create a separate PDF-only template.
+
+Do not create a second Resume data model.
+
+The Career Profile remains the source dataset.
+
+==================================================
+3. CREDIT RULES — MUST PRESERVE EXACTLY
+==================================================
+
+PDF export:
+
+- NEW PDF export = 2 Credits
+- Existing valid PDF download = 0 Credits
+- Failed export = no permanent Credit loss
+- Reservation happens before the chargeable operation
+- Consume only after successful PDF completion
+- Release reservation after confirmed failure
+- Server is authoritative
+- Client cannot grant or consume Credits directly
+- Duplicate requests must not double-charge
+- Retry/recovery must not double-charge
+- An existing valid completed export must be downloadable without another 2-Credit charge
+
+Other existing Credit rules must remain unchanged:
+
+- Signup = +5 Credits
+- Professional Email = 1 Credit per successful use
+- Cover Letter = 1 Credit per NEW PDF export
+- Profile 2 = 10 Credits once
+- Profile 3 = 20 Credits once
+- Daily Reward = +2 Credits
+
+Do not implement or change subscriptions, billing, Premium pricing, or payment flows.
+
+==================================================
+4. EXPORT STATE MACHINE
+==================================================
+
+Inspect the current Architecture V2 and existing implementation.
+
+The approved export lifecycle is:
+
+QUEUED
+→ CLAIMED
+→ GENERATING
+→ UPLOADING
+→ COMPLETED
+
+With appropriate retryable failure/recovery states.
+
+Existing operational defaults include:
+
+- worker lease = 5 minutes
+- heartbeat = 60 seconds
+- render timeout = 10 minutes
+- maximum attempts = 3
+- recovery scan = every 1 minute
+- worker concurrency = 2
+- maximum worker instances = 3
+
+Do NOT blindly recreate these values.
+
+Verify the current code/configuration and identify exactly what already exists.
+
+There is an architectural inconsistency around a possible CANCELLED export state.
+
+Investigate this carefully.
+
+There is no approved public `export.cancel` command in the current architecture.
+
+Do not invent cancellation behavior.
+
+Recommend whether the unused CANCELLED state should be removed/clarified as part of this phase.
+
+Flag it for owner review if necessary.
+
+==================================================
+5. EXPORT CREATE CONTRACT
+==================================================
+
+Inspect the existing command envelope:
+
+{
+  request_id,
+  idempotency_key,
+  expected_profile_version,
+  payload
+}
+
+The export creation operation should preserve the approved behavior:
+
+- create immutable export snapshot
+- reserve service-specific Credits
+- create durable export job
+- perform these authoritative operations atomically where required
+- worker dispatch is best-effort
+- Scheduler/recovery is authoritative
+
+The plan must specify:
+
+- request contract
+- response contract
+- idempotency behavior
+- expected_profile_version behavior
+- snapshot contents
+- job creation
+- reservation creation
+- failure handling
+
+Do not allow a PDF job to render mutable live profile data after creation.
+
+The export must render the immutable snapshot associated with that export.
+
+==================================================
+6. IMMUTABLE EXPORT SNAPSHOT
+==================================================
+
+The exported Resume must represent the data/configuration captured at export creation.
+
+The snapshot must preserve the necessary:
+
+- profile content
+- Resume configuration
+- CV language
+- template
+- profile version
+- renderer/template metadata/version
+- any required font/rendering metadata
+
+If the user edits the Career Profile after creating an export:
+
+- the existing export must remain based on its original snapshot
+- a new export is required to reflect new profile data
+- a new export charges 2 Credits
+
+Do not silently regenerate an old export from newer profile data.
+
+==================================================
+7. CHROMIUM / PDF RENDERING
+==================================================
+
+The project architecture requires:
+
+- Chromium/Playwright rendering
+- canonical HTML/CSS
+- A4 MVP
+- selectable text
+- English LTR
+- Arabic RTL
+- packaged/embedded fonts
+- no uncontrolled external resources
+- deterministic rendering
+- private output
+
+Do not force the Resume to one page.
+
+Do not silently delete content.
+
+Do not arbitrarily shrink typography just to reduce page count.
+
+Multi-page resumes are valid.
+
+Existing technical safety limits must remain respected, including the current normalized-text/page safety limits.
+
+The plan must address:
+
+- Chromium launch/runtime
+- browser executable availability
+- fonts
+- CSS
+- print configuration
+- page size
+- margins
+- page breaks
+- long content
+- Arabic RTL
+- mixed Arabic/English
+- bullets
+- Skills
+- images/profile photo if supported
+- links
+- missing/invalid content
+- timeout
+- crash
+- retry
+
+==================================================
+8. PREVIEW ↔ PDF CONSISTENCY
+==================================================
+
+This is critical.
+
+The existing WebView Preview and Chromium PDF must consume the SAME canonical Resume document representation.
+
+Do not build a second renderer.
+
+The plan must explain how we verify:
+
+Preview HTML
+==
+PDF source HTML
+
+and how we prevent future drift.
+
+Include tests/verification for:
+
+- English
+- Arabic
+- long Resume
+- Skills
+- bullets
+- Volunteer Experience
+- profile photo if supported
+- links
+- multi-page output
+- page breaks
+- fonts
+
+==================================================
+9. GCS STORAGE
+==================================================
+
+Use the approved private GCS architecture.
+
+Existing development bucket:
+
+gs://mhflow-jobix-dev-pdfs
+
+The bucket is private with:
+
+- public access prevention
+- uniform bucket-level access
+- soft-delete/lifecycle protection
+
+The plan must verify the current implementation and configuration.
+
+PDF objects must NOT be public.
+
+The client must not receive unrestricted public object URLs.
+
+Authenticated download must be authorized by the backend.
+
+The plan must specify:
+
+- object naming
+- ownership
+- authorization
+- expiration
+- lifecycle
+- missing-object handling
+- deletion/account deletion interaction
+
+Existing GCS architecture must be preserved.
+
+==================================================
+10. DOWNLOAD BEHAVIOR
+==================================================
+
+Define the approved download flow.
+
+If export is:
+
+COMPLETED
+and
+not expired
+and
+object exists
+
+then:
+
+- download is allowed
+- cost = 0 Credits
+
+If the export is expired or object is missing:
+
+- do not silently charge for a "download"
+- define the appropriate recovery behavior
+- if a NEW PDF must be generated, it is a NEW export and costs 2 Credits
+
+Do not invent a free regeneration.
+
+==================================================
+11. RETRIES / FAILURE / RECOVERY
+==================================================
+
+The system must be safe against:
+
+- worker crash
+- Cloud Run restart
+- timeout
+- network failure
+- Chromium failure
+- GCS upload failure
+- Scheduler recovery
+- duplicate worker execution
+- ambiguous completion
+- client retry
+- app restart
+
+The plan must show exactly when Credits are:
+
+RESERVED
+CONSUMED
+RELEASED
+
+and how those transitions remain idempotent.
+
+No double spend.
+
+No lost reservation.
+
+No permanent charge after confirmed failure.
+
+==================================================
+12. EXPORT WORKER
+==================================================
+
+Inspect whether the current worker already exists.
+
+If missing, plan the required Cloud Run worker.
+
+The worker must:
+
+- claim a durable job
+- use lease semantics
+- heartbeat
+- render snapshot
+- upload private object
+- mark completion
+- handle retries
+- avoid duplicate completion/charging
+
+Do not move rendering into Flutter.
+
+Do not render production PDFs on the mobile client.
+
+==================================================
+13. SCHEDULER / RECOVERY
+==================================================
+
+Inspect existing Scheduler configuration.
+
+The plan must preserve the architecture where:
+
+- worker dispatch can fail
+- Scheduler/recovery can still find queued/stale jobs
+- stale leases can be recovered safely
+
+Do not depend entirely on the Flutter client to keep an export alive.
+
+==================================================
+14. DATABASE / RLS
+==================================================
+
+Inspect current tables and migrations for:
+
+- export_snapshots
+- export_jobs
+- credit_transactions
+- credit_reservations
+- idempotency records
+- profile versions
+- any related ownership tables
+
+Do not create duplicate tables if equivalent structures already exist.
+
+The plan must specify exact required migrations if anything is missing.
+
+RLS must ensure:
+
+- users can only access their own exports
+- users can only see their own export status
+- users cannot directly mutate authoritative export state
+- users cannot grant/consume Credits
+- users cannot access another user's PDF
+
+Server-side service-role operations remain server-only.
+
+==================================================
+15. CREDITS ATOMICITY
+==================================================
+
+This is a high-risk area.
+
+The plan must explicitly verify the atomic relationship between:
+
+export snapshot
++
+Credit reservation
++
+export job
+
+Avoid:
+
+- reserved Credit without export job
+- export job without reservation
+- duplicate reservation
+- double consumption
+- charging before a successful export
+- client-side charging
+
+Use the existing immutable credit_transactions + mutable credit_reservations architecture.
+
+Do not redesign the Credit ledger unless the current implementation proves the architecture is incomplete.
+
+==================================================
+16. IDEMPOTENCY
+==================================================
+
+Export creation must be idempotent.
+
+The same logical user action must reuse the same idempotency key.
+
+If the client retries because of:
+
+- network timeout
+- app restart
+- duplicate tap
+- ambiguous response
+
+it must not create another chargeable export.
+
+The plan must define what response is returned when the same idempotency key is replayed.
+
+==================================================
+17. CONCURRENCY / PROFILE VERSION
+==================================================
+
+Export creation uses:
+
+expected_profile_version
+
+The plan must determine:
+
+- behavior when expected version is stale
+- whether export should be rejected
+- how client obtains latest authoritative version
+- how snapshot guarantees consistency
+
+Do not silently export a stale or mixed profile.
+
+==================================================
+18. ENVIRONMENT / SECRETS / PERMISSIONS
+==================================================
+
+This is a NEW Replit account.
+
+Before implementation, audit all required development credentials and permissions.
+
+Known development resources include:
+
+Supabase dev project:
+lmouxhbjhtqdtiqijcee
+
+Google Cloud project:
+mhflow-jobix
+
+Region:
+me-central1
+
+Development PDF bucket:
+gs://mhflow-jobix-dev-pdfs
+
+Do not expose secret values.
+
+Do not ask me to paste passwords/tokens into chat.
+
+Use Replit Secrets.
+
+At minimum determine whether the workspace has the required development configuration for:
+
+- JOBIX_DEV_SUPABASE_URL
+- JOBIX_DEV_SUPABASE_CLIENT_KEY
+- JOBIX_DEV_DATABASE_URL
+- server-side Supabase access if required
+- GCP project access
+- Cloud Run deployment
+- GCS access
+- Scheduler access
+- runtime service account
+- deployer/service-account impersonation
+- Chromium runtime requirements
+
+For every missing item return:
+
+NAME
+PURPOSE
+WHERE USED
+STATUS
+OWNER ACTION REQUIRED
+
+If something is missing, STOP before implementation and ask me for it.
+
+Do not invent credentials.
+
+Do not use production credentials.
+
+Do not modify production.
+
+==================================================
+19. ANDROID / FLUTTER
+==================================================
+
+Do not make Android APK verification part of this implementation plan unless necessary.
+
+Phase 1 and Phase 2 real-device verification will happen after the next major milestone.
+
+Do not change signing configuration.
+
+Do not uninstall/clear app data to work around signing continuity.
+
+Do not modify Flutter architecture.
+
+==================================================
+20. SECURITY
+==================================================
+
+Preserve:
+
+- RLS
+- private GCS
+- server-authoritative Credits
+- no secrets in Flutter
+- authenticated download
+- ownership enforcement
+- idempotency
+- version checking
+- immutable snapshots
+
+No security shortcuts for development convenience.
+
+==================================================
+21. TESTING PLAN
+==================================================
+
+Plan comprehensive tests for:
+
+Credit tests:
+- reservation
+- consume
+- release
+- duplicate reservation
+- duplicate consume
+- failed export
+- successful export
+- existing download = 0 Credits
+
+Export tests:
+- snapshot creation
+- profile version mismatch
+- job creation
+- idempotency
+- worker claim
+- lease
+- heartbeat
+- retry
+- recovery
+- timeout
+- Chromium failure
+- upload failure
+- completion
+- missing object
+- expiration
+
+Rendering:
+- English
+- Arabic
+- RTL
+- mixed language
+- Skills
+- bullets
+- Volunteer
+- long Resume
+- multi-page
+- page breaks
+- fonts
+- profile photo if supported
+
+Security:
+- RLS
+- cross-user export access
+- cross-user download
+- unauthorized mutations
+- Credit manipulation attempts
+
+Integration:
+- create export
+- worker
+- GCS
+- download
+- exact Credit balance transitions
+
+Do not claim real Cloud Run/GCS verification unless it actually executes against the approved development resources.
+
+==================================================
+22. OUT OF SCOPE
+==================================================
+
+Do NOT implement:
+
+- AI generation
+- Gemini/Vertex AI operation flow
+- Improve with Jobix
+- AI history
+- AI acceptance
+- AI allowance changes
+- subscriptions
+- billing
+- Premium purchase
+- Cover Letter
+- Professional Email
+- new ATS scoring
+- broad UI redesign
+- new Resume templates unless strictly required by existing export architecture
+- production deployment
+- production database changes
+- supporting Node/browser services
+- dependency upgrades unrelated to PDF export
+
+==================================================
+23. REQUIRED PLAN OUTPUT
+==================================================
+
+Return:
+
+# JOBIX PHASE 3 — PDF EXPORT + CREDITS IMPLEMENTATION PLAN
+
+Include:
+
+A. Current PDF implementation status
+B. Current Credits implementation status
+C. Current export database status
+D. Current worker status
+E. Current Scheduler status
+F. Current GCS status
+G. Current Chromium/Playwright status
+H. Preview ↔ PDF canonical renderer status
+I. Exact missing components
+J. Export state machine
+K. Credit reservation/consume/release flow
+L. Snapshot design
+M. Idempotency design
+N. Profile-version/concurrency design
+O. Worker/recovery design
+P. Download/expiration design
+Q. RLS/security
+R. Required migrations
+S. Required backend changes
+T. Required Flutter changes
+U. Required GCP/Cloud Run/Scheduler changes
+V. Required Secrets/permissions
+W. Test plan
+X. Rollback/recovery considerations
+Y. Implementation order
+Z. Risks
+AA. Owner decisions required
+
+For every missing credential or permission explicitly say:
+
+MISSING — OWNER ACTION REQUIRED
+
+For every architectural inconsistency explicitly say:
+
+ARCHITECTURE DECISION REQUIRED
+
+Do not silently resolve it.
+
+==================================================
+24. CRITICAL EXECUTION RULE
+==================================================
+
+THIS IS PLAN ONLY.
+
+Do NOT:
+
+- write implementation code
+- modify source files
+- modify database schema
+- run migrations
+- deploy Cloud Run
+- create GCS objects
+- change RLS
+- change Credits behavior
+- enable PDF export
+- charge Credits
+- change production
+
+Stop after producing the plan.
+
+Wait for explicit owner approval before implementation.

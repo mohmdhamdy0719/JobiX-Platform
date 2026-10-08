@@ -2,7 +2,25 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: bounded Phase 2 scope
+## Current authorization: Phase 3 planning only
+
+The owner now specifies PDF Resume Export + server-authoritative Credits before
+the AI operation/history/acceptance milestone. Phase 1/2 are accepted from the
+implementation/testing perspective, not proof of physical-device acceptance.
+Android APK/device verification will happen after this next major milestone;
+do not include it as a Phase 3 implementation gate or change signing.
+
+**Why:** The owner explicitly supplied a planning-only PDF Export + Credits
+brief, reordered the milestones and deferred real-device verification.
+
+**How to apply:** Produce an audited plan only and wait for explicit approval,
+assignment and Build mode. No AI implementation, source/schema/RLS/Credits
+changes, migrations, cloud provisioning/deployment, GCS writes, production
+operations or supporting-service work is authorized by this planning request.
+Missing new-account credentials/permissions must be surfaced before execution;
+past Volunteer rollout approval does not authorize PDF rollout.
+
+## Earlier authorization: bounded Phase 2 scope
 
 The owner accepted Phase 1 and approved the Phase 2 plan for Volunteer
 Experience and targeted Resume Preview refinements, with an explicit decision
