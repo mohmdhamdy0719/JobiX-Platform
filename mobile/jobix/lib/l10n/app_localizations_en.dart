@@ -9,6 +9,22 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get sectionVolunteer => 'Volunteer Experience';
+
+  @override
+  String get addVolunteer => 'Add volunteer role';
+
+  @override
+  String get fieldOrganization => 'Organization';
+
+  @override
+  String get currentVolunteer => 'Currently volunteering';
+
+  @override
+  String get volunteerEvidenceHint =>
+      'Volunteer roles are separate unpaid career evidence and appear in your Resume. They do not change Profile Completeness.';
+
+  @override
   String get exitTitle => 'Exit Jobix?';
 
   @override

@@ -1,5 +1,103 @@
 # Jobix verification evidence
 
+## Phase 2 — Volunteer and targeted Resume refinements — 2026-10-08
+
+**Status: locally implemented and verified; development rollout and native
+acceptance are BLOCKED / NOT VERIFIED.** The assigned Phase 2 scope permits
+native/source implementation, not automatic remote migration execution.
+
+### Implemented
+
+- A first-class `volunteer` type and `volunteer_experiences` snapshot array;
+  separately stored owner-scoped records through the additive
+  `202610080011_volunteer_experience.sql` migration.
+- Organization, Role/Title, optional Location, month range, current toggle and
+  optional Description with the approved limits. Current roles clear stale
+  end months; zero-year dates are rejected.
+- Create/edit/delete entry points in Career Profile, builder Step 3 and Review,
+  English/Arabic labels, unchanged six-step navigation and the accepted
+  explicit-Save/discard/quality-warning policy.
+- Generic encrypted drafts/outbox reuse, version/conflict handling, frozen
+  unknown-Save replay and canonical profile cache. No local database schema or
+  dependency version changes.
+- Volunteer is distinct unpaid ATS/profile evidence and a separate Resume
+  section. No new ATS/AI operation or paid-employment classification.
+- Compact plain-text Skills and valid semantic lists for explicitly authored
+  bullets, preserving prose, blank lines and ambiguous numbering.
+- Centered personal header selected after current/centered EN/AR comparisons,
+  including long names/contacts. It separates personal information from the
+  body while retaining conventional text and mixed-script isolation.
+- Shared canonical HTML/CSS retains A4/margins, embedded Inter/IBM Plex Arabic,
+  escaping/CSP and existing template IDs. Renderer/model revision metadata is
+  2; this is not a completeness algorithm revision. Metadata/header cohesion
+  improved without whole-entry pagination locks or a second PDF renderer.
+
+### Completeness and AI-state boundary
+
+Volunteer never qualifies for percentage credit or a scored evidence count.
+The existing Contact/Evidence/Skills/Summary/Languages/Target Role weights,
+30 + 15 evidence qualification, algorithm/version and 50% latch are unchanged.
+Volunteer mutations update only profile/item versions and timestamps; they
+do not invoke completeness recomputation or update its trigger column.
+The migration contains no scoring/AI-state backfill.
+
+No product Auth or AI code, historical migration, Android signing/configuration,
+supporting Node service, package/lockfile, staging or production resource was
+changed. The disposable SQL fixture alone gained the role/schema shape needed
+to execute the existing later-foundation tests; it must never run on Supabase.
+
+### Passed checks
+
+- `dart tool/check_foundation.dart config/dev.local.json`.
+- `flutter analyze --no-pub`: no issues.
+- `flutter test --no-pub --reporter expanded`: **204 tests passed**, using real
+  SQLCipher and packaged production fonts.
+- EN/AR Volunteer widget Save/edit/discard/delete and quiet pre-Save/empty
+  descriptions, generic Back regressions and Review return paths.
+- Encrypted host database reopening with a lost Volunteer Save response,
+  retained frozen key, no duplicate record and unchanged 45%/algorithm.
+  This is not native Keystore/process-death proof.
+- `bash tool/test_rls.sh`: existing foundation and later Resume/AI foundations,
+  populated-database Volunteer migration, exact old acknowledgement replay,
+  CRUD/idempotency/conflicts, malformed input, anonymous/cross-owner/direct-write
+  denial and deleting/deleted-account guards.
+- SQL non-regression at 0%, 45%, 50%, 55%, including a legacy above-threshold
+  profile with no allowance row: Volunteer operations preserve profile scoring,
+  AI rows, wallet and ledger. Normal paid evidence still contributes 30 then 15.
+- Chromium static canonical fixtures: short EN/AR documents each print as one
+  A4 page; long EN/AR documents print as seven/five A4 pages. All 96 authored
+  test lines per language and final skill text are retained. Long names/links
+  wrap without clipping. These are offline print fixtures, not PDF export.
+- Reviewed host-native Career/builder captures and canonical EN/AR header
+  comparisons. Only Career and builder Steps 3/6 golden references changed.
+- Existing Phase 1 ARM64 APK retained with SHA-256
+  `88e58035b912ddb43208ace1ee947e1ef3f89cf880851982c0a7074ec08315c5`.
+
+Canonical comparisons are reproducible with
+`dart tool/render_resume_fixtures.dart <output-directory>` from the native app
+directory; only synthetic, explicitly labelled fixture data is used.
+
+### Approval/readiness gates still open
+
+1. **Development rollout:** the configured public development project is
+   `lmouxhbjhtqdtiqijcee`. No live schema/read/write check or migration execution
+   occurred. Explicit target/execution approval and secure administrative
+   access are required; `JOBIX_DEV_DATABASE_URL` is absent. No matching
+   migration integration was found. Use the existing certificate-validating
+   pooler approach, verify the installed baseline, apply only this additive
+   migration, and authorize isolated live checks separately. Never apply
+   disposable Auth/role fixtures to the live project.
+2. **Native acceptance/signing:** no Android device is attached and the
+   previously used debug keystore is absent. No new key, signed APK or phone
+   installation was generated. Recover the correct signing key or obtain
+   explicit approval for an alternative test arrangement; do not uninstall
+   or clear existing M31 data to bypass an update-signature conflict.
+3. Live owner-scoped persistence, actual Android WebView appearance, phone
+   restart and device-specific lifecycle behavior remain unverified until
+   those gates are resolved. Host tests/Chromium printing are not substitutes.
+
+No later phase or supporting-service repair was started.
+
 ## Fresh Samsung M31 ARM64 development APK — 2026-10-08
 
 After the native bug-fix phase, the owner explicitly approved installing the

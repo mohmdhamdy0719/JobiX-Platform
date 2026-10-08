@@ -27,7 +27,7 @@ const skillCatalog = [
 ];
 
 const stepSections = {
-  3: [EntitySection.experience],
+  3: [EntitySection.experience, EntitySection.volunteer],
   4: [
     EntitySection.education,
     EntitySection.certification,
@@ -251,6 +251,15 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                       onRemove: (item) => remove(profile, item),
                     ),
                   const SizedBox(height: TokensV0.space24),
+                  if (section == EntitySection.volunteer) ...[
+                    Text(
+                      copy.volunteerEvidenceHint,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: TokensV0.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: TokensV0.space16),
+                  ],
                 ],
                 if (widget.step == 3) InactiveSlot(label: copy.aiSoon),
               ],

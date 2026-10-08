@@ -246,6 +246,33 @@ class _CareerBody extends StatelessWidget {
           child: lines(EntitySection.experience),
         ),
         _SectionCard(
+          key: const Key('career-volunteer'),
+          icon: Icons.volunteer_activism_outlined,
+          title: copy.sectionVolunteer,
+          badge: count(EntitySection.volunteer),
+          done: false,
+          onTap: () => context.go('/builder/3?origin=career'),
+          trailing: TextButton.icon(
+            key: const Key('career-add-volunteer'),
+            onPressed: () =>
+                context.go('/career/edit/volunteer/new?origin=career'),
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(copy.addAction),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              lines(EntitySection.volunteer),
+              Text(
+                copy.volunteerEvidenceHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: TokensV0.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _SectionCard(
           key: const Key('career-education'),
           icon: Icons.school_outlined,
           title: copy.stepEducation,

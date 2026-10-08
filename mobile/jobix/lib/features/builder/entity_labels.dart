@@ -4,6 +4,7 @@ import '../career_profile/profile_sections.dart';
 String sectionTitle(AppLocalizations copy, EntitySection section) =>
     switch (section) {
       EntitySection.experience => copy.stepExperience,
+      EntitySection.volunteer => copy.sectionVolunteer,
       EntitySection.education => copy.sectionEducation,
       EntitySection.certification => copy.sectionCertifications,
       EntitySection.achievement => copy.sectionAchievements,
@@ -15,6 +16,7 @@ String sectionTitle(AppLocalizations copy, EntitySection section) =>
 String addLabel(AppLocalizations copy, EntitySection section) =>
     switch (section) {
       EntitySection.experience => copy.addRole,
+      EntitySection.volunteer => copy.addVolunteer,
       EntitySection.education => copy.addEducation,
       EntitySection.certification => copy.addCertification,
       EntitySection.achievement => copy.addAchievement,
@@ -23,39 +25,43 @@ String addLabel(AppLocalizations copy, EntitySection section) =>
       EntitySection.language => copy.addLanguage,
     };
 
-String fieldLabel(
-  AppLocalizations copy,
-  EntitySection section,
-  String field,
-) => switch (field) {
-  'job_title' => copy.fieldJobTitle,
-  'company' => copy.fieldCompany,
-  'location' => copy.fieldLocation,
-  'start_month' => copy.fieldStartMonth,
-  'end_month' => copy.fieldEndMonth,
-  'is_current' =>
-    section == EntitySection.education ? copy.currentStudy : copy.currentRole,
-  'description' =>
-    section == EntitySection.education || section == EntitySection.certification
-        ? copy.fieldDescriptionOptional
-        : copy.fieldDescription,
-  'degree' => copy.fieldDegree,
-  'institution' => copy.fieldInstitution,
-  'field_of_study' => copy.fieldStudy,
-  'name' =>
-    section == EntitySection.language ? copy.fieldLanguage : copy.fieldName,
-  'issuer' => copy.fieldIssuer,
-  'issue_month' => copy.fieldIssueMonth,
-  'expiry_month' => copy.fieldExpiryMonth,
-  'credential_id' => copy.fieldCredential,
-  'url' => copy.fieldUrl,
-  'title' => copy.fieldTitle,
-  'achieved_month' || 'project_month' => copy.fieldMonth,
-  'role' => copy.fieldRole,
-  'technologies' => copy.fieldTechnologies,
-  'proficiency' => copy.fieldProficiency,
-  _ => field,
-};
+String fieldLabel(AppLocalizations copy, EntitySection section, String field) =>
+    switch (field) {
+      'job_title' => copy.fieldJobTitle,
+      'company' => copy.fieldCompany,
+      'organization' => copy.fieldOrganization,
+      'location' => copy.fieldLocation,
+      'start_month' => copy.fieldStartMonth,
+      'end_month' => copy.fieldEndMonth,
+      'is_current' =>
+        section == EntitySection.education
+            ? copy.currentStudy
+            : section == EntitySection.volunteer
+            ? copy.currentVolunteer
+            : copy.currentRole,
+      'description' =>
+        section == EntitySection.education ||
+                section == EntitySection.certification ||
+                section == EntitySection.volunteer
+            ? copy.fieldDescriptionOptional
+            : copy.fieldDescription,
+      'degree' => copy.fieldDegree,
+      'institution' => copy.fieldInstitution,
+      'field_of_study' => copy.fieldStudy,
+      'name' =>
+        section == EntitySection.language ? copy.fieldLanguage : copy.fieldName,
+      'issuer' => copy.fieldIssuer,
+      'issue_month' => copy.fieldIssueMonth,
+      'expiry_month' => copy.fieldExpiryMonth,
+      'credential_id' => copy.fieldCredential,
+      'url' => copy.fieldUrl,
+      'title' => copy.fieldTitle,
+      'achieved_month' || 'project_month' => copy.fieldMonth,
+      'role' => copy.fieldRole,
+      'technologies' => copy.fieldTechnologies,
+      'proficiency' => copy.fieldProficiency,
+      _ => field,
+    };
 
 String problemText(AppLocalizations copy, FieldProblem problem) =>
     switch (problem) {
@@ -77,7 +83,7 @@ String proficiencyLabel(AppLocalizations copy, String code) => switch (code) {
 
 /// Builder step that owns each section's list.
 int stepFor(EntitySection section) => switch (section) {
-  EntitySection.experience => 3,
+  EntitySection.experience || EntitySection.volunteer => 3,
   EntitySection.education ||
   EntitySection.certification ||
   EntitySection.achievement => 4,
@@ -105,6 +111,7 @@ String monthLabel(String value, String locale) {
 
 String itemTitle(ProfileItem item) => switch (item.section) {
   EntitySection.experience => item.text('job_title'),
+  EntitySection.volunteer => item.text('role'),
   EntitySection.education => item.text('degree'),
   EntitySection.achievement => item.text('title'),
   _ => item.text('name'),
@@ -125,6 +132,10 @@ String itemSubtitle(AppLocalizations copy, ProfileItem item, String locale) {
   final parts = switch (item.section) {
     EntitySection.experience => [
       item.text('company'),
+      range('start_month', 'end_month'),
+    ],
+    EntitySection.volunteer => [
+      item.text('organization'),
       range('start_month', 'end_month'),
     ],
     EntitySection.education => [

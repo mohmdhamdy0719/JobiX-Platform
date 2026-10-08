@@ -32,6 +32,15 @@ enum EntitySection {
       minimum: 20,
     ),
   ]),
+  volunteer('volunteer', 'volunteer_experiences', [
+    SectionField('organization', FieldKind.text, required: true),
+    SectionField('role', FieldKind.text, required: true),
+    SectionField('location', FieldKind.text),
+    SectionField('start_month', FieldKind.month, required: true),
+    SectionField('end_month', FieldKind.month),
+    SectionField('is_current', FieldKind.toggle),
+    SectionField('description', FieldKind.multiline, max: 1500, minimum: 20),
+  ]),
   education('education', 'education', [
     SectionField('degree', FieldKind.text, required: true),
     SectionField('institution', FieldKind.text, required: true),
@@ -93,11 +102,12 @@ enum EntitySection {
 
   /// Which pair of month fields form a range, if any.
   (String, String)? get range => switch (this) {
-    experience || education => ('start_month', 'end_month'),
+    experience || volunteer || education => ('start_month', 'end_month'),
     certification => ('issue_month', 'expiry_month'),
     _ => null,
   };
-  bool get hasCurrent => this == experience || this == education;
+  bool get hasCurrent =>
+      this == experience || this == volunteer || this == education;
 }
 
 const proficiencies = [
@@ -162,8 +172,9 @@ class ProfileItem {
     id: json['id'] as String,
     section: section,
     version: (json['version'] as num? ?? 0).toInt(),
-    complete:
-        section == EntitySection.skill || section == EntitySection.language
+    complete: section == EntitySection.volunteer
+        ? false // Saved unpaid evidence, never percentage qualification.
+        : section == EntitySection.skill || section == EntitySection.language
         ? true
         : json['complete'] == true,
     values: {
@@ -282,6 +293,7 @@ class ProfileItem {
 
   /// Local estimate used only before the server acknowledges a save.
   bool get locallyComplete {
+    if (section == EntitySection.volunteer) return false;
     // Completeness is unchanged. Empty optional prose no longer produces a
     // quality warning, but that does not award its existing completeness.
     if (problems().isNotEmpty ||

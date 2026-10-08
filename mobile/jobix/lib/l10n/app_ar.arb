@@ -1,4 +1,9 @@
 {
+  "sectionVolunteer": "الخبرات التطوعية",
+  "addVolunteer": "إضافة دور تطوعي",
+  "fieldOrganization": "المنظمة",
+  "currentVolunteer": "أتطوع حاليًا",
+  "volunteerEvidenceHint": "الأدوار التطوعية خبرات غير مدفوعة ومستقلة تظهر في سيرتك الذاتية، ولا تغيّر نسبة اكتمال الملف المهني.",
   "exitTitle": "الخروج من Jobix؟",
   "exitMessage": "هل تريد إغلاق Jobix؟",
   "exitAction": "خروج",

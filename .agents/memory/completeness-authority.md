@@ -25,7 +25,19 @@ decision, superseding the proposal to credit Volunteer in the evidence bucket.
 **How to apply:** Integrate Volunteer storage, editing, Review, typed evidence
 and Resume rendering without changing scoring or existing allowance states.
 Keep quality guidance independent from percentage qualification. All other
-Phase 2 plan scope is approved, but the owner expressly withheld implementation.
+Phase 2 plan scope is approved; scoring changes remain outside that scope.
+
+Unscored evidence must not rewrite the completeness column merely to preserve
+its numeric value, and must not use the scored-section recomputation path.
+
+**Why:** The existing AI latch responds to an update targeting the completeness
+column even when its value is unchanged. Such a write could create/change
+allowance state for a legacy profile, violating the owner's no-state-change rule.
+
+**How to apply:** Keep unscored evidence persistence/versioning independent from
+percentage recomputation. Test both established allowance state and an
+above-threshold legacy profile without an allowance row; unchanged percentage
+alone is not sufficient proof of unchanged AI state.
 
 ## Existing completeness rules
 

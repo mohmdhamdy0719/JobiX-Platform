@@ -68,6 +68,9 @@ class FakeEntityServer {
       summary: current.summary,
       targetRole: current.targetRole,
       completeness: current.completeness,
+      algorithm: current.algorithm,
+      summaryState: current.summaryState,
+      targetRoleState: current.targetRoleState,
       slot: current.slot,
       items: {...current.items, section: items},
     );

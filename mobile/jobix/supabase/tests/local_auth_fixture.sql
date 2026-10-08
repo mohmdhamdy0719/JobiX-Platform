@@ -2,8 +2,9 @@
 -- Emulates Supabase auth.uid() and roles on disposable plain PostgreSQL.
 CREATE ROLE anon NOLOGIN NOSUPERUSER NOBYPASSRLS;
 CREATE ROLE authenticated NOLOGIN NOSUPERUSER NOBYPASSRLS;
+CREATE ROLE service_role NOLOGIN NOSUPERUSER BYPASSRLS;
 CREATE SCHEMA auth;
-CREATE TABLE auth.users (id uuid PRIMARY KEY);
+CREATE TABLE auth.users (id uuid PRIMARY KEY, email text);
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
     SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
 $$;

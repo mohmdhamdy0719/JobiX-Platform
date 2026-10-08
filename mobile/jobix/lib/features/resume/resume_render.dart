@@ -5,8 +5,8 @@ import '../career_profile/profile_sections.dart';
 /// Immutable render-package contract. Preview and the future Chromium worker
 /// consume this same HTML, not a second PDF-specific layout or screenshot.
 class ResumeRender {
-  static const modelVersion = 1;
-  static const templateVersion = 1;
+  static const modelVersion = 2;
+  static const templateVersion = 2;
   static String html({
     required CareerProfile profile,
     required String language,
@@ -24,14 +24,31 @@ class ResumeRender {
     String e(String? text) => const HtmlEscape().convert(text ?? '');
     String bi(String? text) => '<bdi>${e(text)}</bdi>';
     String label(String en, String arabic) => ar ? arabic : en;
-    String lines(String text) => text
-        .split('\n')
-        .map(
-          (line) => line.trim().startsWith(RegExp(r'[-•]'))
-              ? '<li>${bi(line.trim().substring(1).trim())}</li>'
-              : '<p>${bi(line)}</p>',
-        )
-        .join();
+    String lines(String text) {
+      if (text.isEmpty) return '';
+      final out = StringBuffer();
+      final marker = RegExp(r'^\s*[-•]\s+(.+)$');
+      var inList = false;
+      for (final line in text.split('\n')) {
+        final bullet = marker.firstMatch(line);
+        if (bullet != null) {
+          if (!inList) out.write('<ul>');
+          inList = true;
+          out.write('<li>${bi(bullet.group(1))}</li>');
+        } else {
+          if (inList) out.write('</ul>');
+          inList = false;
+          out.write(
+            line.trim().isEmpty
+                ? '<p class="blank"><br></p>'
+                : '<p>${bi(line)}</p>',
+          );
+        }
+      }
+      if (inList) out.write('</ul>');
+      return out.toString();
+    }
+
     final sections = <String>[];
     void section(String title, String body) {
       if (body.trim().isNotEmpty) {
@@ -45,6 +62,10 @@ class ResumeRender {
     );
     final labels = {
       EntitySection.experience: label('Work Experience', 'الخبرة المهنية'),
+      EntitySection.volunteer: label(
+        'Volunteer Experience',
+        'الخبرات التطوعية',
+      ),
       EntitySection.education: label('Education', 'التعليم'),
       EntitySection.certification: label('Certifications', 'الشهادات'),
       EntitySection.achievement: label('Achievements', 'الإنجازات'),
@@ -53,10 +74,20 @@ class ResumeRender {
       EntitySection.language: label('Languages', 'اللغات'),
     };
     for (final type in EntitySection.values) {
+      if (type == EntitySection.skill) {
+        section(
+          labels[type]!,
+          profile.of(type).isEmpty
+              ? ''
+              : '<p class="skills">${profile.of(type).map((i) => bi(i.text('name'))).join(' · ')}</p>',
+        );
+        continue;
+      }
       final content = StringBuffer();
       for (final item in profile.of(type)) {
         final title = switch (type) {
           EntitySection.experience => item.text('job_title'),
+          EntitySection.volunteer => item.text('role'),
           EntitySection.education => item.text('degree'),
           EntitySection.achievement => item.text('title'),
           _ => item.text('name'),
@@ -64,10 +95,11 @@ class ResumeRender {
         final metadata = [
           for (final field in [
             'company',
+            'organization',
             'institution',
             'field_of_study',
             'issuer',
-            'role',
+            if (type != EntitySection.volunteer) 'role',
             'location',
           ])
             if (item.text(field).isNotEmpty) bi(item.text(field)),
@@ -133,6 +165,7 @@ class ResumeRender {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:">
 <meta name="jobix-render-version" content="$modelVersion">
+<meta name="jobix-template-revision" content="$templateVersion">
 <meta name="jobix-template" content="resume_ats_${language}_v1">
 <meta name="jobix-profile-version" content="${profile.version}">
 <style>
@@ -146,13 +179,16 @@ h1{font-size:24pt;margin:0 0 5mm;font-weight:700}h2{font-size:13pt;border-bottom
 padding-bottom:2mm;margin:7mm 0 3mm;break-after:avoid}h3{font-size:11.5pt;margin:0}
 article{margin-bottom:4mm}article header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2mm}
 p{margin:1mm 0;white-space:pre-wrap}.contact{font-size:9.5pt}.meta,.dates{color:#43516a}
+.personal-header{text-align:center;break-inside:avoid}.skills{line-height:1.7}
+ul{margin:1mm 0;padding-inline-start:6mm}li{margin:1mm 0;padding-inline-start:1mm}
+article .meta{break-after:avoid}p.blank{margin:0;height:2mm}
 .dates{font-size:9.5pt}a{color:inherit;text-decoration:none}bdi{unicode-bidi:plaintext}
-li{margin-inline-start:5mm;padding-inline-start:1mm;list-style-position:outside}
+li{list-style-position:outside}
 @media print{html{background:white}body{width:auto;min-height:0;margin:0;padding:0}
 p,li{orphans:3;widows:3}h1,h2,h3,article header{break-after:avoid}}
 </style></head><body>
-<h1>${bi(profile.personal['full_name'])}</h1><div class="contact">${contacts.join(' · ')}</div>
+<header class="personal-header"><h1>${bi(profile.personal['full_name'])}</h1><div class="contact">${contacts.join(' · ')}</div>
 ${profile.targetRole.trim().isEmpty ? '' : '<p>${bi(profile.targetRole)}</p>'}
-${sections.join('\n')}</body></html>''';
+</header>${sections.join('\n')}</body></html>''';
   }
 }

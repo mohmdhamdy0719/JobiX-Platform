@@ -34,3 +34,12 @@ fi
 psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/tests/dev_backfill_rollback.sql
 echo "PASS: Foundation, first slice, core bootstrap/credits/RLS (disposable PostgreSQL, not live Supabase)"
+psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
+  -f supabase/migrations/202610050008_profile_polish.sql \
+  -f supabase/migrations/202610050009_resume_configuration.sql \
+  -f supabase/migrations/202610050010_credits_ai_foundation.sql \
+  -f supabase/tests/polish_foundation.sql \
+  -f supabase/tests/volunteer_before_migration.sql \
+  -f supabase/migrations/202610080011_volunteer_experience.sql \
+  -f supabase/tests/volunteer_experience.sql
+echo "PASS: Resume foundation and non-scoring Volunteer CRUD/RLS/migration regressions (disposable PostgreSQL)"

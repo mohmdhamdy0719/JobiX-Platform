@@ -148,10 +148,11 @@ class _ReviewBody extends StatelessWidget {
           _Section(
             title: sectionTitle(copy, section),
             editKey: section.key,
-            meta:
-                section == EntitySection.skill ||
-                    section == EntitySection.language ||
-                    profile.count(section) == 0
+            meta: section == EntitySection.volunteer
+                ? copy.itemsAdded(profile.count(section))
+                : section == EntitySection.skill ||
+                      section == EntitySection.language ||
+                      profile.count(section) == 0
                 ? null
                 : copy.sectionStatusCount(
                     profile.completeCount(section),

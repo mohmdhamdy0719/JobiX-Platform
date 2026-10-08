@@ -378,7 +378,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               _field(copy, field),
               const SizedBox(height: TokensV0.space16),
             ],
-            if (!item!.locallyComplete)
+            if (widget.section == EntitySection.volunteer
+                ? item!.problems().isNotEmpty
+                : !item!.locallyComplete)
               Text(
                 copy.localeName.startsWith('ar')
                     ? 'الحقول المميزة بـ * مطلوبة لإضافة العنصر. مراجعة الوصف الاختياري لا تمنع الحفظ.'

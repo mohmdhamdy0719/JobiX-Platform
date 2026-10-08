@@ -9,6 +9,22 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get sectionVolunteer => 'الخبرات التطوعية';
+
+  @override
+  String get addVolunteer => 'إضافة دور تطوعي';
+
+  @override
+  String get fieldOrganization => 'المنظمة';
+
+  @override
+  String get currentVolunteer => 'أتطوع حاليًا';
+
+  @override
+  String get volunteerEvidenceHint =>
+      'الأدوار التطوعية خبرات غير مدفوعة ومستقلة تظهر في سيرتك الذاتية، ولا تغيّر نسبة اكتمال الملف المهني.';
+
+  @override
   String get exitTitle => 'الخروج من Jobix؟';
 
   @override

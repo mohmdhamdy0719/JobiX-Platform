@@ -1683,7 +1683,11 @@ void main() {
         state: StartupState.signedIn,
         size: const Size(402, 1100),
       );
-      for (final section in [EntitySection.experience, EntitySection.project]) {
+      for (final section in [
+        EntitySection.experience,
+        EntitySection.volunteer,
+        EntitySection.project,
+      ]) {
         await route(tester, '/career/edit/${section.key}/new?origin=career');
         final description = find.byKey(const Key('field-description'));
         await tester.ensureVisible(description);
@@ -2068,6 +2072,107 @@ void main() {
     expect(find.byKey(const Key('draft-conflict')), findsOneWidget);
     expect(find.text(copy.itemChangedElsewhere), findsOneWidget);
   });
+
+  for (final locale in ['en', 'ar']) {
+    testWidgets(
+      'Volunteer Save/edit/discard/delete stays separate and unscored $locale',
+      (tester) async {
+        api.server = const CareerProfile(
+          id: 'profile-one',
+          version: 1,
+          resumeLanguage: 'en',
+          completeness: 45,
+          algorithm: 'core-profile-v2',
+        );
+        await pump(
+          tester,
+          state: StartupState.signedIn,
+          locale: locale,
+          size: const Size(360, 1100),
+        );
+        await route(tester, '/career');
+        expect(find.byKey(const Key('career-volunteer')), findsOneWidget);
+        await route(tester, '/builder/3');
+        expect(find.byKey(const Key('add-volunteer')), findsOneWidget);
+        await route(tester, '/career/edit/volunteer/new?origin=career');
+        final copy = AppLocalizations.of(
+          tester.element(find.byKey(const Key('editor-save'))),
+        )!;
+        await tester.enterText(
+          find.byKey(const Key('field-organization')),
+          'Community Group',
+        );
+        await tester.enterText(
+          find.byKey(const Key('field-role')),
+          'Volunteer Coordinator',
+        );
+        await tester.ensureVisible(find.byKey(const Key('field-start_month')));
+        await tester.enterText(
+          find.byKey(const Key('field-start_month')),
+          '2024-01',
+        );
+        await tester.ensureVisible(find.byKey(const Key('field-is_current')));
+        await tester.tap(find.byKey(const Key('field-is_current')));
+        tester.testTextInput.hide();
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Needs attention —'), findsNothing);
+        await tester.tap(find.byKey(const Key('editor-save')));
+        await tester.pumpAndSettle();
+        final saved = api.server.of(EntitySection.volunteer).single;
+        expect(saved.text('organization'), 'Community Group');
+        expect(saved.text('description'), '');
+        expect(api.server.of(EntitySection.experience), isEmpty);
+        expect(api.server.completeness, 45);
+        expect(api.server.algorithm, 'core-profile-v2');
+        expect(entities.requests, hasLength(1));
+        await route(tester, '/career/edit/volunteer/${saved.id}?origin=career');
+        await tester.enterText(
+          find.byKey(const Key('field-role')),
+          'Unsaved change',
+        );
+        await tester.tap(find.byKey(const Key('editor-back')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('discard-entity')));
+        await tester.pumpAndSettle();
+        expect(
+          api.server.of(EntitySection.volunteer).single.text('role'),
+          'Volunteer Coordinator',
+        );
+        expect(entities.requests, hasLength(1));
+        await route(tester, '/career/edit/volunteer/${saved.id}?origin=review');
+        await tester.ensureVisible(find.byKey(const Key('field-description')));
+        await tester.enterText(
+          find.byKey(const Key('field-description')),
+          'Short',
+        );
+        tester.testTextInput.hide();
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('editor-save')));
+        await tester.pumpAndSettle();
+        expect(
+          api.server.of(EntitySection.volunteer).single.text('description'),
+          'Short',
+        );
+        expect(api.server.completeCount(EntitySection.volunteer), 0);
+        expect(api.server.completeness, 45);
+        expect(find.byKey(const Key('review-edit-volunteer')), findsOneWidget);
+        await route(tester, '/builder/3?origin=career');
+        await tester.ensureVisible(
+          find.byKey(Key('menu-volunteer-${saved.id}')),
+        );
+        await tester.tap(find.byKey(Key('menu-volunteer-${saved.id}')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(copy.removeAction).last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('confirm-remove')));
+        await tester.pumpAndSettle();
+        expect(api.server.of(EntitySection.volunteer), isEmpty);
+        expect(api.server.completeness, 45);
+        expect(entities.requests, hasLength(3));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('every Review section Edit returns to Review', (tester) async {
     seedProfile();

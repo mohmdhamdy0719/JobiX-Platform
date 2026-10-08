@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -77,6 +78,67 @@ void main() {
       reason: 'The acknowledged snapshot is the single read model.',
     );
   });
+
+  test(
+    'Volunteer unknown Save survives encrypted restart without credit or duplicate records',
+    () async {
+      const item = ProfileItem(
+        id: '9f0f8a52-3c55-4a4e-9a51-0d3b8c1f2a10',
+        section: EntitySection.volunteer,
+        values: {
+          'organization': 'Community Group',
+          'role': 'Volunteer Coordinator',
+          'start_month': '2024-01',
+          'is_current': true,
+          'description': '',
+        },
+      );
+      api.server = CareerProfile(
+        id: api.server.id,
+        version: api.server.version,
+        completeness: 45,
+        algorithm: 'core-profile-v2',
+      );
+      await repository.retainDraft(api.server.id, item);
+      expect(
+        await repository.unsavedNew(api.server, EntitySection.volunteer),
+        hasLength(1),
+      );
+      expect(api.server.count(EntitySection.volunteer), 0);
+      server.loseNextResponse = true;
+      await expectLater(
+        repository.upsert(api.server, item),
+        throwsA(isA<SocketException>()),
+      );
+      final frozen = (await repository.pending(api.server.id))!;
+      await repository.discardDraft(api.server.id, item.section, item.id);
+      expect((await repository.pending(api.server.id))!.key, frozen.key);
+      await db.close();
+      db = AppDatabase(encryptedDatabase(File('${directory.path}/db'), key));
+      repository = open();
+      final acknowledged = (await repository.resume(api.server.id))!;
+      expect(server.requests.map((r) => r.key).toSet(), {frozen.key});
+      expect(acknowledged.count(EntitySection.volunteer), 1);
+      expect(acknowledged.completeCount(EntitySection.volunteer), 0);
+      expect(acknowledged.completeness, 45);
+      expect(acknowledged.algorithm, 'core-profile-v2');
+      final cache = CareerProfile.fromJson(
+        jsonDecode((await db.cachedProfile('user-one', acknowledged.id))!),
+      );
+      expect(
+        cache.of(EntitySection.volunteer).single.text('role'),
+        'Volunteer Coordinator',
+      );
+      final deleted = await repository.delete(
+        acknowledged,
+        item.section,
+        item.id,
+      );
+      expect(deleted.count(EntitySection.volunteer), 0);
+      expect(deleted.completeness, 45);
+      expect(deleted.algorithm, 'core-profile-v2');
+    },
+  );
 
   test('a lost response is retried after restart with the same key', () async {
     server.loseNextResponse = true;

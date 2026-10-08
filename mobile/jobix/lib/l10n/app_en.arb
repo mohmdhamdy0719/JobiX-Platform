@@ -1,4 +1,9 @@
 {
+  "sectionVolunteer": "Volunteer Experience",
+  "addVolunteer": "Add volunteer role",
+  "fieldOrganization": "Organization",
+  "currentVolunteer": "Currently volunteering",
+  "volunteerEvidenceHint": "Volunteer roles are separate unpaid career evidence and appear in your Resume. They do not change Profile Completeness.",
   "exitTitle": "Exit Jobix?",
   "exitMessage": "Do you want to close Jobix?",
   "exitAction": "Exit",

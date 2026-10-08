@@ -98,6 +98,36 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @sectionVolunteer.
+  ///
+  /// In en, this message translates to:
+  /// **'Volunteer Experience'**
+  String get sectionVolunteer;
+
+  /// No description provided for @addVolunteer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add volunteer role'**
+  String get addVolunteer;
+
+  /// No description provided for @fieldOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get fieldOrganization;
+
+  /// No description provided for @currentVolunteer.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently volunteering'**
+  String get currentVolunteer;
+
+  /// No description provided for @volunteerEvidenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Volunteer roles are separate unpaid career evidence and appear in your Resume. They do not change Profile Completeness.'**
+  String get volunteerEvidenceHint;
+
   /// No description provided for @exitTitle.
   ///
   /// In en, this message translates to:
