@@ -109,6 +109,18 @@ For Google Cloud, distinguish `SERVICE_DISABLED` from
 deployment requirement. Do not request broader IAM roles just to list
 service-account identities when the owner can supply their non-secret names.
 
+Positive runtime permission checks are not sufficient to approve least-privilege
+IAM. Also check unwanted permissions and actual resource-level role bindings.
+Keep managed builder, deployer and runtime identities separate.
+
+**Why:** Development upload/signing checks passed while predefined grants also
+permitted unnecessary object mutation/restoration and token/JWT delegation.
+
+**How to apply:** Verify the approved permission set and absence of excess
+permissions under the actual runtime identity. Report scope corrections;
+preserve unrelated bindings and do not substitute a runtime identity for a
+builder just to bypass a missing actAs grant.
+
 Supabase's older `logs.all` API is retired. Current programmatic log reads use
 `/analytics/endpoints/logs`, the unified `logs` table, ClickHouse SQL and
 `log_attributes` rather than the old separate tables/BigQuery metadata format.

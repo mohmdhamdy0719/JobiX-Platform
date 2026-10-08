@@ -3,7 +3,7 @@
 **Development implementation/deployment authorized; activation still gated on
 verified access/runtime.** Six development migrations are applied with exports
 still disabled. The private bucket has an approved seven-day `exports/`/`.pdf`
-lifecycle rule. No IAM grant, Cloud Run/Scheduler start, Edge rollout, worker
+lifecycle rule. No agent IAM-policy mutation, Cloud Run/Scheduler start, Edge rollout, worker
 deployment or committed live Credit debit has occurred.
 Native tooling/signing/APK/device verification is not part of this implementation.
 The deletion/retention product decision is now approved and recorded exactly in
@@ -117,6 +117,20 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ### Current development checkpoint
 
+**Latest operator-access verification:** backend object CRUD and keyless signing
+now work. The actual `GoogleStorage` adapter passed private backend-identity
+upload/read/sign/download, duplicate-create and signed-generation-tamper checks;
+its exact-generation isolated fixture was removed and absence verified. This
+does not verify metadata identity in Cloud Run or PDF generation.
+
+Submission now fails specifically on deployer actAs of the default Compute
+builder. The supplied numeric runtime-secret resource belongs to the approved
+project, but required deployer/backend secret permissions are still absent.
+Effective backend permissions exceed the approved minimum: objectUser also
+allows update/restore/move, and signing access also allows token/JWT/delegation
+operations. No policy has been changed by the agent; operator scope correction
+is required. See `DEVELOPMENT_ACCESS.md` for exact principals and resource scopes.
+
 - The owner-supplied public Supabase Root 2021 CA is bundled at
   `assets/certs/supabase-root-2021.crt`; verified-TLS migration and repeat
   checksum/idempotency checks succeeded on the guarded development target.
@@ -133,9 +147,10 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
   `phase3-builds/`, outside the PDF lifecycle prefix. It is retained for retry;
   no extra CV/snapshot retention period is introduced. Managed build submission
   is rejected with 403. No image is built/deployed.
-- Runtime backend object access and self-signing permission tests return none.
-  Necessary custom-role creation and runtime-secret creation are rejected.
-  Do not work around these with broader storage roles, new keys or admin DSNs.
+- Original runtime object/self-signing permission tests returned none; these
+  are superseded by the operator-access verification above. Earlier necessary
+  custom-role/runtime-secret creation attempts were rejected. Do not work
+  around remaining blockers with broader roles, new keys or admin DSNs.
 
 `Dockerfile` packages the same Dart 3.8.0 canonical generator as an AOT executable
 and installs the locked Playwright engine into a compatible Debian runtime.

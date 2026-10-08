@@ -6,12 +6,34 @@ the deployment/admin database credential in the application.
 
 ## Observed blockers
 
-- Managed Cloud Build submission: HTTP 403.
-- Custom storage-role creation: HTTP 403.
-- Runtime-secret creation: HTTP 403, `secretmanager.secrets.create`.
-- Backend bucket permission test: none of create/get/list/delete.
-- Backend self-signing permission test: no `iam.serviceAccounts.signBlob`.
-- Deployer has no tested `iam.serviceAccounts.setIamPolicy` on the backend.
+After the operator's access update:
+
+- Backend object create/get/list/delete and self-signBlob are effective. Actual
+  backend-identity production-adapter tests passed conditional create/read,
+  self-signing/private signed download, signed-generation tamper rejection and
+  exact-generation fixture cleanup. Cloud Run metadata identity and actual
+  worker PDF generation remain unverified.
+- Cloud Build inventory/default-builder lookup now succeed, but submission is
+  denied because the deployer cannot act as the selected builder:
+  `850519041397-compute@developer.gserviceaccount.com` (reported account unique
+  ID `112247149794458910320`). Grant only `iam.serviceAccounts.actAs` to
+  `jobix-deployer-dev@mhflow-jobix.iam.gserviceaccount.com` on this builder
+  account, or configure an existing approved least-privileged builder.
+- Supplied resource `projects/850519041397/secrets/jobix-dev-export-database`
+  is confirmed to reference the approved project number. Neither friendly nor
+  numeric resource addressing gives the deployer tested metadata-get/version-add
+  permissions or the backend version-access permission; actual backend latest
+  version access returns 403. Secret existence/content is not established.
+- Least-privilege scope has **not** passed: bucket IAM binds the backend to
+  `roles/storage.objectUser`, and effective tests additionally permit
+  object update/restore/move. Signing tests additionally permit signJwt,
+  getAccessToken/getOpenIdToken/implicitDelegation. Replace these broad backend
+  grants with the exact four storage permissions and single signBlob permission
+  specified below, preserving unrelated principals/bindings.
+
+No IAM policy was mutated by the agent during this verification. Earlier
+custom-role/secret creation attempts were denied; no runtime DB LOGIN or secret
+value was created as a fallback.
 
 These require an authorized GCP operator; approval in chat alone cannot change
 the existing credential's effective permissions.

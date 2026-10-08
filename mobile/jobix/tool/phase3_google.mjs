@@ -1,6 +1,9 @@
 // Operational development tooling only. Never logs credentials or provider bodies.
 import {createSign} from 'node:crypto';
 export const project='mhflow-jobix',region='me-central1',bucket='mhflow-jobix-dev-pdfs';
+// Public project number, verified against the approved bucket's projectNumber.
+// Managed Google responses may use this canonical numeric form.
+export const projectNumber='850519041397';
 export const backend=`jobix-backend-dev@${project}.iam.gserviceaccount.com`;
 export const scheduler=`jobix-scheduler-dev@${project}.iam.gserviceaccount.com`;
 export class CloudFailure extends Error {
@@ -23,7 +26,8 @@ export async function google() {
   const request=async(url,{method='GET',body,token=auth.access_token,write=false,headers={}}={})=>{
     const target=new URL(url);
     if(target.protocol!=='https:'||!hosts.has(target.hostname)||
-      !(target.pathname.includes(project)||target.pathname.includes(bucket)))throw new CloudFailure(0,'DEV_RESOURCE_GUARD');
+      !(target.pathname.includes(project)||target.pathname.includes(bucket)||
+        target.pathname.includes(`/projects/${projectNumber}/`)))throw new CloudFailure(0,'DEV_RESOURCE_GUARD');
     const readOnlyPost=/:(testIamPermissions|getIamPolicy|generateAccessToken|generateIdToken|signBlob)$/.test(target.pathname);
     if(method!=='GET'&&!readOnlyPost&&!write)throw new CloudFailure(0,'EXPLICIT_WRITE_REQUIRED');
     const r=await fetch(url,{method,headers:{authorization:'Bearer '+token,

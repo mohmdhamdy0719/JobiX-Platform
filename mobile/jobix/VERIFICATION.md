@@ -1,5 +1,30 @@
 # Jobix verification evidence
 
+## Operator access update — private backend storage/signing verified
+
+**PARTIALLY VERIFIED; deployment/activation remain blocked.**
+
+- Actual backend-identity `GoogleStorage` adapter passed conditional upload,
+  duplicate create rejection, generation-specific inspect/read, IAM self-signBlob,
+  private signed download and signed-generation tamper rejection. Anonymous
+  access was denied. Signed URL/token/signature were not printed or persisted.
+- Only the freshly created synthetic protocol fixture was deleted by exact
+  generation; the owned prefix and full active export prefix were verified empty.
+  This is not an actual Chromium PDF, Cloud Run metadata identity, authenticated
+  Edge export or Credit finalization test.
+- Cloud Build inventory/default-builder reads succeeded. Actual submission
+  failed on missing deployer actAs of
+  `850519041397-compute@developer.gserviceaccount.com`.
+- Runtime-secret resource project number was verified against the approved
+  bucket. Both numeric/friendly path checks still deny required secret access.
+  No runtime database credential/LOGIN was created, read out or substituted.
+- Minimum IAM has not passed: observed backend objectUser grant permits
+  update/restore/move in addition to approved CRUD. Effective signing permissions
+  include token/JWT/delegation operations beyond signBlob. No IAM mutation was
+  made; narrowing must preserve unrelated principals/bindings.
+- Native/product code and dependency manifests/locks remain unchanged.
+  Operational tool syntax and dependency checksum checks passed.
+
 ## Development migration and approved cleanup checkpoint
 
 **PARTIALLY VERIFIED; exports disabled; worker deployment blocked by IAM/access.**
