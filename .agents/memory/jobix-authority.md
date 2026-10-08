@@ -2,22 +2,24 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: Phase 2 planning only
+## Current authorization: Phase 2 scope approved, execution withheld
 
-The owner accepted Phase 1 and requested a detailed Phase 2 plan for Volunteer
-Experience and targeted Resume Preview refinements, explicitly saying not to
-implement yet. Volunteer remains a dedicated unpaid section inside the existing
-six-step builder; the existing professional resume is to be refined, not
-redesigned.
+The owner accepted Phase 1 and approved the Phase 2 plan for Volunteer
+Experience and targeted Resume Preview refinements, with an explicit decision
+that Volunteer must not affect Profile Completeness or existing AI states.
+The owner still says not to implement yet. Volunteer remains a dedicated unpaid
+section inside the existing six-step builder; the professional resume is to be
+refined, not redesigned.
 
-**Why:** The owner said "Phase 1 is accepted" and "Do not implement yet" when
-requesting the Phase 2 implementation plan.
+**Why:** The owner approved everything else in Phase 2, required no Volunteer
+percentage/scoring changes and explicitly instructed "Do not implement yet."
 
-**How to apply:** Treat Phase 1 as accepted and keep Phase 2 work limited to
-planning until explicit implementation assignment and Build mode. Keep
-Volunteer scoring proposals unapproved until the owner confirms the rule;
-preserve the existing percentage weights, Contact 5+5+5 and 50% transition.
-Do not start AI/PDF/later phases or archived follow-ups.
+**How to apply:** Treat Phase 1 as accepted and keep this work limited to the
+plan/decision update until explicit implementation authorization. The Volunteer
+no-scoring rule is settled, not awaiting another approval; see
+`completeness-authority.md`. Do not start AI/PDF/later phases or archived
+follow-ups, and retain the development-rollout and safe native-installation
+approval gates.
 
 ## Earlier Phase 1 native bug-fix authorization
 

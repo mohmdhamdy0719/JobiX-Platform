@@ -2,6 +2,33 @@
 name: Completeness authority
 description: Owner-confirmed Contact scoring and first-profile AI transition boundaries
 ---
+## Phase 2 Volunteer decision
+
+Volunteer Experience is a first-class, separately stored career-evidence
+section: persisted, editable, reviewable, rendered in the Resume and available
+as distinctly unpaid ATS/profile evidence input where appropriate. It awards
+no Profile Completeness percentage in Phase 2 and must not enter the existing
+30 + 15 evidence qualification algorithm.
+
+Keep the Contact/Evidence/Skills/Summary/Languages/Target Role weights, existing
+completeness percentages/states and formula unchanged. Keep the existing 50%
+AI transition/latch and AI allowance states unchanged; do not reset, duplicate
+or alter them. Do not invent another completeness formula.
+
+Empty/short Volunteer descriptions must not generate a quality warning before
+Save. Descriptive quality and available career evidence do not imply scoring
+eligibility.
+
+**Why:** The owner explicitly approved Phase 2 with this required product
+decision, superseding the proposal to credit Volunteer in the evidence bucket.
+
+**How to apply:** Integrate Volunteer storage, editing, Review, typed evidence
+and Resume rendering without changing scoring or existing allowance states.
+Keep quality guidance independent from percentage qualification. All other
+Phase 2 plan scope is approved, but the owner expressly withheld implementation.
+
+## Existing completeness rules
+
 Contact completeness contributes independently: 5% for valid full name,
 5% for valid email, and 5% for valid phone. Do not replace this with an
 all-or-nothing 15% contribution.
