@@ -2,7 +2,22 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: complete Phase 3 development implementation and deployment
+## Current stage gate: runtime configuration and read-only verification
+
+The owner authorized development runtime binding to the existing database
+Secret version 1 and bundled verified-TLS CA, followed by read-only readiness
+checks and a READY/BLOCKED report, then stop. No credential creation/rotation,
+new Secret, migrations, production/staging work or unrelated IAM changes.
+
+**Why:** The owner explicitly separated this runtime-configuration milestone
+from further worker activity and requested stopping after verification.
+
+**How to apply:** Readiness success does not authorize switching to normal
+export processing, changing rollout flags or starting subsequent rollout work.
+Keep the approved plan, credentials and least-privilege IAM unchanged; obtain
+the next stage's authorization before activation.
+
+## Broader authorization: Phase 3 development implementation and deployment
 
 The owner explicitly authorized the complete PDF Export + Credits vertical slice,
 development migrations, private worker/storage/recovery, approved deletion

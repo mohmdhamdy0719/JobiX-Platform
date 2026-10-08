@@ -118,6 +118,23 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ### Current development checkpoint
 
+**Current runtime configuration: READY, read-only mode only.** Private Cloud Run
+`jobix-dev-pdf-export` in `me-central1` uses the existing pinned image/backend
+account, Secret `jobix-dev-export-database` version `1`, and CA file
+`/opt/jobix/assets/certs/supabase-root-2021.crt`. Its authenticated `/ready`
+response confirms actual hosted Secret resolution, certificate presence/
+fingerprint, authorized TLS, restricted database identity and all 19 export
+function privileges. Anonymous access is 403; dispatch is 503.
+
+The image entrypoint is overridden with read-only startup verification, not
+`server.mjs`. Export processing flags are false; no scheduler or normal worker
+is enabled. Do not activate by merely changing flags: a separately authorized
+normal worker revision must deliberately restore the entrypoint and complete
+the remaining private transport/live export checks. Configuration is managed by
+`tool/configure_phase3_runtime_dev.mjs`, which refuses to replace an existing
+service blindly. No IAM/credential/Secret/migration changes accompany this
+runtime binding. Earlier checkpoints below are historical.
+
 **Latest build/credential checkpoint:** the immutable managed image is built
 and pushed; isolated managed verification passed English/Arabic canonical,
 font/text/PDF validity and invalid-PDF checks using its actual pinned Chromium.

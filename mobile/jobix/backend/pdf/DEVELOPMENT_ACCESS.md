@@ -4,6 +4,22 @@ All resources below are **development only** in `mhflow-jobix`. Do not grant
 Owner/Editor, create service-account keys, alter production/staging, or reuse
 the deployment/admin database credential in the application.
 
+## Current runtime checkpoint
+
+The requested runtime binding is applied and **READY in read-only mode** on
+private service `jobix-dev-pdf-export`, `me-central1`. Secret version 1 and the
+bundled verified CA are resolved inside the actual hosted runtime. Its
+authenticated readiness response confirms restricted database authentication
+and all required function privileges; unauthenticated calls are denied and
+dispatch is disabled. No IAM grant, credential rotation, Secret creation or
+migration was performed for this configuration step.
+
+The administrator's signing correction has since passed actual backend
+effective-permission checks: signBlob alone, with deployer impersonation
+preserved. The earlier access denials/excess grants below are historical.
+Normal worker/export activation and subsequent rollout are not part of this
+read-only configuration authorization.
+
 ## Observed blockers
 
 After the operator's access update:

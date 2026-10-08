@@ -1,5 +1,35 @@
 # Jobix verification evidence
 
+## Development runtime Secret/CA binding — READY, read-only
+
+Configured only the development runtime `jobix-dev-pdf-export` in `me-central1`
+using the existing immutable image and `jobix-backend-dev` account:
+- `JOBIX_DEV_EXPORT_DATABASE_URL` references existing Secret
+  `projects/850519041397/secrets/jobix-dev-export-database`, version `1`.
+- `JOBIX_DEV_DATABASE_CA_FILE` points to
+  `/opt/jobix/assets/certs/supabase-root-2021.crt`.
+- Runtime command is read-only readiness verification, not the normal worker.
+  Export/deletion processing flags are false; no scheduler was configured.
+
+Actual hosted verification:
+1. Cloud Run readback confirms the Secret reference; startup and authenticated
+   `/ready` prove successful resolution.
+2. Exact version 1 is accessible to the configured runtime identity.
+3. The CA exists at the configured path and matches the approved fingerprint.
+4. The real database socket is encrypted and certificate-authorized; the
+   production database adapter enforces `rejectUnauthorized: true`.
+5. The database session is `jobix_export_runtime`, with privileged flags false.
+6. Read-only catalog queries verify all 19 gateway/worker function privileges.
+   No mutating export function was invoked.
+
+Cloud Run Ready/RoutesReady/ConfigurationsReady succeeded. Authenticated
+readiness returned HTTP 200 with all six confirmations and
+`exportProcessing:false`; anonymous access returned 403 and dispatch 503.
+No credential rotation/new Secret, database migration, IAM-policy change,
+real Credit transaction, production/staging change or production worker start.
+Full Phase 3 export processing remains unactivated/unverified; this checkpoint
+is runtime readiness only.
+
 ## Owner-approved scoped bucket IAM cleanup
 
 **BUCKET SCOPE VERIFIED; signing correction pending; deployment still blocked.**

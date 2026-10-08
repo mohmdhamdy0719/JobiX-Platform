@@ -58,5 +58,23 @@ export async function google() {
     if(!data.accessToken)throw new CloudFailure(0,'IMPERSONATION_UNAVAILABLE');
     return data.accessToken;
   };
-  return {request,impersonate,principal:key.client_email};
+  const identityToken=async audience=>{
+    const target=new URL(audience);
+    if(target.protocol!=='https:'||!target.hostname.startsWith('jobix-dev-pdf-export-')||
+      !target.hostname.endsWith('.run.app')||target.pathname!=='/'||target.search||target.hash)
+      throw new CloudFailure(0,'DEV_AUDIENCE_GUARD');
+    // Existing deployer identity only, for an authorized read-only service check.
+    // This is not a runtime/database credential or a newly created key.
+    const stamp=Math.floor(Date.now()/1000);
+    const data=b64({alg:'RS256',typ:'JWT'})+'.'+b64({iss:key.client_email,
+      aud:'https://oauth2.googleapis.com/token',iat:stamp,exp:stamp+900,target_audience:audience});
+    const assertion=data+'.'+createSign('RSA-SHA256').update(data).sign(key.private_key,'base64url');
+    const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',
+      body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion}),
+      signal:AbortSignal.timeout(20000)});
+    const result=await response.json();
+    if(!response.ok||!result.id_token)throw new CloudFailure(response.status,'IDENTITY_TOKEN_UNAVAILABLE');
+    return result.id_token;
+  };
+  return {request,impersonate,identityToken,principal:key.client_email};
 }
