@@ -2,19 +2,20 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current next-stage brief: audit and plan only
+## Current next-stage authorization: native bug fixes only
 
-The owner requests a read-only next-stage audit and approval-first implementation
-plan. Earlier implementation authorizations below do not authorize starting this
-stage. Do not resume archived follow-ups or repair supporting Node/browser/API
-services as native Jobix work.
+The approval-first audit is complete and Phase 1 has a Build-mode assignment:
+only the five reported native bugs are authorized. Later feature phases are
+not authorized. Do not resume archived follow-ups or repair supporting
+Node/browser/API services as native Jobix work.
 
 **Why:** The owner explicitly stopped unauthorized supporting-service work and
-then supplied a new planning-only brief before approving native bug fixes and
-later features.
+then supplied a planning-only brief before approving the native bug-fix phase.
 
-**How to apply:** Wait for explicit plan approval and a Build-mode assignment.
-The sequence is native bug fixes, Volunteer Experience/resume refinements,
+**How to apply:** Implement only language editing, Back handling, draft discard,
+warning timing and Country/City icon removal. Report missing prerequisites
+before installing or configuring them. The later proposed sequence is Volunteer
+Experience/resume refinements,
 server AI operations/history/acceptance, real AI UI enablement, then private PDF
 export. Preserve the native stack, six-step builder and existing security rules.
 
@@ -32,8 +33,8 @@ following real Android bug reports, not behavior inferred from old tests.
 
 **How to apply:** Keep restart recovery and already-submitted ambiguous Save
 reconciliation safe while changing intentional exit behavior. Do not silently
-alter completeness weights or volunteer scoring; approval of the plan is still
-required before implementation.
+alter completeness weights or volunteer scoring; later feature phases still
+require approval.
 
 ## Current builder-polish and Resume foundation authorization
 

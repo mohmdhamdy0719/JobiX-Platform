@@ -1189,6 +1189,43 @@ void main() {
   String currentPath() =>
       container!.read(routerProvider).routeInformationProvider.value.uri.path;
 
+  testWidgets('existing language edit owns its controller through dismissal', (
+    tester,
+  ) async {
+    seedProfile();
+    await pump(tester, state: StartupState.signedIn, size: const Size(402, 1100));
+    await route(tester, '/builder/5');
+    const id = '1c2d3e4f-0000-4000-8000-000000000002';
+    final menu = find.byKey(const Key('menu-language-$id'));
+    await tester.ensureVisible(menu);
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    final copy = AppLocalizations.of(tester.element(find.byType(Scaffold).first))!;
+    await tester.tap(find.text(copy.editAction).last);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'opening an existing record');
+    await tester.tap(find.byKey(const Key('language-level')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(copy.profFluent).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(copy.saveAction).last);
+    // Check both the popped result and reverse-animation/unmount lifetime.
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull, reason: 'saving and dismissing');
+    expect(api.server.of(EntitySection.language).single.text('proficiency'), 'FLUENT');
+    await tester.ensureVisible(menu);
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(copy.editAction).last);
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(currentPath(), '/builder/5');
+    expect(entities.requests, hasLength(1));
+    expect(tester.takeException(), isNull, reason: 'reopening and system Back');
+  });
+
   for (final locale in ['en', 'ar']) {
     testWidgets('builder steps and Review native captures $locale', (
       tester,
