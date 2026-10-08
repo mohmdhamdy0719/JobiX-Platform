@@ -2,9 +2,9 @@
 
 ## Phase 2 — Volunteer and targeted Resume refinements — 2026-10-08
 
-**Status: locally implemented and verified; development rollout and native
-acceptance are BLOCKED / NOT VERIFIED.** The assigned Phase 2 scope permits
-native/source implementation, not automatic remote migration execution.
+**Status: implementation, local checks and authorized development rollout
+verified; native acceptance remains BLOCKED / NOT VERIFIED.** Remote execution
+occurred only after explicit owner approval and secure access provisioning.
 
 ### Implemented
 
@@ -79,23 +79,40 @@ directory; only synthetic, explicitly labelled fixture data is used.
 
 ### Approval/readiness gates still open
 
-1. **Development rollout:** the configured public development project is
-   `lmouxhbjhtqdtiqijcee`. No live schema/read/write check or migration execution
-   occurred. The owner subsequently approved this target, the Volunteer
-   migration and isolated live checks. Secure administrative access is still
-   required; `JOBIX_DEV_DATABASE_URL` is absent. No matching
-   migration integration was found. Use the existing certificate-validating
-   pooler approach, verify the installed baseline, apply only this additive
-   migration, and authorize isolated live checks separately. Never apply
-   disposable Auth/role fixtures to the live project.
-2. **Native acceptance/signing:** no Android device is attached and the
+**Development gate resolved:** the owner approved
+`lmouxhbjhtqdtiqijcee` and supplied `JOBIX_DEV_DATABASE_URL` through the secure
+form. No credential value was printed or committed.
+
+- `python3 tool/apply_volunteer.py` passed read-only target, verify-full TLS and
+  installed-contract checks. The pre-existing scoring, snapshot and mutation
+  bodies matched the approved baseline.
+- `python3 tool/apply_volunteer.py --apply-approved-dev` applied only the
+  additive Volunteer migration. In-transaction exact comparisons proved that
+  all existing profile, AI, wallet and idempotency rows were unchanged.
+- The protected live transaction passed Volunteer CRUD/replay/conflicts,
+  ownership and actual Supabase role/RLS checks, malformed-input rejection,
+  legacy paid 30 + 15 qualification and Volunteer non-credit/latch/allowance
+  invariants. Synthetic test Auth/app/credit rows were rolled back.
+  No disposable local Auth schema or role fixture was applied to Supabase.
+- Historical acknowledgement preservation was checked during migration;
+  same-key replay was checked live. Replay of a pre-migration response lacking
+  the Volunteer array was separately verified in the disposable local suite.
+- `python3 tool/check_volunteer_http.py` confirmed anonymous HTTP Volunteer
+  reads and mutations are denied with permission code `42501`. No rows were
+  exposed or written. This is not authenticated SDK/phone journey proof.
+- A subsequent read-only target/contract check passed against the installed
+  Volunteer wrapper and unchanged previous implementations.
+- Only the explicitly authorized development target was used. No staging,
+  production, product Auth configuration, old migration or AI operation changed.
+
+1. **Native acceptance/signing:** no Android device is attached and the
    previously used debug keystore is absent. No new key, signed APK or phone
    installation was generated. Recover the correct signing key or obtain
    explicit approval for an alternative test arrangement; do not uninstall
    or clear existing M31 data to bypass an update-signature conflict.
-3. Live owner-scoped persistence, actual Android WebView appearance, phone
-   restart and device-specific lifecycle behavior remain unverified until
-   those gates are resolved. Host tests/Chromium printing are not substitutes.
+2. Actual Android WebView appearance, authenticated SDK/phone Save/edit/delete,
+   phone restart and device-specific lifecycle behavior remain unverified until
+   that gate is resolved. Host tests/Chromium/live SQL are not substitutes.
 
 No later phase or supporting-service repair was started.
 
