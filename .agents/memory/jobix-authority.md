@@ -2,7 +2,24 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current next-stage authorization: native bug fixes only
+## Current authorization: Phase 2 planning only
+
+The owner accepted Phase 1 and requested a detailed Phase 2 plan for Volunteer
+Experience and targeted Resume Preview refinements, explicitly saying not to
+implement yet. Volunteer remains a dedicated unpaid section inside the existing
+six-step builder; the existing professional resume is to be refined, not
+redesigned.
+
+**Why:** The owner said "Phase 1 is accepted" and "Do not implement yet" when
+requesting the Phase 2 implementation plan.
+
+**How to apply:** Treat Phase 1 as accepted and keep Phase 2 work limited to
+planning until explicit implementation assignment and Build mode. Keep
+Volunteer scoring proposals unapproved until the owner confirms the rule;
+preserve the existing percentage weights, Contact 5+5+5 and 50% transition.
+Do not start AI/PDF/later phases or archived follow-ups.
+
+## Earlier Phase 1 native bug-fix authorization
 
 The approval-first audit is complete and Phase 1 has a Build-mode assignment:
 only the five reported native bugs are authorized. Later feature phases are
