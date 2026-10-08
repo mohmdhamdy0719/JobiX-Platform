@@ -49,6 +49,17 @@ read-only readiness report.
 Flag PDF/account/profile deletion-policy integration for separate owner
 approval, audit dev access read-only, report missing prerequisites and stop.
 
+The owner authorized secure development-access setup and read-only access
+verification. This does not authorize IAM/resource changes, migrations,
+deployment or starting Cloud Run.
+
+**Why:** The owner explicitly selected “Authorize secure access setup” after
+these limits were stated.
+
+**How to apply:** Collect existing development credentials only through secure
+tooling, verify the approved targets read-only, and stop at missing permissions
+or the remaining deletion-policy approval. Never request secret values in chat.
+
 ## Earlier authorization: bounded Phase 2 scope
 
 The owner accepted Phase 1 and approved the Phase 2 plan for Volunteer
