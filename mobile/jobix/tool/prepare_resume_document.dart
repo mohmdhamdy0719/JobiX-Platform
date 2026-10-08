@@ -8,17 +8,27 @@ import '../lib/features/resume/resume_document.dart';
 /// No public HTML input; callers supply authoritative database source only.
 Future<void> main(List<String> args) async {
   try {
-    if (args.length != 1) throw StateError('APP_UPDATE_REQUIRED');
+    if (args.length != 1 && !(args.length == 2 && args[1] == 'source')) {
+      throw StateError('APP_UPDATE_REQUIRED');
+    }
     final source = jsonDecode(await stdin.transform(utf8.decoder).join());
-    final root = args.single;
+    final root = args.first;
+    final render = args.length == 1;
     final result = ResumeDocument.prepare(
       Map<String, dynamic>.from(source as Map),
-      base64Encode(await File('$root/assets/fonts/Inter.ttf').readAsBytes()),
-      base64Encode(
-        await File(
-          '$root/assets/fonts/IBMPlexSansArabic-Regular.ttf',
-        ).readAsBytes(),
-      ),
+      render
+          ? base64Encode(
+              await File('$root/assets/fonts/Inter.ttf').readAsBytes(),
+            )
+          : '',
+      render
+          ? base64Encode(
+              await File(
+                '$root/assets/fonts/IBMPlexSansArabic-Regular.ttf',
+              ).readAsBytes(),
+            )
+          : '',
+      render: render,
     );
     stdout.write(jsonEncode(result));
   } catch (_) {

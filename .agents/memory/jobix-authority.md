@@ -20,6 +20,19 @@ operations. Do not implement the unresolved deletion policy or start AI work.
 Surface missing dependencies/configuration; don't repair unrelated supporting
 services. Past Volunteer rollout approval does not authorize PDF rollout.
 
+The owner also authorized remaining Phase 3 local pipeline, lifecycle, Credit
+fixtures, recovery/client flows and deletion/retention integration tests.
+Do not interpret this as approval for a new snapshot purge period or Auth
+deletion flow; consume existing DELETING states and keep deletion incomplete
+until the existing policy and late-write barrier are verified.
+
+**Why:** The owner explicitly requested local integration without changing the
+approved deletion policy, and kept all remote gates closed.
+
+**How to apply:** Use disposable fixtures only; preserve snapshot/history/dedupe
+while unresolved, and report runtime/policy blockers rather than substituting
+engines, weakening verification or proceeding remotely.
+
 ### Accepted Phase 3 product decisions
 The owner accepted the technical direction but explicitly said not to start
 Build. Use the existing pure-Dart generator with server-frozen authoritative

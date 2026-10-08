@@ -7,8 +7,9 @@ import {Gateway} from './gateway.mjs';
 import {Worker} from './worker.mjs';
 import {ChromiumRenderer} from './renderer.mjs';
 import {GoogleStorage,authenticateInternal} from './google.mjs';
+import {ExportCleanup} from './cleanup.mjs';
 
-export function server({gateway,worker,authenticate}) {
+export function server({gateway,worker,cleanup,authenticate}) {
   return createServer(async(req,res)=>{
     // Private endpoint; no application logs containing bodies/URLs/tokens.
     res.setHeader('Content-Type','application/json');
@@ -26,7 +27,10 @@ export function server({gateway,worker,authenticate}) {
       }
       const input=JSON.parse(Buffer.concat(chunks));
       let result;
-      if(req.url==='/recover')result=await worker.recover();
+      if(req.url==='/recover') {
+        result=await worker.recover();
+        if(cleanup)await cleanup.retention();
+      }
       else if(req.url==='/dispatch')result=await worker.dispatch();
       else if(req.url==='/command')result=await gateway.handle(input.actor,input.action,input.command);
       else throw new ExportError('NOT_FOUND');
@@ -47,7 +51,8 @@ async function main() {
   const storage=new GoogleStorage();
   const gateway=new Gateway({db,storage,canonicalizer:new Canonicalizer(),enabled:true});
   const worker=new Worker({db,storage,renderer:new ChromiumRenderer(),enabled:true});
-  server({gateway,worker,authenticate:header=>authenticateInternal(header,
+  const cleanup=new ExportCleanup({db,storage,enabled:true});
+  server({gateway,worker,cleanup,authenticate:header=>authenticateInternal(header,
     process.env.JOBIX_DEV_EXPORT_WORKER_URL)}).listen(Number(process.env.PORT??8080),'0.0.0.0');
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {

@@ -5,6 +5,10 @@ import {resolve} from 'node:path';
 
 export const bundle = 'jobix-resume-export-1';
 export const sha256 = value => createHash('sha256').update(value).digest('hex');
+export function fontChecksums(html) {
+  return [...html.matchAll(/data:font\/ttf;base64,([A-Za-z0-9+/=]+)/g)]
+    .map(match=>sha256(Buffer.from(match[1],'base64')));
+}
 export class ExportError extends Error {
   constructor(code) { super(code); this.code = code; }
 }
@@ -45,21 +49,29 @@ export function subprocess(program, args, input, {signal, maxBytes = 8000000} = 
   });
 }
 export class Canonicalizer {
-  constructor({root = resolve(import.meta.dirname, '../..'), dart = 'dart'} = {}) {
-    this.root = root; this.dart = dart;
+  constructor({root = resolve(import.meta.dirname, '../..'), dart = 'dart',execute=subprocess} = {}) {
+    Object.assign(this,{root,dart,execute});
   }
   async prepare(input) {
-    const output = await subprocess(this.dart,
+    const signal=AbortSignal.timeout(30000);
+    const facts=JSON.parse(await this.execute(this.dart,
+      [resolve(this.root,'tool/prepare_resume_document.dart'),this.root,'source'],
+      JSON.stringify(input.source),{signal}));
+    if(facts.bundle!==bundle || typeof facts.source_text!=='string' ||
+      Buffer.byteLength(facts.source_text.normalize('NFC'))>200000)throw new ExportError('VALIDATION_FAILED');
+    const output = await this.execute(this.dart,
       [resolve(this.root,'tool/prepare_resume_document.dart'),this.root],
-      JSON.stringify(input.source), {signal:AbortSignal.timeout(30000)});
+      JSON.stringify(input.source), {signal});
     let document;
     try { document = JSON.parse(output); } catch { throw new ExportError('VALIDATION_FAILED'); }
     if (document.bundle !== bundle || typeof document.html !== 'string' ||
         Buffer.byteLength(document.source_text.normalize('NFC')) > 200000) {
       throw new ExportError('VALIDATION_FAILED');
     }
-    const fonts = await Promise.all(['Inter.ttf','IBMPlexSansArabic-Regular.ttf']
-      .map(name => readFile(resolve(this.root,'assets/fonts',name))));
+    const fonts=fontChecksums(document.html);
+    if(fonts.length!==2)throw new ExportError('VALIDATION_FAILED');
+    const licenses=await Promise.all(['OFL.txt','OFL-IBMPlexSansArabic.txt']
+      .map(name=>readFile(resolve(this.root,'assets/fonts',name),'utf8')));
     return {
       html:document.html, document_sha256:sha256(document.html),
       source_sha256:input.source_sha256, bundle, issues:document.issues,
@@ -68,7 +80,11 @@ export class Canonicalizer {
       language:input.source.configuration.language,
       configuration:input.source.configuration,
       // The hash covers exact HTML including immutable embedded font bytes.
-      font_sha256:fonts.map(sha256),
+      font_sha256:fonts,
+      asset_manifest:{bundle,font_checksums:fonts,model_version:2,template_version:2,
+        render_config_version:'export-v1',
+        licenses:licenses.map((text,index)=>({font:index===0?'Inter':'IBM Plex Sans Arabic',
+          sha256:sha256(text),text}))},
     };
   }
 }

@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -18,6 +20,67 @@ import 'package:jobix/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'support/production_fonts.dart';
+
+class _PdfOverrides extends HttpOverrides {
+  final bytes = Uint8List.fromList(utf8.encode('%PDF-synthetic fixture'));
+  bool closed = false;
+  @override
+  HttpClient createHttpClient(SecurityContext? context) => _PdfClient(this);
+}
+
+class _PdfClient implements HttpClient {
+  _PdfClient(this.fixture);
+  final _PdfOverrides fixture;
+  @override
+  Future<HttpClientRequest> getUrl(Uri uri) async {
+    expect(uri.host, 'storage.googleapis.com');
+    expect(uri.queryParameters['generation'], '7');
+    return _PdfRequest(fixture.bytes);
+  }
+
+  @override
+  void close({bool force = false}) {
+    fixture.closed = true;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _PdfRequest implements HttpClientRequest {
+  _PdfRequest(this.bytes);
+  final Uint8List bytes;
+  @override
+  set followRedirects(bool value) {
+    expect(value, false);
+  }
+
+  @override
+  Future<HttpClientResponse> close() async => _PdfResponse(bytes);
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _PdfResponse extends Stream<List<int>> implements HttpClientResponse {
+  _PdfResponse(this.bytes);
+  final Uint8List bytes;
+  @override
+  int get statusCode => 200;
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int>)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => Stream<List<int>>.value(bytes).listen(
+    onData,
+    onError: onError,
+    onDone: onDone,
+    cancelOnError: cancelOnError,
+  );
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 const enabled = bool.fromEnvironment('JOBIX_ENABLE_PDF_EXPORT');
 const actor = '70000000-0000-4000-8000-000000000001';
@@ -172,6 +235,9 @@ void main() {
   late SupabaseClient client;
   late List<Map<String, dynamic>> commands;
   Map<String, dynamic>? acknowledgement;
+  late Map<String, dynamic> prepared;
+  bool paginate = false;
+  bool expiredDownload = true;
   bool loseResponse = false;
   String? rejected;
   int accepted = 0;
@@ -224,12 +290,41 @@ void main() {
     accepted = 0;
     loseResponse = false;
     rejected = null;
+    paginate = false;
+    expiredDownload = true;
+    prepared = {
+      ...document,
+      'configuration': {'section_visibility': <String, dynamic>{}},
+    };
     client = SupabaseClient(
       'https://synthetic.example.invalid',
       'synthetic-publishable',
       authOptions: const AuthClientOptions(autoRefreshToken: false),
       httpClient: MockClient((request) async {
         final body = jsonDecode(request.body) as Map;
+        if (request.url.path.endsWith('/save_resume_presentation')) {
+          commands.add({
+            'action': 'presentation',
+            'command': Map<String, dynamic>.from(body),
+          });
+          prepared = {
+            ...prepared,
+            'profile_version': (prepared['profile_version'] as int) + 1,
+            'configuration_version':
+                (prepared['configuration_version'] as int) + 1,
+            'configuration': {
+              'section_visibility': {
+                for (final key in body['hidden_sections'] as List) key: false,
+              },
+            },
+          };
+          return http.Response(
+            jsonEncode(prepared['configuration']),
+            200,
+            request: request,
+            headers: {'content-type': 'application/json'},
+          );
+        }
         final action = body['action'];
         final command = Map<String, dynamic>.from(body['command'] as Map);
         commands.add({'action': action, 'command': command});
@@ -239,14 +334,15 @@ void main() {
             'jobs': [
               {
                 'id': jobId,
+                'profile_id': profileId,
                 'state': acknowledgement == null ? 'COMPLETED' : 'QUEUED',
                 'created_at': '2026-10-08T12:00:00Z',
               },
             ],
-            'next_cursor': null,
+            'next_cursor': paginate && command['cursor'] == null ? jobId : null,
           };
         } else if (action == 'document') {
-          result = document;
+          result = prepared;
         } else if (action == 'create' || action == 'again') {
           if (rejected != null) {
             return http.Response(
@@ -280,6 +376,19 @@ void main() {
         } else if (action == 'status') {
           result = {'state': 'QUEUED'};
         } else if (action == 'download') {
+          if (!expiredDownload) {
+            return http.Response(
+              jsonEncode({
+                'data': {
+                  'url':
+                      'https://storage.googleapis.com/synthetic.pdf?generation=7&token=synthetic-only',
+                },
+                'error': null,
+              }),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }
           return http.Response(
             jsonEncode({
               'data': null,
@@ -403,6 +512,39 @@ void main() {
     expect(find.text('Server balance: 3 available.'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink()); // Disposes polling timer.
   });
+  testWidgets(
+    'valid free download saves bytes without persisting URL or creating another job',
+    (tester) async {
+      expiredDownload = false;
+      final fixture = _PdfOverrides();
+      Map? saved;
+      const channel = MethodChannel('jobix/pdf_save');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+        call,
+      ) async {
+        expect(call.method, 'save');
+        saved = call.arguments as Map;
+        return true;
+      });
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await HttpOverrides.runWithHttpOverrides(() async {
+        await mount(tester, initial: true);
+        await tap(tester, 'Download — free');
+        expect(saved!['bytes'], fixture.bytes);
+        expect(saved!['name'], '$jobId.pdf');
+        expect(saved!.containsKey('url'), false);
+        expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+        expect(accepted, 0);
+        expect(fixture.closed, true);
+        expect(find.text('PDF saved. No Credits charged.'), findsOneWidget);
+      }, fixture);
+    },
+  );
   testWidgets('expired download neither creates nor charges a replacement', (
     tester,
   ) async {
@@ -430,6 +572,103 @@ void main() {
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
       expect(observedDocument!['html'], documentHtml);
       expect(accepted, 0);
+    },
+  );
+  testWidgets(
+    'Export Again is a new confirmed logical request for the selected historical PDF',
+    (tester) async {
+      await mount(tester, initial: true);
+      await tap(tester, 'Export Again — 2');
+      await tap(tester, 'Create — 2 Credits');
+      final request =
+          commands.singleWhere((c) => c['action'] == 'again')['command'] as Map;
+      expect((request['payload'] as Map)['historical_export_id'], jobId);
+      expect((request['payload'] as Map)['expected_document_sha256'], 'a' * 64);
+      expect(accepted, 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+  test('presentation fixture returns a valid SDK RPC response', () async {
+    final result = await client.rpc(
+      'save_resume_presentation',
+      params: {
+        'hidden_sections': ['volunteer'],
+      },
+    );
+    expect((result as Map)['section_visibility'], {'volunteer': false});
+  });
+  testWidgets(
+    'history pagination uses only the supplied opaque cursor and creates no export',
+    (tester) async {
+      paginate = true;
+      await mount(tester);
+      await tap(tester, 'More exports');
+      final history = commands.where((c) => c['action'] == 'history').toList();
+      expect((history.last['command'] as Map)['cursor'], jobId);
+      expect(accepted, 0);
+    },
+  );
+  testWidgets(
+    'explicit hide freezes config command and advances authoritative versions without export',
+    (tester) async {
+      await mount(tester, initial: true);
+      await tester.ensureVisible(find.text('Volunteer Experience'));
+      await tester.tap(find.text('Volunteer Experience'));
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+      final request =
+          commands.singleWhere((c) => c['action'] == 'presentation')['command']
+              as Map;
+      expect(request['expected_profile_version'], 4);
+      expect(request['expected_configuration_version'], 3);
+      expect(request['hidden_sections'], ['volunteer']);
+      expect(
+        commands.map((c) => c['action']).toList(),
+        contains('document'),
+        reason:
+            'Synthetic request sequence ${commands.map((c) => c['action']).toList()}',
+      );
+      expect(observedDocument!['profile_version'], 5);
+      expect(observedDocument!['configuration_version'], 4);
+      expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+      expect(accepted, 0);
+    },
+  );
+  testWidgets(
+    'insufficient Credits keeps frozen intent for retry without creating another key',
+    (tester) async {
+      rejected = 'CREDIT_INSUFFICIENT';
+      await mount(tester, initial: true);
+      await tap(tester, 'Create PDF — 2 Credits');
+      await tap(tester, 'Create — 2 Credits');
+      final initial =
+          jsonDecode((await db.setting('resume:$actor:export:$profileId'))!)
+              as Map;
+      rejected = null;
+      await tap(tester, 'Reconcile saved export request');
+      final attempts = commands.where((c) => c['action'] == 'create').toList();
+      expect(
+        (attempts.last['command'] as Map)['idempotency_key'],
+        (initial['command'] as Map)['idempotency_key'],
+      );
+      expect(accepted, 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+  test(
+    'invalid included personal URLs are reported rather than silently omitted',
+    () {
+      final invalid = CareerProfile.fromJson({
+        ...savedProfile,
+        'personal': {
+          ...(savedProfile['personal'] as Map),
+          'portfolio_url': 'javascript:alert(1)',
+        },
+      });
+      expect(
+        ResumeDocument.issues(invalid, ResumePresentation(language: 'en')),
+        contains('personal.portfolio_url'),
+      );
     },
   );
 }

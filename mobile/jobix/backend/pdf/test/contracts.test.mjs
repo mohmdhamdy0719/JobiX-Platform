@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {Gateway} from '../gateway.mjs';
 import {Worker} from '../worker.mjs';
-import {bundle,logicalHash,sha256,ExportError} from '../document.mjs';
+import {bundle,logicalHash,sha256,ExportError,Canonicalizer} from '../document.mjs';
 import {containsText} from '../renderer.mjs';
 import {GoogleStorage,authenticateInternal} from '../google.mjs';
 
@@ -125,4 +125,38 @@ test('server refuses startup gates without any listener/cloud call',async()=>{
 });
 test('signer rejects unbounded TTL before accessing identity',async()=>{
   await assert.rejects(new GoogleStorage().sign('opaque','1',601),{code:'VALIDATION_FAILED'});
+});
+test('expired download rejects before object/signing calls and never regenerates',async()=>{
+  const gateway=new Gateway({enabled:true,db:{call:async()=>({
+    state:'COMPLETED',expires_at:new Date(0).toISOString()})},
+    storage:{inspect:async()=>{throw new Error('must not inspect');}}});
+  await assert.rejects(gateway.handle(randomUUID(),'download',{export_id:randomUUID()}),
+    {code:'EXPORT_EXPIRED'});
+});
+test('Export Again requires explicit historical identity and has a distinct logical payload',async()=>{
+  const c=command();
+  await assert.rejects(new Gateway({enabled:true}).handle(randomUUID(),'again',c),
+    {code:'VALIDATION_FAILED'});
+  const original=logicalHash(c);c.payload.historical_export_id=randomUUID();
+  assert.notEqual(original,logicalHash(c));
+});
+test('history projection hides private object fields and uses opaque pagination',async()=>{
+  const id=randomUUID();
+  const gateway=new Gateway({enabled:true,db:{call:async(name,args)=>{
+    assert.equal(args.before_id,id);
+    return Array.from({length:25},()=>({id:randomUUID(),object_path:'private',object_generation:'9',
+      pdf_sha256:'hash',user_id:'owner',state:'EXPIRED'}));}}});
+  const result=await gateway.handle(randomUUID(),'history',{cursor:id});
+  assert.ok(result.next_cursor);assert.equal(result.jobs[0].object_path,undefined);
+  assert.equal(result.jobs[0].object_generation,undefined);
+});
+test('normalized UTF-8 overflow is rejected before invoking HTML/font rendering',async()=>{
+  let calls=0;
+  const canonicalizer=new Canonicalizer({execute:async(_program,args)=>{
+    calls++;assert.equal(args.at(-1),'source');
+    // NFC expands this combining character: raw length below limit, normalized above.
+    return JSON.stringify({bundle,source_text:'\u0344'.repeat(50001)});
+  }});
+  await assert.rejects(canonicalizer.prepare({source:{}}),{code:'VALIDATION_FAILED'});
+  assert.equal(calls,1);
 });

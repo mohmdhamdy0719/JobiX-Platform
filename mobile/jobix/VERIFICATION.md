@@ -7,6 +7,61 @@ No live migrations, deployment/IAM/Scheduler/Cloud Run changes, GCS writes/signi
 or real Credit operations. Unresolved deletion/snapshot policy was not implemented.
 No signing/APK/build-environment changes or AI work.
 
+### Additional authorized local pipeline/recovery step
+
+**Implemented and fixture-verified; not approved for rollout.**
+
+- Canonical preparation now checks normalized UTF-8 source size in a separate
+  source-only pass before HTML/font rendering, using the same Dart generator.
+  Snapshots archive exact embedded-font checksums, font-license text/checksums,
+  bundle/model/template/config versions and immutable canonical HTML.
+- Two additional **unapplied** forward migration files harden null/stale fences,
+  active-profile guards, recovery eligibility after lock waits, asset metadata
+  and private cleanup hooks. No historical migrations were edited.
+- Independent heartbeat/hard-deadline cancellation covers stalled render,
+  validation and storage adapters; late results cannot finalize a newer lease.
+- Private freeze hooks consume an **already DELETING** account/profile state,
+  invalidate job leases and release only pending reservations. They never modify
+  Auth or mark account deletion complete. Object cleanup requires an explicit
+  quiescence verifier and generation checks. Snapshot purge policy is still
+  unapproved, so snapshots/history/dedupe are not purged.
+- Seven-day expiry cleanup preserves completed charges, history and replay;
+  verification markers prevent repeatedly scanning already-cleaned objects.
+  Private recovery is wired to the approved PDF-only expiry cleanup hook.
+- Client history/download/Export Again eligibility respects active profile and
+  ownership; structural invalid URLs are reported rather than silently omitted.
+
+Latest checks:
+- **33 Node contract/recovery/cleanup tests passed**, including deterministic
+  virtual-clock heartbeat, timeout, stale upload, ambiguous upload/completion,
+  conditional-create adoption, asset tampering, pagination, expired objects and
+  cleanup races.
+- **208 Flutter regression tests passed** with default-off exports.
+- **16 opt-in local Flutter checks passed**, including reopened frozen requests,
+  explicit visibility/config versioning, paid Export Again, history pagination,
+  insufficient-Credit retry, invalid included personal URLs and successful free
+  download byte streaming to a mocked save channel without URL persistence.
+- Historical + new migrations and SQL lifecycle/freeze tests passed in a
+  disposable PostgreSQL cluster. Actual concurrent connections returned the
+  same accepted receipt with one reservation. An injected failure between debit
+  and job completion rolled back both. Duplicate callbacks debit/release once.
+- End-to-end canonical Dart + actual existing local Chromium/Poppler passed:
+  free repeat download, paid Export Again, exact-generation expiry cleanup, and
+  a real canonical CV over twenty pages rejected before upload/debit.
+- Analyzer: zero errors/warnings; two pre-existing standalone fixture import
+  infos. Client secret/layout/token checks passed.
+- Declared PDF dependencies restored at their existing exact versions into
+  the isolated product directory, with its own frozen lockfile. Root manifests,
+  root lock and Flutter manifest/lock hashes unchanged.
+
+**Runtime blocker:** the downloaded Playwright-pinned headless browser does not
+launch in this Nix/host libc environment. It initially lacked shared libraries;
+reusing available libraries exposed incompatible glibc ABI requirements.
+No browser substitution, system-library upgrade or cloud image build was done.
+The CDP integration uses the explicitly identified existing host Chromium and
+does not prove production Playwright runtime readiness. Browser child processes
+now receive only approved non-secret environment fields.
+
 Local checks passed:
 - Standalone Dart EN/AR structural validity, unscored Volunteer, optional
   descriptions, explicit visibility and contact rules.

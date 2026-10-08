@@ -22,6 +22,7 @@ export class Gateway {
       }
       if (job.state==='MISSING_OBJECT') throw new ExportError('EXPORT_OBJECT_MISSING');
       if (job.state!=='COMPLETED') throw new ExportError('EXPORT_NOT_READY');
+      if(job.download_eligible===false)throw new ExportError('EXPORT_NOT_READY');
       const metadata = await this.storage.inspect(job.object_path,job.object_generation);
       if (!metadata) {
         await this.db.call('missing',{actor,operation,generation:job.object_generation});
@@ -30,7 +31,8 @@ export class Gateway {
       if (String(metadata.generation)!==job.object_generation) throw new ExportError('EXPORT_OBJECT_MISSING');
       // Recheck account state after IO; URLs themselves remain short-lived bearer capabilities.
       const current=await this.db.call('status',{actor,operation});
-      if(current.state!=='COMPLETED' || current.object_generation!==job.object_generation) {
+      if(current.state!=='COMPLETED' || current.download_eligible===false ||
+        current.object_generation!==job.object_generation) {
         throw new ExportError('EXPORT_NOT_READY');
       }
       const ttl = Math.min(600,Math.floor((Date.parse(job.expires_at)-Date.now())/1000));
@@ -68,6 +70,7 @@ export class Gateway {
       profile,profile_version:document.profile_version,config_version:document.configuration_version,
       source_hash:document.source_sha256,document_hash:document.document_sha256,
       request_hash:hash,html:document.html,bundle,again:payload.historical_export_id ?? null,
+      asset_manifest:document.asset_manifest ?? {},
     });
   }
 }

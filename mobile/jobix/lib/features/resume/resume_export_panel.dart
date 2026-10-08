@@ -470,7 +470,8 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               Text(job['created_at'] as String),
               Wrap(
                 children: [
-                  if (job['state'] == 'COMPLETED')
+                  if (job['state'] == 'COMPLETED' &&
+                      job['download_eligible'] != false)
                     TextButton(
                       style: TextButton.styleFrom(
                         minimumSize: const Size(0, 48),
@@ -484,6 +485,7 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                     style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
                     onPressed:
                         busy ||
+                            job['profile_id'] != widget.profileId ||
                             document == null ||
                             pending != null ||
                             (document!['issues'] as List).isNotEmpty

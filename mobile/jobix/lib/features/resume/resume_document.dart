@@ -62,6 +62,13 @@ class ResumeDocument {
       errors.add('personal.email');
     }
     final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    for (final key in ['linkedin_url', 'github_url', 'portfolio_url']) {
+      final value = p.personal[key]?.trim() ?? '';
+      if (value.isNotEmpty &&
+          (value.runes.length > 2048 || normalizeUrl(value) == null)) {
+        errors.add('personal.$key');
+      }
+    }
     if (phone.length > 32 ||
         digits.length < 7 ||
         digits.length > 15 ||
@@ -124,8 +131,9 @@ class ResumeDocument {
   static Map<String, dynamic> prepare(
     Map<String, dynamic> source,
     String latinFont,
-    String arabicFont,
-  ) {
+    String arabicFont, {
+    bool render = true,
+  }) {
     final profile = CareerProfile.fromJson(
       Map<String, dynamic>.from(source['profile'] as Map),
     );
@@ -149,14 +157,15 @@ class ResumeDocument {
       'bundle': bundle,
       'issues': issues(profile, config),
       'source_text': text,
-      'html': ResumeRender.html(
-        profile: profile,
-        language: config.language,
-        latinFontBase64: latinFont,
-        arabicFontBase64: arabicFont,
-        additionalLinks: links,
-        hiddenSections: config.hidden,
-      ),
+      if (render)
+        'html': ResumeRender.html(
+          profile: profile,
+          language: config.language,
+          latinFontBase64: latinFont,
+          arabicFontBase64: arabicFont,
+          additionalLinks: links,
+          hiddenSections: config.hidden,
+        ),
     };
   }
 }

@@ -60,13 +60,38 @@ explicit in-memory storage test adapter. It does **not** verify GCS or deployed
 identity/IAM. The test-only CDP adapter is not a production second renderer.
 
 Production adapters declare exact `pg`/`playwright` versions in this isolated
-directory. Runtime packages/browser installation and transitive lock are not yet
-verified. Do not install/repair root pnpm services or use their workflow.
+directory. Those exact dependencies and their isolated frozen lock are restored.
+The matching headless browser was downloaded to ignored local tooling storage,
+but cannot launch with the host's available libc/library combination. Do not
+substitute the working host Chromium for the pinned production engine, upgrade
+system libraries, install/repair root services or claim runtime readiness.
 
 The Flutter lock was restored with explicit owner approval and without changing
 dependency versions or manifests. The full default-off suite and opt-in local
 export UI fixtures passed. The test-only compile flag is not a rollout flag
 change and does not enable any remote service.
+
+## Local deletion/expiry integration
+
+`cleanup.mjs` is a private hook, not an Auth/deletion product endpoint.
+`freeze` only accepts an account/profile already marked DELETING by its authorized
+owner. Its transaction invalidates all relevant fences and releases PENDING
+reservations once, without refunding completed debits.
+
+An injected verifier must prove writer quiescence before object cleanup; waiting
+for a timeout alone never proves that an in-flight remote write has stopped.
+Cleanup deletes/verifies exact generations and catches replacement/late-write
+races. Without a configured verifier, it remains DELETION_PENDING.
+Even after object verification it stays DELETION_PENDING with
+`snapshot_policy: APPROVAL_REQUIRED`. No snapshot purge period, Auth rewrite,
+physical account/profile deletion or deletion-complete claim is implemented.
+Snapshot/FK/purge semantics must be resolved against the owner's existing contract
+before rollout. Seven-day PDF-only expiry preserves snapshots, history, logical
+receipts and the original completed charge.
+
+Source-only and HTML passes share a single thirty-second preparation budget.
+Normalized 200KB validation happens before HTML/font rendering. Snapshot manifests
+archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ## Closed readiness/approval gates
 

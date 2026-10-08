@@ -16,13 +16,17 @@ export function containsText(actual,expected) {
   return true;
 }
 export class ChromiumRenderer {
-  async browser() {
+  async browser({timeout=20000}={}) {
     const {chromium}=await import('playwright');
-    return chromium.launch({headless:true}); // Pinned runtime image, no download/installation here.
+    const allowed=['PATH','HOME','LANG','LD_LIBRARY_PATH','NIX_LD','NIX_LD_LIBRARY_PATH',
+      'FONTCONFIG_FILE','FONTCONFIG_PATH','XDG_DATA_DIRS','XDG_CONFIG_DIRS'];
+    const env=Object.fromEntries(allowed.filter(key=>process.env[key]).map(key=>[key,process.env[key]]));
+    return chromium.launch({headless:true,timeout,env}); // No server credentials in browser env.
   }
   async render(html,{signal,timeout}) {
     if (signal.aborted || timeout<=0) throw new ExportError('STALE_LEASE');
-    const browser=await this.browser();
+    const browser=await this.browser({timeout:Math.min(20000,timeout)});
+    if(signal.aborted){await browser.close();throw new ExportError('STALE_LEASE');}
     const close=()=>{browser.close().catch(()=>{});};
     signal.addEventListener('abort',close,{once:true});
     try {
@@ -36,7 +40,8 @@ export class ChromiumRenderer {
         displayHeaderFooter:false,timeout});
     } finally {signal.removeEventListener('abort',close);await browser.close();}
   }
-  async validate(pdf,html) {
+  async validate(pdf,html,{signal,timeout=20000}={}) {
+    const bounded=AbortSignal.any([...(signal?[signal]:[]),AbortSignal.timeout(Math.max(1,timeout))]);
     if (!Buffer.isBuffer(pdf) || !pdf.subarray(0,5).equals(Buffer.from('%PDF-'))) {
       throw new ExportError('VALIDATION_FAILED');
     }
@@ -46,14 +51,18 @@ export class ChromiumRenderer {
       const file=join(directory,'document.pdf');
       await writeFile(file,pdf,{mode:0o600});
       const info=(await subprocess('pdfinfo',[file],null,
-        {signal:AbortSignal.timeout(20000),maxBytes:20000})).toString();
+        {signal:bounded,maxBytes:20000})).toString();
       const match=info.match(/^Pages:\s+(\d+)$/m);
       const pages=Number(match?.[1]);
       if (!pages || pages>20) throw new ExportError('VALIDATION_FAILED');
       await subprocess('pdftotext',['-enc','UTF-8',file,join(directory,'text')],null,
-        {signal:AbortSignal.timeout(20000)});
+        {signal:bounded});
       const actual=await readFile(join(directory,'text'),'utf8');
-      browser=await this.browser();
+      if(bounded.aborted)throw new ExportError('STALE_LEASE');
+      browser=await this.browser({timeout:Math.min(20000,timeout)});
+      const close=()=>browser.close().catch(()=>{});
+      bounded.addEventListener('abort',close,{once:true});
+      if(bounded.aborted)throw new ExportError('STALE_LEASE');
       const page=await browser.newPage({javaScriptEnabled:false});
       await page.route('**/*',route=>route.abort());
       await page.setContent(html,{timeout:20000});

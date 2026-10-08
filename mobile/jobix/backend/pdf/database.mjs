@@ -3,12 +3,13 @@ import {readFile} from 'node:fs/promises';
 const contracts = {
   source:['actor','profile'], replay:['actor','command','request_hash'],
   create:['actor','command','request_id','profile','profile_version','config_version',
-    'source_hash','document_hash','request_hash','html','bundle','again'],
+    'source_hash','document_hash','request_hash','html','bundle','again','asset_manifest'],
   status:['actor','operation'], history:['actor','before_id'], missing:['actor','operation','generation'],
   claim:['capacity'], heartbeat:['operation','fence'], stage:['operation','fence','stage'],
   finish:['operation','fence','proof','terminal'], recover:[],
+  freeze:['actor','profile'], retention:[],cleaned:['operation','generation'],
 };
-const jsonArgs = new Set(['proof']);
+const jsonArgs = new Set(['proof','asset_manifest']);
 export class Database {
   constructor(pool) { this.pool = pool; }
   async call(method,args={}) {
@@ -23,7 +24,7 @@ export class Database {
     } catch (error) {
       const known = new Set(['AUTH_REQUIRED','ACCOUNT_DELETING','FORBIDDEN','NOT_FOUND',
         'EXPORT_NOT_READY','VALIDATION_FAILED','VERSION_CONFLICT','IDEMPOTENCY_KEY_REUSE',
-        'CREDIT_INSUFFICIENT','RATE_LIMITED','STALE_LEASE','INVALID_STATE']);
+        'CREDIT_INSUFFICIENT','RATE_LIMITED','STALE_LEASE','INVALID_STATE','CLEANUP_UNVERIFIED']);
       throw new ExportError(known.has(error.message) ? error.message : 'SERVICE_UNAVAILABLE');
     }
   }

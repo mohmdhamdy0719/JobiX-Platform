@@ -38,14 +38,19 @@ export class GoogleStorage {
     if(media)params.set('alt','media');
     return `https://storage.googleapis.com/storage/v1/b/${this.bucket}/o/${encode(path)}?${params}`;
   }
-  async inspect(path,generation) {
-    const response=await checked(this.url(path,generation),{headers:await this.headers()});
+  async inspect(path,generation,signal) {
+    const response=await checked(this.url(path,generation),{headers:await this.headers(),signal});
     return response?response.json():null;
   }
-  async read(path,generation) {
-    const response=await checked(this.url(path,generation,true),{headers:await this.headers()});
+  async read(path,generation,signal) {
+    const response=await checked(this.url(path,generation,true),{headers:await this.headers(),signal});
     if(!response)throw new ExportError('EXPORT_OBJECT_MISSING');
     return Buffer.from(await response.arrayBuffer());
+  }
+  async remove(path,generation) {
+    if(!/^[1-9][0-9]*$/.test(String(generation)))throw new ExportError('VALIDATION_FAILED');
+    await checked(this.url(path,generation)+'&ifGenerationMatch='+generation,
+      {method:'DELETE',headers:await this.headers()});
   }
   async create(path,pdf,metadata,signal) {
     const boundary=randomUUID();
