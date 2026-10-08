@@ -131,6 +131,14 @@ void main(List<String> arguments) {
           },
         ];
       }
+      if (regression && ar && (fixture.name == 'short' || fixture.boundary)) {
+        // Joined forms, lam-alef, tashkeel, Arabic punctuation and LTR islands.
+        // These are synthetic content only; the canonical renderer is unchanged.
+        source['summary'] =
+            '${source['summary']}\n'
+            'لَا إِلٰهَ؛ مُنَسِّقٌ يَتَعَلَّمُ بِجِدٍّ، شُؤُون الفريق؟ '
+            '(SQL / C++ / R&D) — 2024-06: «نصّ مُختلط».';
+      }
       final profile = CareerProfile.fromJson(source);
       for (final item in profile.items.values.expand((items) => items)) {
         if (item.problems().isNotEmpty) {

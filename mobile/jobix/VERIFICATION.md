@@ -69,6 +69,82 @@ architecture, Android signing/build configuration or dependency files changed.
 No supporting services, live-data, AI or APK-build operations ran. Existing
 APK/build artifacts are preserved.
 
+## Opt-in offline Arabic/RTL visual guard — 2026-10-08
+
+**Status: PASSED.** All 12 logical/print fixtures and all 17 checker self-tests
+passed. Seven representative PDF pages matched the explicitly reviewed baseline
+with zero changed pixels. Negative self-tests reject joining/mark-like ink loss
+or addition, weight/position changes, dimension changes, altered candidates,
+unreviewed baselines, engine/font/policy drift and missing page coverage.
+
+Visual snapshots **complement all logical text, embedded-font, geometry and
+heading-cohesion assertions above; they never replace them**. The same Dart
+canonical renderer and local Chromium DevTools pipe produce the PDFs. Existing
+`pdftoppm` rasterizes them at 96 DPI; no dependency installation, second product
+renderer, HTTP server, app/API startup or live account/data is involved.
+
+The representative set covers every PDF page of Arabic short, Arabic boundary-10
+and English boundary-10 (currently seven pages). Arabic synthetic content adds
+joined letters/lam-alef, tashkeel, punctuation, quotes and Latin SQL/C++/R&D/date
+islands; existing contacts, mixed skills and long headers exercise bidi/wrapping.
+PNG previews and RGB PPM comparison rasters are temporary/ignored only.
+
+```sh
+python3 -m unittest discover -s mobile/jobix/tool -p 'test_resume_print*.py' -v
+# Candidate directory MUST be new. Generation does not approve anything.
+python3 mobile/jobix/tool/check_resume_print.py \
+  --visual-candidates mobile/jobix/.resume-visual-baselines/new-review
+# OPEN EVERY generated PNG. Compare with prior approved PNGs if available.
+# Check joining, diacritics, punctuation, Latin island order, contacts/dates,
+# weight, spacing, header wrapping, alignment and page continuations.
+python3 mobile/jobix/tool/resume_print_visual.py \
+  --approve mobile/jobix/.resume-visual-baselines/new-review \
+  --review-note "Describe which pages/features were visually checked and why accepted"
+# Only an explicitly reviewed manifest can be compared:
+python3 mobile/jobix/tool/check_resume_print.py \
+  --visual-baselines mobile/jobix/.resume-visual-baselines/new-review --keep
+```
+
+The ignored `mobile/jobix/.resume-visual-baselines/current` set was explicitly
+visually reviewed page-by-page for this change. Review found joined Arabic,
+visible diacritics/punctuation, intact LTR contact/date/skill islands, wrapped
+long headings and unclipped page continuations. This is an agent-reviewed host
+baseline, **not owner design approval, native WebView or real-phone acceptance**.
+Because evidence is intentionally not committed, a fresh checkout must obtain
+the retained reviewed directory or generate **and deliberately review** new
+candidates; a missing baseline is a failure, not an auto-update.
+
+Recorded capture versions: Chromium **152.0.7977.64**, revision
+`506c834ecceaa943c5f41e6cfe7f68acb5c45346`, JS **15.2.124.18**;
+Poppler **26.06.0**, Linux x86_64. Font binary SHA-256 fingerprints (version
+authority, including any internal font-name/version changes):
+
+- Inter.ttf: `29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031`
+- IBMPlexSansArabic-Regular.ttf: `6f611412270a132bbac838da9259d4c68569b4175f3b3b8fa3fa36a30b56dab9`
+
+Each manifest records these engine/font fingerprints, capture policy, source
+hashes, image hashes and a separate explicit review note/time. Changing
+Chromium, Poppler, fonts, platform, DPI/tolerances, fixture content or page
+coverage fails closed. Generate a *separate* candidate set and inspect **all**
+pages deliberately; do not automatically bless the new output or loosen
+tolerances to hide regressions. Candidate generation cannot overwrite an
+existing directory, and approval verifies PPM/PNG integrity before recording
+review. Baseline PPM integrity is also checked during comparison.
+
+Tolerance: ignore RGB channel changes <=24/255, allow at most **1.5% changed
+pixels relative to ink** over the page, and at most **12%** within any 64x64
+tile (minimum denominator 32 ink pixels). Ink means either image has a channel
+below 245. This tolerates minor antialiasing, not page-sized white-space dilution
+or broad font/position changes; local tiles catch small missing joins/marks.
+Dimensions must match exactly; no image registration, cropping or blurring
+hides shifts. This is not a guarantee of catching every subpixel defect.
+
+On failure the suite retains current PDF/PNG/PPM evidence in `/tmp` and writes
+a red changed-pixel `*-diff.ppm` where pixel comparison ran. Open that alongside
+the approved PNG; `report.json`/`visual-manifest.json` on successful runs record
+the results. Poppler may emit existing Type 3 glyph bounding-box warnings while
+rasterizing bullets; these do not waive text/font checks or visual comparison.
+
 ## Phase 2 — Volunteer and targeted Resume refinements — 2026-10-08
 
 **Status: implementation, local checks and authorized development rollout

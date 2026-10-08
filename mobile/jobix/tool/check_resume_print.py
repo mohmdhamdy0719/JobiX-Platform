@@ -292,7 +292,7 @@ def command(args, **kwargs):
     return subprocess.check_output(args, timeout=60, env=tool_environment(), **kwargs)
 
 
-def run(directory, binaries):
+def run(directory, binaries, visual_baseline=None, visual_candidates=None):
     # Direct VM execution avoids Dart CLI telemetry/package startup. The
     # generator imports only the canonical app's pure-Dart sources relatively.
     command([binaries["dart"], "--disable-dart-dev",
@@ -302,6 +302,10 @@ def run(directory, binaries):
     browser = Chromium(binaries["chromium"], directory)
     reports = []
     try:
+        visual = None
+        if visual_baseline or visual_candidates:
+            from resume_print_visual import VisualCheck
+            visual = VisualCheck(directory, binaries, ROOT, browser, visual_baseline)
         for case in cases:
             target = browser.call("Target.createTarget", {"url": "about:blank"})["targetId"]
             session = browser.call("Target.attachToTarget", {
@@ -341,6 +345,8 @@ def run(directory, binaries):
                            str(stem.with_suffix(".pdf")), "-"]).decode()
             fonts = command([binaries["pdffonts"], str(stem.with_suffix(".pdf"))]).decode()
             report = check_pdf(case, dom, text, xml, fonts)
+            if visual:
+                visual.capture(case, stem, report["pages"])
             stem.with_suffix(".txt").write_text(text)
             if case["case"] == "boundary-10":
                 image = browser.call("Page.captureScreenshot", {
@@ -352,6 +358,16 @@ def run(directory, binaries):
             print(f"PASS {case['file']}: {report['pages']} A4 pages, "
                   f"{report['cohesion_checks']} cohesion checks, complete text/skills/fonts")
             browser.call("Target.closeTarget", {"targetId": target})
+        if visual:
+            visual.finish()
+            if visual_candidates:
+                visual_candidates.mkdir(parents=True)
+                for image in visual.images:
+                    for suffix in (".ppm", ".png"):
+                        name = Path(image).with_suffix(suffix)
+                        shutil.copy2(directory / name, visual_candidates / name)
+                shutil.copy2(directory / "visual-manifest.json", visual_candidates)
+                print(f"Unapproved visual candidates: {visual_candidates}")
     finally:
         browser.close()
     (directory/"report.json").write_text(json.dumps(reports, indent=2))
@@ -361,14 +377,28 @@ def run(directory, binaries):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--keep", action="store_true", help="retain synthetic evidence in /tmp")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--visual-baselines", type=Path,
+                       help="opt-in comparison against explicitly reviewed synthetic pages")
+    group.add_argument("--visual-candidates", type=Path,
+                       help="write unapproved candidate images to a NEW ignored/temporary directory")
     args = parser.parse_args()
     binaries = {name: shutil.which(name) for name in ("dart", "chromium", "pdftotext", "pdffonts")}
+    if args.visual_baselines or args.visual_candidates:
+        from resume_print_visual import evidence_directory
+        binaries["pdftoppm"] = shutil.which("pdftoppm")
+        for name in ("visual_baselines", "visual_candidates"):
+            path = getattr(args, name)
+            if path:
+                setattr(args, name, evidence_directory(path, ROOT.parents[1]))
+        if args.visual_candidates and args.visual_candidates.exists():
+            parser.error("Candidate directory must not exist; never overwrite a reviewed baseline")
     missing = [name for name, path in binaries.items() if not path]
     if missing:
         raise RuntimeError("Missing existing tools (no auto-install): " + ", ".join(missing))
     directory = Path(tempfile.mkdtemp(prefix="jobix-resume-regression-"))
     try:
-        run(directory, binaries)
+        run(directory, binaries, args.visual_baselines, args.visual_candidates)
     except Exception:
         print(f"FAIL: synthetic diagnostic evidence retained at {directory}")
         raise
