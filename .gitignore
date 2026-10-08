@@ -57,3 +57,6 @@ Thumbs.db
 *.jks
 *.p12
 *.pfx
+
+# Synthetic offline print visual evidence (deliberately reviewed, not source).
+/mobile/jobix/.resume-visual-baselines/
