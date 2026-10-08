@@ -1,8 +1,10 @@
 # Private Resume PDF exports — local implementation
 
 **Development implementation/deployment authorized; activation still gated on
-verified access/runtime.** No live migrations, IAM/provisioning, Cloud Run/Scheduler
-start, object upload/signing, live Credits or deployment was performed.
+verified access/runtime.** Six development migrations are applied with exports
+still disabled. The private bucket has an approved seven-day `exports/`/`.pdf`
+lifecycle rule. No IAM grant, Cloud Run/Scheduler start, Edge rollout, worker
+deployment or committed live Credit debit has occurred.
 Native tooling/signing/APK/device verification is not part of this implementation.
 The deletion/retention product decision is now approved and recorded exactly in
 [the Phase 3 ADR](ADR-retention-deletion.md). The owner subsequently authorized
@@ -113,6 +115,28 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ## Closed readiness/approval gates
 
+### Current development checkpoint
+
+- The owner-supplied public Supabase Root 2021 CA is bundled at
+  `assets/certs/supabase-root-2021.crt`; verified-TLS migration and repeat
+  checksum/idempotency checks succeeded on the guarded development target.
+- Live development DB tests passed for canonical preparation, atomic
+  create/replay, reservation/release, denied direct client table reads,
+  cross-actor status denial and frozen export-data purge. Both synthetic Auth
+  identities, profile/export rows, settings changes and Credit entries were
+  transactionally rolled back. This is not a deployed Edge/worker test.
+- A new isolated GCS protocol fixture passed conditional create/conflict and
+  anonymous-read denial, then exact-generation deletion and active-object
+  absence verification. It used deployment credentials strictly as test
+  tooling, not runtime credentials or a substitute for backend access.
+- Allowlisted, credential-free managed-build source is uploaded privately under
+  `phase3-builds/`, outside the PDF lifecycle prefix. It is retained for retry;
+  no extra CV/snapshot retention period is introduced. Managed build submission
+  is rejected with 403. No image is built/deployed.
+- Runtime backend object access and self-signing permission tests return none.
+  Necessary custom-role creation and runtime-secret creation are rejected.
+  Do not work around these with broader storage roles, new keys or admin DSNs.
+
 `Dockerfile` packages the same Dart 3.8.0 canonical generator as an AOT executable
 and installs the locked Playwright engine into a compatible Debian runtime.
 It is for managed development Cloud Build, never local Docker. `.dockerignore`
@@ -126,6 +150,12 @@ migration runner. It applies all six files in one transaction under an advisory
 lock with recorded checksums, rejects partial unmanaged export schemas, and
 never enables rollout or provisions administrator runtime access. A trusted
 public database root certificate is required; verification is never disabled.
+
+Operational tools: `tool/configure_phase3_bucket.mjs` requires explicit scoped
+expiry approval and preserves unrelated rules; `tool/build_phase3_dev.mjs`
+uploads only a fixed source allowlist and submits managed development builds;
+`tool/test_phase3_dev.mjs` requires isolated-fixture approval, rolls back database
+fixtures, and removes only its freshly created exact GCS generation.
 
 1. Deletion/retention product behavior and development implementation are
    authorized. Destructive cloud cleanup/lifecycle operations require approval;

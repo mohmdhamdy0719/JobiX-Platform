@@ -1,5 +1,40 @@
 # Jobix verification evidence
 
+## Development migration and approved cleanup checkpoint
+
+**PARTIALLY VERIFIED; exports disabled; worker deployment blocked by IAM/access.**
+
+Completed against development only:
+- Verified TLS with the supplied public Supabase Root 2021 CA; applied all six
+  Phase 3 migrations (012–017) in one transaction. Re-running the protected
+  runner passed checksum/idempotency checks. The development ledger has six
+  entries; both export rollout flags remain false.
+- Verified upload-flight RLS, denied client job INSERT/purge/ledger UPDATE and
+  private-client table access. No production/staging connection was made.
+- Read back private bucket IAM/uniform access; no public principal grants.
+  Installed/read back only the approved Delete rule: age seven days, prefix
+  `exports/`, suffix `.pdf`. Existing prefix inventory was empty.
+- Live DB tests passed canonical preparation, atomic same-key replay, reserve
+  two/release on freeze, client table denial, cross-actor status isolation,
+  object-absence verification and export snapshot/related-data purge. All
+  synthetic identities/data/Credit entries and temporary flag changes rolled
+  back; no existing account/profile/completeness/allowance data was modified.
+- Live private GCS conditional-create/conflict and anonymous denial tests
+  passed with an explicitly synthetic storage-protocol fixture using deployer
+  tooling. Its exact generation was deleted and no active export objects remain.
+  This does not verify the runtime backend or real PDF/signed download path.
+- Bundled the public CA for the managed runtime; uploaded only allowlisted
+  source/fonts/licenses/public CA privately for a managed build retry. No
+  developer config, credentials or user data is included. The build source is
+  retained outside `exports/`; it is not deleted as a test fixture.
+
+Actual blocks: managed build submission 403, custom-role creation 403,
+`secretmanager.secrets.create` 403, and no tested storage or self-signBlob
+permissions for the backend. No service-account keys, IAM grants, worker,
+Scheduler jobs, Edge rollout or runtime credentials were created. No dependency,
+Flutter product/signing, AI or billing changes. Full deployed end-to-end
+verification and Phase 3 completion remain outstanding.
+
 ## Development implementation authorization — current build increment
 
 The owner superseded the recording-only pause with complete Phase 3 DEVELOPMENT

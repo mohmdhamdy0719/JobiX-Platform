@@ -21,3 +21,5 @@
 !assets/fonts/IBMPlexSansArabic-Regular.ttf
 !assets/fonts/OFL.txt
 !assets/fonts/OFL-IBMPlexSansArabic.txt
+!assets/certs/
+!assets/certs/supabase-root-2021.crt

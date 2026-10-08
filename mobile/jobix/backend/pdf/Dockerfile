@@ -8,7 +8,8 @@ RUN dart compile exe tool/prepare_resume_document.dart -o /canonical
 
 FROM node:20.20.0-bookworm
 ENV NODE_ENV=production PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
-    JOBIX_CANONICAL_EXECUTABLE=/opt/jobix/canonical
+    JOBIX_CANONICAL_EXECUTABLE=/opt/jobix/canonical \
+    JOBIX_DEV_DATABASE_CA_FILE=/opt/jobix/assets/certs/supabase-root-2021.crt
 WORKDIR /opt/jobix/backend/pdf
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 COPY backend/pdf/package.json backend/pdf/pnpm-lock.yaml ./
@@ -18,6 +19,7 @@ RUN pnpm install --ignore-workspace --frozen-lockfile --prod && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=canonical /canonical /opt/jobix/canonical
 COPY assets/fonts/ /opt/jobix/assets/fonts/
+COPY assets/certs/supabase-root-2021.crt /opt/jobix/assets/certs/
 COPY backend/pdf/*.mjs ./
 RUN useradd --create-home --uid 10001 exportworker && \
     chown -R exportworker:exportworker /opt/jobix && chmod -R a+rX /ms-playwright

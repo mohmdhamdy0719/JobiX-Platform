@@ -20,6 +20,18 @@ destructive or irreversible cloud operations. Credential availability is not
 permission/readiness proof; use verified TLS and restricted runtime identities,
 never administrator/deployer runtime shortcuts or newly created keys.
 
+The owner approved cleanup for development only: delete only expired Jobix
+export/PDF objects older than seven days and isolated test objects created by
+this Phase 3 work. Do not touch unrelated objects or production/staging; do not
+change the approved retention/deletion contract.
+
+**Why:** The owner explicitly confirmed these cleanup limits when supplying the
+public database root certificate.
+
+**How to apply:** Use owned export scope, expiry checks and exact generations.
+Do not treat deployment source archives as test objects or delete them under
+this approval. Keep unrelated lifecycle rules and objects unchanged.
+
 ## Earlier authorization: Phase 3 deletion/retention decision recording only
 
 The owner approved the exact deletion/retention contract recorded in
