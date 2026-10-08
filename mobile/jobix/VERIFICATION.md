@@ -1,5 +1,55 @@
 # Jobix verification evidence
 
+## Fresh Samsung M31 ARM64 development APK — 2026-10-08
+
+After the native bug-fix phase, the owner explicitly approved installing the
+missing Android build tools, accepting SDK licenses and recreating the ignored
+development build settings. This removes the earlier APK-build setup blocker;
+it does **not** establish real-phone runtime acceptance.
+
+- Built the merged native bug-fix source at
+  `12af109219041d7a667c2ca88aa382bf382c32ee`, without product code,
+  Auth/Supabase/RLS, dependency-version or supporting-service changes.
+- Installed Android command-line tools 12.0, platform 36, build tools 35.0.0,
+  NDK 27.0.12077973 and CMake 3.22.1 into ignored workspace storage. Gradle
+  also installed platform 34 for an existing plugin's build requirements.
+- Restored locked Flutter/Dart packages and recreated only the ignored
+  `config/dev.local.json` using the existing public development settings.
+  `dart tool/check_foundation.dart config/dev.local.json` passed.
+- Successful command, with workspace-local Android SDK and Gradle cache:
+
+  ```sh
+  flutter build apk --debug --target-platform android-arm64 --split-per-abi \
+    --dart-define-from-file=config/dev.local.json
+  ```
+
+- APK: `deliverables/jobix-m31-native-bugfix/jobix-m31-arm64-dev.apk`.
+  Size: **97,399,913 bytes**. Package: `com.mhflow.jobix`. Version: 1.0.0 (1).
+  Minimum Android API: 24 (Android 7.0). Target/compile API: 36.
+- Packaged native code is ARM64 only (`arm64-v8a`), including Flutter and
+  SQLCipher. `apksigner verify` passed with APK Signature Scheme v2.
+- APK SHA-256:
+  `88e58035b912ddb43208ace1ee947e1ef3f89cf880851982c0a7074ec08315c5`.
+
+### Signing continuity warning
+
+No previous debug keystore existed in this workspace. The new build has a
+new debug signing certificate:
+`7c16b8b1283ed20a73b25ac595152ec5b9df55ed3de6db08aa467ecb9d2380be`.
+It differs from the previously archived builder APK's certificate
+`109e7d8f025f4999cd084c8a1841aca199344a515d9482b52fa192617f326f6b`.
+
+If that earlier build is installed on the phone, Android will reject an
+in-place update with this new certificate. **Do not uninstall Jobix or clear
+its data to bypass the conflict.** Recover the original signing key, or obtain
+separate approval for another safe testing arrangement. The earlier APKs and
+archives remain unchanged.
+
+The new APK has not been installed or launched on the Samsung M31 by the agent.
+The original phone crash, physical/predictive Back and WebView behavior still
+require actual phone testing. This is a development/debug APK, not a production
+release or publication.
+
 ## Native bug-fix phase — 2026-10-08
 
 **Status: BLOCKED / PARTIALLY VERIFIED.** The approved five-bug native changes

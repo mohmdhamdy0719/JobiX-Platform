@@ -20,13 +20,24 @@ server AI operations/history/acceptance, real AI UI enablement, then private PDF
 export. Preserve the native stack, six-step builder and existing security rules.
 
 Restoring the existing locked Flutter/Dart package cache is authorized for this
-native bug-fix phase; package upgrades and Android SDK installation are not.
+native bug-fix phase; package upgrades are not authorized.
 
 **Why:** The owner explicitly approved "Restore locked packages and continue"
 after the missing cache prevented the regression test from compiling.
 
 **How to apply:** Enforce the existing lockfile; ask before any additional
 toolchain/configuration installation and do not repair supporting services.
+
+The owner subsequently approved installing the missing Android SDK/NDK,
+accepting required SDK licenses and recreating ignored development settings
+to build a fresh ARM64 development APK for the Samsung M31.
+
+**Why:** The owner explicitly approved the native build setup after requesting
+an APK containing the completed bug fixes.
+
+**How to apply:** Limit this approval to native build preparation and APK
+delivery. It does not authorize product/backend changes, supporting-service
+repairs, later feature phases or a claim of real-phone acceptance.
 
 The new product rules supersede earlier unsaved-item continuation behavior:
 opening/editing a repeatable record is not Save; explicit Back discards

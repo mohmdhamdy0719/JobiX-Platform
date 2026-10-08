@@ -80,6 +80,19 @@ compressed archive could be delivered without rebuilding or altering the app.
 **How to apply:** Preserve the original APK/output path, check archive integrity
 and tell the user to extract the APK before installation.
 
+Check signing continuity before delivering a rebuilt development APK from a
+resumed workspace. Missing home-directory debug keys can silently generate a
+new certificate, even when the package ID and source history are unchanged.
+
+**Why:** A fresh ARM64 build verified successfully but its new default debug
+certificate differed from the previously delivered APK. Android cannot update
+that existing installation with the new signer.
+
+**How to apply:** Compare public APK certificate digests. Never recommend
+uninstalling or clearing app data to bypass a signing mismatch; preserve the
+old install and recover its original signing key or seek explicit approval
+for an alternative test arrangement.
+
 Flutter's localization generation can run before its package-restore command
 has repaired missing cached dependencies.
 

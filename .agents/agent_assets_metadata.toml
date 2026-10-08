@@ -266,3 +266,17 @@ mtime_ms = 1791230664889
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/53858bc3-3af4-40be-88ea-8fb794f05857/ed83bc66-25af-4637-a862-cb41448e9505"
 storage_version_token = "1791230672443557"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "lHOo_-EbB98zNOoi5dms6"
+uri = "file://deliverables/jobix-m31-native-bugfix/jobix-m31-arm64-dev.apk"
+type = "unspecified"
+title = "Jobix — Samsung M31 ARM64 test APK"
+description = "Fresh development/debug APK containing the native bug fixes. ARM64, Android 7.0+, 93 MiB. Signature and package verified; not yet phone-tested. New debug signer differs from the previous archived APK: do not uninstall or clear existing Jobix data if an update is rejected."
+logical_id = "ee73dbe5-f6c8-4d8c-be26-df3d4d12e168"
+content_hash = "sha256:88e58035b912ddb43208ace1ee947e1ef3f89cf880851982c0a7074ec08315c5"
+size = 97399913
+mtime_ms = 1791421928678
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fa3eb370-26ea-49af-8134-96e72f640abc/ee73dbe5-f6c8-4d8c-be26-df3d4d12e168/e4cb862c-8047-41d8-860a-11a38d31f2ae"
+storage_version_token = "1791422040333724"
+content_type = "application/octet-stream"
