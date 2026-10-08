@@ -304,14 +304,19 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                   showDocument: (document) async {
                     final controller = WebViewController()
                       ..setJavaScriptMode(JavaScriptMode.disabled)
-                      ..setNavigationDelegate(NavigationDelegate(
-                        onNavigationRequest: (_) => NavigationDecision.prevent,
-                      ));
+                      ..setNavigationDelegate(
+                        NavigationDelegate(
+                          onNavigationRequest: (_) =>
+                              NavigationDecision.prevent,
+                        ),
+                      );
                     await controller.loadHtmlString(document['html'] as String);
-                    if (mounted) setState(() {
-                      preparedDocument = document;
-                      preview = controller;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        preparedDocument = document;
+                        preview = controller;
+                      });
+                    }
                   },
                 ),
                 Text(

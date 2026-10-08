@@ -60,7 +60,8 @@ class ResumeRender {
     section(
       label('Professional Summary', 'الملخص المهني'),
       hiddenSections.contains('summary') || profile.summary.trim().isEmpty
-          ? '' : lines(profile.summary),
+          ? ''
+          : lines(profile.summary),
     );
     final labels = {
       EntitySection.experience: label('Work Experience', 'الخبرة المهنية'),

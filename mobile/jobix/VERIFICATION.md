@@ -27,12 +27,23 @@ Local checks passed:
 - Existing print checker self-tests: 21 passed.
 - All 16 canonical EN/AR print fixtures passed all 304 cohesion checks, text,
   embedded-font and A4 checks. No baseline was refreshed.
+- Owner-authorized locked Flutter/Dart package restoration completed.
+  `pubspec.yaml` and `pubspec.lock` hashes are unchanged; no upgrades.
+- Full Flutter regression suite: **208 passed**, with export disabled by default.
+- Opt-in local export-control suite: **9 passed**, using synthetic HTTP fixtures
+  and disposable encrypted SQLCipher. Covers exact server Preview bytes, explicit
+  visibility/structural evidence, English/Arabic phone-width layouts, cost
+  confirmation without submission, ambiguous acceptance followed by reopening
+  and same-key reconciliation, expired downloads without replacement, and
+  explicit Preview review after confirmed version conflicts.
+- Flutter analysis has **zero errors/warnings**. Run with
+  `--no-fatal-infos`; two pre-existing informational relative-import notices in
+  the standalone print-fixture tool remain. Client secret/layout/token checks pass.
 
-Not verified: Flutter analyzer/widgets (locked package cache missing), Android
-SAF/phone controls, production Playwright runtime packaging, deployed Edge/OIDC,
+Not verified: Android SAF/real-phone controls, production Playwright runtime packaging, deployed Edge/OIDC,
 private GCS/IAM/runtime TLS and live reservation recovery under cloud failures.
-Flutter `analyze --no-pub` failed with missing-package imports; that is not a
-passing product-code analysis. No package repair has been silently performed.
+The earlier missing-cache analyzer failure was resolved by owner-authorized
+restoration, not by upgrading packages or weakening product validation.
 
 See `backend/pdf/README.md` for reproducible local checks and closed readiness
 gates. Source work is local only; this evidence is not rollout/device acceptance.

@@ -46,6 +46,10 @@ dart mobile/jobix/tool/test_resume_document.dart
 node --test mobile/jobix/backend/pdf/test/*.test.mjs
 bash mobile/jobix/tool/test_rls.sh
 python3 mobile/jobix/tool/check_resume_print.py
+# From mobile/jobix, with the existing real SQLCipher test-library path:
+flutter analyze --no-pub --no-fatal-infos
+flutter test --no-pub
+flutter test --no-pub --dart-define=JOBIX_ENABLE_PDF_EXPORT=true test/resume_export_test.dart
 ```
 
 The SQL runner creates/destroys a guarded PostgreSQL cluster on a local Unix
@@ -58,6 +62,11 @@ identity/IAM. The test-only CDP adapter is not a production second renderer.
 Production adapters declare exact `pg`/`playwright` versions in this isolated
 directory. Runtime packages/browser installation and transitive lock are not yet
 verified. Do not install/repair root pnpm services or use their workflow.
+
+The Flutter lock was restored with explicit owner approval and without changing
+dependency versions or manifests. The full default-off suite and opt-in local
+export UI fixtures passed. The test-only compile flag is not a rollout flag
+change and does not enable any remote service.
 
 ## Closed readiness/approval gates
 

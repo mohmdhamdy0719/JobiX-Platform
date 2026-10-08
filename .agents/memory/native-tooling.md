@@ -126,16 +126,28 @@ shim pointed to 3.13, making successful installation look like missing packages.
 **How to apply:** Use the matching interpreter and its installed site-packages;
 do not repeatedly reinstall or create an unsupported virtual environment.
 
-Use a real-time Flutter test binding for opt-in host UI tests that call live
-services, rather than the default automated fake-clock binding.
+Use a real-time Flutter test binding for opt-in host UI tests that involve SDK
+streams/networking and actual database-isolate I/O, rather than the default
+automated fake-clock binding. This also applies when HTTP is mocked.
 
-**Why:** Mixing real SDK networking with fake test clocks can delay response
-handling and cleanup even after server writes succeed, producing false timeouts.
+**Why:** Mixing asynchronous SDK/database I/O with fake test clocks can delay
+response handling and cleanup, producing false timeouts even in local fixtures.
 
 **How to apply:** Use LiveTestWidgetsFlutterBinding for live Flutter flows and
 settle popup animations before interacting. Keep fixture snapshots private and
 verify restoration after every live mutation pass. This is still host UI
 verification, not proof of native Keystore, email callbacks or process-death recovery.
+
+Flutter dependency restoration can run localization generation/formatting before
+downloading missing packages.
+
+**Why:** A surviving package configuration may reference a deleted lint cache;
+the formatter then fails before dependency resolution can restore that cache.
+
+**How to apply:** For an owner-authorized locked restore, bootstrap only the
+missing lint packages at their exact lockfile versions, then use
+`flutter pub get --enforce-lockfile`. Do not disable lint rules, upgrade
+dependencies or alter package manifests to work around it.
 
 For formatting a pure-Dart helper when the Flutter lint include is missing,
 format stdin from outside the native package with explicit language version,

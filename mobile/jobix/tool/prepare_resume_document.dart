@@ -1,3 +1,5 @@
+// Standalone server CLI deliberately has no Flutter/package-runtime dependency.
+// ignore_for_file: avoid_relative_lib_imports
 import 'dart:convert';
 import 'dart:io';
 import '../lib/features/resume/resume_document.dart';
@@ -12,8 +14,12 @@ Future<void> main(List<String> args) async {
     final result = ResumeDocument.prepare(
       Map<String, dynamic>.from(source as Map),
       base64Encode(await File('$root/assets/fonts/Inter.ttf').readAsBytes()),
-      base64Encode(await File(
-        '$root/assets/fonts/IBMPlexSansArabic-Regular.ttf').readAsBytes()));
+      base64Encode(
+        await File(
+          '$root/assets/fonts/IBMPlexSansArabic-Regular.ttf',
+        ).readAsBytes(),
+      ),
+    );
     stdout.write(jsonEncode(result));
   } catch (_) {
     // No exception/input snippets: source contains private career data.
