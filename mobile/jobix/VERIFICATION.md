@@ -1,5 +1,42 @@
 # Jobix verification evidence
 
+## Phase 3 local PDF/Credits implementation — 2026-10-08
+
+**Status: PARTIALLY VERIFIED; rollout remains blocked and disabled.**
+No live migrations, deployment/IAM/Scheduler/Cloud Run changes, GCS writes/signing
+or real Credit operations. Unresolved deletion/snapshot policy was not implemented.
+No signing/APK/build-environment changes or AI work.
+
+Local checks passed:
+- Standalone Dart EN/AR structural validity, unscored Volunteer, optional
+  descriptions, explicit visibility and contact rules.
+- Sixteen built-in Node contract checks: transport-idempotency, replay before
+  mutable reads, pre-reservation conflicts, input rejection, free download,
+  confirmed missing vs transient object failures, fenced worker/proof ordering,
+  20-page overflow before upload, concurrency slots, text preservation and
+  fail-closed private authentication/startup/TTL.
+- Existing historical and new forward-only migrations applied successfully to
+  disposable PostgreSQL. Synthetic tests cover default-off gates, immutable
+  snapshots, exact replay after edits/old receipt pruning, owner isolation,
+  no reservation on stale versions, stale leases, successful single debit,
+  repeated completion, missing-file handling, expiry release, role restrictions
+  and configuration/profile-version increments without completeness/AI change.
+- Real disposable SQL + server canonical Dart HTML + actual local Chromium PDF
+  with verified English/Arabic text + exactly one debit + free repeat downloads.
+  Storage is explicitly an in-memory test adapter, **not GCS**.
+- Existing print checker self-tests: 21 passed.
+- All 16 canonical EN/AR print fixtures passed all 304 cohesion checks, text,
+  embedded-font and A4 checks. No baseline was refreshed.
+
+Not verified: Flutter analyzer/widgets (locked package cache missing), Android
+SAF/phone controls, production Playwright runtime packaging, deployed Edge/OIDC,
+private GCS/IAM/runtime TLS and live reservation recovery under cloud failures.
+Flutter `analyze --no-pub` failed with missing-package imports; that is not a
+passing product-code analysis. No package repair has been silently performed.
+
+See `backend/pdf/README.md` for reproducible local checks and closed readiness
+gates. Source work is local only; this evidence is not rollout/device acceptance.
+
 ## Offline Resume print regression suite — 2026-10-08
 
 **Status: PASSED.** This is synthetic canonical-renderer verification, not

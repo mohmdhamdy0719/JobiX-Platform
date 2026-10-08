@@ -1,0 +1,8 @@
+{
+  "name": "jobix-private-resume-export",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=20.20.0"},
+  "scripts": {"test": "node --test test/*.test.mjs", "start": "node server.mjs"},
+  "dependencies": {"pg": "8.23.1", "playwright": "1.64.0"}
+}

@@ -12,6 +12,7 @@ import '../../core/design/tokens.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
 import 'resume_render.dart';
+import 'resume_export_panel.dart';
 
 /// Configuration references the Career Profile; it never copies editable data.
 class ResumePage extends ConsumerStatefulWidget {
@@ -27,6 +28,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
   bool busy = false, failed = false, saved = false, pending = false;
   WebViewController? preview;
   String? message;
+  Map<String, dynamic>? preparedDocument;
   bool configurationConflict = false;
   String key(String user, String id) => 'resume:$user:$id';
   bool get ar => Localizations.localeOf(context).languageCode == 'ar';
@@ -199,8 +201,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
             padding: const EdgeInsets.all(16),
             child: Text(
               t(
-                'A4 preview • selectable text • PDF export is not connected yet.',
-                'معاينة A4 • نص قابل للتحديد • تصدير PDF غير متصل بعد.',
+                'Draft A4 preview • selectable text • Export uses a separately confirmed online document.',
+                'معاينة مسودة A4 • نص قابل للتحديد • التصدير يستخدم مستندًا متصلًا مؤكدًا بشكل منفصل.',
               ),
             ),
           ),
@@ -295,6 +297,23 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                     ),
                   ),
                 const SizedBox(height: 16),
+                ResumeExportPanel(
+                  profileId: profile!.id,
+                  canPrepare: saved && !pending && !busy,
+                  initialDocument: preparedDocument,
+                  showDocument: (document) async {
+                    final controller = WebViewController()
+                      ..setJavaScriptMode(JavaScriptMode.disabled)
+                      ..setNavigationDelegate(NavigationDelegate(
+                        onNavigationRequest: (_) => NavigationDecision.prevent,
+                      ));
+                    await controller.loadHtmlString(document['html'] as String);
+                    if (mounted) setState(() {
+                      preparedDocument = document;
+                      preview = controller;
+                    });
+                  },
+                ),
                 Text(
                   t(
                     'Preview is free. A new successful PDF export will cost 2 Credits once the export service is available.',

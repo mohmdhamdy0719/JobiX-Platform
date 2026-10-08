@@ -13,6 +13,7 @@ class ResumeRender {
     required String latinFontBase64,
     required String arabicFontBase64,
     List<Map<String, dynamic>> additionalLinks = const [],
+    Set<String> hiddenSections = const {},
   }) {
     if (!['en', 'ar'].contains(language)) {
       throw ArgumentError('Unsupported language');
@@ -58,7 +59,8 @@ class ResumeRender {
 
     section(
       label('Professional Summary', 'الملخص المهني'),
-      profile.summary.trim().isEmpty ? '' : lines(profile.summary),
+      hiddenSections.contains('summary') || profile.summary.trim().isEmpty
+          ? '' : lines(profile.summary),
     );
     final labels = {
       EntitySection.experience: label('Work Experience', 'الخبرة المهنية'),
@@ -74,6 +76,7 @@ class ResumeRender {
       EntitySection.language: label('Languages', 'اللغات'),
     };
     for (final type in EntitySection.values) {
+      if (hiddenSections.contains(type.key)) continue;
       if (type == EntitySection.skill) {
         section(
           labels[type]!,
@@ -188,7 +191,7 @@ li{list-style-position:outside}
 p,li{orphans:3;widows:3}h1,h2,h3,article header{break-after:avoid}}
 </style></head><body>
 <header class="personal-header"><h1>${bi(profile.personal['full_name'])}</h1><div class="contact">${contacts.join(' · ')}</div>
-${profile.targetRole.trim().isEmpty ? '' : '<p>${bi(profile.targetRole)}</p>'}
+${hiddenSections.contains('target_role') || profile.targetRole.trim().isEmpty ? '' : '<p>${bi(profile.targetRole)}</p>'}
 </header>${sections.join('\n')}</body></html>''';
   }
 }

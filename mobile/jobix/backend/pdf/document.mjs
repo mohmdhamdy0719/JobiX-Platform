@@ -1,0 +1,74 @@
+import {createHash} from 'node:crypto';
+import {spawn} from 'node:child_process';
+import {readFile} from 'node:fs/promises';
+import {resolve} from 'node:path';
+
+export const bundle = 'jobix-resume-export-1';
+export const sha256 = value => createHash('sha256').update(value).digest('hex');
+export class ExportError extends Error {
+  constructor(code) { super(code); this.code = code; }
+}
+export const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+export function requireUuid(value) {
+  if (typeof value !== 'string' || !uuid.test(value)) throw new ExportError('VALIDATION_FAILED');
+  return value;
+}
+export function logicalHash(command) {
+  function sorted(value) {
+    if (Array.isArray(value)) return value.map(sorted);
+    if (value && typeof value === 'object') return Object.fromEntries(
+      Object.keys(value).sort().map(key => [key, sorted(value[key])]));
+    return value;
+  }
+  return sha256(JSON.stringify(sorted({
+    expected_profile_version: command.expected_profile_version,
+    payload: command.payload,
+  })));
+}
+export function subprocess(program, args, input, {signal, maxBytes = 8000000} = {}) {
+  return new Promise((yes, no) => {
+    const child = spawn(program, args, {stdio:['pipe','pipe','pipe'], signal,
+      env: {PATH:process.env.PATH, HOME:process.env.HOME, LANG:'C.UTF-8'}});
+    const chunks = []; let bytes = 0;
+    child.stdout.on('data', chunk => {
+      bytes += chunk.length;
+      if (bytes > maxBytes) { child.kill(); no(new ExportError('VALIDATION_FAILED')); }
+      else chunks.push(chunk);
+    });
+    // Never propagate raw stderr, which may contain private content.
+    child.stderr.resume();
+    child.on('error', () => no(new ExportError('SERVICE_UNAVAILABLE')));
+    child.on('close', code => code === 0 ? yes(Buffer.concat(chunks)) :
+      no(new ExportError('VALIDATION_FAILED')));
+    child.stdin.on('error', () => {});
+    child.stdin.end(input);
+  });
+}
+export class Canonicalizer {
+  constructor({root = resolve(import.meta.dirname, '../..'), dart = 'dart'} = {}) {
+    this.root = root; this.dart = dart;
+  }
+  async prepare(input) {
+    const output = await subprocess(this.dart,
+      [resolve(this.root,'tool/prepare_resume_document.dart'),this.root],
+      JSON.stringify(input.source), {signal:AbortSignal.timeout(30000)});
+    let document;
+    try { document = JSON.parse(output); } catch { throw new ExportError('VALIDATION_FAILED'); }
+    if (document.bundle !== bundle || typeof document.html !== 'string' ||
+        Buffer.byteLength(document.source_text.normalize('NFC')) > 200000) {
+      throw new ExportError('VALIDATION_FAILED');
+    }
+    const fonts = await Promise.all(['Inter.ttf','IBMPlexSansArabic-Regular.ttf']
+      .map(name => readFile(resolve(this.root,'assets/fonts',name))));
+    return {
+      html:document.html, document_sha256:sha256(document.html),
+      source_sha256:input.source_sha256, bundle, issues:document.issues,
+      profile_version:input.source.profile.profile_version,
+      configuration_version:input.source.configuration.version,
+      language:input.source.configuration.language,
+      configuration:input.source.configuration,
+      // The hash covers exact HTML including immutable embedded font bytes.
+      font_sha256:fonts.map(sha256),
+    };
+  }
+}

@@ -2,7 +2,7 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: Phase 3 planning only
+## Current authorization: Phase 3 local implementation and tests only
 
 The owner now specifies PDF Resume Export + server-authoritative Credits before
 the AI operation/history/acceptance milestone. Phase 1/2 are accepted from the
@@ -10,15 +10,15 @@ implementation/testing perspective, not proof of physical-device acceptance.
 Android APK/device verification will happen after this next major milestone;
 do not include it as a Phase 3 implementation gate or change signing.
 
-**Why:** The owner explicitly supplied a planning-only PDF Export + Credits
-brief, reordered the milestones and deferred real-device verification.
+**Why:** After approving the product decisions and secure read-only access setup,
+the owner selected “Local implementation and tests” while remote gates stay closed.
 
-**How to apply:** Produce an audited plan only and wait for explicit approval,
-assignment and Build mode. No AI implementation, source/schema/RLS/Credits
-changes, migrations, cloud provisioning/deployment, GCS writes, production
-operations or supporting-service work is authorized by this planning request.
-Missing new-account credentials/permissions must be surfaced before execution;
-past Volunteer rollout approval does not authorize PDF rollout.
+**How to apply:** Local native/backend source, forward-only migration files and
+disposable tests are authorized. Keep exports disabled by default. No live
+migrations, deployments, IAM changes, Cloud Run starts, GCS writes or real Credit
+operations. Do not implement the unresolved deletion policy or start AI work.
+Surface missing dependencies/configuration; don't repair unrelated supporting
+services. Past Volunteer rollout approval does not authorize PDF rollout.
 
 ### Accepted Phase 3 product decisions
 The owner accepted the technical direction but explicitly said not to start
