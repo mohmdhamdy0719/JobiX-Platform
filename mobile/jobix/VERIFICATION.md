@@ -1,5 +1,37 @@
 # Jobix verification evidence
 
+## Development worker activated — BLOCKED at Scheduler invocation
+
+After the administrator's service-scoped backend Run Invoker correction:
+- Genuine backend Google ID-token invocation of `/ready` returned HTTP 200.
+  Secret resolution, verified TLS, `jobix_export_runtime` and required function
+  privileges passed. Anonymous invocation returned HTTP 403.
+- Activated the existing pinned image's actual `node server.mjs` entrypoint
+  on private `jobix-dev-pdf-export` in `me-central1`. Ready revision:
+  `jobix-dev-pdf-export-00002-bpb`. Existing backend identity, Secret version 1
+  and CA binding were preserved. No IAM policy was changed.
+- Runtime has two browser slots, maximum three instances, request concurrency
+  two, 900-second request timeout, two CPUs / 2 GiB per instance and TCP startup
+  probing. Authenticated invalid-action transport verification returned the
+  expected HTTP 400 / `VALIDATION_FAILED`; anonymous invocation returned 403.
+  This is worker transport verification, not successful PDF generation.
+- Created development Scheduler job `jobix-dev-pdf-export-recovery` in
+  `me-central1`, every minute, UTC, POST `/recover`, body `{}`, using
+  `jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com` OIDC and the exact
+  service URL as audience. The explicit live run failed with canonical RPC
+  status **7 / PERMISSION_DENIED**. No service-level invocation binding for
+  this identity was present. Paused the newly created job to prevent repeated
+  failures; readback confirms `PAUSED`.
+
+Stopped at the Scheduler failure. Gateway rollout, database export-flag
+enabling and live billable end-to-end tests were not performed. Database flags
+remain disabled. No real Credit transaction, new key, broader IAM permission
+or production/staging change. Existing migrations and native code preserved.
+Administrator action: authorize Scheduler `roles/run.invoker` on this private
+service only; reverify actual Scheduler invocation before continuing. Overall
+Phase 3 remains incomplete. The prior backend invocation blocker below is
+resolved, not the current blocker.
+
 ## Actual development rollout attempt — BLOCKED on private invocation
 
 The owner authorized actual development activation/integration and fail-fast.

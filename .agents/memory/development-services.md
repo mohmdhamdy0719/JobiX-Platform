@@ -121,6 +121,18 @@ permissions under the actual runtime identity. Report scope corrections;
 preserve unrelated bindings and do not substitute a runtime identity for a
 builder just to bypass a missing actAs grant.
 
+Backend invocation access does not prove Scheduler invocation access. Verify
+the recovery job with its own OIDC identity and exact service audience, and
+capture failed execution status before pausing a newly created failing job.
+
+**Why:** Backend live access passed while Scheduler returned PERMISSION_DENIED;
+pausing then replaced the job's observable status code with -1, so a later
+metadata read did not preserve the original execution failure.
+
+**How to apply:** Keep invocation grants service-scoped and identities separate.
+Record execution evidence before pausing; do not interpret the paused status
+as a successful run or broaden IAM to bypass failed recovery.
+
 Supabase's older `logs.all` API is retired. Current programmatic log reads use
 `/analytics/endpoints/logs`, the unified `logs` table, ClickHouse SQL and
 `log_attributes` rather than the old separate tables/BigQuery metadata format.

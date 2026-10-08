@@ -1,11 +1,12 @@
 # Private Resume PDF exports — local implementation
 
-**Development implementation/deployment authorized; activation still gated on
-verified access/runtime.** Six development migrations are applied with exports
-still disabled. The private bucket has an approved seven-day `exports/`/`.pdf`
+**Development implementation/deployment authorized; actual worker activated,
+rollout BLOCKED at Scheduler invocation.** Six development migrations are applied
+with database/client exports still disabled. The private bucket has an approved seven-day `exports/`/`.pdf`
 lifecycle rule. The only agent IAM-policy mutation was the owner-approved
-obsolete backend bucket-membership removal. No Cloud Run/Scheduler start, Edge rollout, worker
-deployment or committed live Credit debit has occurred.
+obsolete backend bucket-membership removal. The actual worker is deployed;
+the newly configured recovery job is paused after live PERMISSION_DENIED.
+No Edge rollout or committed live Credit debit has occurred.
 Native tooling/signing/APK/device verification is not part of this implementation.
 The deletion/retention product decision is now approved and recorded exactly in
 [the Phase 3 ADR](ADR-retention-deletion.md). The owner subsequently authorized
@@ -118,13 +119,17 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ### Current development checkpoint
 
-**Actual rollout is BLOCKED:** the authorized migration/RLS checks passed, but
-live backend-identity access to the private service returned 403 due to missing
-`run.routes.invoke`. The fail-fast instruction was followed. No IAM grant was
-added and no actual worker/Scheduler/gateway activation took place.
-Readiness-only runtime status below does not imply full export readiness.
+**Actual rollout is BLOCKED at Scheduler:** backend access now passes HTTP 200,
+anonymous access is denied with 403, and the actual pinned worker is active on
+revision `jobix-dev-pdf-export-00002-bpb`. The new one-minute recovery job's
+actual invocation failed with RPC **7 / PERMISSION_DENIED**, then was paused.
+Scheduler identity has no service-level invocation binding. Administrator
+action is service-scoped Scheduler Run Invoker authorization; no agent IAM
+grant or security bypass was performed. Gateway/database enabling and live
+billable export tests remain unperformed. Historical readiness-only evidence
+below does not imply full export readiness.
 
-**Current runtime configuration: READY, read-only mode only.** Private Cloud Run
+**Earlier runtime configuration: READY in read-only mode before activation.** Private Cloud Run
 `jobix-dev-pdf-export` in `me-central1` uses the existing pinned image/backend
 account, Secret `jobix-dev-export-database` version `1`, and CA file
 `/opt/jobix/assets/certs/supabase-root-2021.crt`. Its authenticated `/ready`

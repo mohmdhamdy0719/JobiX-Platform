@@ -6,17 +6,29 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
-**Actual rollout blocker:** migration checksum/RLS verification passed, but
-backend Google-authenticated invocation of this private service returns 403.
-Effective permissions show no `run.routes.invoke`. The owner requires stopping
-at that failure and forbids IAM broadening; no invoker grant was added.
-Administrator action: authorize/configure backend `roles/run.invoker` membership
-on this service only, preserving existing principals and private authentication.
-Do not substitute the deployer for the backend, grant project-wide invocation
-or disable the invoker IAM check. Actual worker/Scheduler/gateway activation
-and end-to-end export verification remain unperformed.
+**Current actual rollout blocker: Scheduler PERMISSION_DENIED.** The
+administrator's backend invocation correction now passes genuine authenticated
+HTTP 200 and anonymous HTTP 403 checks. The actual worker entrypoint is active
+on ready revision `jobix-dev-pdf-export-00002-bpb`, preserving the pinned image,
+backend identity, Secret version 1, CA and private invocation enforcement.
 
-The requested runtime binding is applied and **READY in read-only mode** on
+Created the approved one-minute development recovery job
+`jobix-dev-pdf-export-recovery` using Scheduler OIDC identity
+`jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com` and the exact service
+audience. Its live run failed with canonical RPC code **7 / PERMISSION_DENIED**.
+No service-level Run Invoker binding for that identity was present. The new job
+was paused, with readback confirming `PAUSED`, and the rollout stopped.
+
+Administrator action: authorize/configure Scheduler `roles/run.invoker` on
+`projects/mhflow-jobix/locations/me-central1/services/jobix-dev-pdf-export`
+only. Preserve existing principals and private authentication. Reverify actual
+Scheduler invocation before resuming recovery or proceeding to the gateway.
+Do not substitute identities, grant project-wide/public invocation or disable
+the invoker IAM check. Gateway activation, database export enabling and billable
+end-to-end verification remain unperformed. No agent IAM grant or real Credit
+transaction occurred.
+
+The earlier requested runtime binding was verified **READY in read-only mode** on
 private service `jobix-dev-pdf-export`, `me-central1`. Secret version 1 and the
 bundled verified CA are resolved inside the actual hosted runtime. Its
 authenticated readiness response confirms restricted database authentication
