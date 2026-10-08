@@ -1,5 +1,35 @@
 # Jobix verification evidence
 
+## Existing Scheduler resumed — PASS; gateway access checkpoint — BLOCKED
+
+Following the administrator's Scheduler service-scoped Run Invoker correction,
+resumed the existing `jobix-dev-pdf-export-recovery` job (no duplicate created)
+and explicitly triggered its actual live invocation. Observed canonical RPC
+status **0 / OK** at `2026-10-08T19:34:28.589778Z`. The job remains `ENABLED`,
+every minute, using `jobix-scheduler-dev` OIDC and the exact private worker
+service audience. Private IAM enforcement, backend identity and absence of
+public service bindings passed read-only guards. No IAM grant was added.
+
+The next gateway prerequisite check failed:
+`GET https://api.supabase.com/v1/projects/lmouxhbjhtqdtiqijcee/secrets`
+returned **HTTP 403** under the existing development management credential.
+Stopped at that failure. The function inventory and database flag read in the
+same guarded procedure were not reached. Remote gateway credentials/configuration
+therefore remain unverified, not proven absent.
+
+Local Edge source still has only the optional
+`JOBIX_EXPORT_GATEWAY_IDENTITY_JSON` key-backed adapter; it has no implemented
+keyless token transport. No key was created or requested, no deployer credential
+was substituted, and no gateway deployment or export-flag change was performed.
+Database flags were last verified disabled before this checkpoint and were
+not changed here. No billable end-to-end tests, real Credit transaction or
+production/staging changes. Overall Phase 3 remains incomplete.
+
+Next prerequisites: administrator-authorized development management access to
+the rejected metadata endpoint and an approved, verifiable keyless Edge-to-private
+worker identity mechanism before enabling client exports. The earlier Scheduler
+invocation failure below is resolved.
+
 ## Development worker activated — BLOCKED at Scheduler invocation
 
 After the administrator's service-scoped backend Run Invoker correction:

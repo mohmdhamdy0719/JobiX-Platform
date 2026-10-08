@@ -6,27 +6,30 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
-**Current actual rollout blocker: Scheduler PERMISSION_DENIED.** The
-administrator's backend invocation correction now passes genuine authenticated
-HTTP 200 and anonymous HTTP 403 checks. The actual worker entrypoint is active
-on ready revision `jobix-dev-pdf-export-00002-bpb`, preserving the pinned image,
-backend identity, Secret version 1, CA and private invocation enforcement.
+**Current actual rollout blocker: development gateway metadata access HTTP 403.**
+Backend invocation passes and the actual pinned worker is active on ready
+revision `jobix-dev-pdf-export-00002-bpb`, preserving backend identity, Secret
+version 1, CA and private invocation enforcement.
 
-Created the approved one-minute development recovery job
-`jobix-dev-pdf-export-recovery` using Scheduler OIDC identity
-`jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com` and the exact service
-audience. Its live run failed with canonical RPC code **7 / PERMISSION_DENIED**.
-No service-level Run Invoker binding for that identity was present. The new job
-was paused, with readback confirming `PAUSED`, and the rollout stopped.
+After the administrator's Scheduler correction, resumed the existing
+`jobix-dev-pdf-export-recovery` job and verified its actual invocation:
+canonical RPC **0 / OK**, `2026-10-08T19:34:28.589778Z`. The existing job is
+`ENABLED`, every minute, with Scheduler OIDC and exact service audience.
+No duplicate was created and no IAM grant was added.
 
-Administrator action: authorize/configure Scheduler `roles/run.invoker` on
-`projects/mhflow-jobix/locations/me-central1/services/jobix-dev-pdf-export`
-only. Preserve existing principals and private authentication. Reverify actual
-Scheduler invocation before resuming recovery or proceeding to the gateway.
-Do not substitute identities, grant project-wide/public invocation or disable
-the invoker IAM check. Gateway activation, database export enabling and billable
-end-to-end verification remain unperformed. No agent IAM grant or real Credit
-transaction occurred.
+Next, `GET /v1/projects/lmouxhbjhtqdtiqijcee/secrets` at the Supabase
+Management API returned **403** under the existing development credential.
+Stopped; function inventory/database flag read were not reached. Remote gateway
+identity configuration could not be verified. Local Edge source contains only
+an optional key-backed adapter, not an implemented keyless transport.
+
+Administrator/owner action: authorize scoped access to the rejected development
+metadata endpoint and establish an approved, verifiable keyless gateway-to-private
+worker identity mechanism. Do not create keys, reuse deployer credentials,
+substitute end-user JWTs as Google service authority, add project-wide/public
+invocation or disable the IAM check. Gateway deployment, export enabling and
+billable end-to-end verification remain unperformed. No agent IAM change or
+real Credit transaction occurred.
 
 The earlier requested runtime binding was verified **READY in read-only mode** on
 private service `jobix-dev-pdf-export`, `me-central1`. Secret version 1 and the

@@ -1,11 +1,11 @@
 # Private Resume PDF exports — local implementation
 
 **Development implementation/deployment authorized; actual worker activated,
-rollout BLOCKED at Scheduler invocation.** Six development migrations are applied
+Scheduler invocation verified, rollout BLOCKED at gateway metadata access.** Six development migrations are applied
 with database/client exports still disabled. The private bucket has an approved seven-day `exports/`/`.pdf`
 lifecycle rule. The only agent IAM-policy mutation was the owner-approved
 obsolete backend bucket-membership removal. The actual worker is deployed;
-the newly configured recovery job is paused after live PERMISSION_DENIED.
+the existing recovery job is enabled after a successful live invocation.
 No Edge rollout or committed live Credit debit has occurred.
 Native tooling/signing/APK/device verification is not part of this implementation.
 The deletion/retention product decision is now approved and recorded exactly in
@@ -119,15 +119,17 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ### Current development checkpoint
 
-**Actual rollout is BLOCKED at Scheduler:** backend access now passes HTTP 200,
+**Actual rollout is BLOCKED at gateway:** backend access passes HTTP 200,
 anonymous access is denied with 403, and the actual pinned worker is active on
-revision `jobix-dev-pdf-export-00002-bpb`. The new one-minute recovery job's
-actual invocation failed with RPC **7 / PERMISSION_DENIED**, then was paused.
-Scheduler identity has no service-level invocation binding. Administrator
-action is service-scoped Scheduler Run Invoker authorization; no agent IAM
-grant or security bypass was performed. Gateway/database enabling and live
-billable export tests remain unperformed. Historical readiness-only evidence
-below does not imply full export readiness.
+revision `jobix-dev-pdf-export-00002-bpb`. The existing one-minute recovery job
+was resumed after the administrator's correction; actual invocation passed
+RPC **0 / OK** and the job remains enabled, without a duplicate or agent IAM
+change. The subsequent Supabase Management API development secret-metadata
+read returned **403** and the rollout stopped. Remote gateway configuration
+remains unverified; local Edge code still lacks an implemented keyless identity
+transport. No keys, credential substitution or security bypass. Gateway/database
+enabling and live billable export tests remain unperformed. Historical
+readiness-only evidence below does not imply full export readiness.
 
 **Earlier runtime configuration: READY in read-only mode before activation.** Private Cloud Run
 `jobix-dev-pdf-export` in `me-central1` uses the existing pinned image/backend
