@@ -67,6 +67,10 @@ export class Worker {
         if(metadata.metadata?.document_sha256!==snapshot.document_sha256 ||
           metadata.metadata?.source_sha256!==snapshot.source_sha256)throw new ExportError('VALIDATION_FAILED');
         pdf=await step(()=>this.storage.read(path,metadata.generation,signal));
+        if(metadata.metadata.upload_fence) {
+          await step(()=>this.db.call('upload_settle',{operation,
+            fence:metadata.metadata.upload_fence,generation:String(metadata.generation)}));
+        }
       } else {
         pdf=await step(()=>this.renderer.render(snapshot.canonical_html,
           {signal,timeout:Math.min(600000,remaining())}));
@@ -75,10 +79,20 @@ export class Worker {
       await step(()=>this.db.call('heartbeat',{operation,fence}));
       await step(()=>this.db.call('stage',{operation,fence,stage:'UPLOADING'}));
       if(!metadata) {
+        await step(()=>this.db.call('upload_begin',{operation,fence}));
         try {
           metadata=await step(()=>this.storage.create(path,pdf,{
             document_sha256:snapshot.document_sha256,source_sha256:snapshot.source_sha256,
-            pdf_sha256:sha256(pdf)},signal));
+            pdf_sha256:sha256(pdf),upload_fence:fence},signal).then(async object=>{
+              await this.db.call('upload_settle',{operation,fence,generation:String(object.generation)});
+              return object;
+            }).catch(async error=>{
+              if(error.code==='OBJECT_EXISTS') {
+                await this.db.call('upload_settle',{operation,fence,generation:null});
+              }
+              // Network/timeout ambiguity stays SENT: never assume quiescence.
+              throw error;
+            }));
         } catch(error) {
           if(error.code!=='OBJECT_EXISTS')throw error;
           metadata=await step(()=>this.storage.inspect(path,null,signal));

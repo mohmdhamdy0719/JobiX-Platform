@@ -2,7 +2,25 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: Phase 3 deletion/retention decision recording only
+## Current authorization: complete Phase 3 development implementation and deployment
+
+The owner explicitly authorized the complete PDF Export + Credits vertical slice,
+development migrations, private worker/storage/recovery, approved deletion
+integration, least-privilege security/IAM and isolated development live tests.
+Use the approved plan and Architecture V2. Reuse approved resources; no
+unnecessary resources, new service-account keys, AI, billing, changed product
+behavior or unjustified dependency upgrades.
+
+**Why:** The owner superseded the recording-only pause with "START BUILDING
+PHASE 3 NOW" and development-only implementation/deployment authorization.
+
+**How to apply:** Preserve existing regression/security tests and canonical
+immutable-snapshot rendering. Never touch production/staging. Ask before
+destructive or irreversible cloud operations. Credential availability is not
+permission/readiness proof; use verified TLS and restricted runtime identities,
+never administrator/deployer runtime shortcuts or newly created keys.
+
+## Earlier authorization: Phase 3 deletion/retention decision recording only
 
 The owner approved the exact deletion/retention contract recorded in
 [the Phase 3 ADR](../../mobile/jobix/backend/pdf/ADR-retention-deletion.md).

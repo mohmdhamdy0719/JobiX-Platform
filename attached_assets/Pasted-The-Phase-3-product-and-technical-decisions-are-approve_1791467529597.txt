@@ -1,0 +1,54 @@
+The Phase 3 product and technical decisions are approved.
+
+START BUILDING PHASE 3 NOW.
+
+Use the approved Phase 3 PDF Export + Credits implementation plan and the existing Jobix Architecture V2 as the source of truth.
+
+You are authorized to implement and deploy the DEVELOPMENT environment only.
+
+Build the complete Phase 3 vertical slice:
+
+1. Supabase migrations for the approved export lifecycle.
+2. Export snapshot/job persistence.
+3. Atomic export creation + idempotency.
+4. Job-bound Credit reservation/finalization/release.
+5. Private Cloud Run PDF worker.
+6. Canonical HTML/CSS → Chromium PDF generation.
+7. GCS private upload with generation-safe handling.
+8. Scheduler/recovery processing.
+9. Signed generation-bound download URLs.
+10. Export history/status/retry/Export Again flows in Flutter.
+11. Approved 7-day PDF retention.
+12. Approved deletion/retention integration.
+13. Required RLS/security/IAM enforcement.
+14. Live integration tests using the DEVELOPMENT environment.
+
+Rules:
+- DEVELOPMENT ONLY. Never touch production/staging.
+- Reuse existing approved GCP/Supabase resources.
+- Do not create unnecessary new resources.
+- Use minimum required IAM permissions.
+- Do not create new service-account keys.
+- Do not broaden IAM unnecessarily.
+- Never expose secrets.
+- No AI/Gemini implementation.
+- No billing/subscription implementation.
+- No changes to the approved product behavior.
+- No dependency upgrades unless strictly required and explicitly justified.
+- Preserve the existing 208 Flutter regression tests.
+- Preserve all existing Phase 3 local tests.
+- Do not remove or weaken security/RLS tests.
+- PDF generation must use the immutable server snapshot, never mutable current profile data.
+- Preview and exported PDF must continue to use the same canonical representation.
+- PDF objects remain private.
+- Existing valid downloads are free.
+- Export Again costs 2 Credits.
+- Failed exports must not permanently consume Credits.
+- Ambiguous operations must remain safely recoverable/idempotent.
+- Do not silently regenerate expired PDFs.
+- Respect the approved deletion/retention contract exactly.
+
+Before destructive or irreversible cloud operations, stop and ask for approval.
+Otherwise proceed with implementation, deployment and development integration testing.
+
+Do not stop for another planning/readiness report. BUILD NOW.

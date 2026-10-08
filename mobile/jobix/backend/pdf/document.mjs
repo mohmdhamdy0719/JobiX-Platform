@@ -49,18 +49,20 @@ export function subprocess(program, args, input, {signal, maxBytes = 8000000} = 
   });
 }
 export class Canonicalizer {
-  constructor({root = resolve(import.meta.dirname, '../..'), dart = 'dart',execute=subprocess} = {}) {
-    Object.assign(this,{root,dart,execute});
+  constructor({root = resolve(import.meta.dirname, '../..'), dart = 'dart',execute=subprocess,
+    executable=process.env.JOBIX_CANONICAL_EXECUTABLE} = {}) {
+    Object.assign(this,{root,dart,execute,executable});
   }
   async prepare(input) {
     const signal=AbortSignal.timeout(30000);
-    const facts=JSON.parse(await this.execute(this.dart,
-      [resolve(this.root,'tool/prepare_resume_document.dart'),this.root,'source'],
+    const program=this.executable??this.dart;
+    const args=this.executable?[this.root]:[resolve(this.root,'tool/prepare_resume_document.dart'),this.root];
+    const facts=JSON.parse(await this.execute(program,
+      [...args,'source'],
       JSON.stringify(input.source),{signal}));
     if(facts.bundle!==bundle || typeof facts.source_text!=='string' ||
       Buffer.byteLength(facts.source_text.normalize('NFC'))>200000)throw new ExportError('VALIDATION_FAILED');
-    const output = await this.execute(this.dart,
-      [resolve(this.root,'tool/prepare_resume_document.dart'),this.root],
+    const output = await this.execute(program,args,
       JSON.stringify(input.source), {signal});
     let document;
     try { document = JSON.parse(output); } catch { throw new ExportError('VALIDATION_FAILED'); }

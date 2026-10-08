@@ -1,5 +1,50 @@
 # Jobix verification evidence
 
+## Development implementation authorization — current build increment
+
+The owner superseded the recording-only pause with complete Phase 3 DEVELOPMENT
+implementation/deployment/live-test authorization. Production/staging, new
+service-account keys, AI/billing, broader product changes and unjustified upgrades
+remain excluded. Destructive/irreversible cloud operations require approval.
+
+Implemented in this increment:
+- Forward-only migration 017: private durable physical-upload flight tracking,
+  one unresolved create per job, late-response settlement without Credit
+  finalization, distributed quiescence checks, export-only transactional
+  snapshot/job/receipt/reservation purge with absence verification.
+- Existing account/profile DELETING transitions freeze exports automatically;
+  physical deletion cannot cascade away export evidence before cleanup.
+  No new Auth/account deletion API, slot policy or immutable-ledger mutation.
+- Conditional upload metadata includes the unique fence; matching stored
+  source/document/fence evidence reconciles a lost response. Unproved requests
+  keep deletion pending. Prefix listing/removal covers orphan objects; absence
+  is checked again before snapshot purge.
+- Private recovery invokes deletion integration. PDF expiry still preserves
+  snapshots/history/replay and never silently regenerates or charges.
+- Managed-build Dockerfile and strict context allowlist, same Dart 3.8.0 AOT
+  canonical source and locked Playwright engine; no local Docker or version upgrade.
+- Guarded opt-in additive development migration runner, single transaction,
+  checksum ledger, verified TLS and rollout flags unchanged.
+
+Evidence: canonical AOT compiled successfully and actual AOT/Dart source → host
+Chromium/Poppler → disposable PostgreSQL integration passed, including historical
+security/credits/RLS tests and new freeze/ambiguous-flight/purge/physical-delete
+guards. Production container/pinned browser and deployed end-to-end path are not
+verified; no remote migration/deployment/live Credit transaction occurred.
+All **36 backend contract/recovery/cleanup tests passed**. JavaScript syntax,
+opt-out migration-runner guard, unchanged dependency-manifest/lock checksums and
+diff checks passed. No Flutter product/test code changed in this increment;
+the previously passing **208 regression + 16 export tests** were preserved.
+
+Authenticated development checks found the approved repository/bucket, no
+Cloud Run services/Scheduler jobs, usable backend actAs/impersonation, and
+Supabase function-list access. Cloud Build list/Secret Manager list returned
+403; backend bucket permission tests returned no granted permissions.
+The administrative DB connection failed verified TLS without its trusted root
+certificate. Public certificate download and management retrieval were denied;
+TLS verification was not weakened. These are access/runtime blockers, not
+reopened product decisions. No IAM/bucket/lifecycle/production changes were made.
+
 ## Phase 3 local PDF/Credits implementation — 2026-10-08
 
 **Status: PARTIALLY VERIFIED; rollout remains blocked and disabled.**

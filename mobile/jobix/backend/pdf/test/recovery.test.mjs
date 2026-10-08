@@ -34,6 +34,7 @@ function fixture() {
       document_sha256:job.snapshot.document_sha256,source_sha256:job.snapshot.source_sha256,
       pdf_sha256:sha256(bytes)},bytes};
   const storage={inspect:async p=>objects.get(p)??null,
+    listPrefix:async()=>[...objects].map(([name,object])=>({name,...object})),
     create:async(p,b,metadata)=>{objects.set(p,{...object,bytes:b,metadata});return objects.get(p);},
     read:async p=>objects.get(p).bytes};
   const db={call:async(name,args)=>{calls.push([name,args]);return 'COMPLETED';}};
@@ -110,8 +111,10 @@ test('snapshot asset digest tampering is terminal before any render/upload',asyn
 function cleanupFixture() {
   const objects=new Map([['path',{generation:'7'}]]),calls=[];
   const job={id:randomUUID(),path:'path',generation:'7'};
-  const db={call:async(name,args)=>{calls.push([name,args]);return name==='cleaned'?null:[job];}};
+  const db={call:async(name,args)=>{calls.push([name,args]);return name==='cleaned'?null:
+    name==='quiescent'?false:name==='purge'?{state:'EXPORT_DATA_REMOVED',objects_verified:true,snapshots_verified:true}:[job];}};
   const storage={inspect:async p=>objects.get(p)??null,
+    listPrefix:async()=>[...objects].map(([name,object])=>({name,...object})),
     remove:async(p,g)=>{assert.equal(g,'7');objects.delete(p);}};
   return {objects,calls,job,db,storage};
 }
@@ -119,13 +122,14 @@ test('deletion hook waits for quiescence and never guesses snapshot retention',a
   const f=cleanupFixture();
   const result=await new ExportCleanup({...f,enabled:true}).freeze(randomUUID());
   assert.equal(result.state,'DELETION_PENDING');assert.equal(result.objects_verified,false);
-  assert.equal(f.objects.size,1);assert.equal(result.snapshot_policy,'APPROVAL_REQUIRED');
+  assert.equal(f.objects.size,1);assert.equal(result.reason,'UPLOAD_QUIESCENCE_UNVERIFIED');
 });
-test('quiescent deletion removes exact generation but does not claim account/snapshot deletion',async()=>{
+test('quiescent deletion verifies objects then purges export data without claiming account deletion',async()=>{
   const f=cleanupFixture();
   const result=await new ExportCleanup({...f,enabled:true,barrier:{quiescent:async()=>true}}).freeze(randomUUID());
-  assert.equal(result.objects_verified,true);assert.equal(result.state,'DELETION_PENDING');
-  assert.deepEqual(f.calls.map(([n])=>n),['freeze']);
+  assert.equal(result.objects_verified,true);assert.equal(result.state,'EXPORT_DATA_REMOVED');
+  assert.equal(result.snapshots_verified,true);
+  assert.deepEqual(f.calls.map(([n])=>n),['freeze','purge']);
 });
 test('late upload racing deletion verification cannot be declared clean',async()=>{
   const f=cleanupFixture();let probes=0;
@@ -143,4 +147,32 @@ test('replacement generation is not removed by an old expiry callback',async()=>
   await assert.rejects(new ExportCleanup({...f,enabled:true}).retention(),{code:'CLEANUP_UNVERIFIED'});
   assert.equal(f.objects.get('path').generation,'8');
   assert.ok(!f.calls.some(([n])=>n==='cleaned'));
+});
+test('account export cleanup removes orphan objects as well as canonical paths before purge',async()=>{
+  const f=cleanupFixture();f.objects.set('orphan',{generation:'7'});
+  const result=await new ExportCleanup({...f,enabled:true,barrier:{quiescent:async()=>true}}).freeze(randomUUID());
+  assert.equal(result.state,'EXPORT_DATA_REMOVED');assert.equal(f.objects.size,0);
+});
+test('stored unique upload marker reconciles a lost response before distributed deletion barrier',async()=>{
+  const f=cleanupFixture(),fence=randomUUID();let settled=false;
+  Object.assign(f.job,{document_sha256:'doc',source_sha256:'source'});
+  f.objects.get('path').metadata={upload_fence:fence,document_sha256:'doc',source_sha256:'source'};
+  f.db.call=async(name,args)=>{
+    f.calls.push([name,args]);
+    if(name==='freeze')return [f.job];
+    if(name==='upload_settle'){assert.equal(args.fence,fence);settled=true;return;}
+    if(name==='quiescent')return settled;
+    if(name==='purge')return {state:'EXPORT_DATA_REMOVED',snapshots_verified:true};
+  };
+  const result=await new ExportCleanup({...f,enabled:true}).freeze(randomUUID());
+  assert.equal(result.state,'EXPORT_DATA_REMOVED');assert.equal(f.objects.size,0);
+  assert.deepEqual(f.calls.map(([n])=>n),['freeze','upload_settle','quiescent','quiescent','purge']);
+});
+test('wrong snapshot metadata cannot settle an ambiguous upload or permit purge',async()=>{
+  const f=cleanupFixture();
+  Object.assign(f.job,{document_sha256:'doc',source_sha256:'source'});
+  f.objects.get('path').metadata={upload_fence:randomUUID(),document_sha256:'wrong',source_sha256:'source'};
+  const result=await new ExportCleanup({...f,enabled:true}).freeze(randomUUID());
+  assert.equal(result.state,'DELETION_PENDING');assert.equal(f.objects.size,1);
+  assert.ok(!f.calls.some(([n])=>['upload_settle','purge'].includes(n)));
 });

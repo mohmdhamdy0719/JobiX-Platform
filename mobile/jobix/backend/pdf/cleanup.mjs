@@ -20,19 +20,46 @@ export class ExportCleanup {
     if(!this.enabled)throw new ExportError('EXPORT_NOT_READY');
     // SQL only accepts an already DELETING account/profile; never changes Auth.
     const jobs=await this.db.call('freeze',{actor,profile});
-    if(!this.barrier || !(await this.barrier.quiescent(jobs))) {
+    for(const job of jobs) {
+      const object=await this.storage.inspect(job.path);
+      if(object?.metadata?.upload_fence &&
+        object.metadata.document_sha256===job.document_sha256 &&
+        object.metadata.source_sha256===job.source_sha256) {
+        // One registered physical create per fence, no overlapping unresolved
+        // creates: this exact stored marker proves that request completed.
+        await this.db.call('upload_settle',{operation:job.id,
+          fence:object.metadata.upload_fence,generation:String(object.generation)});
+      }
+    }
+    const quiescent=()=>this.barrier?this.barrier.quiescent(jobs):
+      this.db.call('quiescent',{actor,profile});
+    if((await quiescent())!==true) {
       return {state:'DELETION_PENDING',objects_verified:false,
-        snapshot_policy:'APPROVAL_REQUIRED'};
+        reason:'UPLOAD_QUIESCENCE_UNVERIFIED'};
     }
     for(const job of jobs)await this.removeGeneration(job);
+    const prefixes=profile?jobs.map(job=>job.path.slice(0,job.path.lastIndexOf('/')+1)):
+      [`exports/${actor}/`];
+    for(const prefix of prefixes) {
+      for(const object of await this.storage.listPrefix(prefix)) {
+        await this.storage.remove(object.name,object.generation);
+      }
+    }
     // Verify again after the barrier/cleanup, including an upload racing removal.
-    if(!(await this.barrier.quiescent(jobs)))throw new ExportError('CLEANUP_UNVERIFIED');
+    if((await quiescent())!==true)throw new ExportError('CLEANUP_UNVERIFIED');
     for(const job of jobs)if(await this.storage.inspect(job.path)) {
       throw new ExportError('CLEANUP_UNVERIFIED');
     }
-    // Intentionally no snapshot purge or "account deletion complete" claim.
-    return {state:'DELETION_PENDING',objects_verified:true,
-      snapshot_policy:'APPROVAL_REQUIRED'};
+    for(const prefix of prefixes)if((await this.storage.listPrefix(prefix)).length) {
+      throw new ExportError('CLEANUP_UNVERIFIED');
+    }
+    return this.db.call('purge',{actor,profile,objects_verified:true});
+  }
+  async deletions() {
+    if(!this.enabled)throw new ExportError('EXPORT_NOT_READY');
+    const scopes=await this.db.call('deletions');
+    for(const scope of scopes)await this.freeze(scope.actor,scope.profile);
+    return {processed:scopes.length};
   }
   async retention() {
     if(!this.enabled)throw new ExportError('EXPORT_NOT_READY');

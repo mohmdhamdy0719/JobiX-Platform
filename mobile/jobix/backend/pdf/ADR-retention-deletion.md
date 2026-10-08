@@ -1,6 +1,6 @@
 # ADR — Phase 3 PDF/export deletion and retention
 
-**Status:** Product decision approved; documentation only.
+**Status:** Product decision approved; subsequent development implementation and deployment authorized.
 **Recorded:** 2026-10-08.
 **Authority:** Explicit owner approval. This supersedes earlier documentation
 that described the deletion/snapshot policy as unresolved.
@@ -24,7 +24,7 @@ that described the deletion/snapshot policy as unresolved.
 9. No automatic regeneration after expiry.
 10. No production/staging changes.
 
-## Current authorization — recorded exactly
+## Original recording-only authorization — recorded exactly (superseded)
 
 For now:
 - Record this decision in the Phase 3 documentation/ADR.
@@ -36,7 +36,16 @@ For now:
 
 Do not implement or deploy yet.
 
-## Implementation and verification status
+## Subsequent development authorization
+
+The owner subsequently instructed "START BUILDING PHASE 3 NOW", authorizing the
+complete DEVELOPMENT vertical slice and live integration tests using existing
+approved resources and minimum IAM. No production/staging, new service-account
+keys, AI/billing, unjustified upgrades, or changes to approved behavior.
+Destructive/irreversible cloud operations still require prior explicit approval.
+The ten-point retention/deletion contract above remains unchanged.
+
+## Implementation and verification status (historical recording-only checkpoint)
 
 Approval settles the product decision, not implementation or rollout readiness.
 No implementation, migration, worker start, cloud change or Credit transaction

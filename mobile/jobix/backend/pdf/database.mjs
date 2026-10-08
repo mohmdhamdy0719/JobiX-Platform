@@ -8,6 +8,8 @@ const contracts = {
   claim:['capacity'], heartbeat:['operation','fence'], stage:['operation','fence','stage'],
   finish:['operation','fence','proof','terminal'], recover:[],
   freeze:['actor','profile'], retention:[],cleaned:['operation','generation'],
+  upload_begin:['operation','fence'],upload_settle:['operation','fence','generation'],
+  quiescent:['actor','profile'],purge:['actor','profile','objects_verified'],deletions:[],
 };
 const jsonArgs = new Set(['proof','asset_manifest']);
 export class Database {

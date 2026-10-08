@@ -29,7 +29,7 @@ export function server({gateway,worker,cleanup,authenticate}) {
       let result;
       if(req.url==='/recover') {
         result=await worker.recover();
-        if(cleanup)await cleanup.retention();
+        if(cleanup){await cleanup.retention();await cleanup.deletions();}
       }
       else if(req.url==='/dispatch')result=await worker.dispatch();
       else if(req.url==='/command')result=await gateway.handle(input.actor,input.action,input.command);

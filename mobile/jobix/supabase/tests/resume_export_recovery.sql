@@ -96,6 +96,4 @@ BEGIN
  ASSERT NOT EXISTS(SELECT FROM public.credit_transactions WHERE user_id=actor AND delta=-2);
  UPDATE public.export_settings SET enabled=false,deletion_policy_approved=false;
 END $$;
-DROP FUNCTION pg_temp.fixture_create(uuid,uuid);
-DROP FUNCTION pg_temp.fixture_actor();
-DROP FUNCTION pg_temp.must_fail(text,text);
+-- Helpers are removed after the approved deletion-contract checks in the same session.

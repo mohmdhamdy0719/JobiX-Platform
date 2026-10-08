@@ -52,6 +52,19 @@ export class GoogleStorage {
     await checked(this.url(path,generation)+'&ifGenerationMatch='+generation,
       {method:'DELETE',headers:await this.headers()});
   }
+  async listPrefix(prefix) {
+    if(!/^exports\/[0-9a-f-]{36}\/(?:[0-9a-f-]{36}\/)?$/.test(prefix))throw new ExportError('FORBIDDEN');
+    const objects=[];let pageToken;
+    do {
+      const query=new URLSearchParams({prefix,maxResults:'1000'});
+      if(pageToken)query.set('pageToken',pageToken);
+      const response=await checked(`https://storage.googleapis.com/storage/v1/b/${this.bucket}/o?${query}`,
+        {headers:await this.headers()});
+      const page=await response.json();
+      objects.push(...(page.items??[]));pageToken=page.nextPageToken;
+    } while(pageToken);
+    return objects;
+  }
   async create(path,pdf,metadata,signal) {
     const boundary=randomUUID();
     const body=Buffer.concat([Buffer.from(

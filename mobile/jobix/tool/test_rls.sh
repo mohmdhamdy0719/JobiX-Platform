@@ -49,9 +49,11 @@ psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/migrations/202610080014_resume_configuration_concurrency.sql \
   -f supabase/migrations/202610080015_resume_export_local_hardening.sql \
   -f supabase/migrations/202610080016_resume_export_cleanup_hooks.sql \
+  -f supabase/migrations/202610080017_resume_export_deletion.sql \
   -f supabase/tests/resume_export.sql
 psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
-  -f supabase/tests/resume_export_recovery.sql
+  -f supabase/tests/resume_export_recovery.sql \
+  -f supabase/tests/resume_export_deletion.sql
 echo "PASS: Disabled-by-default private export/credits/snapshot/lifecycle/concurrency (disposable PostgreSQL)"
 if [[ -f backend/pdf/test/integration.mjs ]]; then
   JOBIX_DISPOSABLE_PG_SOCKET="$work/socket" node backend/pdf/test/integration.mjs
