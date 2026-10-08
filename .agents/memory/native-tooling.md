@@ -136,3 +136,15 @@ handling and cleanup even after server writes succeed, producing false timeouts.
 settle popup animations before interacting. Keep fixture snapshots private and
 verify restoration after every live mutation pass. This is still host UI
 verification, not proof of native Keystore, email callbacks or process-death recovery.
+
+For formatting a pure-Dart helper when the Flutter lint include is missing,
+format stdin from outside the native package with explicit language version,
+page width and trailing-comma mode. Do not disable analyzer rules or restore
+dependencies solely to format that helper.
+
+**Why:** Overriding page width alone still made the formatter resolve the absent
+lint include for its trailing-comma configuration; stdin with all formatting
+settings supplied avoided that lookup.
+
+**How to apply:** This is a formatting-only workaround for pure-Dart tools.
+It does not prove Flutter analysis/tests pass or replace their dependencies.

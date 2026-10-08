@@ -11,3 +11,4 @@
 - [First-launch lifecycle](first-launch-lifecycle.md) — completion survives account cleanup; persist final Continue and answer snapshot together.
 - [GitHub history transfer](github-history-transfer.md) — API access does not prove native Git transport; preserve both commit graphs and verify LFS separately.
 - [Read-only Git/LFS checks](plan-mode-lfs.md) — git status can invoke LFS and attempt temporary writes; avoid repair or filter bypass in Plan mode.
+- [Resume print verification](resume-print-verification.md) — bidi extraction and font boxes can cause false failures; keep logical-source and physical-print checks separate.
