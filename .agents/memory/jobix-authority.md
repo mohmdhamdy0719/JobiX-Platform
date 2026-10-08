@@ -2,20 +2,23 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current stage gate: runtime configuration and read-only verification
+## Current authorization: actual development deployment and live integration
 
-The owner authorized development runtime binding to the existing database
-Secret version 1 and bundled verified-TLS CA, followed by read-only readiness
-checks and a READY/BLOCKED report, then stop. No credential creation/rotation,
-new Secret, migrations, production/staging work or unrelated IAM changes.
+The owner explicitly ended readiness-only work and authorized actual Phase 3
+development migration verification, worker activation, Scheduler recovery,
+gateway enabling and live end-to-end testing, in that order. Reuse existing
+resources, database Secret version 1 and restricted role. No production/staging,
+AI, new service-account keys, IAM broadening, security bypass or changed product
+behavior. Stop at a migration/deployment failure or live correctness/security
+failure and report its exact error.
 
-**Why:** The owner explicitly separated this runtime-configuration milestone
-from further worker activity and requested stopping after verification.
+**Why:** The owner said "STOP READINESS-ONLY WORK" and "Proceed with the actual
+Phase 3 DEVELOPMENT deployment and live integration now."
 
-**How to apply:** Readiness success does not authorize switching to normal
-export processing, changing rollout flags or starting subsequent rollout work.
-Keep the approved plan, credentials and least-privilege IAM unchanged; obtain
-the next stage's authorization before activation.
+**How to apply:** Do the authorized deployment rather than another generic
+readiness exercise, but honor fail-fast. Missing permissions do not authorize
+adding grants, making a private service public or using another runtime identity.
+Keep the overall task incomplete when a failure stops the vertical slice.
 
 ## Broader authorization: Phase 3 development implementation and deployment
 

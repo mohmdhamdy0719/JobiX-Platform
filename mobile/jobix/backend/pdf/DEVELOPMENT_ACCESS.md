@@ -6,6 +6,16 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Actual rollout blocker:** migration checksum/RLS verification passed, but
+backend Google-authenticated invocation of this private service returns 403.
+Effective permissions show no `run.routes.invoke`. The owner requires stopping
+at that failure and forbids IAM broadening; no invoker grant was added.
+Administrator action: authorize/configure backend `roles/run.invoker` membership
+on this service only, preserving existing principals and private authentication.
+Do not substitute the deployer for the backend, grant project-wide invocation
+or disable the invoker IAM check. Actual worker/Scheduler/gateway activation
+and end-to-end export verification remain unperformed.
+
 The requested runtime binding is applied and **READY in read-only mode** on
 private service `jobix-dev-pdf-export`, `me-central1`. Secret version 1 and the
 bundled verified CA are resolved inside the actual hosted runtime. Its

@@ -1,0 +1,88 @@
+The development runtime configuration is READY and verified.
+
+STOP READINESS-ONLY WORK.
+
+Proceed with the actual Phase 3 DEVELOPMENT deployment and live integration now.
+
+Execute the approved Phase 3 PDF Export + Credits vertical slice using the existing implementation and approved architecture.
+
+Order:
+
+1. Apply the approved forward-only development Supabase migrations:
+   - 202610080012_resume_export_foundation.sql
+   - 202610080013_resume_export_lifecycle.sql
+   - 202610080014_resume_configuration_concurrency.sql
+
+2. Verify migrations and RLS in the development database.
+
+3. Deploy/activate the actual PDF export worker using the already configured:
+   jobix-dev-pdf-export
+   in mhflow-jobix / me-central1
+
+4. Configure the approved Cloud Scheduler recovery path.
+
+5. Enable the development export gateway/endpoints.
+
+6. Run live end-to-end export tests.
+
+Verify at minimum:
+
+- export.create idempotency
+- immutable snapshot creation
+- 2 Credit reservation
+- successful PDF generation
+- canonical HTML → Chromium PDF
+- private GCS upload
+- generation-safe object handling
+- signed generation-bound download URL
+- existing download costs 0 Credits
+- Export Again costs 2 Credits
+- failed export releases Credits
+- ambiguous/retry behavior
+- duplicate callbacks
+- stale lease recovery
+- history/status
+- 7-day expiry behavior
+- no silent regeneration
+- deletion freeze/quiescence/cleanup behavior
+- RLS/ownership
+- authenticated vs anonymous access
+- Arabic and English PDF generation
+
+Use DEVELOPMENT ONLY.
+
+Do NOT touch production or staging.
+
+Do NOT implement AI/Gemini.
+
+Do NOT change the approved product behavior.
+
+Do NOT create new service-account keys.
+
+Do NOT broaden IAM permissions.
+
+Do NOT make destructive changes outside the approved migrations.
+
+Do NOT disable security checks.
+
+Use the existing:
+- GCP project mhflow-jobix
+- region me-central1
+- Artifact Registry jobix-dev
+- private bucket gs://mhflow-jobix-dev-pdfs
+- backend service account jobix-backend-dev
+- deployer service account jobix-deployer-dev
+- existing database Secret version 1
+- existing restricted DB role jobix_export_runtime
+
+If a migration fails, deployment fails, or a live test reveals a correctness/security issue, stop at that failure and report the exact error rather than bypassing it.
+
+Do not stop for another generic readiness report. Perform the implementation/deployment and live development verification now.
+
+At the end report:
+- migrations applied
+- services deployed
+- scheduler configured
+- live tests passed/failed
+- any blocker requiring my approval
+- final Phase 3 status

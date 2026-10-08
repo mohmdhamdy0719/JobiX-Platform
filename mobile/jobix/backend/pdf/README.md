@@ -118,6 +118,12 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ### Current development checkpoint
 
+**Actual rollout is BLOCKED:** the authorized migration/RLS checks passed, but
+live backend-identity access to the private service returned 403 due to missing
+`run.routes.invoke`. The fail-fast instruction was followed. No IAM grant was
+added and no actual worker/Scheduler/gateway activation took place.
+Readiness-only runtime status below does not imply full export readiness.
+
 **Current runtime configuration: READY, read-only mode only.** Private Cloud Run
 `jobix-dev-pdf-export` in `me-central1` uses the existing pinned image/backend
 account, Secret `jobix-dev-export-database` version `1`, and CA file

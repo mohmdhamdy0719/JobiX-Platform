@@ -1,5 +1,26 @@
 # Jobix verification evidence
 
+## Actual development rollout attempt — BLOCKED on private invocation
+
+The owner authorized actual development activation/integration and fail-fast.
+The protected migration runner confirmed all six installed migration checksums
+and skipped already-applied schema changes, including the explicitly requested
+012–014. Live metadata confirms RLS on the checked export/Credit tables with
+authenticated client INSERT/UPDATE/DELETE denied. Rollout flags remain false.
+
+The actual backend identity lacks `run.routes.invoke` on
+`projects/mhflow-jobix/locations/me-central1/services/jobix-dev-pdf-export`.
+Live HTTP verification using a genuine Google-issued backend ID token, the
+correct service audience and `/ready` returned **403**. This is a private-service
+invocation failure, not a database credential/CA/image failure.
+
+Stopped at that failure without adding IAM grants or changing identities.
+The actual worker entrypoint was not activated; existing readiness-only service
+remains unchanged. Scheduler/gateway enabling and live billable export journeys
+were not attempted. No real Credit transaction or production/staging change.
+Overall Phase 3 remains incomplete. Operator action requires explicitly scoped
+backend invocation access on this service only, not project-wide/public access.
+
 ## Development runtime Secret/CA binding — READY, read-only
 
 Configured only the development runtime `jobix-dev-pdf-export` in `me-central1`
