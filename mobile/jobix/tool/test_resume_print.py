@@ -4,7 +4,8 @@ import copy
 import unittest
 
 from check_resume_print import (
-    authored, check_cohesion, check_dom, glyphs, pdf_lines, visible_characters, words,
+    PROFICIENCIES, authored, check_cohesion, check_dom, check_pdf_content,
+    glyphs, pdf_lines, visible_characters, words,
 )
 
 
@@ -49,9 +50,130 @@ def line(text, page, y, height=22):
             "page": page, "y": y, "height": height, "text": text}
 
 
+def credential_dom(language):
+    case, dom = valid_dom()
+    ar = language == "ar"
+    case["language"] = language
+    dom.update(lang=language, dir="rtl" if ar else "ltr",
+               id=f"resume_ats_{language}_v1")
+    # Independent synthetic oracle, including empty optional records.
+    source = case["source"]
+    source["volunteer_experiences"] = []
+    source["certifications"] = [
+        {"name": "شهادة تجريبية" if ar else "Sample Certificate",
+         "issuer": "معهد تجريبي" if ar else "Sample Institute",
+         "issue_month": "2021-03", "expiry_month": "2029-11",
+         "credential_id": "CERT-0042/SQL",
+         "url": "https://example.invalid/cert?id=42&lang=en",
+         "description": "Credential introduction.\n- Credential outcome."},
+        {"name": "شهادة ثانية" if ar else "Second Certificate",
+         "issuer": "Second Institute", "issue_month": "2020-02",
+         "expiry_month": "", "credential_id": "", "url": "", "description": ""},
+    ]
+    source["achievements"] = [
+        {"title": "إنجاز تجريبي" if ar else "Sample Achievement",
+         "issuer": "Sample Committee", "achieved_month": "2022-09",
+         "description": "Achievement introduction.\n• Achievement outcome.",
+         "url": "https://example.invalid/award?year=2022&kind=sample"},
+        {"title": "Second Achievement", "issuer": "Second Committee",
+         "achieved_month": "2019-12", "description": "", "url": ""},
+    ]
+    source["languages"] = [
+        {"name": f"لغة {index}" if ar else f"Language {index}", "proficiency": key}
+        for index, key in enumerate(PROFICIENCIES)
+    ]
+    certs, awards = source["certifications"], source["achievements"]
+    dom["headings"] = (["الملخص المهني", "الشهادات", "الإنجازات", "المهارات", "اللغات"]
+                       if ar else ["Professional Summary", "Certifications",
+                                   "Achievements", "Skills", "Languages"])
+    dom["articles"] = ([i["name"] for i in certs] + [i["title"] for i in awards] +
+                       [i["name"] for i in source["languages"]])
+    dom["records"] = [
+        f'{certs[0]["name"]} {certs[0]["issuer"]} 2021-03 '
+        f'{"تاريخ الانتهاء" if ar else "Expires"}: 2029-11 CERT-0042/SQL '
+        f'{certs[0]["url"]} Credential introduction. Credential outcome.',
+        f'{certs[1]["name"]} Second Institute 2020-02',
+        f'{awards[0]["title"]} Sample Committee 2022-09 '
+        f'{awards[0]["url"]} Achievement introduction. Achievement outcome.',
+        "Second Achievement Second Committee 2019-12",
+        *[f'{i["name"]} {PROFICIENCIES[i["proficiency"]][int(ar)]}'
+          for i in source["languages"]],
+    ]
+    dom["recordLinks"] = [
+        [{"text": certs[0]["url"], "href": certs[0]["url"]}], [],
+        [{"text": awards[0]["url"], "href": awards[0]["url"]}], [],
+        *[[] for _ in source["languages"]],
+    ]
+    dom["lists"] = [["First bullet", "Second bullet"],
+                    ["Credential outcome."], ["Achievement outcome."]]
+    dom["paragraphs"] = ["Opening.", "", "1. Numbered prose.",
+                         "Credential introduction.", "Achievement introduction."]
+    dom["blanks"] = 1
+    dom["text"] = "\n".join([dom["header"], *dom["headings"], *dom["records"],
+                             *dom["paragraphs"], dom["skills"],
+                             "First bullet Second bullet"])
+    return case, dom
+
+
 class ResumeAssertionsTest(unittest.TestCase):
     def test_healthy_dom(self):
         check_dom(*valid_dom())
+
+    def test_credentials_and_all_translated_proficiencies(self):
+        for language in ("en", "ar"):
+            with self.subTest(language=language):
+                case, dom = credential_dom(language)
+                check_dom(case, dom)
+                check_pdf_content(dom, dom["text"])
+
+    def test_each_credential_field_and_proficiency_cannot_disappear(self):
+        for language in ("en", "ar"):
+            case, healthy = credential_dom(language)
+            fields = [(0, value) for key, value in case["source"]["certifications"][0].items()
+                      if key != "description"]
+            fields += [(2, value) for key, value in case["source"]["achievements"][0].items()
+                       if key != "description"]
+            fields += [(4+i, PROFICIENCIES[item["proficiency"]][int(language == "ar")])
+                       for i, item in enumerate(case["source"]["languages"])]
+            for index, value in fields:
+                with self.subTest(language=language, field=value):
+                    dom = copy.deepcopy(healthy)
+                    dom["records"][index] = dom["records"][index].replace(value, "")
+                    with self.assertRaises(AssertionError):
+                        check_dom(case, dom)
+                    # PDF must fail even when logical DOM remains healthy.
+                    with self.assertRaisesRegex(AssertionError, "PDF content mismatch"):
+                        check_pdf_content(healthy, healthy["text"].replace(value, ""))
+
+    def test_wrong_translation_is_not_accepted(self):
+        for language in ("en", "ar"):
+            case, healthy = credential_dom(language)
+            for index, labels in enumerate(PROFICIENCIES.values()):
+                dom = copy.deepcopy(healthy)
+                selected = int(language == "ar")
+                dom["records"][4+index] = dom["records"][4+index].replace(
+                    labels[selected], labels[1-selected])
+                with self.subTest(language=language, index=index), self.assertRaises(AssertionError):
+                    check_dom(case, dom)
+
+    def test_optional_fields_links_and_section_order(self):
+        case, healthy = credential_dom("en")
+        for regression in ("expiry", "link", "href", "sections", "records", "moved"):
+            dom = copy.deepcopy(healthy)
+            if regression == "expiry":
+                dom["records"][1] += " Expires: 2029-11"
+            elif regression == "link":
+                dom["recordLinks"][1] = dom["recordLinks"][0]
+            elif regression == "href":
+                dom["recordLinks"][0][0]["href"] = "https://example.invalid/wrong"
+            elif regression == "sections":
+                dom["headings"][1:3] = reversed(dom["headings"][1:3])
+            elif regression == "records":
+                dom["records"].append("Unexpected duplicate")
+            else:
+                dom["records"][0], dom["records"][2] = dom["records"][2], dom["records"][0]
+            with self.subTest(regression=regression), self.assertRaises(AssertionError):
+                check_dom(case, dom)
 
     def test_dom_regressions_fail(self):
         case, healthy = valid_dom()

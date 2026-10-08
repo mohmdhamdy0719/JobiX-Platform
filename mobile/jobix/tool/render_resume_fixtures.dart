@@ -21,6 +21,16 @@ void main(List<String> arguments) {
     final cases = [
       (name: 'short', long: false, count: 1, lines: 2, boundary: false),
       (name: 'long', long: true, count: 8, lines: 12, boundary: false),
+      if (regression) ...[
+        (name: 'credentials', long: false, count: 1, lines: 2, boundary: true),
+        (
+          name: 'credentials-long',
+          long: true,
+          count: 2,
+          lines: 8,
+          boundary: true,
+        ),
+      ],
       if (regression)
         for (final lines in [6, 8, 10, 12])
           (
@@ -129,6 +139,82 @@ void main(List<String> arguments) {
                 ? 'فقرة مشروع محفوظة.\n• نتيجة موثقة\n\nفقرة أخيرة.'
                 : 'Preserved project paragraph.\n• Documented result\n\nFinal paragraph.',
           },
+        ];
+      }
+      if (fixture.name.startsWith('credentials')) {
+        // Separate cases preserve the existing reviewed visual fixture inputs.
+        // All records use current field limits and reserved, offline-only URLs.
+        final issuer = ar
+            ? 'هيئة اعتماد تجريبية'
+            : 'Synthetic Credential Institute';
+        final description = ar
+            ? 'فقرة اعتماد محفوظة؛ (SQL / R&D) «اختبار».\n- نتيجة موثقة\n\nخاتمة مستقلة.'
+            : 'Preserved credential prose; (SQL / R&D) "test".\n- Documented outcome\n\nIndependent closing.';
+        source['certifications'] = [
+          {
+            'id': 'cert-full',
+            'name': ar
+                ? 'شهادة تنسيق تجريبية'
+                : 'Sample Coordination Certificate',
+            'issuer': long ? '$issuer ${'Review / ' * 18}'.trim() : issuer,
+            'issue_month': '2021-03',
+            'expiry_month': '2029-11',
+            'credential_id': long
+                ? 'JXCREDENTIAL-${'ABC123-' * 25}'
+                : 'JXCREDENTIAL-AR/EN-0042',
+            'url':
+                'https://example.invalid/certificate/${long ? 'review/' * 40 : 'sample'}?id=42&lang=$language',
+            'description': long
+                ? List.filled(10, description).join('\n')
+                : description,
+          },
+          {
+            'id': 'cert-minimal',
+            'name': ar ? 'شهادة ثانية تجريبية' : 'Second Sample Certificate',
+            'issuer': ar ? 'معهد ثان تجريبي' : 'Second Sample Institute',
+            'issue_month': '2020-02',
+            'expiry_month': '',
+            'credential_id': '',
+            'url': '',
+            'description': '',
+          },
+        ];
+        source['achievements'] = [
+          {
+            'id': 'achievement-full',
+            'title': ar
+                ? 'إنجاز تنسيق تجريبي'
+                : 'Sample Coordination Achievement',
+            'issuer': long ? '$issuer ${'Award / ' * 18}'.trim() : issuer,
+            'achieved_month': '2022-09',
+            'description': long
+                ? List.filled(10, description).join('\n')
+                : description,
+            'url':
+                'https://example.invalid/achievement/${long ? 'evidence/' * 40 : 'sample'}?year=2022&kind=award',
+          },
+          {
+            'id': 'achievement-minimal',
+            'title': ar ? 'إنجاز ثان تجريبي' : 'Second Sample Achievement',
+            'issuer': ar ? 'لجنة ثانية تجريبية' : 'Second Sample Committee',
+            'achieved_month': '2019-12',
+            'description': '',
+            'url': '',
+          },
+        ];
+        source['languages'] = [
+          for (final entry in [
+            ('BASIC', 'لغة ألف', 'Sample Alpha'),
+            ('CONVERSATIONAL', 'لغة باء', 'Sample Beta'),
+            ('PROFESSIONAL', 'لغة جيم', 'Sample Gamma'),
+            ('FLUENT', 'لغة دال', 'Sample Delta'),
+            ('NATIVE', 'لغة هاء', 'Sample Epsilon'),
+          ])
+            {
+              'id': 'language-${entry.$1}',
+              'name': '${ar ? entry.$2 : entry.$3} / SQL',
+              'proficiency': entry.$1,
+            },
         ];
       }
       if (regression && ar && (fixture.name == 'short' || fixture.boundary)) {

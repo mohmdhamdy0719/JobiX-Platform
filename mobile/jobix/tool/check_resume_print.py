@@ -30,6 +30,13 @@ SECTIONS = [
     ("skills", "Skills", "المهارات", "name"),
     ("languages", "Languages", "اللغات", "name"),
 ]
+PROFICIENCIES = {
+    "BASIC": ("Basic", "مبتدئ"),
+    "CONVERSATIONAL": ("Conversational", "محادثة"),
+    "PROFESSIONAL": ("Professional", "مهني"),
+    "FLUENT": ("Fluent", "بطلاقة"),
+    "NATIVE": ("Native", "اللغة الأم"),
+}
 DOM = r"""(() => {
   const text = e => e?.textContent.trim() || '';
   const meta = name => document.querySelector(`meta[name="${name}"]`)?.content;
@@ -66,6 +73,8 @@ DOM = r"""(() => {
     headings:[...document.querySelectorAll('section > h2')].map(text),
     articles:[...document.querySelectorAll('article h3')].map(text),
     records:[...document.querySelectorAll('article')].map(e=>e.innerText),
+    recordLinks:[...document.querySelectorAll('article')].map(e=>
+      [...e.querySelectorAll('a')].map(a=>({text:text(a),href:a.getAttribute('href')}))),
     paragraphs:[...document.querySelectorAll('p')].map(text),
     lists:[...document.querySelectorAll('ul')].map(e=>[...e.children].map(text)),
     validLists:[...document.querySelectorAll('ul')].every(e=>
@@ -165,6 +174,8 @@ def check_dom(case, dom):
             for item in items:
                 require(record_index < len(dom["records"]), "record body missing")
                 record_text = dom["records"][record_index]
+                require(item[title] in record_text,
+                        f"record title lost/moved: {item[title]}")
                 for field in ("company", "organization", "institution", "field_of_study",
                               "issuer", "role", "location", "credential_id",
                               "start_month", "end_month", "issue_month", "expiry_month",
@@ -172,6 +183,24 @@ def check_dom(case, dom):
                     if item.get(field) and not (field == "end_month" and item.get("is_current")):
                         require(item[field] in record_text,
                                 f"record lost {field}: {item[field]}")
+                if item.get("expiry_month"):
+                    require(("تاريخ الانتهاء" if ar else "Expires") in record_text,
+                            "expiry label missing/untranslated")
+                if item.get("is_current"):
+                    require(("حتى الآن" if ar else "Present") in record_text,
+                            "current date label missing/untranslated")
+                if key == "languages":
+                    require(PROFICIENCIES[item["proficiency"]][int(ar)] in record_text,
+                            "proficiency missing/wrong translation")
+                if key in ("certifications", "achievements"):
+                    url = item.get("url", "")
+                    require(dom["recordLinks"][record_index] ==
+                            ([{"text": url, "href": url}] if url else []),
+                            "credential/achievement link missing/changed/spurious")
+                    if not item.get("expiry_month"):
+                        require(not any(label in record_text for label in
+                                        ("Expires", "تاريخ الانتهاء")),
+                                "spurious expiry for empty optional date")
                 cursor = 0
                 for line in item.get("description", "").split("\n"):
                     match = re.match(r"^\s*[-•]\s+(.+)$", line)
@@ -181,6 +210,7 @@ def check_dom(case, dom):
                         require(position >= 0, "record description lost/reordered/moved")
                         cursor = position + len(text)
                 record_index += 1
+    require(record_index == len(dom["records"]), "unexpected extra records")
     require(dom["headings"] == expected_headings, "section order/paid-unpaid separation lost")
     require(dom["articles"] == titles, "record titles lost/reordered")
     expected_lists, prose = [], []
@@ -254,7 +284,7 @@ def check_cohesion(anchors, lines):
                 f"orphaned heading/metadata: {anchor['heading']} -> {anchor['next'][:70]}")
 
 
-def check_pdf(case, dom, text, xml, fonts):
+def check_pdf_content(dom, text):
     actual, expected = visible_characters(text), visible_characters(dom["text"])
     missing, extra = expected-actual, actual-expected
     # Some Poppler/Chromium versions expose CSS disc markers as Unicode;
@@ -262,8 +292,14 @@ def check_pdf(case, dom, text, xml, fonts):
     marker_count = sum(map(len, dom["lists"]))
     require(not missing and (not extra or extra == Counter({"•": marker_count})),
             f"PDF content mismatch; missing={dict(expected-actual)}, extra={dict(actual-expected)}")
+    return expected
+
+
+def check_pdf(case, dom, text, xml, fonts):
+    expected = check_pdf_content(dom, text)
     pages, lines = pdf_lines(xml)
-    require(len(pages) == 1 if case["case"] == "short" else len(pages) > 1,
+    require(len(pages) == 1 if case["case"] == "short" else
+            len(pages) >= 1 if case["case"] == "credentials" else len(pages) > 1,
             "short fixture must fit; expanded fixture must exercise pagination")
     check_cohesion(dom["anchors"], lines)
     records = case["source"]["experiences"]

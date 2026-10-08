@@ -9,6 +9,8 @@ Run from the repository root:
 
 ```sh
 python3 -m unittest discover -s mobile/jobix/tool -p test_resume_print.py -v
+# Also run the existing visual-checker self-tests (no baseline refresh):
+python3 -m unittest discover -s mobile/jobix/tool -p 'test_resume_print*.py' -v
 python3 mobile/jobix/tool/check_resume_print.py
 # Optional: retain synthetic HTML/manifest/DOM/PDF/text/screenshots/report in /tmp
 python3 mobile/jobix/tool/check_resume_print.py --keep
@@ -25,8 +27,9 @@ The existing comparison-fixture command remains available without
 
 ### Automated coverage and observed results
 
-- **12 fixtures passed:** short, long and four varied page-boundary profiles
-  in each of English and Arabic. All repeatable fixture fields pass the current
+- **16 fixtures passed:** short, long, four varied page-boundary profiles,
+  plus two populated credential/language profiles in each of English and Arabic.
+  All repeatable fixture fields pass the current
   structural validator. Names, email and portfolio contacts include long cases.
 - HTML uses `ResumeRender.html` directly, the packaged fonts and unchanged
   canonical CSS/CSP. The suite checks language/direction, model/template
@@ -35,6 +38,18 @@ The existing comparison-fixture command remains available without
   per-record text/metadata preservation and ordered descriptions are checked
   against the input manifest. Paid Work and Volunteer remain separate.
   Skills remain one selectable compact paragraph with every skill in order.
+- The four added fixtures populate Certifications, Achievements and Languages
+  alongside the existing sections. They check each title, issuer, issue/expiry/
+  achievement month, credential ID, authored description and safe HTTPS URL
+  against the source manifest. Link text and DOM href must both match, including
+  query-string punctuation. Expiry labels and all five proficiency labels
+  (Basic, Conversational, Professional, Fluent, Native) must use the selected
+  English/Arabic translation in the correct record.
+- Minimal credentials/achievements have empty optional descriptions, dates,
+  credential IDs and URLs; no phantom expiry label or link is allowed. Long
+  issuer text, IDs, URLs and mixed-direction multiline descriptions remain
+  within the actual field limits. Every language has a mixed-script SQL island.
+  Missing/moved titles and unexpected extra records are rejected.
 - PDF extraction preserves complete normalized visible characters, including
   punctuation and repeated text, rather than just checking a final sentinel.
   NFKC normalization and removal of whitespace/direction controls accommodate
@@ -46,17 +61,30 @@ The existing comparison-fixture command remains available without
   tolerance is 5pt because Poppler's ascent/descent boxes are not painted ink
   (the 24pt Inter heading extends about 3pt above its CSS line box). Horizontal
   tolerance is 1.5pt. No arbitrary long-document page count is enforced.
-- **188 heading/metadata cohesion checks passed**, using same-page first
+- **304 heading/metadata cohesion checks passed**, using same-page first
   content, actual line positions and observed heading-font boxes. This avoids
   mistaking an Arabic section word repeated in metadata for a second heading.
 - Both short fixtures are one page. Long fixtures were seven pages in English
   and five in Arabic; boundary fixtures were three pages in this toolchain.
   Expanded fixtures must exercise pagination, not match these exact counts.
+  Added credential cases were three pages per language; their long variants
+  were six pages. These observed counts are not assertions. The original short
+  one-page contract remains unchanged.
 - Both packaged font faces load; printed fonts are embedded with Unicode text
   extraction, with no unexpected fallback fonts or whole-entry page locks.
-- **8 checker self-tests passed**, including intentionally missing/reordered
+- **12 logical/print checker self-tests passed** (21 including the nine
+  existing visual-checker self-tests), including intentionally missing/reordered
   text, missing skills/metadata/punctuation, wrong revisions/page geometry,
   malformed lists, font failure, overflow and orphaned headings.
+  The new negative checks remove each credential/achievement field and all
+  five proficiency labels independently from DOM and extracted PDF text, and
+  reject untranslated labels, changed hrefs, spurious optional values, moved
+  records and changed section order.
+
+The original 12 fixture inputs, including all three selected visual-baseline
+cases, are unchanged. This extension does not generate, approve or refresh any
+visual baseline. The opt-in visual results below describe the earlier reviewed
+run, not a new visual comparison for the added credential cases.
 
 The browser uses a local DevTools pipe, not a listening server. HTTP(S) requests
 are blocked and background browser networking is disabled. Tool subprocesses
