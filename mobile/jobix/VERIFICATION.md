@@ -1,5 +1,22 @@
 # Jobix verification evidence
 
+## Owner-approved scoped bucket IAM cleanup
+
+**BUCKET SCOPE VERIFIED; signing correction pending; deployment still blocked.**
+
+- Removed only `jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com` from
+  obsolete bucket `roles/storage.objectUser` membership, as explicitly approved.
+- Retained `projects/mhflow-jobix/roles/jobixExportObjectAccess` and every
+  unrelated role/condition/principal. Used policy etag/metageneration guards;
+  full policy readback matched only the intended change.
+- Pure fixture tests passed unchanged input, other-principal/condition
+  preservation, idempotency and required-custom-role guard.
+- Actual backend permission readback returns exactly object create/get/list/
+  delete. Update/restore/move are absent.
+- No objects or lifecycle/retention settings changed. Signing remains pending
+  administrator correction as confirmed by the owner. No worker/Edge/Scheduler
+  deployment or export activation was performed.
+
 ## Managed image and restricted runtime credential checkpoint
 
 **PARTIALLY VERIFIED; no worker/Edge/Scheduler deployment; exports disabled.**

@@ -37,23 +37,27 @@ After the operator's access update:
   numeric resource addressing gives the deployer tested metadata-get/version-add
   permissions or the backend version-access permission; actual backend latest
   version access returned 403. These access denials are now resolved as above.
-- Least-privilege scope has **not** passed: bucket IAM binds the backend to
-  `roles/storage.objectUser`, and effective tests additionally permit
-  object update/restore/move. Signing tests additionally permit signJwt,
+- Bucket scope is now corrected: the owner-approved removal deleted only the
+  backend's obsolete `roles/storage.objectUser` membership. The custom role and
+  every unrelated binding/condition/principal were preserved with concurrency
+  guards and full policy readback. Effective bucket tests return exactly
+  create/get/list/delete; update/restore/move are absent.
+- Overall least-privilege scope has **not** passed: signing tests permit signJwt,
   getAccessToken/getOpenIdToken/implicitDelegation. Replace these broad backend
   grants with the exact four storage permissions and single signBlob permission
   specified below, preserving unrelated principals/bindings.
 
-No IAM policy was mutated by the agent during this verification. Earlier
+The only agent IAM mutation is the explicitly approved obsolete bucket
+membership removal above. Earlier
 custom-role/secret creation attempts were denied. The new runtime LOGIN/secret
 is approved secure provisioning, not an administrator credential fallback.
 
-The custom bucket role `jobixExportObjectAccess` is now present **alongside**
-`roles/storage.objectUser` for the backend. The latter must lose only the
-backend membership, retaining the new role and all unrelated principals.
-The deployer can read/set this bucket policy, but grant removal requires the
-owner's confirmation. Backend service-account policy read is still denied;
-an administrator must narrow the remaining signing/token/delegation access.
+The retained bucket role is `jobixExportObjectAccess`; the owner-approved
+obsolete backend membership was removed successfully. No objects, retention
+rules or other principals were changed. Backend service-account policy read
+is still denied; an administrator must narrow signing/token/delegation access.
+The owner confirms that signing correction is pending. Do not deploy or activate
+the worker while that scope is unresolved.
 
 These require an authorized GCP operator; approval in chat alone cannot change
 the existing credential's effective permissions.

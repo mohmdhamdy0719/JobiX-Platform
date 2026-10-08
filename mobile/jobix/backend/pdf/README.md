@@ -3,7 +3,8 @@
 **Development implementation/deployment authorized; activation still gated on
 verified access/runtime.** Six development migrations are applied with exports
 still disabled. The private bucket has an approved seven-day `exports/`/`.pdf`
-lifecycle rule. No agent IAM-policy mutation, Cloud Run/Scheduler start, Edge rollout, worker
+lifecycle rule. The only agent IAM-policy mutation was the owner-approved
+obsolete backend bucket-membership removal. No Cloud Run/Scheduler start, Edge rollout, worker
 deployment or committed live Credit debit has occurred.
 Native tooling/signing/APK/device verification is not part of this implementation.
 The deletion/retention product decision is now approved and recorded exactly in
@@ -123,8 +124,11 @@ font/text/PDF validity and invalid-PDF checks using its actual pinned Chromium.
 Restricted development LOGIN and encrypted Secret Manager version provisioning
 also passed backend retrieval/TLS/exact-membership/direct-table-denial checks.
 No admin DSN was used at runtime; no worker/Edge/Scheduler was deployed.
-Bucket and signing grants still exceed the approved minimum. Deployment remains
-blocked pending obsolete backend-grant removal and signing scope correction.
+The owner-approved obsolete bucket membership removal is complete: the custom
+role and every unrelated grant/condition were preserved, and effective tests
+return exactly create/get/list/delete with no update/restore/move. No objects
+or retention rules changed. Signing still exceeds the approved minimum;
+deployment remains blocked pending the administrator's signing correction.
 The earlier build/secret denials below are historical, not current blockers.
 
 **Latest operator-access verification:** backend object CRUD and keyless signing
@@ -181,6 +185,11 @@ expiry approval and preserves unrelated rules; `tool/build_phase3_dev.mjs`
 uploads only a fixed source allowlist and submits managed development builds;
 `tool/test_phase3_dev.mjs` requires isolated-fixture approval, rolls back database
 fixtures, and removes only its freshly created exact GCS generation.
+
+`tool/narrow_phase3_bucket_iam_dev.mjs` requires explicit owner grant-removal
+approval, removes only the obsolete backend objectUser membership, retains the
+custom binding, preserves every other principal/condition, and uses etag/
+metageneration guards plus full policy/effective-permission readback.
 
 `tool/provision_phase3_runtime_dev.mjs` refuses existing LOGIN/secret rotation,
 creates only a restricted development LOGIN and stores credentials encrypted
