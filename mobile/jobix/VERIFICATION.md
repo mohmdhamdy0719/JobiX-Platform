@@ -1,5 +1,30 @@
 # Jobix verification evidence
 
+## Managed image and restricted runtime credential checkpoint
+
+**PARTIALLY VERIFIED; no worker/Edge/Scheduler deployment; exports disabled.**
+
+- Managed build succeeded in `me-central1`; image pushed to existing
+  `jobix-dev/pdf-worker`, pinned digest
+  `sha256:670a21879bd42deae556d2208b83571e5c0d145c10a58c51423027956412347d`.
+- Managed image verification passed actual AOT canonical generator and pinned
+  Playwright/Chromium English/Arabic PDF generation/structural/text/font checks,
+  plus invalid-PDF rejection. The first synthetic-fixture attempt failed on its
+  invalid day-date; correcting to the logical month DTO passed without product
+  changes. Host Chromium is not used as a production-engine substitute.
+- Created only the approved restricted development LOGIN and encrypted secret
+  version. Backend secret access and verified-TLS login passed. Membership is
+  exactly export gateway/worker; privileged flags are false; direct export
+  INSERT and user UPDATE are denied. No credential output/file or SA key.
+- IAM still blocks deployment: custom bucket role exists, but obsolete
+  backend `storage.objectUser` membership remains; signing still permits extra
+  token/JWT/delegation powers. No IAM policy was changed without grant-removal
+  consent. Existing principals must be preserved when correcting scope.
+- Canonical/public build source remains retained for retry, no active export
+  fixture objects remain, and no real Credit transaction or export activation
+  occurred. Full private Edge→worker, Scheduler, and live export/deletion
+  journeys remain unverified.
+
 ## Operator access update — private backend storage/signing verified
 
 **PARTIALLY VERIFIED; deployment/activation remain blocked.**

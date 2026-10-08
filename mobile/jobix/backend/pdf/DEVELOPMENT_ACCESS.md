@@ -8,22 +8,35 @@ the deployment/admin database credential in the application.
 
 After the operator's access update:
 
+- Build submission and builder actAs now succeed. The managed image was built
+  and pushed to the approved repository, pinned at
+  `sha256:670a21879bd42deae556d2208b83571e5c0d145c10a58c51423027956412347d`.
+  An isolated managed-image check passed English/Arabic canonical generation,
+  pinned Chromium PDF/text/font validation and invalid-PDF rejection. A first
+  fixture-only attempt used a day-date instead of the logical YYYY-MM month;
+  correcting the fixture and rerunning passed without changing product code.
+- Deployer secret metadata-get/version-add and backend version-access now pass.
+  The previously empty secret holds a newly provisioned restricted development
+  LOGIN. Actual backend secret retrieval and verified-TLS connection passed;
+  membership is exactly gateway/worker, no superuser/create-db/create-role/
+  replication/RLS-bypass, no direct export INSERT or user UPDATE.
+- Remaining blockers below supersede the earlier build/secret access denials:
 - Backend object create/get/list/delete and self-signBlob are effective. Actual
   backend-identity production-adapter tests passed conditional create/read,
   self-signing/private signed download, signed-generation tamper rejection and
   exact-generation fixture cleanup. Cloud Run metadata identity and actual
   worker PDF generation remain unverified.
-- Cloud Build inventory/default-builder lookup now succeed, but submission is
-  denied because the deployer cannot act as the selected builder:
+- Earlier Cloud Build inventory/default-builder lookup succeeded, but submission
+  was denied because the deployer could not act as the selected builder:
   `850519041397-compute@developer.gserviceaccount.com` (reported account unique
   ID `112247149794458910320`). Grant only `iam.serviceAccounts.actAs` to
   `jobix-deployer-dev@mhflow-jobix.iam.gserviceaccount.com` on this builder
   account, or configure an existing approved least-privileged builder.
 - Supplied resource `projects/850519041397/secrets/jobix-dev-export-database`
-  is confirmed to reference the approved project number. Neither friendly nor
+  is confirmed to reference the approved project number. Earlier neither friendly nor
   numeric resource addressing gives the deployer tested metadata-get/version-add
   permissions or the backend version-access permission; actual backend latest
-  version access returns 403. Secret existence/content is not established.
+  version access returned 403. These access denials are now resolved as above.
 - Least-privilege scope has **not** passed: bucket IAM binds the backend to
   `roles/storage.objectUser`, and effective tests additionally permit
   object update/restore/move. Signing tests additionally permit signJwt,
@@ -32,8 +45,15 @@ After the operator's access update:
   specified below, preserving unrelated principals/bindings.
 
 No IAM policy was mutated by the agent during this verification. Earlier
-custom-role/secret creation attempts were denied; no runtime DB LOGIN or secret
-value was created as a fallback.
+custom-role/secret creation attempts were denied. The new runtime LOGIN/secret
+is approved secure provisioning, not an administrator credential fallback.
+
+The custom bucket role `jobixExportObjectAccess` is now present **alongside**
+`roles/storage.objectUser` for the backend. The latter must lose only the
+backend membership, retaining the new role and all unrelated principals.
+The deployer can read/set this bucket policy, but grant removal requires the
+owner's confirmation. Backend service-account policy read is still denied;
+an administrator must narrow the remaining signing/token/delegation access.
 
 These require an authorized GCP operator; approval in chat alone cannot change
 the existing credential's effective permissions.

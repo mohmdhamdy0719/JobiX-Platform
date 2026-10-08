@@ -15,3 +15,13 @@ that is a different runtime verification claim.
 system tooling as a workaround. Keep browser-only test environments separate
 from Node. Report the blocker and verify the pinned distribution in an approved
 compatible runtime; cloud image builds/deployment need separate authorization.
+
+Treat scratch verification artifacts as ephemeral across sessions, even when
+earlier evidence named a working temporary executable or checksum baseline.
+
+**Why:** Scratch artifacts disappeared while repository source and installed
+tooling remained available, creating a false local runtime failure.
+
+**How to apply:** Confirm current artifact availability before reusing old
+evidence. Distinguish a missing scratch resource from a product/runtime defect;
+verify the current source and approved runtime rather than upgrading tooling.

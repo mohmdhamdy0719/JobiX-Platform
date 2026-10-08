@@ -22,17 +22,24 @@ export async function google() {
   if(!response.ok||!auth.access_token)throw new CloudFailure(response.status,'CREDENTIAL_UNAVAILABLE');
   const hosts=new Set(['storage.googleapis.com','iam.googleapis.com','iamcredentials.googleapis.com',
     'run.googleapis.com','cloudbuild.googleapis.com','artifactregistry.googleapis.com',
-    'cloudscheduler.googleapis.com','secretmanager.googleapis.com','serviceusage.googleapis.com']);
-  const request=async(url,{method='GET',body,token=auth.access_token,write=false,headers={}}={})=>{
+    'cloudscheduler.googleapis.com','secretmanager.googleapis.com','serviceusage.googleapis.com','logging.googleapis.com']);
+  const request=async(url,{method='GET',body,token=auth.access_token,write=false,headers={},text=false}={})=>{
     const target=new URL(url);
+    const scopedLogRead=target.hostname==='logging.googleapis.com'&&target.pathname==='/v2/entries:list'&&
+      method==='POST'&&Array.isArray(body?.resourceNames)&&body.resourceNames.length===1&&
+      body.resourceNames[0]===`projects/${project}`;
+    const scopedBuildLog=target.hostname==='storage.googleapis.com'&&method==='GET'&&
+      new RegExp(`^/storage/v1/b/${projectNumber}\\.cloudbuild-logs\\.googleusercontent\\.com/o/log-[0-9a-f-]{36}\\.txt$`).test(target.pathname);
     if(target.protocol!=='https:'||!hosts.has(target.hostname)||
-      !(target.pathname.includes(project)||target.pathname.includes(bucket)||
+      !(scopedLogRead||scopedBuildLog||target.pathname.includes(project)||target.pathname.includes(bucket)||
         target.pathname.includes(`/projects/${projectNumber}/`)))throw new CloudFailure(0,'DEV_RESOURCE_GUARD');
-    const readOnlyPost=/:(testIamPermissions|getIamPolicy|generateAccessToken|generateIdToken|signBlob)$/.test(target.pathname);
+    if(text&&!scopedBuildLog)throw new CloudFailure(0,'SCOPED_BUILD_LOG_ONLY');
+    const readOnlyPost=scopedLogRead||/:(testIamPermissions|getIamPolicy|generateAccessToken|generateIdToken|signBlob)$/.test(target.pathname);
     if(method!=='GET'&&!readOnlyPost&&!write)throw new CloudFailure(0,'EXPLICIT_WRITE_REQUIRED');
     const r=await fetch(url,{method,headers:{authorization:'Bearer '+token,
       'content-type':'application/json',...headers},body:body===undefined?undefined:
       body instanceof Uint8Array?body:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
+    if(text&&r.ok)return r.text();
     const data=await r.json().catch(()=>({}));
     if(!r.ok) {
       const message=data.error?.message??data.message??(typeof data.error==='string'?data.error:'');

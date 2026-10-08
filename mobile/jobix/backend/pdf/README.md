@@ -117,6 +117,16 @@ archive exact embedded fonts and licenses, not hashes of later mutable files.
 
 ### Current development checkpoint
 
+**Latest build/credential checkpoint:** the immutable managed image is built
+and pushed; isolated managed verification passed English/Arabic canonical,
+font/text/PDF validity and invalid-PDF checks using its actual pinned Chromium.
+Restricted development LOGIN and encrypted Secret Manager version provisioning
+also passed backend retrieval/TLS/exact-membership/direct-table-denial checks.
+No admin DSN was used at runtime; no worker/Edge/Scheduler was deployed.
+Bucket and signing grants still exceed the approved minimum. Deployment remains
+blocked pending obsolete backend-grant removal and signing scope correction.
+The earlier build/secret denials below are historical, not current blockers.
+
 **Latest operator-access verification:** backend object CRUD and keyless signing
 now work. The actual `GoogleStorage` adapter passed private backend-identity
 upload/read/sign/download, duplicate-create and signed-generation-tamper checks;
@@ -171,6 +181,12 @@ expiry approval and preserves unrelated rules; `tool/build_phase3_dev.mjs`
 uploads only a fixed source allowlist and submits managed development builds;
 `tool/test_phase3_dev.mjs` requires isolated-fixture approval, rolls back database
 fixtures, and removes only its freshly created exact GCS generation.
+
+`tool/provision_phase3_runtime_dev.mjs` refuses existing LOGIN/secret rotation,
+creates only a restricted development LOGIN and stores credentials encrypted
+without writing them to files/logs. `tool/verify_phase3_image_dev.mjs` runs only
+the digest-pinned approved image in managed Cloud Build with synthetic source,
+no database/storage/runtime credentials. No Docker runs in this workspace.
 
 1. Deletion/retention product behavior and development implementation are
    authorized. Destructive cloud cleanup/lifecycle operations require approval;
