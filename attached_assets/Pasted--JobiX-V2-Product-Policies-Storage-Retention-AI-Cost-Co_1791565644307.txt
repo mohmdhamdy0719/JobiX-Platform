@@ -1,0 +1,238 @@
+# JobiX V2 — Product Policies, Storage Retention, AI Cost Control & Infrastructure Optimization
+
+We have a working JobiX development application with a verified personal resume PDF export and download flow. We want to prepare it for a controlled beta and eventual production launch while minimizing operating costs and preventing abuse.
+
+Use the existing Architecture V2, the production-readiness assessment dated 2026-10-09, the current repository, deployed development configuration, database schema, and actual provider configuration as the source of truth.
+
+## CRITICAL OPERATING RULES
+
+1. This task is an **assessment and implementation plan only**. Do not modify application code, database schemas/data, Credits, IAM, cloud resources, retention settings, billing settings, secrets, dependencies, deployment revisions, or feature gates.
+2. Do not run exports, generate AI content, fund accounts, perform paid tests, or repeat successful personal-account tests.
+3. Do not touch production or staging. Do not enable features or change any existing approval/policy.
+4. Do not rebuild the architecture or introduce new paid services unless evidence shows a clear need and the alternatives are compared.
+5. Inspect actual code and configuration before proposing changes. Clearly distinguish verified facts, estimates, unknowns, and recommendations.
+6. Keep the report concise and actionable. Do not repeat previous readiness audits unnecessarily. Reuse existing evidence and identify only new gaps.
+7. Return a plan with exact files, functions, database objects, configuration keys, migration requirements, tests, risks, and acceptance criteria. No implementation until I approve the plan.
+
+## 1. Export Rate Limits
+
+Our proposed product policy per user is:
+
+- At most 1 new logical PDF export every 5 minutes.
+- At most 3 new logical exports per rolling hour.
+- At most 5 new logical exports per rolling 24 hours.
+- At most 10 new logical exports per rolling 30 days.
+- At most one active export intent for the same user/profile at a time.
+
+Requirements:
+- Enforce limits authoritatively on the server/database, not only in Flutter or the Edge Function.
+- Limits must be race-safe under concurrent requests and across multiple service instances.
+- Retries and replay of an already accepted idempotency key must not count as a new export or create another debit.
+- Export Again is a new logical export and counts toward limits.
+- Count failed and refunded logical attempts toward abuse/cost limits where appropriate, without charging the user for a failed export contrary to the existing Credit contract.
+- Use clearly defined rolling windows and UTC/server time, not client clocks.
+- Return a useful retry-after/error response and show it in the app.
+- Ensure legitimate existing PDF downloads remain free and do not count as new exports.
+- Explain how these limits interact with the existing five-jobs-per-10-minute rule. Recommend one consistent policy rather than overlapping/conflicting controls.
+
+Do not implement the proposed numbers until the existing policy, relevant SQL functions, idempotency rules, and side effects have been mapped.
+
+## 2. Insufficient Credits and Preview Admission
+
+Proposed behavior: if the user does not have enough available Credits for a task, do not start that paid task. Return a clear insufficient-Credits error.
+
+First inspect the actual behavior and cost of:
+- Resume preview/canonical document preparation.
+- New PDF export.
+- Export Again.
+- Downloading an existing valid PDF.
+- Any planned AI generation.
+
+For each action, report whether it currently costs Credits, incurs meaningful infrastructure cost, or both.
+
+Important:
+- Do not silently convert a currently free preview or download into a paid feature.
+- Do not block access to a previously generated, still-valid PDF merely because the user's current Credit balance is low, unless the existing approved contract explicitly requires it.
+- For paid operations, check available Credits and admission limits before expensive work wherever possible.
+- Use authoritative reservation and finalization logic; never trust a client-supplied balance.
+- Where an operation is intentionally free, protect it with separate request, byte, and compute limits rather than pretending it consumes Credits.
+- Propose clear Arabic/English UI error messages and retry behavior.
+
+Identify exactly which operations should be blocked by insufficient Credits, and request approval if the proposed behavior would change existing product semantics.
+
+## 3. First-Signup Bonus: Five Credits Once
+
+Our intended business rule:
+- Grant 5 signup Credits only once to an eligible first-time user.
+- The account must be confirmed/verified before the grant is issued.
+- Signing out and registering a second account must not grant another 5 Credits if the same person has already claimed the first-time bonus.
+- A second confirmed account must receive 0 signup bonus Credits.
+- The client must never be able to request or forge a grant.
+
+Inspect the current signup trigger, Credit ledger, Auth providers, confirmation flow, unique constraints, and existing account records. Propose a secure, idempotent implementation and a migration/backfill strategy for existing accounts.
+
+Explicitly explain the limitations of identifying the same human across multiple accounts, app reinstalls, cleared local storage, or multiple devices. Do not claim that device identifiers, IP addresses, email confirmation, or Google sign-in alone can guarantee one bonus per human. Avoid invasive fingerprinting or collecting unnecessary personal data.
+
+Recommend a privacy-conscious combination of verified identity, server-side grant records, abuse signals, and a global signup-grant budget. Explain how account recovery, deleted accounts, duplicate Auth events, concurrent signups, and provider linking should behave.
+
+Preserve the immutable Credit ledger and existing successful-export charging rules. Do not remove or rewrite historical ledger entries.
+
+## 4. PDF Retention: Seven Days and Hard Delete
+
+The intended user-facing policy is:
+- A successfully generated PDF can be downloaded for seven days.
+- After seven days, the PDF is no longer downloadable through any app/API route.
+- The underlying PDF object should be physically deleted as far as the storage provider and approved retention policy permit, to control storage costs.
+- Expired or missing PDFs must not silently regenerate or charge Credits.
+- Export Again creates a new export from the current profile under the existing Credit rules.
+
+Inspect:
+- Logical expiration and download authorization.
+- GCS lifecycle rules, object generations, versioning, soft delete, retention locks, backups, and any other applicable retention mechanism.
+- Whether signed download URLs can remain usable past the logical expiry.
+- The exact behavior of deletion, stale workers, in-flight uploads, and cleanup failures.
+- Database export jobs, immutable snapshots, source data, logs, and backup retention separately from PDF objects.
+
+Important:
+- Seven-day PDF retention does NOT automatically authorize deleting immutable snapshots or other records needed by the existing contract.
+- Do not disable soft delete or shorten any retention configuration without a documented policy review and explicit approval.
+- Explain the difference between immediate application-level unavailability, asynchronous lifecycle deletion, and physical deletion of recoverable object generations.
+- Determine whether existing signed URLs could outlive the promised availability period. Propose a safe fix if needed.
+- Provide an explicit object/database deletion matrix showing what is deleted, when, by which mechanism, and what can remain in backups or recovery windows.
+
+Do not claim immediate physical deletion is guaranteed unless the effective provider configuration supports it.
+
+## 5. HTML Preview and Snapshot Storage
+
+The production-readiness report observed an average stored HTML snapshot size of approximately 0.99 MB in a very small sample. We do not want HTML previews or immutable export snapshots accumulating indefinitely without a defined retention/storage budget.
+
+Inspect the real preview implementation and distinguish:
+1. Temporary preview HTML that can be regenerated.
+2. Canonical immutable HTML snapshots tied to an accepted export.
+3. Profile/resume source data.
+4. Generated PDF objects.
+5. Database backups, logs, and other retained artifacts.
+
+Propose a storage policy that:
+- Avoids permanently storing disposable previews.
+- Reuses cached preparation only when source versions, template versions, ownership, and authorization are safe.
+- Preserves immutable export correctness and the ability to verify existing exports.
+- Defines an approved retention period or storage budget for each data category.
+- Includes cleanup jobs, idempotency, deletion-race protection, monitoring, and safe failure behavior.
+- Does not delete data needed by an active export, a valid download, or the approved deletion/recovery contract.
+- Considers compression, deduplicating immutable template/font assets, and reducing repeated large HTML responses.
+
+First determine which HTML is actually stored and for how long. Do not propose deleting every snapshot after seven days merely because the PDF expires; identify the product and audit implications and request approval for any policy change.
+
+## 6. Supabase Free Storage and Current Plan
+
+We do not currently know the exact storage allowance available to this project.
+
+Read the actual Supabase organization/project plan and usage metadata if authorized. Otherwise identify the exact sanitized dashboard values I must provide.
+
+Report:
+- Current plan and compute size.
+- Included database disk allowance and actual current usage.
+- Storage and egress quotas/usage.
+- Edge Function invocation and other relevant quotas.
+- Existing backup/PITR configuration and retention.
+- Current monthly spend and overage exposure, if available without accessing payment secrets.
+- Estimated remaining headroom based on the observed stored snapshot size, explicitly accounting for other database tables and overhead.
+
+Do not infer that the project is on the Free or Pro plan from connection counts or database size. Clearly label any missing information.
+
+Estimate storage growth for 500, 1,000, 5,000, and 10,000 monthly exports using the observed sample, with caveats. Recommend warning thresholds and a cleanup/storage budget before approaching quota.
+
+## 7. Cloud Run Region: Doha vs Frankfurt vs Alternatives
+
+The current PDF Gateway and Worker are in Doha (`me-central1`); Supabase is in Frankfurt (`eu-central-1`).
+
+We want to know whether moving the Gateway/Worker to Frankfurt or another suitable region would reduce costs and/or improve latency.
+
+Do not deploy, migrate, or change regions.
+
+Compare:
+- Cloud Run CPU, memory, request, networking, and minimum-instance costs by region.
+- GCS regional storage, operations, and egress costs.
+- Cross-region/inter-cloud data transfer between Cloud Run, GCS, Supabase/Postgres, and end users.
+- PDF rendering latency, database round-trip latency, cold starts, availability, and relevant regional constraints.
+- Any data residency/privacy implications and impact on existing service-to-service authentication or signed downloads.
+- Full monthly cost at 500, 1,000, and 5,000 exports under low, expected, and high resource-use assumptions.
+
+Use official region-specific pricing/calculator/SKU evidence wherever possible. If a price cannot be verified, state UNKNOWN and provide a formula or required evidence instead of inventing a regional multiplier.
+
+Recommend the lowest-cost reasonable architecture based on total end-to-end cost and latency, not CPU price alone. Do not recommend migration unless the expected savings justify the migration risk and operational overhead.
+
+## 8. AI Generation Costs and Abuse Controls
+
+JobiX will include AI generations in addition to PDF export. AI functionality may introduce variable model/API costs.
+
+Inspect the current AI implementation and planned architecture. Identify:
+- Models/providers and exact calls, if configured.
+- Input/output token usage and estimated cost per operation.
+- Maximum input/output sizes and context lengths.
+- Retry, timeout, concurrency, caching, and idempotency behavior.
+- Which AI operations are user-triggered, automatic, or free.
+- Whether repeated requests, prompt abuse, huge payloads, or multiple accounts can create uncontrolled costs.
+- Whether API keys and model calls are server-side and protected.
+- Whether existing AI daily allowances are distinct from Credits and from rewarded-ad Credit grants.
+
+Recommend an explicit per-user, per-day, per-month, and global AI budget, plus token/output caps, concurrency limits, admission controls, caching where safe, and alerts/circuit breakers.
+
+Do not enable a model, start paid AI calls, invent a provider/model price, or activate daily/referral/rewarded-ad grants. If model or usage information is missing, specify exactly what must be inspected or provided.
+
+## 9. Whole-App Cost Controls and Financial Safety
+
+Design layered cost controls for:
+- New PDF exports and retries.
+- Free preview/preparation.
+- Existing PDF downloads and signed URL issuance.
+- Signup bonuses and future rewarded Credits.
+- AI generations.
+- Database growth and egress.
+- Invalid requests, repeated failures, and multi-account farming.
+
+Propose race-safe global budgets, per-user quotas, queue admission limits, and a safe degradation mode. Count resource-consuming attempts even when the user's Credit reservation is released. Do not combine operational dollar budgets with the user's Credit ledger.
+
+Recommend provider budget alerts and any supported hard spend caps, but explain which services are affected and how a hard cap could interrupt downloads or recovery. Prefer application-level admission control as the normal mechanism, with provider limits as a carefully planned emergency backstop.
+
+## 10. Required Output
+
+Return one concise but technically grounded report containing:
+
+A. Executive summary: what should stay, what should change, and whether architecture migration is justified.
+
+B. Current-state inventory: verified values, code/schema anchors, deployed revisions, and unknowns.
+
+C. Policy matrix:
+- Proposed policy.
+- Current behavior.
+- Required implementation layer.
+- Whether it changes an approved contract.
+- Security/cost impact.
+- Required approval.
+
+D. Storage/deletion matrix: previews, snapshots, PDFs, backups, logs, and other artifacts.
+
+E. Cost scenarios: 500, 1,000, and 5,000 monthly exports, including AI costs only where provider/model pricing and usage assumptions are supported. Separate fixed costs, per-export costs, AI costs, and uncertain items.
+
+F. Region comparison: Doha vs Frankfurt vs other realistic candidates, with verified prices and transfer costs.
+
+G. Prioritized implementation plan:
+- P0: necessary before a controlled beta.
+- P1: necessary before public launch or meaningful growth.
+- P2: optimization only when measurements justify it.
+
+H. Acceptance tests and evidence for every P0 item.
+
+I. Exact files, SQL functions/tables, configuration variables, dashboards, and cloud resources that would change in each phase.
+
+J. A short list of decisions requiring my approval before implementation.
+
+## Final Restrictions
+
+Do not execute the plan yet. Do not run another generic audit, generate a new APK, repeat the successful personal export, or deploy anything.
+
+Use existing evidence first. Only perform additional read-only checks that directly answer an identified unknown and are authorized by current permissions.
+
+End with a clear recommendation for the next smallest high-value task, with its expected benefit, cost/risk, and the evidence that will prove it is complete.
