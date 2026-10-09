@@ -6,6 +6,15 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Latest actual setup blocker: account creation denied.** Lookup found no
+`jobix-export-gateway-dev`. The explicitly authorized creation request under
+the existing deployer returned HTTP 403 / IAM_PERMISSION_DENIED for
+`iam.serviceAccounts.create` on `mhflow-jobix`. No account, key, grant or other
+cloud mutation succeeded. This is now the concrete provisioning blocker;
+resulting policies/attachment permissions remain unverified. Administrator
+execution of the already-approved resource-specific setup avoids broadening
+the deployer with Owner/Editor/IAM Admin.
+
 **Latest audit: Resource Manager is ENABLED; caller IAM now blocks the audit.**
 Project-scoped permission testing succeeded but returned no permissions from
 the tested provisioning/audit set for `jobix-deployer-dev`. Account creation

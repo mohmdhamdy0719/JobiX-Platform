@@ -1,5 +1,24 @@
 # Jobix verification evidence
 
+## Direct approved account creation attempt — IAM_PERMISSION_DENIED
+
+After the owner's explicit request to perform the scoped setup, read-only lookup
+confirmed the proposed gateway account is absent. Attempted only:
+`POST https://iam.googleapis.com/v1/projects/mhflow-jobix/serviceAccounts`
+with account ID `jobix-export-gateway-dev`, using the existing
+`jobix-deployer-dev@mhflow-jobix.iam.gserviceaccount.com` deployment identity.
+
+Google rejected creation with **HTTP 403**, ErrorInfo
+**IAM_PERMISSION_DENIED**, exact missing permission
+**iam.serviceAccounts.create**. This is an actual account-create denial, not
+the earlier disabled-API or project-policy-audit failure.
+
+Stopped. No service account/key/resource was created and no worker/attachment
+policy was changed. Resulting-account policy/key/actAs verification is therefore
+not possible yet. No deployment/build/export/real Credit operation was run.
+The administrator can perform the three already-approved scoped setup operations
+without granting the deployer Owner/Editor/IAM Admin or runtime impersonation.
+
 ## Resource Manager enabled — read-only audit blocked on caller IAM
 
 Latest Service Usage check now confirms Resource Manager API **ENABLED**.
