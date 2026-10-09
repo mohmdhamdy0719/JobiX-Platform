@@ -1,5 +1,15 @@
 # Development export authentication bridge
 
+## Actual development rollout checkpoint
+
+The managed gateway image is built and pushed. Cloud Run gateway service exists,
+but its first revision failed startup probes; no public invocation was granted.
+The new private worker revision is ready with export processing disabled and
+approved deletion/retention cleanup preserved. Local suite passes 78/78.
+Hosted gateway/worker integration is not verified. Sanitized startup logs are
+needed; do not enable exports or blindly redeploy. Historical local-only notes
+below do not describe the current cloud resource inventory.
+
 Local implementation only. The original failed security fixture omitted its
 canonicalizer and threw before the ownership lookup. Its uncoded exception
 was correctly mapped to SERVICE_UNAVAILABLE. The fixture dependency is fixed,

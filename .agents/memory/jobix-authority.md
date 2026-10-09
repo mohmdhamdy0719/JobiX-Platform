@@ -6,8 +6,8 @@ description: User-specified product authority and implementation boundaries
 
 The owner authorized a development Gateway build/deployment and necessary
 worker authorization changes only after read-only IAM/deployment preconditions
-pass. Keep the worker private, require Supabase token verification, keep every
-export gate disabled, and do not run real Credits/billable exports before
+pass. Keep the worker private, require Supabase token verification, keep export
+processing disabled, and do not run real Credits/billable exports before
 security and live integration checks pass. Never touch production/staging or
 create service-account keys. Stop on missing permissions and report exact
 resource scope; do not broaden IAM or correct bindings without authorization.
@@ -15,11 +15,17 @@ resource scope; do not broaden IAM or correct bindings without authorization.
 **Why:** The owner approved this next rollout phase conditionally on verified
 least-privilege readiness, while expressly preserving privacy and disabled flags.
 
-**How to apply:** Read-only verify exact account-role binding, effective
-deployer actAs, Cloud Run/Cloud Build permissions, worker IAM privacy and
-export-gate values before any build/deployment. An existing worker-invoker
-member string does not prove the account policy or deployer attachment. If any
-gate fails, stop and report without changing IAM or flags.
+**How to apply:** Recheck only the target account binding/current worker
+configuration; reuse passing deployment-permission checks. Do not change the
+deletion-policy approval flag without verifying its approved contract, and do
+not treat approval=true as export processing=true. Execute the authorized next
+step once gates pass rather than repeating broad readiness reports. On a new
+permission/runtime blocker, report the exact command, principal, resource and
+single smallest resolution without broadening IAM or blindly retrying.
+
+**Why this verification discipline matters:** The owner explicitly asked to
+stop the repeated readiness-report cycle and not spend credits repeating
+checks that already passed.
 
 ## Earlier authorization: dedicated bridge identity and narrow grants only
 

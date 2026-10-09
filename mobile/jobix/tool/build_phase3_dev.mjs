@@ -14,10 +14,16 @@ const files=['.dockerignore','backend/pdf/Dockerfile','backend/pdf/package.json'
  'lib/features/resume/resume_document.dart','assets/fonts/Inter.ttf','assets/fonts/IBMPlexSansArabic-Regular.ttf',
  'assets/fonts/OFL.txt','assets/fonts/OFL-IBMPlexSansArabic.txt','assets/certs/supabase-root-2021.crt',
  ...(await readdir(resolve(root,'backend/pdf'))).filter(name=>name.endsWith('.mjs')).map(name=>'backend/pdf/'+name)];
+const includeGateway=process.argv.includes('--include-development-gateway');
+if(includeGateway)files.push('backend/export-gateway/Dockerfile',
+ 'supabase/functions/resume-export/transport.mjs',
+ ...(await readdir(resolve(root,'backend/export-gateway'))).filter(name=>name.endsWith('.mjs'))
+   .map(name=>'backend/export-gateway/'+name));
 // Fixed file list: not git archive, not the workspace or developer config.
 const archive=execFileSync('tar',['-czf','-','-C',root,...files],{maxBuffer:16000000});
 const hash=createHash('sha256').update(archive).digest('hex');
 const image=`${region}-docker.pkg.dev/${project}/jobix-dev/pdf-worker:source-${hash.slice(0,16)}`;
+const gatewayImage=`${region}-docker.pkg.dev/${project}/jobix-dev/export-gateway:source-${hash.slice(0,16)}`;
 const name=`phase3-builds/${hash}.tar.gz`;
 const g=await google();
 try {
@@ -36,10 +42,12 @@ try {
   const build=await g.request(`https://cloudbuild.googleapis.com/v1/projects/${project}/locations/${region}/builds`,
     {method:'POST',write:true,body:{
       source:{storageSource:{bucket,object:name,generation:String(object.generation)}},
-      steps:[{name:'gcr.io/cloud-builders/docker',args:['build','-f','backend/pdf/Dockerfile','-t',image,'.']}],
-      images:[image],timeout:'1800s',tags:['jobix','development','pdf-export'],
+       steps:[{name:'gcr.io/cloud-builders/docker',args:['build','-f','backend/pdf/Dockerfile','-t',image,'.']},
+         ...(includeGateway?[{name:'gcr.io/cloud-builders/docker',
+           args:['build','-f','backend/export-gateway/Dockerfile','-t',gatewayImage,'.']}]:[])],
+       images:[image,...(includeGateway?[gatewayImage]:[])],timeout:'1800s',tags:['jobix','development','pdf-export'],
     }});
-  console.log(JSON.stringify({operation:build.name,image}));
+   console.log(JSON.stringify({operation:build.name,image,...(includeGateway?{gatewayImage}:{})}));
 }catch(error) {
   // Archive is retained, not deleted under a test-object cleanup authorization.
   console.error(JSON.stringify({operation:'DEVELOPMENT_BUILD_BLOCKED',status:error.status??0,

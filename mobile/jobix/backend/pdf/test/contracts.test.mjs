@@ -118,10 +118,11 @@ test('private OIDC rejects missing user/foreign bearer without fetching Google k
   await assert.rejects(authenticateInternal(null,'https://service.run.app'),{code:'FORBIDDEN'});
   await assert.rejects(authenticateInternal('Bearer not-valid','https://service.run.app'),{code:'FORBIDDEN'});
 });
-test('server refuses startup gates without any listener/cloud call',async()=>{
+test('server requires an explicit processing mode and approved deletion gate',async()=>{
   const source=await readFile(new URL('../server.mjs',import.meta.url),'utf8');
   assert.ok(source.includes("JOBIX_EXPORT_DELETION_POLICY_APPROVED!=='true'"));
-  assert.ok(source.includes("JOBIX_EXPORT_ENABLED!=='true'"));
+  assert.ok(source.includes("!['true','false'].includes(process.env.JOBIX_EXPORT_ENABLED)"));
+  assert.ok(source.includes("enabled:exportsEnabled"));
 });
 test('signer rejects unbounded TTL before accessing identity',async()=>{
   await assert.rejects(new GoogleStorage().sign('opaque','1',601),{code:'VALIDATION_FAILED'});

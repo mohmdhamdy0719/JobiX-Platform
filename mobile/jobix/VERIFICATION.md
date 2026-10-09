@@ -1,5 +1,55 @@
 # Jobix verification evidence
 
+## Concrete development bridge rollout — worker deployed, gateway startup blocked
+
+Targeted account policy now binds the deployer through
+`projects/mhflow-jobix/roles/CustomRole` (not the role ID `jobixGatewayAttach`).
+Effective account tests confirm actAs/get/getIamPolicy and no tested signing/
+general-impersonation permissions on that gateway account. No IAM binding was
+changed by the agent.
+
+The two old worker flag values came from explicit environment entries on
+revision `00002-bpb`, not Dockerfile defaults or the original read-only runtime
+configuration. Historical caller attribution is unavailable because audit-log
+reads are denied. The approved deletion/retention ADR was verified, so its
+approval flag remains true; only export processing is turned off.
+
+Implemented a disabled-processing private worker mode: authenticated history/
+status reads remain available for integration verification; create/again,
+document rendering, download signing and dispatch are blocked. Export recovery
+is skipped while approved retention/account-deletion cleanup remains enabled.
+No Credit, RLS, database-function or retention-policy logic was changed.
+Local suite passed **78/78**, including three new disabled-mode tests. An old
+source-string startup assertion was updated for the explicit true/false mode.
+
+Managed build `15209ddf-97da-47c3-9d67-7796bfc71c67` had a successful worker
+step and failed gateway step. The Docker context denylist excluded the new
+gateway/shared transport; adding exactly those allowlist paths resolved this.
+Build `5d2fb32b-e36e-49f5-9a5e-f42c15a3aef5` succeeded and pushed both images:
+- worker: `sha256:7f2cd4dc8e15afa8883e52bd5176527c822c033c0967c5e7cf642aa796dcaa88`
+- gateway: `sha256:1dc542a8ecd4a0ebc5bea8b2278cc8d88e783ce8f268c7f54471c948389b1598`
+
+Worker revision **`00003-frp`** is ready and receives 100% of traffic. Its
+`JOBIX_EXPORT_ENABLED=false`; `JOBIX_EXPORT_DELETION_POLICY_APPROVED=true`.
+Existing runtime identity, Secret version, CA configuration and private IAM
+were preserved. Actual anonymous `/command` invocation returned **403**.
+
+Gateway service was created, but revision **`00001-kqh`** failed its startup
+probe (`HEALTH_CHECK_CONTAINER_ERROR`, Cloud Run operation code 9). There is
+no ready gateway revision. The rollout stopped before adding public invocation.
+Command: `node mobile/jobix/tool/deploy_phase3_bridge_dev.mjs --approved-development-bridge-rollout`.
+Failing step: POST Cloud Run v2 services `?serviceId=jobix-dev-export-gateway`,
+executed as `jobix-deployer-dev@mhflow-jobix.iam.gserviceaccount.com`.
+
+The runtime root cause is not yet established. Startup-log read returned 403;
+project permission test confirms `logging.logEntries.list` is absent on
+`projects/mhflow-jobix`. Smallest next action is administrator-provided sanitized
+startup stdout/stderr for that exact gateway revision using existing access,
+not a broad logging/IAM grant or a blind redeploy. Hosted Gateway-to-Worker
+authentication and live user-security checks did not pass and are not claimed.
+No real Credits/billable exports, production/staging, keys, Supabase Auth,
+ledger/reservation, account-role/RLS or deletion-policy changes were made.
+
 ## Gateway deployment preflight — blocked; no cloud mutations
 
 Read-only audit confirms worker `jobix-dev-pdf-export` has IAM enforcement

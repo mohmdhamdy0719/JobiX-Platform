@@ -5,6 +5,13 @@
 !backend/pdf/package.json
 !backend/pdf/pnpm-lock.yaml
 !backend/pdf/*.mjs
+!backend/export-gateway/
+!backend/export-gateway/Dockerfile
+!backend/export-gateway/*.mjs
+!supabase/
+!supabase/functions/
+!supabase/functions/resume-export/
+!supabase/functions/resume-export/transport.mjs
 !lib/
 !lib/features/
 !lib/features/career_profile/

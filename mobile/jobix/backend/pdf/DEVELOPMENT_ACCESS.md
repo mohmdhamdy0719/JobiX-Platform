@@ -6,6 +6,22 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Concrete rollout checkpoint:** both pinned images were built and pushed.
+Worker revision `00003-frp` is ready on 100% traffic with export processing
+disabled and the verified approved deletion-policy flag preserved as true.
+The existing worker identity, database Secret/CA and private IAM remain intact;
+anonymous worker invocation returned 403. Local tests pass 78/78.
+
+Gateway service exists but revision `00001-kqh` failed startup probes; no ready
+revision or public invocation binding was established. Deployment stopped at
+the actual runtime failure, not account attachment: effective gateway-account
+actAs/get/getIamPolicy now pass, through the account policy's `CustomRole` ID.
+The deployer lacks `logging.logEntries.list` on the development project, so
+startup logs cannot be read. Request sanitized stdout/stderr for that exact
+revision from an administrator using existing access; do not broaden IAM or
+retry deployment without diagnostic evidence. No real Credits or exports ran.
+Earlier absent-binding and enabled-export-flag checkpoints below are historical.
+
 **Latest Gateway rollout preflight: BLOCKED.** The private worker has the
 expected gateway `roles/run.invoker` member. The account-scoped deployer
 effective-permission test returned no actAs/get/getIamPolicy/key-list

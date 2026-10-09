@@ -9,7 +9,7 @@ import {ChromiumRenderer} from './renderer.mjs';
 import {GoogleStorage,authenticateInternal} from './google.mjs';
 import {ExportCleanup} from './cleanup.mjs';
 
-export function server({gateway,worker,cleanup,authenticate}) {
+export function server({gateway,worker,cleanup,authenticate,exportsEnabled=true}) {
   return createServer(async(req,res)=>{
     // Private endpoint; no application logs containing bodies/URLs/tokens.
     res.setHeader('Content-Type','application/json');
@@ -35,11 +35,22 @@ export function server({gateway,worker,cleanup,authenticate}) {
       }
       let result;
       if(req.url==='/recover') {
-        result=await worker.recover();
+        // Disabling exports must not disable the approved deletion/retention contract.
+        result=exportsEnabled?await worker.recover():{exportsEnabled:false};
         if(cleanup){await cleanup.retention();await cleanup.deletions();}
       }
-      else if(req.url==='/dispatch')result=await worker.dispatch();
-      else if(req.url==='/command')result=await gateway.handle(input.actor,input.action,input.command);
+      else if(req.url==='/dispatch') {
+        if(!exportsEnabled)throw new ExportError('EXPORT_NOT_READY');
+        result=await worker.dispatch();
+      }
+      else if(req.url==='/command') {
+        // Only authoritative, non-mutating account/ownership reads are allowed
+        // during deployment verification. No rendering, signing or Credit work.
+        if(!exportsEnabled&&!['history','status'].includes(input.action)) {
+          throw new ExportError('EXPORT_NOT_READY');
+        }
+        result=await gateway.handle(input.actor,input.action,input.command);
+      }
       else throw new ExportError('NOT_FOUND');
       res.end(JSON.stringify({data:result??null,error:null}));
     } catch(error) {
@@ -50,16 +61,17 @@ export function server({gateway,worker,cleanup,authenticate}) {
   });
 }
 async function main() {
-  // Do not start a server or acquire cloud credentials without explicit rollout gates.
-  if(process.env.JOBIX_EXPORT_ENABLED!=='true' ||
+  // A private runtime can verify read-only integration with export processing off.
+  if(!['true','false'].includes(process.env.JOBIX_EXPORT_ENABLED) ||
      process.env.JOBIX_EXPORT_DELETION_POLICY_APPROVED!=='true' ||
      process.env.GCP_PROJECT_ID!=='mhflow-jobix')throw new ExportError('EXPORT_NOT_READY');
+  const exportsEnabled=process.env.JOBIX_EXPORT_ENABLED==='true';
   const db=await database(process.env.JOBIX_DEV_EXPORT_DATABASE_URL);
   const storage=new GoogleStorage();
   const gateway=new Gateway({db,storage,canonicalizer:new Canonicalizer(),enabled:true});
-  const worker=new Worker({db,storage,renderer:new ChromiumRenderer(),enabled:true});
+  const worker=new Worker({db,storage,renderer:new ChromiumRenderer(),enabled:exportsEnabled});
   const cleanup=new ExportCleanup({db,storage,enabled:true});
-  server({gateway,worker,cleanup,authenticate:header=>authenticateInternal(header,
+  server({gateway,worker,cleanup,exportsEnabled,authenticate:header=>authenticateInternal(header,
     process.env.JOBIX_DEV_EXPORT_WORKER_URL)}).listen(Number(process.env.PORT??8080),'0.0.0.0');
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
