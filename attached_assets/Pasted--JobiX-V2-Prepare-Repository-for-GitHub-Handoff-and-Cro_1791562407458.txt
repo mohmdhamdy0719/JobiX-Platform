@@ -1,0 +1,164 @@
+# JobiX V2 — Prepare Repository for GitHub Handoff and Cross-Account Continuation
+
+I am preparing to push the current JobiX V2 project to GitHub and continue working on it from a different Replit account.
+
+Your task is to make the repository self-explanatory, well-documented, safe to share through a private GitHub repository, and ready for another AI coding session to continue without losing context.
+
+**This is a documentation, repository-hygiene, and handoff task only. Do not implement product features or change runtime behavior.**
+
+## 1. Preserve the current working application
+
+The current development application successfully signs in and exports/downloads a PDF using the authenticated user's personal resume.
+
+Do not break or regress this working flow.
+
+Do not:
+- Modify Flutter product logic, PDF rendering logic, Credit accounting, authentication, or export behavior.
+- Change database schemas or migrations.
+- Deploy or modify Cloud Run, Supabase, GCS, IAM, secrets, or environment settings.
+- Enable or disable export gates.
+- Run chargeable exports, fund accounts, or modify user data.
+- Upgrade dependencies or modify dependency lockfiles.
+- Delete existing files just because they appear unused.
+- Rebuild or redesign the architecture.
+
+If you discover a serious issue requiring a runtime change, document it as a finding and stop before implementing it.
+
+## 2. Inspect the repository before editing documentation
+
+Inspect the existing project structure, architecture documents, implementation plans, production-readiness assessment, acceptance reports, README files, test documentation, database migrations, and existing handoff notes.
+
+Reuse existing authoritative documents. Avoid creating multiple competing versions of the same architecture or implementation plan.
+
+Identify:
+- The current source-of-truth architecture document.
+- The latest production-readiness assessment.
+- The current implementation/acceptance status.
+- The deployed development configuration and relevant service revisions, where already documented.
+- Completed, partially completed, blocked, and unverified work.
+- Decisions already approved versus recommendations that still require approval.
+
+Do not treat proposed policies as implemented features.
+
+## 3. Create or update the root README.md
+
+The README must explain:
+- What JobiX is and who it serves.
+- The main product capabilities and intended roadmap.
+- The high-level architecture and technologies.
+- How authentication, resume data, Credits, PDF export, download, and retention are intended to work.
+- Repository structure and important directories.
+- Required development tools and prerequisites.
+- How to install dependencies, configure local development, run tests, and build a debug APK, using commands verified against the repository.
+- Where to find the authoritative architecture, security, production-readiness, and implementation documents.
+- What is currently working and what remains unverified.
+- How another developer or AI session should safely continue the project.
+
+Do not include secrets, tokens, passwords, private connection strings, personal resume data, or real user information.
+
+Do not invent commands. Verify them from project configuration and existing scripts.
+
+## 4. Create a clear PROJECT_STATUS.md
+
+Record the current state as of 2026-10-09, distinguishing:
+
+### Verified working
+Include the successful authenticated personal-resume PDF export/download path and the latest verified deployment/test evidence, without claiming broader capacity than has been demonstrated.
+
+### Implemented but not fully verified
+List components or features whose code exists but whose complete integration, production behavior, or failure handling is not yet proven.
+
+### Known gaps and risks
+Include outstanding security, reliability, cost-control, storage-retention, scalability, production-signing, monitoring, backup/restore, and AI-cost questions where supported by the existing evidence.
+
+### Proposed but not implemented policies
+Clearly list proposals such as export rate limits, signup bonus anti-abuse rules, storage retention changes, AI budgets, regional migration, and other recommendations. Do not present them as completed work.
+
+### Current blockers and dependencies
+Identify the smallest remaining steps required before controlled beta and public production launch.
+
+Every important status claim should reference an existing test, document, commit, configuration, or other evidence when available. Label unknowns as UNKNOWN.
+
+## 5. Create or update docs/NEXT_STEPS.md
+
+Provide an actionable, prioritized roadmap:
+
+- P0: repository/security hygiene and essential launch blockers.
+- P1: reliability, cost controls, retention, monitoring, and production preparation.
+- P2: optimizations that should follow measured usage or load tests.
+- Later: UI/UX work and broader public rollout, preserving the current product direction.
+
+For each task include:
+- Objective.
+- Current status.
+- Relevant files/services/database objects.
+- Dependencies.
+- Required tests and acceptance criteria.
+- Whether it requires approval.
+- Whether it affects cloud resources or incurs cost.
+
+Do not implement these tasks. Make it clear that the production-readiness assessment and proposed policy changes must be reviewed in the other Replit account before implementation.
+
+## 6. Create or update docs/AI_HANDOFF.md
+
+This document is critical. It must allow a new AI coding session to continue from the actual project state.
+
+Include:
+- Product context and architecture.
+- The source-of-truth documents and how conflicts between documents should be resolved.
+- Confirmed architectural invariants and security rules.
+- The current successful PDF export path.
+- Current deployed development service identities/revisions only where safe and useful.
+- Important previous fixes and the tests that verify them.
+- Known unresolved issues and exact evidence.
+- Decisions already approved.
+- Decisions that still require the owner's approval.
+- The proposed next task: conduct a careful production-readiness and policy review using the existing assessment, then implement only approved changes.
+- Instructions not to repeat completed audits, regenerate APKs unnecessarily, perform chargeable tests, or deploy without explicit approval.
+- A rule to inspect the current Git state and read the handoff documents before making any changes.
+
+Do not copy secrets or sensitive user data into this document. Refer to secret names or configuration keys only when necessary; never include their values.
+
+## 7. Repository hygiene and GitHub safety
+
+Review the repository for:
+- `.gitignore` coverage for build outputs, generated files, local environment files, signing keys, credentials, and temporary artifacts.
+- Accidental inclusion of `.env` files, service-account keys, Supabase tokens, database passwords, signing credentials, real user data, or private PDFs.
+- Generated APKs and other large build artifacts that should not be committed unless explicitly intended.
+- Duplicate, outdated, contradictory, or misleading documentation.
+- Untracked migrations or source files needed to reproduce the current application.
+
+Do not delete or rewrite historical documentation automatically. If a document is obsolete or conflicts with current evidence, mark it as superseded with a reference to the authoritative replacement.
+
+Do not modify Git history, force-push, create a public repository, or push to GitHub. I will review the files and perform the push myself.
+
+Do not stage, commit, or push anything unless explicitly requested.
+
+If a potential secret is found, do not print its value. Report the filename and type of risk, and recommend the appropriate safe remediation.
+
+## 8. Preserve reproducibility
+
+Verify and document:
+- Flutter/Dart versions or constraints.
+- Node.js version constraints for backend services.
+- Locked dependency installation commands.
+- Test commands for relevant backend and Flutter suites.
+- Debug APK build commands.
+- Required environment variables by name only.
+- Which resources are local, development-cloud, or production-only.
+
+Do not upgrade dependencies, change Node versions, regenerate lockfiles, or claim that a build/test passed unless you actually ran it.
+
+## 9. Final handoff report
+
+At the end, report:
+1. Files created or updated.
+2. Any contradictions found in the existing documentation.
+3. Any potential secrets or unsafe files that need review before GitHub.
+4. Commands/tests actually executed and their results.
+5. Anything you could not verify.
+6. The recommended first action after importing the GitHub repository into the other Replit account.
+
+**Success criterion:** a fresh AI session can clone the private repository, understand the actual current state, preserve the working PDF export flow, and continue from the approved roadmap without repeating previous work or accidentally changing production resources.
+
+Stop after documentation and repository hygiene. Do not start implementing the roadmap.

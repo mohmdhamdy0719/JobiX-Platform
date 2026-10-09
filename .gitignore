@@ -57,6 +57,13 @@ Thumbs.db
 *.jks
 *.p12
 *.pfx
+*.p8
+*-private.pem
+*-private-key.json
+service-account*.json
+service_account*.json
+*-service-account*.json
+*-service_account*.json
 
 # Synthetic offline print visual evidence (deliberately reviewed, not source).
 /mobile/jobix/.resume-visual-baselines/

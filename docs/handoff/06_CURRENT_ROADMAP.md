@@ -1,5 +1,9 @@
 # 06 — Current roadmap
 
+> **Historical roadmap — superseded.** The current review-only roadmap is
+> [docs/NEXT_STEPS.md](../NEXT_STEPS.md). Do not treat the phases, status labels,
+> or ordering below as current authorization.
+
 Ordered by technical dependencies; no milestone below authorizes changing the
 approved product scope.
 

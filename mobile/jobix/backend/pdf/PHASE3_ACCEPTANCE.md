@@ -43,6 +43,11 @@ scoped development approval.
 
 ## Earlier personal phone window — first completion and extra-intent stop
 
+> Historical checkpoint. Its immediate post-export observations below are
+> superseded where noted by the current outcome at the top of this document.
+> Preserve the accounting and sequence as evidence; do not use this checkpoint's
+> old “unverified” wording as the current device status.
+
 Owner approved one real-account export and reported APK installed, signed in,
 personal resume visible. Read-only baseline: active/confirmed account, one active
 profile, 5 finalized/available Credits, zero reserved, no prior exports/debits.
@@ -59,10 +64,11 @@ create call or second charge. This is database replay, not phone HTTP replay.
 
 The monitor then observed a second job with a distinct idempotency key, about
 three minutes after the first request. It closed all four gates immediately,
-without refunding/altering Credit data. Post-stop: one COMPLETED job, second
+without refunding/altering Credit data. The owner later confirmed explicitly
+choosing Create/Export Again and confirming; this was a separate user intent,
+not a same-key replay or automatic retry. Post-stop: one COMPLETED job, second
 QUEUED job with PENDING 2-Credit reservation, finalized balance 3, reserved 2
-(available 1), exactly one debit. Origin/user action is not yet established;
-do not assume automatic client retry or blame user action.
+(available 1), exactly one debit.
 
 Closed Worker `00011-tnk`, Gateway `00010-4rp`; same deployed image digests.
 Edge and database export gates closed; deletion-policy approval unchanged.
@@ -72,10 +78,18 @@ queued second job. Local source now permits free completed downloads and expiry
 recovery without dispatch while those gates are closed. No deployment or gate
 change is included here. Use only established expiry/recovery semantics; no forced
 expiry, fabricated cancellation/refund or manual balance change.
-Phone download/open/layout and actual request replay/ownership evidence remain
-unverified. Overall status NOT READY; task acceptance is not complete.
+At this checkpoint the phone download/open and layout were not yet confirmed.
+The owner later confirmed that the first PDF downloaded and opened on the M31;
+Arabic print, phone HTTP lost-response replay, and broader ownership/failure
+acceptance remain separate gaps. The later current outcome is at the top of this
+document.
 
 ## Current development delivery — export status NOT READY
+
+> Historical pre-test gate checkpoint. Its “pending” and “not ready” statements
+> predate the separately approved personal export window and the successful
+> phone result recorded at the top. Preserve the original approval boundary;
+> use the current outcome above for present acceptance status.
 
 The owner authorized a current debug APK and only necessary development backend
 fixes. No export gate may be opened or chargeable export performed without
@@ -125,8 +139,10 @@ Gateway `JOBIX_EXPORT_ENABLED`, Edge `JOBIX_EXPORT_ENABLED` and existing
 Keep deletion-policy approval unchanged. Insufficient existing Credits means
 stop, never fund. One new 2-Credit intent only; no repeat/fabrication of prior
 successful export. Close gates after the controlled test.
-Personal sign-in/export/device save/open, replay accounting, reservation and
-unauthorized access evidence are still UNVERIFIED; status must remain NOT READY.
+At this checkpoint, personal sign-in/export/device save/open and replay/
+ownership evidence were pending. The owner subsequently confirmed the
+authenticated M31 happy path; only the specific evidence listed in the current
+outcome is accepted.
 
 ## Earlier local increment
 
@@ -201,10 +217,16 @@ faults injected into Cloud Run or live GCS.
 | Pending-reservation release/stale writer after freeze | PASS, disposable SQL | Profile freeze clears lease/releases funds; old upload-begin rejected; only settlement can acknowledge late request |
 | Object/orphan removal and export-data absence | PASS, local object map + SQL | Owner paths removed; jobs/snapshots/reservations/flights/export-command dedupe zero; peer object and immutable ledger remain |
 | Flutter preview/status/download/visible retry/failure | **PASS, local fixtures** | Enabled cases verified after exact locked restore; native channels mocked, not Android acceptance |
-| Actual Android WebView/PDF file save | **UNVERIFIED / target absent** | `flutter devices --machine` exposes only Linux, no Android device/emulator |
+| Actual Android happy-path PDF download/open | **PASS, owner-confirmed** | The owner reported the first PDF downloaded and opened on Samsung M31; not independent ADB instrumentation and not failure/Arabic-layout acceptance |
 | Live cloud injected failure/expiry/deletion | **UNVERIFIED** | Not substituted with local evidence; no live test gate opened |
 
 ## Commands
+
+> The 90/90, 7-pass/1-fail RLS output and missing-Flutter-cache error below are
+> from an earlier diagnostic run. Later post-fix evidence is recorded above:
+> 101/101 backend, 8/8 guarded disposable acceptance, 11/11 adapter, and the
+> stated fixture-backed Flutter results. Do not claim the complete current RLS
+> harness passed until a fresh full `test_rls.sh` result is recorded.
 
 - `node --test mobile/jobix/backend/pdf/test/*.test.mjs`:
   existing backend regression **90/90 PASS**.

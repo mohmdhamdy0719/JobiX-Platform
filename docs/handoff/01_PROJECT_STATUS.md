@@ -1,5 +1,11 @@
 # 01 — Current project status
 
+> **Historical snapshot — superseded.** This file predates the completed Phase 3
+> personal export and M31 download/open result. Use the root
+> [PROJECT_STATUS.md](../../PROJECT_STATUS.md) for current implementation,
+> deployment, test, and acceptance status. Historical claims below are retained
+> as dated evidence, not current state.
+
 | Area | Code/database | Provider integration | Evidence |
 |---|---|---|---|
 | Supabase account, startup policy and Profile #1 | Implemented | Development configured | Historical live development checks and owner-confirmed signup; do not treat that as a newly repeated device test. |

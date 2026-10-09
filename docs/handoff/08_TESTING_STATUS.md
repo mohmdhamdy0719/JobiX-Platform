@@ -1,5 +1,10 @@
 # 08 — Testing and verification status
 
+> **Historical test snapshot — superseded where newer evidence exists.** Use
+> [PROJECT_STATUS.md](../../PROJECT_STATUS.md) and
+> [Phase 3 acceptance evidence](../../mobile/jobix/backend/pdf/PHASE3_ACCEPTANCE.md).
+> The dated totals below are not the latest regression totals.
+
 Last recorded verification is from the current Replit workspace. Rerun relevant
 checks after migration/setup; a passing host test is not native-device evidence.
 

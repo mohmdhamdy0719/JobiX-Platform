@@ -1,5 +1,11 @@
 # Jobix — Foundation and first vertical slice
 
+> **Historical foundation/setup notes.** This file retains useful environment
+> details but its opening feature-status summary predates PDF Export + Credits
+> and the Samsung M31 happy-path acceptance. Read the root
+> [README](../../README.md), [PROJECT_STATUS](../../PROJECT_STATUS.md), and
+> [AI handoff](../../docs/AI_HANDOFF.md) for current status and safe next steps.
+
 Native Flutter, separate from the pnpm starter. The approved first slice adds
 three onboarding screens, four research questions, Supabase authentication,
 an automatically provisioned empty Profile #1, Home and Personal Information.

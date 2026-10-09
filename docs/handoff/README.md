@@ -1,9 +1,12 @@
 # Jobix handoff index
 
-Read this folder before continuing development from a different account.
-**Current source of truth:** `PROJECT_HANDOFF.md` at the repository root. All
-dates/status claims below are limited to tracked history, persisted task plans,
-project documentation and this workspace's verified results.
+Read [the root README](../../README.md), [current project status](../../PROJECT_STATUS.md),
+[AI handoff instructions](../AI_HANDOFF.md), and [proposed next steps](../NEXT_STEPS.md)
+before continuing from a different account. Those documents are the current
+2026-10-09 handoff set. `PROJECT_HANDOFF.md` and the numbered status/roadmap
+files below are preserved historical snapshots; follow their product/architecture
+references, but not superseded feature-status, test-total, setup, or remote-state
+claims.
 
 1. [Project overview](00_PROJECT_OVERVIEW.md)
 2. [Architecture sources and boundary](02_ARCHITECTURE.md)
@@ -30,12 +33,19 @@ root workflows for `artifacts/api-server` and `artifacts/mockup-sandbox` are not
 the Jobix application. Do not mistake an API health response or component mockup
 for the mobile product.
 
-The private GitHub repository named in the handoff brief was checked through the
-workspace's authorized GitHub connection: its default `master` branch had one
-IDE-only initial commit and no application source; local `main` has its own
-41-commit history. There is no GitHub Git remote in this workspace. No push,
-force push, rebase, or history rewrite was performed. See the migration guide
-before attempting publication.
+An earlier GitHub check and the migration guide are historical evidence only.
+This checkout currently has a GitHub-hosted `origin` and local tracking refs,
+but the destination branch/history and remote LFS payload transfer were not
+re-fetched or written during the 2026-10-09 documentation handoff. The current
+local branch has 65 reachable commits and seven LFS-managed APK/archive
+deliverables; `git lfs fsck --objects` passed locally. No push, force push,
+rebase, or history rewrite was performed in this handoff. Verify both Git and
+LFS access and compare commit graphs before publishing.
+
+Current native setup commands and environment limits are in
+`mobile/jobix/README.md` and the root README. The Node PDF package is not part
+of the pnpm workspace and lacks its own lockfile; do not assume the root
+workspace lock reproduces it.
 
 Replit internal task, plan and checkpoint records are not guaranteed to be
 available after cloning. Preserved task text in `.local/tasks/` is workspace

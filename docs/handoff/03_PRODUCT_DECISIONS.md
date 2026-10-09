@@ -1,5 +1,12 @@
 # 03 — Product decisions
 
+> Product decisions and approved contracts remain useful references, but
+> implementation-status labels in this historical snapshot may predate the
+> completed PDF export path. For current implementation/deployment status, use
+> [PROJECT_STATUS.md](../../PROJECT_STATUS.md). The PDF retention/deletion
+> contract is recorded in
+> [ADR-retention-deletion.md](../../mobile/jobix/backend/pdf/ADR-retention-deletion.md).
+
 Statuses distinguish owner-approved rules from components that merely exist.
 
 | Decision | Status | Constraint |

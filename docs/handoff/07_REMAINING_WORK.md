@@ -1,5 +1,10 @@
 # 07 — Remaining work
 
+> **Historical snapshot — superseded.** For current gaps and proposed
+> priorities, see [PROJECT_STATUS.md](../../PROJECT_STATUS.md) and
+> [docs/NEXT_STEPS.md](../NEXT_STEPS.md). Items below are not current status or
+> authorization.
+
 ## Blocking
 
 - Reconcile local `main` history with the private GitHub repository without

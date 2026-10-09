@@ -1,5 +1,12 @@
 # Jobix Project Handoff
 
+> **Historical snapshot, superseded for current status.** This handoff predates
+> the PDF export/download and Samsung M31 acceptance work and contains stale
+> milestone and GitHub-remote claims. Preserve it as history; use
+> [PROJECT_STATUS.md](PROJECT_STATUS.md),
+> [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md), and
+> [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for the 2026-10-09 handoff.
+
 ## Current status
 
 The primary product client is the native Flutter app in `mobile/jobix/`; Supabase
