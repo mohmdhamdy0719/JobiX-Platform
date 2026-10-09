@@ -2,7 +2,23 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: local bridge diagnosis/verification only
+## Current authorization: read-only development bridge deployment readiness
+
+The owner authorized checking existing local/development state without rerunning
+the green local suite. Do not change token scopes or create credentials. Keep
+export flags disabled and no real Credit/billable exports. If required readiness
+fails, stop and report the smallest safe resolution. If it passes, report exact
+planned development changes and ask approval before applying cloud changes.
+
+**Why:** The owner explicitly requires a fresh approval gate before cloud
+mutations, even after the earlier thin-bridge design/implementation approval.
+
+**How to apply:** Readiness checks are not deployment/resource/IAM authorization.
+Preserve production/staging, Supabase Auth signing, DB roles, existing secrets
+and unrelated IAM. Do not treat an absent intended resource or a successful
+metadata read as proof of attached runtime identity or deployment readiness.
+
+## Earlier authorization: local bridge diagnosis/verification only
 
 The owner explicitly authorized diagnosis and minimal local correction of
 the bridge security test, followed by targeted and complete local tests.

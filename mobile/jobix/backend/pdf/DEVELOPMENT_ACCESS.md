@@ -6,6 +6,22 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Latest readiness blocker: missing dedicated bridge identity and invocation
+grant.** Read-only lookup of `jobix-export-gateway-dev` returned 404; the private
+worker has no Run Invoker binding for it. The planned bridge service is also
+absent (404). Provision only the approved dedicated identity and worker-scoped
+invocation grant after explicit cloud-change approval; verify deployer actAs
+and effective runtime permissions before deployment. No resource/grant/build/
+deployment was applied during this check.
+
+The earlier Supabase Management metadata-read blocker is now resolved: both
+development `/secrets` and `/functions` reads return 200 with the existing
+credential. Successful response bodies were cancelled without secret inspection.
+No credential/scope was changed. Those reads do not establish Edge write/deploy
+access and do not block Cloud Run bridge runtime/deployment. An existing local
+public client key is available and the Auth endpoint rejects invalid tokens.
+Worker IAM remains private and anonymous invocation is denied with 403.
+
 **Latest checkpoint: local bridge security suite passes; cloud work not resumed.**
 The owner authorized a local-only correction. The failing fixture omitted the
 canonicalizer and threw before database authorization; its uncoded error was
@@ -16,9 +32,9 @@ authorization/error mapping changed. These are local/mock checks, not live
 deployment/integration proof.
 No bridge service/account/IAM binding/build/deployment exists from this work.
 Existing runtime resources are unchanged; export/client flags were not enabled.
-Deployment/live integration remains unverified and the earlier remote
-metadata-access blocker below remains unresolved. Do not resume cloud work
-under the local-only diagnosis authorization.
+Deployment/live integration remains unverified. The readiness checkpoint above
+supersedes the old metadata-access failure below. Local security success does
+not authorize cloud configuration or deployment without the requested approval.
 
 **Current actual rollout blocker: development gateway metadata access HTTP 403.**
 Backend invocation passes and the actual pinned worker is active on ready

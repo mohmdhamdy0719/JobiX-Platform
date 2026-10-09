@@ -1,5 +1,38 @@
 # Jobix verification evidence
 
+## Development bridge deployment-readiness check — identity prerequisite missing
+
+Inspected the committed local bridge changes without rerunning the green suite.
+Read-only checks under the existing credentials:
+- Development local configuration matches the approved Supabase project and
+  provides an already-existing public client key. Client exports are not enabled.
+- Live Supabase `/auth/v1/user` verification rejected an invalid bearer with
+  HTTP 403; no user session/account was created.
+- Management API GET `/projects/lmouxhbjhtqdtiqijcee/secrets` and `/functions`
+  both returned HTTP 200. Successful bodies were cancelled without inspecting
+  secret values. The earlier 403 metadata-read blocker is resolved. Read access
+  does not establish Edge deploy/write permission; neither endpoint is required
+  for bridge runtime authentication or the Google bridge deployment itself.
+- Worker revision remains `jobix-dev-pdf-export-00002-bpb`. IAM invocation checks
+  are enabled; no allUsers/allAuthenticatedUsers bindings are present. Anonymous
+  POST `/command` returned 403. No bridge-identity invocation binding exists.
+- GET of `jobix-dev-export-gateway` returned 404.
+- GET of dedicated runtime service account
+  `jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com` returned 404.
+
+Stopped: the dedicated runtime identity and its worker-scoped invocation grant
+are absent, so attached-identity/actAs/effective-permission checks and hosted
+integration cannot yet pass. Smallest next step is explicitly authorized
+identity provisioning plus only worker-scoped Run Invoker, with narrowly scoped
+deployer actAs if needed. Then reverify before requesting/applying deployment.
+The new worker authorization code also needs its approved image/revision rollout
+before the bridge can satisfy its startup checks; no image was built here.
+
+Only the proposed bridge is intended to receive public invocation. No service,
+identity, IAM, token scope, credential, secret, Auth setting, database role,
+image, deployment or export flag was changed. No Credit/billable export ran.
+Bridge deployment/live integration and overall Phase 3 remain incomplete.
+
 ## Thin bridge local diagnosis/fix — PASS; deployment remains unverified
 
 The owner authorized only local diagnosis, a minimal fix and local verification.
