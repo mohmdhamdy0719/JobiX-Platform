@@ -2,6 +2,15 @@
 
 ## Actual development rollout checkpoint
 
+Real-user path work now has local authenticated read-only routing for document
+preview/history/status while exports remain off. Mutation/signing paths still
+fail closed. Local full suite passes 90/90, including two mocked verified
+identities and profile/job isolation. This is not deployed/live two-user proof.
+Private Gateway IAM currently prevents Edge's Supabase bearer from reaching
+the handler, and the Edge function is absent in the development inventory.
+The proposal is public invocation only on this independently authenticating
+Gateway, never the Worker; await scoped cloud approval before applying it.
+
 Gateway revision `00003-whw` is now Ready after one controlled Gateway-only
 deployment of the hostname fix. Authenticated private `/ready` returned 200
 and verifies native Gateway-to-Worker authentication plus worker-only path

@@ -1,5 +1,45 @@
 # Jobix verification evidence
 
+## Real-user ingress trace — local read-only implementation; cloud proposal pending
+
+Existing Flutter `_call` invokes `resume-export` using the signed-in Supabase
+client and action/command body. The Edge source verifies the user through
+Supabase Auth and forwards the original bearer/body. A private Cloud Run
+Gateway instead requires a Google ID token at its IAM frontend; the Supabase
+user token is not that credential, and Edge has no approved native Google
+identity/WIF issuer. This is an authorization blocker, not a DNS/network or
+startup failure. Do not put service-account keys into Edge.
+
+Development Management API function inventory returned HTTP 200 and no
+`resume-export` function. Edge has not been deployed. Both local Edge and
+deployed Gateway gates also blocked every action while exports were off.
+Configured test-user email/password environment entries A/B are absent.
+
+Prepared minimal local read-only routing: verify the user first and allow
+document preview/history/status with export processing false. Canonical HTML
+preview does not persist an export snapshot or render a PDF. Create/again,
+download signing, dispatch and Credit mutations remain blocked. Worker needs
+the corresponding narrow document-read allowance; no ledger/RLS/retention
+logic changes. Local two-identity fixtures prove own profile/job reads and
+foreign profile FORBIDDEN / foreign job NOT_FOUND. These are mocked Auth/DB
+tests, not two real Supabase sessions. Full suite passed **90/90**.
+
+Smallest proposed cloud change: `allUsers -> roles/run.invoker` on ONLY
+`jobix-dev-export-gateway`, retaining mandatory independent Supabase
+verification and server-derived actor. Worker IAM remains private. Deploy
+the Edge function with platform verify_jwt enabled (official Supabase
+auth-headers documentation confirms asymmetric signing-key support), its
+existing handler verification, Gateway URL, export=false and preserved
+deletion approval. Roll out the read-only Gateway/Worker changes; no migrations.
+No cloud changes have been applied for this request; exposure approval pending.
+
+Prefer the existing two isolated test accounts and reusable test jobs.
+Every export_jobs row requires a credit_reservations reference; do not pretend
+an unowned random ID proves owned-job isolation or fabricate Credit rows.
+If no reusable jobs exist, fixture-only terminal snapshots/jobs/released
+reservations need explicit approval with unchanged balances/ledger, no
+reserve/finalize calls, no PDF/GCS objects and exact fixture cleanup.
+
 ## One controlled Gateway-only fix deployment — Ready; safe live checks passed
 
 Managed gateway-only build `be9b115a-14e8-4651-9893-64bbb22c788f` succeeded.

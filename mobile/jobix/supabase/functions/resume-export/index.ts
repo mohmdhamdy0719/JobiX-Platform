@@ -1,10 +1,10 @@
 // Public application entry point; no Google keys or service-token minting.
-import {readCommand,forwardCommand,TransportError} from './transport.mjs';
+import {readCommand,forwardCommand,TransportError,readOnlyActions} from './transport.mjs';
 const project='lmouxhbjhtqdtiqijcee';
 Deno.serve(async request=>{
   const headers={'Content-Type':'application/json','Cache-Control':'no-store'};
   try {
-    const {token,raw}=await readCommand(request);
+    const {token,raw,envelope}=await readCommand(request);
     const origin=Deno.env.get('SUPABASE_URL');
     if(origin!==`https://${project}.supabase.co`)throw new TransportError('FORBIDDEN');
     const verified=await fetch(origin+'/auth/v1/user',{
@@ -15,8 +15,9 @@ Deno.serve(async request=>{
     if(!verified.ok)throw new TransportError('SERVICE_UNAVAILABLE');
     const user=await verified.json();
     if(!user.id||user.deleted_at)throw new TransportError('AUTH_REQUIRED');
-    if(Deno.env.get('JOBIX_EXPORT_ENABLED')!=='true'||
-      Deno.env.get('JOBIX_EXPORT_DELETION_POLICY_APPROVED')!=='true') {
+    if(!readOnlyActions.includes(envelope.action)&&
+      (Deno.env.get('JOBIX_EXPORT_ENABLED')!=='true'||
+      Deno.env.get('JOBIX_EXPORT_DELETION_POLICY_APPROVED')!=='true')) {
       throw new TransportError('EXPORT_NOT_READY');
     }
     const result=await forwardCommand({

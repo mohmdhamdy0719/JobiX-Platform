@@ -1,5 +1,8 @@
 // Shared Edge/bridge input policy. No Google credential acquisition here.
 export const applicationActions=Object.freeze(['document','create','again','status','history','download']);
+// Canonical preview and owner-scoped metadata reads never create an export,
+// reserve Credits, generate a PDF or sign a download.
+export const readOnlyActions=Object.freeze(['document','status','history']);
 const identityFields=new Set(['actor','user_id','userId','identity','claims','sub','headers']);
 const identityHeaders=new Set(['x-actor','x-user-id','x-authenticated-user-id',
   'x-goog-authenticated-user-id','x-goog-authenticated-user-email',

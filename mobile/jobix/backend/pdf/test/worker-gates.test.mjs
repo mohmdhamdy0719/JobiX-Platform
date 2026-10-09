@@ -20,16 +20,16 @@ async function fixture(run) {
       headers:authenticated?{Authorization:'Bearer fixture'}:{},body:JSON.stringify(body)});
   try{await run(post,calls);}finally{await new Promise(resolve=>s.close(resolve));}
 }
-test('disabled worker blocks all export/signing/rendering mutations but permits authoritative reads',async()=>{
+test('disabled worker blocks PDF/Credit mutations but permits canonical preview and metadata reads',async()=>{
   await fixture(async(post,calls)=>{
-    for(const action of ['create','again','download','document']) {
+    for(const action of ['create','again','download']) {
       const r=await post('/command',{action});
       assert.equal((await r.json()).error.code,'EXPORT_NOT_READY');
     }
     assert.equal((await (await post('/dispatch')).json()).error.code,'EXPORT_NOT_READY');
     assert.deepEqual(calls,[]);
-    for(const action of ['history','status'])assert.equal((await post('/command',{action})).status,200);
-    assert.deepEqual(calls,['history','status']);
+    for(const action of ['document','history','status'])assert.equal((await post('/command',{action})).status,200);
+    assert.deepEqual(calls,['document','history','status']);
   });
 });
 test('disabled exports skip worker recovery while preserving approved retention/deletion cleanup',async()=>{

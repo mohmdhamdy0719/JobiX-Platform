@@ -2,17 +2,17 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: one controlled development Gateway-only fix deployment
+## Current authorization: real-user read-only path; explain ingress fix before cloud changes
 
-The owner accepted the proven hostname root cause/fix and approved one
-controlled development-only Gateway rebuild/deployment. Do not rebuild or
-redeploy the Worker without a concrete dependency. Keep export processing off,
-approved deletion-policy setting preserved, Worker private, and IAM/secrets/
-Supabase Auth/Credits/retention/production/staging untouched. Stop on a new
-startup/integration failure; never automatically create another revision.
+The owner requests the real Flutter/Edge/Gateway/Worker authenticated path and
+two authenticated development users' profile/job ownership tests, while export
+processing stays false. Do not repeat passed startup/IAM readiness work.
+If private Gateway IAM blocks Edge, explain the exact blocker and smallest
+fix before cloud changes. Keep Worker private; no keys, unrelated IAM,
+retention-policy changes, production/staging or real Credit/PDF transactions.
 
-**Why:** The owner explicitly approved this single tested-fix deployment and
-forbade changes outside that development Gateway scope.
+**Why:** The owner explicitly prioritizes a working authenticated user path
+and concrete ownership results, with billing still disabled.
 
 **How to apply:** Recheck only the target account binding/current worker
 configuration; reuse passing deployment-permission checks. Do not change the

@@ -5,7 +5,7 @@ import {createSign,generateKeyPairSync} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {createBridge,origin,gatewayIdentity,workerTarget,publicClientKey} from '../../export-gateway/core.mjs';
 import {GatewayIdentity} from '../../export-gateway/identity.mjs';
-import {readCommand,forwardCommand,gatewayTarget} from '../../../supabase/functions/resume-export/transport.mjs';
+import {readCommand,forwardCommand,gatewayTarget,readOnlyActions} from '../../../supabase/functions/resume-export/transport.mjs';
 import {Gateway} from '../gateway.mjs';
 import {server} from '../server.mjs';
 import {authenticateInternal} from '../google.mjs';
@@ -109,8 +109,57 @@ for(const header of ['X-User-Id','X-Jobix-Actor','X-Apigateway-Api-Userinfo',
   });
 }
 test('closed export gate verifies Auth but never acquires Google credentials or calls worker',async()=>{
-  const f=setup({enabled:false});assert.equal((await f.handle(request())).status,503);
-  assert.equal(f.authCalls.length,1);assert.equal(f.identities(),0);assert.equal(f.workerCalls.length,0);
+  for(const action of ['create','again','download']) {
+    const f=setup({enabled:false});
+    assert.equal((await f.handle(request({action,command:{}}))).status,503);
+    assert.equal(f.authCalls.length,1);assert.equal(f.identities(),0);assert.equal(f.workerCalls.length,0);
+  }
+});
+test('closed-mode read policy is explicitly limited to preview/history/status',()=>{
+  assert.deepEqual(readOnlyActions,['document','status','history']);
+});
+test('two independently verified fixture users can read only their own profiles/jobs with exports closed',async()=>{
+  const p2='44444444-4444-4444-8444-444444444444';
+  const j1='55555555-5555-4555-8555-555555555555',j2='66666666-6666-4666-8666-666666666666';
+  const profiles=new Map([[profile,actor],[p2,other]]);
+  const jobs=new Map([[j1,actor],[j2,other]]);
+  const calls=[];
+  const gateway=new Gateway({enabled:true,canonicalizer:{prepare:async source=>source},
+    db:{call:async(name,args)=>{
+      calls.push(name);
+      if(name==='source'){
+        if(profiles.get(args.profile)!==args.actor)throw new ExportError('FORBIDDEN');
+        return {profile_id:args.profile};
+      }
+      if(name==='history')return [...jobs].filter(([,owner])=>owner===args.actor)
+        .map(([id,user_id])=>({id,user_id,state:'FAILED'}));
+      if(name==='status'){
+        if(jobs.get(args.operation)!==args.actor)throw new ExportError('NOT_FOUND');
+        return {id:args.operation,user_id:args.actor,state:'FAILED'};
+      }
+      assert.fail('Read-only tests must never call Credit/export mutations: '+name);
+    }}});
+  for(const [user,ownProfile,foreignProfile,ownJob,foreignJob] of [
+    [actor,profile,p2,j1,j2],[other,p2,profile,j2,j1],
+  ]) {
+    const f=setup({enabled:false,user:{id:user},worker:async body=>{
+      try{return json({data:await gateway.handle(body.actor,body.action,body.command),error:null});}
+      catch(error){return json({data:null,error:{code:error.code}},error.code==='FORBIDDEN'?403:503);}
+    }});
+    const read=(action,command)=>f.handle(request({action,command},
+      {headers:{Authorization:bearer({sub:user})}}));
+    const own=await read('document',{profile_id:ownProfile});
+    assert.equal(own.status,200);assert.equal((await own.json()).data.profile_id,ownProfile);
+    const foreign=await read('document',{profile_id:foreignProfile});
+    assert.equal(foreign.status,403);assert.equal((await foreign.json()).error.code,'FORBIDDEN');
+    assert.equal((await read('status',{export_id:ownJob})).status,200);
+    const hidden=await read('status',{export_id:foreignJob});
+    assert.deepEqual(await hidden.json(),{data:null,error:{code:'NOT_FOUND'}});
+    const history=await (await read('history',{})).json();
+    assert.deepEqual(history.data.jobs.map(j=>j.id),[ownJob]);
+    assert.ok(f.workerCalls.every(c=>c.actor===user));
+  }
+  assert.ok(calls.every(c=>['source','history','status'].includes(c)));
 });
 for(const action of ['recover','dispatch','cleanup','retention','freeze','purge','delete']) {
   test('worker-only action '+action+' is rejected at public bridge',async()=>{

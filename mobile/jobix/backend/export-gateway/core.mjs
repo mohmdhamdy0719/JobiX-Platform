@@ -1,4 +1,4 @@
-import {readCommand,TransportError} from '../../supabase/functions/resume-export/transport.mjs';
+import {readCommand,TransportError,readOnlyActions} from '../../supabase/functions/resume-export/transport.mjs';
 export const origin='https://lmouxhbjhtqdtiqijcee.supabase.co';
 export const gatewayIdentity='jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -68,8 +68,10 @@ export function createBridge({clientKey,target,identity,fetchImpl=fetch,exportsE
       if(new URL(request.url).pathname!=='/resume-export')return response('NOT_FOUND',404);
       const {token,envelope}=await readCommand(request);
       const actor=await verifyUser(token,clientKey,fetchImpl);
-      // Closed rollout gate: valid users cannot reach any export command yet.
-      if(!exportsEnabled)throw new TransportError('EXPORT_NOT_READY');
+      // User identity must be verified even for non-billable owner-scoped reads.
+      if(!exportsEnabled&&!readOnlyActions.includes(envelope.action)) {
+        throw new TransportError('EXPORT_NOT_READY');
+      }
       return await callWorker({target,identity,actor,action:envelope.action,
         command:envelope.command,fetchImpl});
     }catch(error) {

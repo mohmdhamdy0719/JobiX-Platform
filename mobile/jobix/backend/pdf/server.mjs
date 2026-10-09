@@ -44,9 +44,9 @@ export function server({gateway,worker,cleanup,authenticate,exportsEnabled=true}
         result=await worker.dispatch();
       }
       else if(req.url==='/command') {
-        // Only authoritative, non-mutating account/ownership reads are allowed
-        // during deployment verification. No rendering, signing or Credit work.
-        if(!exportsEnabled&&!['history','status'].includes(input.action)) {
+        // Canonical preview is a profile read, not PDF rendering or a persisted
+        // export snapshot. No signing, reservations or export work while closed.
+        if(!exportsEnabled&&!['document','history','status'].includes(input.action)) {
           throw new ExportError('EXPORT_NOT_READY');
         }
         result=await gateway.handle(input.actor,input.action,input.command);
