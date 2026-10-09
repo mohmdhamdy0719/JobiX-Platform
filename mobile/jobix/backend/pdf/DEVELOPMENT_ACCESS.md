@@ -6,6 +6,18 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Latest: gateway worker invocation binding verified; deployer actAs missing.**
+The worker policy now contains unconditional Run Invoker for the exact gateway
+member and remains IAM-private without public bindings. Direct account-scoped
+permission testing confirms deployer actAs is absent. Deployer metadata/policy
+reads also fail with 403 for iam.serviceAccounts.get/getIamPolicy on the new
+account. Its metadata email/status and full account policy remain unverified,
+although the worker-binding member string matches exactly. Missing attachment/
+audit permissions belong only to the deployer on that account, not to gateway
+runtime/project-wide access. No grants/roles/keys/builds/deployments/flags changed.
+The owner's creation report and verified invocation binding supersede earlier
+absent-account/create-denied checkpoints below.
+
 **Latest actual setup blocker: account creation denied.** Lookup found no
 `jobix-export-gateway-dev`. The explicitly authorized creation request under
 the existing deployer returned HTTP 403 / IAM_PERMISSION_DENIED for

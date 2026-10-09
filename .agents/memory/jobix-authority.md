@@ -2,22 +2,21 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: execute dedicated development identity and narrow grants only
+## Current authorization: read-only audit of administrator-provisioned gateway identity
 
-The owner explicitly requested creation of `jobix-export-gateway-dev` without
-user-managed keys, Run Invoker on the existing private worker only, and deployer
-actAs bound only on the new account. Prefer an existing verified actAs-only
-role. No Owner/Editor/IAM Admin, general impersonation or gateway DB/GCS/secret/
-signing access. No gateway/worker deployment, image builds, export flags, real
-Credits or production/staging changes.
+The owner reports the dedicated account and worker-scoped Run Invoker were
+provisioned and requests read-only verification of account email, worker
+invocation binding and deployer actAs. Do not create custom roles, add grants,
+build/deploy, enable exports or run Credits. Report exact missing permissions
+and their account/service scope before requesting changes.
 
-**Why:** The owner explicitly requested completion of these three scoped
-development IAM operations after the read-only audit.
+**Why:** The owner explicitly paused mutations while checking the administrator's
+provisioning and retained private-worker/development-only boundaries.
 
-**How to apply:** Use the existing deployment identity; do not self-escalate
-or substitute another principal to bypass a denial. Report exact missing
-permissions and successful mutations separately. Preserve worker privacy and
-verify resulting policies before claiming setup complete.
+**How to apply:** Use the existing deployer; distinguish verified worker member
+strings from account metadata blocked by read permission. Runtime invocation
+permissions and deployer attachment/audit permissions are separate; do not
+grant extra runtime or project-wide rights to resolve deployer read failures.
 
 ## Earlier authorization: dedicated bridge identity and narrow grants only
 

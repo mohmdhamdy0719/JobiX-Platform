@@ -1,5 +1,29 @@
 # Jobix verification evidence
 
+## Administrator-created identity — read-only audit: invocation PASS, attachment missing
+
+Read-only checks under `jobix-deployer-dev` confirm the worker policy contains
+an unconditional `roles/run.invoker` binding for the exact member
+`serviceAccount:jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com`.
+The worker retains IAM invocation enforcement, no allUsers/allAuthenticatedUsers
+bindings and unchanged revision `jobix-dev-pdf-export-00002-bpb`.
+This verifies that binding on this worker, not absence of grants elsewhere.
+
+Account-scoped `testIamPermissions` executed successfully and returned no
+`iam.serviceAccounts.actAs` for the deployer. Direct account metadata lookup
+returned 403 / IAM_PERMISSION_DENIED / `iam.serviceAccounts.get`; account policy
+lookup returned 403 / IAM_PERMISSION_DENIED /
+`iam.serviceAccounts.getIamPolicy`. Account email/status cannot be independently
+confirmed through metadata, nor its policy inspected, under this credential.
+The member email in the worker binding is confirmed exactly.
+
+Missing permissions are for the deployer, on only
+`projects/mhflow-jobix/serviceAccounts/jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com`:
+actAs for deployment, get/getIamPolicy for metadata/policy audit. Do not grant
+these to the runtime gateway identity or add general impersonation/project-wide
+roles. No custom role, resource, IAM grant, key, build, deployment, flag or Credit
+operation was created/changed in this audit. Provisioning/deployment is incomplete.
+
 ## Direct approved account creation attempt — IAM_PERMISSION_DENIED
 
 After the owner's explicit request to perform the scoped setup, read-only lookup
