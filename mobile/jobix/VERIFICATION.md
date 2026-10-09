@@ -1,5 +1,34 @@
 # Jobix verification evidence
 
+## Gateway deployment preflight — blocked; no cloud mutations
+
+Read-only audit confirms worker `jobix-dev-pdf-export` has IAM enforcement
+enabled, no public members, and an unconditional `roles/run.invoker` binding
+for the exact gateway service-account email. Gateway Cloud Run service is
+absent (404). Its account record and account policy cannot be read by the
+deployer (403 for `iam.serviceAccounts.get` and
+`iam.serviceAccounts.getIamPolicy`); effective account permission testing
+returned none of `iam.serviceAccounts.actAs`, `.get`, `.getIamPolicy`, or
+`.keys.list`. Thus the exact role binding and account/key state are unverified,
+and deployer `actAs` is not effective. The supplied custom-role description
+lists `.actAs`, `.get`, and `.getIamPolicy`; the deployed role definition
+could not be independently read.
+
+Verified deployer permissions include project-level `run.services.create`,
+`.get`, `.update`, `.setIamPolicy`, and `cloudbuild.builds.create`/`.get`;
+worker-scoped Run get/update/getIamPolicy/setIamPolicy; `actAs` on the backend
+runtime and existing compute build identity; Artifact Registry get/upload/
+download on `me-central1/jobix-dev`; and source-bucket object create/get.
+These do not resolve gateway-account attachment.
+
+**Additional safety blocker:** the current worker service has
+`JOBIX_EXPORT_ENABLED=true` and `JOBIX_EXPORT_DELETION_POLICY_APPROVED=true`,
+contrary to the requested disabled-flag condition. These values were observed,
+not changed. Do not proceed to deploy/revise the worker or expose a gateway
+until the scoped deployer role binding is corrected/verified and the flags are
+disabled. No IAM/service/build/image/flag/Credit/production/staging mutation
+occurred during this audit.
+
 ## Administrator-created identity — read-only audit: invocation PASS, attachment missing
 
 Read-only checks under `jobix-deployer-dev` confirm the worker policy contains

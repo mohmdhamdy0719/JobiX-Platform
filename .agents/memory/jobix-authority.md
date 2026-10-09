@@ -2,21 +2,24 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: read-only audit of administrator-provisioned gateway identity
+## Current authorization: conditional development gateway deployment after preflight
 
-The owner reports the dedicated account and worker-scoped Run Invoker were
-provisioned and requests read-only verification of account email, worker
-invocation binding and deployer actAs. Do not create custom roles, add grants,
-build/deploy, enable exports or run Credits. Report exact missing permissions
-and their account/service scope before requesting changes.
+The owner authorized a development Gateway build/deployment and necessary
+worker authorization changes only after read-only IAM/deployment preconditions
+pass. Keep the worker private, require Supabase token verification, keep every
+export gate disabled, and do not run real Credits/billable exports before
+security and live integration checks pass. Never touch production/staging or
+create service-account keys. Stop on missing permissions and report exact
+resource scope; do not broaden IAM or correct bindings without authorization.
 
-**Why:** The owner explicitly paused mutations while checking the administrator's
-provisioning and retained private-worker/development-only boundaries.
+**Why:** The owner approved this next rollout phase conditionally on verified
+least-privilege readiness, while expressly preserving privacy and disabled flags.
 
-**How to apply:** Use the existing deployer; distinguish verified worker member
-strings from account metadata blocked by read permission. Runtime invocation
-permissions and deployer attachment/audit permissions are separate; do not
-grant extra runtime or project-wide rights to resolve deployer read failures.
+**How to apply:** Read-only verify exact account-role binding, effective
+deployer actAs, Cloud Run/Cloud Build permissions, worker IAM privacy and
+export-gate values before any build/deployment. An existing worker-invoker
+member string does not prove the account policy or deployer attachment. If any
+gate fails, stop and report without changing IAM or flags.
 
 ## Earlier authorization: dedicated bridge identity and narrow grants only
 

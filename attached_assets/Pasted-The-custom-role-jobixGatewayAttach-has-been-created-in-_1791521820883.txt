@@ -1,0 +1,19 @@
+The custom role `jobixGatewayAttach` has been created in project `mhflow-jobix`. It currently contains:
+
+- `iam.serviceAccounts.actAs`
+- `iam.serviceAccounts.get`
+- `iam.serviceAccounts.getIamPolicy`
+
+Proceed with the following:
+
+1. Run a read-only audit of the exact IAM binding. Verify that the role is granted to `jobix-deployer-dev@mhflow-jobix.iam.gserviceaccount.com` on the resource `jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com`. Do not assume this binding is correct.
+2. Verify the Gateway service account exists and that its `roles/run.invoker` grant is scoped only to `jobix-dev-pdf-export`.
+3. Verify the deployer has the required Cloud Run deployment permissions and `iam.serviceAccounts.actAs`. Do not request broad project roles.
+4. If the existing binding is incorrect, report the exact correction required before changing it. Do not modify unrelated IAM bindings.
+5. Once these prerequisites are verified, proceed with the development Gateway build and deployment, including the required worker authorization changes, provided no additional permissions or scope expansion is needed. If a new permission is required, stop and report the exact permission and resource first.
+6. Keep the PDF worker private. Only the Gateway may have public invocation, and its Supabase token verification must remain mandatory.
+7. Keep export flags disabled. Do not perform real Credit transactions or billable exports until security and live integration checks pass.
+8. Do not touch production/staging, create service-account keys, change Supabase Auth settings, or alter the established Credit, retention, and deletion contracts.
+9. After deployment, verify the Gateway-to-Worker authenticated path, anonymous worker rejection, invalid-token rejection, cross-account isolation, idempotency and timeout recovery. Report actual test results and the exact resources changed.
+
+Do not return another design-only report. Complete the verified steps that are already authorized and stop only at a concrete blocker.
