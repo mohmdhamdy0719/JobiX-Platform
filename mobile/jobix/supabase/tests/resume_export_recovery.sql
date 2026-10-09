@@ -88,9 +88,12 @@ BEGIN
  operation:=(ack->>'operation_id')::uuid;
  claimed:=public.jobix_export_claim(2);fence:=(claimed#>>'{0,lease_token}')::uuid;
  UPDATE public.export_jobs SET deadline=now()-interval '1 second' WHERE id=operation;
+  UPDATE public.export_settings SET enabled=false,deletion_policy_approved=false;
  PERFORM pg_temp.must_fail(format('SELECT public.jobix_export_finish(%L,%L,NULL,true)',operation,fence),'STALE_LEASE');
  ASSERT public.jobix_export_recover()=1;
  ASSERT public.jobix_export_recover()=0;
+  ASSERT (SELECT state FROM public.export_jobs WHERE id=operation)='FAILED';
+  ASSERT (SELECT state FROM public.credit_reservations WHERE id=reservation)='RELEASED';
  ASSERT (SELECT reserved_balance FROM public.credit_accounts WHERE user_id=actor)=0;
  ASSERT (SELECT finalized_balance FROM public.credit_accounts WHERE user_id=actor)=5;
  ASSERT NOT EXISTS(SELECT FROM public.credit_transactions WHERE user_id=actor AND delta=-2);

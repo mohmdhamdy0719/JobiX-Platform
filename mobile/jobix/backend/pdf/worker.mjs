@@ -7,9 +7,10 @@ export class Worker {
     Object.assign(this,{db,renderer,storage,enabled,heartbeatMs,clock});this.active=0;
   }
   async recover() {
-    if (!this.enabled) throw new ExportError('EXPORT_NOT_READY');
     await this.db.call('recover');
-    return this.dispatch();
+    // Recovery only reconciles durable reservations and expired jobs. Dispatch
+    // remains controlled by the export gate and cannot run while it is closed.
+    if (this.enabled) return this.dispatch();
   }
   async dispatch() {
     if (!this.enabled) throw new ExportError('EXPORT_NOT_READY');

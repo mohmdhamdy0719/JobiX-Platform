@@ -3,6 +3,9 @@ export const applicationActions=Object.freeze(['document','create','again','stat
 // Canonical preview and owner-scoped metadata reads never create an export,
 // reserve Credits, generate a PDF or sign a download.
 export const readOnlyActions=Object.freeze(['document','status','history']);
+// A closed export gate also permits a free download of an existing completed
+// export. The Gateway still enforces ownership, account state and object generation.
+export const disabledGateActions=Object.freeze([...readOnlyActions,'download']);
 const identityFields=new Set(['actor','user_id','userId','identity','claims','sub','headers']);
 const identityHeaders=new Set(['x-actor','x-user-id','x-authenticated-user-id',
   'x-goog-authenticated-user-id','x-goog-authenticated-user-email',

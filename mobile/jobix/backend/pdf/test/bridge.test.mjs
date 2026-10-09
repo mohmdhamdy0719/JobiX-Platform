@@ -5,7 +5,7 @@ import {createSign,generateKeyPairSync} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import {createBridge,origin,gatewayIdentity,workerTarget,publicClientKey} from '../../export-gateway/core.mjs';
 import {GatewayIdentity} from '../../export-gateway/identity.mjs';
-import {readCommand,forwardCommand,gatewayTarget,readOnlyActions} from '../../../supabase/functions/resume-export/transport.mjs';
+import {readCommand,forwardCommand,gatewayTarget,readOnlyActions,disabledGateActions} from '../../../supabase/functions/resume-export/transport.mjs';
 import {Gateway} from '../gateway.mjs';
 import {server} from '../server.mjs';
 import {authenticateInternal} from '../google.mjs';
@@ -29,9 +29,11 @@ function request(envelope={action:'history',command:{}},options={}) {
     headers:{Authorization:bearer(),'Content-Type':'application/json',...options.headers},
     body:JSON.stringify(envelope)});
 }
-function setup({user={id:actor},authStatus=200,authFailure,worker,enabled=true}={}) {
+function setup({user={id:actor},authStatus=200,authFailure,worker,enabled=true,
+  deletionPolicyApproved=true}={}) {
   const authCalls=[],workerCalls=[];let identities=0;
   const handle=createBridge({target,clientKey,exportsEnabled:enabled,
+    deletionPolicyApproved,
     identity:async()=>{identities++;return 'google-id-token';},
     fetchImpl:async(url,options)=>{
       if(url===origin+'/auth/v1/user') {
@@ -108,15 +110,24 @@ for(const header of ['X-User-Id','X-Jobix-Actor','X-Apigateway-Api-Userinfo',
     assert.equal(f.workerCalls.length,0);
   });
 }
-test('closed export gate verifies Auth but never acquires Google credentials or calls worker',async()=>{
-  for(const action of ['create','again','download']) {
+test('closed export gate denies new exports but allows an authenticated free download',async()=>{
+  for(const action of ['create','again']) {
     const f=setup({enabled:false});
     assert.equal((await f.handle(request({action,command:{}}))).status,503);
     assert.equal(f.authCalls.length,1);assert.equal(f.identities(),0);assert.equal(f.workerCalls.length,0);
   }
+  const f=setup({enabled:false});
+  const result=await f.handle(request({action:'download',command:{export_id:profile}}));
+  assert.equal(result.status,200);
+  assert.equal(f.authCalls.length,1);assert.equal(f.identities(),1);
+  assert.deepEqual(f.workerCalls,[{actor,action:'download',command:{export_id:profile}}]);
+  const policyClosed=setup({enabled:false,deletionPolicyApproved:false});
+  assert.equal((await policyClosed.handle(request({action:'download',command:{export_id:profile}}))).status,503);
+  assert.equal(policyClosed.workerCalls.length,0);
 });
 test('closed-mode read policy is explicitly limited to preview/history/status',()=>{
   assert.deepEqual(readOnlyActions,['document','status','history']);
+  assert.deepEqual(disabledGateActions,['document','status','history','download']);
 });
 test('two independently verified fixture users can read only their own profiles/jobs with exports closed',async()=>{
   const p2='44444444-4444-4444-8444-444444444444';
@@ -337,4 +348,5 @@ test('Edge source has no Google private-key path and keeps both rollout gates',a
   assert.ok(source.includes('JOBIX_EXPORT_ENABLED'));
   assert.ok(source.includes('JOBIX_EXPORT_DELETION_POLICY_APPROVED'));
   assert.ok(source.includes('JOBIX_DEV_EXPORT_GATEWAY_URL'));
+  assert.ok(source.includes('disabledGateActions.includes(envelope.action)'));
 });

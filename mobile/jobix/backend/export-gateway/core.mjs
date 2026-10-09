@@ -1,4 +1,4 @@
-import {readCommand,TransportError,readOnlyActions} from '../../supabase/functions/resume-export/transport.mjs';
+import {readCommand,TransportError,readOnlyActions,disabledGateActions} from '../../supabase/functions/resume-export/transport.mjs';
 export const origin='https://lmouxhbjhtqdtiqijcee.supabase.co';
 export const gatewayIdentity='jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -61,7 +61,8 @@ export async function callWorker({target,identity,actor,action,command,fetchImpl
   }
   return new Response(JSON.stringify(body),{status:upstream.status,headers});
 }
-export function createBridge({clientKey,target,identity,fetchImpl=fetch,exportsEnabled=false}) {
+export function createBridge({clientKey,target,identity,fetchImpl=fetch,exportsEnabled=false,
+  deletionPolicyApproved=true}) {
   publicClientKey(clientKey);workerTarget(target);
   return async request=>{
     try {
@@ -69,7 +70,8 @@ export function createBridge({clientKey,target,identity,fetchImpl=fetch,exportsE
       const {token,envelope}=await readCommand(request);
       const actor=await verifyUser(token,clientKey,fetchImpl);
       // User identity must be verified even for non-billable owner-scoped reads.
-      if(!exportsEnabled&&!readOnlyActions.includes(envelope.action)) {
+      if((!exportsEnabled&&!disabledGateActions.includes(envelope.action))||
+        (!deletionPolicyApproved&&!readOnlyActions.includes(envelope.action))) {
         throw new TransportError('EXPORT_NOT_READY');
       }
       return await callWorker({target,identity,actor,action:envelope.action,

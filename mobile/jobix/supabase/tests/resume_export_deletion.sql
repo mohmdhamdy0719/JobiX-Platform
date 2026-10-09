@@ -11,6 +11,15 @@ BEGIN
  PERFORM public.jobix_export_stage(operation,fence,'GENERATING');
  PERFORM public.jobix_export_stage(operation,fence,'UPLOADING');
  PERFORM public.jobix_export_upload_begin(operation,fence);
+ UPDATE public.export_jobs SET deadline=now()-interval '1 second' WHERE id=operation;
+ UPDATE public.export_settings SET enabled=false,deletion_policy_approved=false;
+ ASSERT public.jobix_export_recover()=1;
+ ASSERT (SELECT state FROM public.export_jobs WHERE id=operation)='FAILED';
+ ASSERT (SELECT state FROM public.credit_reservations WHERE id=(ack#>>'{data,reservation_id}')::uuid)='RELEASED';
+ ASSERT NOT EXISTS(SELECT FROM public.credit_transactions WHERE user_id=actor AND delta=-2);
+ ASSERT (SELECT state FROM public.export_upload_flights f WHERE f.operation=resume_export_deletion.operation)='SENT';
+ ASSERT public.jobix_export_finish(operation,fence,NULL,false)='FAILED';
+ PERFORM pg_temp.must_fail(format('SELECT public.jobix_export_stage(%L,%L,%L)',operation,fence,'UPLOADING'),'STALE_LEASE');
  PERFORM pg_temp.must_fail(format('DELETE FROM public.career_profiles WHERE id=%L',profile),'DELETION_PENDING');
  UPDATE public.career_profiles SET status='DELETING' WHERE id=profile;
  ASSERT (SELECT lease_token IS NULL AND state='DELETION_PENDING' FROM public.export_jobs WHERE id=operation);

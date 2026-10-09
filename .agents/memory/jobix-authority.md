@@ -2,6 +2,23 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
+## Owner-selected export gate semantics
+
+`JOBIX_EXPORT_ENABLED` is a new-export/billing gate. While false, block
+create/again, dispatch, rendering and new charges, but continue verified,
+owner-scoped free downloads of completed PDFs while the existing deletion-policy
+approval is true, and private expired-reservation recovery. Recovery must not
+dispatch; unresolved `SENT` upload flights continue to prevent deletion
+completion. This decision does not authorize deployment or changing any gate
+value.
+
+**Why:** The owner explicitly chose to gate new exports and charges only.
+
+**How to apply:** Preserve existing Supabase identity, ACTIVE account and
+ownership checks, private Worker/GCS, generation-bound signed links, Credit
+rules, fencing, deletion protections and seven-day PDF retention. Obtain
+separate scoped approval before a development deployment or gate change.
+
 ## Current authorization: one real personal-account phone export
 
 The owner subsequently confirmed explicit Create/Export Again confirmation for

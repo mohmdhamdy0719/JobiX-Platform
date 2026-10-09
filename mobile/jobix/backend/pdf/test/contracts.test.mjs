@@ -7,6 +7,7 @@ import {Worker} from '../worker.mjs';
 import {bundle,logicalHash,sha256,ExportError,Canonicalizer} from '../document.mjs';
 import {containsText} from '../renderer.mjs';
 import {GoogleStorage,authenticateInternal} from '../google.mjs';
+import {disabledGateActions} from '../../../supabase/functions/resume-export/transport.mjs';
 
 const command=()=>({request_id:randomUUID(),idempotency_key:randomUUID(),
   expected_profile_version:1,payload:{profile_id:randomUUID(),
@@ -22,6 +23,16 @@ test('same logical hash across transport attempts/key ordering',()=>{
 test('gateway disabled by default without database/credential access',async()=>{
   await assert.rejects(new Gateway({}).handle(randomUUID(),'document',{}),
     {code:'EXPORT_NOT_READY'});
+});
+test('disabled-gate action policy allows only non-creating reads and completed downloads',()=>{
+  assert.deepEqual(disabledGateActions,['document','status','history','download']);
+  for(const action of ['create','again','dispatch','recover']) {
+    assert.ok(!disabledGateActions.includes(action));
+  }
+});
+test('deletion-policy approval remains required for downloads independently of the export gate',async()=>{
+  const source=await readFile(new URL('../../export-gateway/server.mjs',import.meta.url),'utf8');
+  assert.ok(source.includes("deletionPolicyApproved:process.env.JOBIX_EXPORT_DELETION_POLICY_APPROVED==='true'"));
 });
 test('accepted replay precedes stale/current-document reads',async()=>{
   let reads=0;

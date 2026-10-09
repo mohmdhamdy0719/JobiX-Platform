@@ -8,6 +8,7 @@ import {Worker} from './worker.mjs';
 import {ChromiumRenderer} from './renderer.mjs';
 import {GoogleStorage,authenticateInternal} from './google.mjs';
 import {ExportCleanup} from './cleanup.mjs';
+import {disabledGateActions} from '../../supabase/functions/resume-export/transport.mjs';
 
 export function server({gateway,worker,cleanup,authenticate,exportsEnabled=true}) {
   return createServer(async(req,res)=>{
@@ -36,7 +37,8 @@ export function server({gateway,worker,cleanup,authenticate,exportsEnabled=true}
       let result;
       if(req.url==='/recover') {
         // Disabling exports must not disable the approved deletion/retention contract.
-        result=exportsEnabled?await worker.recover():{exportsEnabled:false};
+        await worker.recover();
+        if(!exportsEnabled)result={exportsEnabled:false};
         if(cleanup){await cleanup.retention();await cleanup.deletions();}
       }
       else if(req.url==='/dispatch') {
@@ -46,7 +48,7 @@ export function server({gateway,worker,cleanup,authenticate,exportsEnabled=true}
       else if(req.url==='/command') {
         // Canonical preview is a profile read, not PDF rendering or a persisted
         // export snapshot. No signing, reservations or export work while closed.
-        if(!exportsEnabled&&!['document','history','status'].includes(input.action)) {
+        if(!exportsEnabled&&!disabledGateActions.includes(input.action)) {
           throw new ExportError('EXPORT_NOT_READY');
         }
         result=await gateway.handle(input.actor,input.action,input.command);

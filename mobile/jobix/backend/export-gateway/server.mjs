@@ -9,8 +9,8 @@ async function main() {
   const target=process.env.JOBIX_DEV_EXPORT_WORKER_URL;
   const identity=new GatewayIdentity(target),token=()=>identity.token();
   const bridge=createBridge({clientKey:process.env.JOBIX_DEV_SUPABASE_CLIENT_KEY,
-    target,identity:token,exportsEnabled:process.env.JOBIX_EXPORT_ENABLED==='true'&&
-      process.env.JOBIX_EXPORT_DELETION_POLICY_APPROVED==='true'});
+    target,identity:token,exportsEnabled:process.env.JOBIX_EXPORT_ENABLED==='true',
+    deletionPolicyApproved:process.env.JOBIX_EXPORT_DELETION_POLICY_APPROVED==='true'});
   await verifyPrivateWorker(target,token);
   startupStage='listen';
   const server=createServer({maxHeaderSize:16384},async(req,res)=>{

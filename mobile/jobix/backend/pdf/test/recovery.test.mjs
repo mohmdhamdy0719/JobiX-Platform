@@ -42,6 +42,14 @@ function fixture() {
   const worker=new Worker({clock,db,storage,renderer,enabled:true});
   return {clock,calls,objects,job,path,object,storage,db,renderer,worker};
 }
+test('disabled export recovery reconciles reservations without claiming or dispatching work',async()=>{
+  const calls=[];
+  const worker=new Worker({enabled:false,db:{call:async name=>{calls.push(name);return 1;}}});
+  await worker.recover();
+  assert.deepEqual(calls,['recover']);
+  await assert.rejects(worker.dispatch(),{code:'EXPORT_NOT_READY'});
+  assert.deepEqual(calls,['recover']);
+});
 test('independent heartbeat during a stalled browser; hard deadline releases local slots',async()=>{
   const f=fixture();let rendering=false;
   f.renderer.render=()=>{rendering=true;return new Promise(()=>{});};

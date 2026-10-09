@@ -32,6 +32,15 @@ Original operation's replay was verified through the authoritative native RPC;
 real phone HTTP lost-response/replay and supplemental live fault/deletion checks
 remain separate test gaps. No further paid tests/AI/new implementation authorized.
 
+Owner-selected local gate contract: `JOBIX_EXPORT_ENABLED` blocks new create/again
+requests, dispatch, rendering and new charges, but does not block an authenticated,
+owner-authorized free download of an existing completed PDF when the existing
+deletion-policy approval remains enabled, or safe expiry recovery. Disabled
+recovery must not dispatch; unresolved upload flights continue to block deletion
+completion. This is a source/test change only: no deployed gate, service or
+environment value was changed. Deploying this behavior still needs separate
+scoped development approval.
+
 ## Earlier personal phone window — first completion and extra-intent stop
 
 Owner approved one real-account export and reported APK installed, signed in,
@@ -57,10 +66,12 @@ do not assume automatic client retry or blame user action.
 
 Closed Worker `00011-tnk`, Gateway `00010-4rp`; same deployed image digests.
 Edge and database export gates closed; deletion-policy approval unchanged.
-No second test/export may be started. Do not reopen gates merely for download:
-download is also gated and reopening Worker can run the queued second job.
-Use only established expiry/recovery semantics after reconciling this job;
-no forced expiry, fabricated cancellation/refund or manual balance change.
+No second test/export may be started. The deployed versions still gate downloads;
+do not reopen gates or enable Worker merely to download, since it can run the
+queued second job. Local source now permits free completed downloads and expiry
+recovery without dispatch while those gates are closed. No deployment or gate
+change is included here. Use only established expiry/recovery semantics; no forced
+expiry, fabricated cancellation/refund or manual balance change.
 Phone download/open/layout and actual request replay/ownership evidence remain
 unverified. Overall status NOT READY; task acceptance is not complete.
 
