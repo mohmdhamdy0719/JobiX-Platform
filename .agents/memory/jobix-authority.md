@@ -152,7 +152,29 @@ readiness exercise, but honor fail-fast. Missing permissions do not authorize
 adding grants, making a private service public or using another runtime identity.
 Keep the overall task incomplete when a failure stops the vertical slice.
 
-## Current approval: local retry fix, locked packages, Android target check
+## Current approval: personal-account M31 APK and necessary dev deployment
+
+Build a current debug APK with locked dependencies and deploy only necessary
+development fixes, including the upload-rejection fix. Keep the Worker private;
+no new service-account keys, Auth signing changes, contract weakening or
+production/staging changes. Opening disabled export gates or executing a
+chargeable export requires explicit separate approval first.
+
+Final READY requires the current APK and deployed development backend to export,
+download and open the owner's existing personal resume using their real signed-in
+development account, with one 2-Credit debit, replay safety, no pending
+reservation and ownership isolation. Build/local/fictional evidence alone is
+not READY. Never fund this account or invent data/identity; stop if Credits are
+insufficient. Preserve the prior successful fictional test; do not repeat it.
+
+**Why:** The owner explicitly requested a working phone app and defined READY
+as actual personal-account/native export evidence, not another readiness report.
+
+**How to apply:** Deliver APK, distinguish live image from local source,
+complete minimal approved deployment, verify existing account/balance read-only
+and request exact gate/charge approval. Do not request passwords in chat.
+
+## Earlier approval: local retry fix, locked packages, Android target check
 
 The owner authorized implementing the rejected-upload settlement fix locally,
 focused tests then backend regression, exact locked Flutter package restoration

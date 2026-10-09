@@ -1,6 +1,59 @@
-# Phase 3 acceptance — local fix verified, live/Android acceptance pending
+# Phase 3 acceptance — Worker fix deployed, personal phone export pending
 
-## Current local increment
+## Current development delivery — export status NOT READY
+
+The owner authorized a current debug APK and only necessary development backend
+fixes. No export gate may be opened or chargeable export performed without
+separate approval. Final acceptance must use the owner's real authenticated
+development account and existing personal resume, never the earlier fictional
+fixture. No funding/balance adjustment is permitted.
+
+- Current ARM64 debug APK build succeeded using `--no-pub`, exact locked
+  dependencies, existing SDK/cache and dev defines plus
+  `JOBIX_ENABLE_PDF_EXPORT=true` (client UI only).
+- APK: `mobile/jobix/build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`.
+  Package `com.mhflow.jobix`, version `1.0.0` / code `1`, debug, min API 24,
+  target API 36, ARM64. APK signature verifies and certificate matches the
+  earlier delivered M31 native-bugfix APK. No device test is claimed.
+- APK SHA-256: `49b7ce41f0085b91ddfbc3c8ad1339ebd930ca9bd75722f941fc68b5043fa214`.
+  Download: `deliverables/jobix-phase3-m31/jobix-phase3-m31-debug.zip` contains
+  the unchanged APK; archive integrity passed. ZIP is necessary because raw APK
+  exceeds Library's 100 MiB limit.
+- Allowlisted managed Worker build succeeded, source hash
+  `9b387ab79d28a3feb45239781987816d7558aeb7682d409c6f34759c114c38f0`.
+  Only existing development Worker image updated, region `me-central1`.
+  Ready revision `jobix-dev-pdf-export-00009-hg8`, image digest
+  `sha256:69fd2947770a4be0e37b778a7ad7d6bf8063474de7febc3d8fd6b9b57e58e5ef`.
+  Upload-rejection fix is now in this deployed image.
+- Gateway unchanged: `jobix-dev-export-gateway-00008-8p9`, digest
+  `sha256:4754a7409e471ecb8aef8ebf41bf3607de55915fd09246e7da697dc4e69d573d`.
+  Edge `resume-export` v5 ACTIVE, JWT verification enabled; its configured
+  Gateway URL matches the actual deployed Gateway. Development Auth rejects
+  invalid token (403). No signing configuration changed.
+- Worker identity, Secret version 1, CA path, flags and IAM policy preserved.
+  Worker remains private; Gateway alone has public invocation. GCS uniform
+  access enabled, no public IAM binding; no storage privacy changes.
+- Six post-deployment checks pass: Gateway startup-health 200, anonymous Worker
+  403, absent/invalid Gateway token 401, Gateway recovery path 404, forbidden
+  cleanup command 400. Gateway `/ready` reports its startup check, not a fresh
+  personal-user call through the updated Worker.
+- Worker/Gateway/Edge export-enabled flags remain false; database enabled=false,
+  approved deletion-policy flags preserved. No Credit data modified, funding,
+  new PDF export, migrations, IAM/credential changes or production/staging work.
+  All three tracked dependency lock hashes remain unchanged.
+
+Pending: owner installs APK/signs in/confirms personal resume; identify the
+owner's account for a read-only active-account/profile/Credit balance check.
+Request approval for a bounded development window changing only Worker and
+Gateway `JOBIX_EXPORT_ENABLED`, Edge `JOBIX_EXPORT_ENABLED` and existing
+`export_settings.enabled` to true. These are global development gates.
+Keep deletion-policy approval unchanged. Insufficient existing Credits means
+stop, never fund. One new 2-Credit intent only; no repeat/fabrication of prior
+successful export. Close gates after the controlled test.
+Personal sign-in/export/device save/open, replay accounting, reservation and
+unauthorized access evidence are still UNVERIFIED; status must remain NOT READY.
+
+## Earlier local increment
 
 The rejected-upload blocker is fixed locally, not deployed. The production
 adapter preserves HTTP rejection classification and privately mints no-write

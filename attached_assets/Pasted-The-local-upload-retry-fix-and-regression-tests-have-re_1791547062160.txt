@@ -1,0 +1,62 @@
+The local upload-retry fix and regression tests have reportedly passed. Do not repeat completed work without a specific reason.
+
+My goal is to install Jobix on my Android phone and successfully export a PDF using my own authenticated development account and existing personal resume data.
+
+**I want a working development app, not another readiness report.**
+
+### 1. Build the APK
+- Build a debug APK from the current Jobix Flutter project using the exact locked dependencies.
+- Do not upgrade packages or modify lockfiles.
+- Confirm the build succeeds and report the exact APK output path, package ID, version, and build type.
+- Do not claim the APK was tested on a device unless it actually was.
+- Provide the APK artifact so I can install it on my Samsung M31.
+
+### 2. Verify the deployed backend before claiming export readiness
+Inspect the current development environment and verify the actual deployed state of:
+- Supabase Auth and the `resume-export` Edge Function.
+- Export Gateway.
+- Private PDF Worker.
+- Private PDF storage.
+- The development export-enabled flag and any other required configuration.
+
+Do not assume local code changes are already deployed. Compare the deployed Worker and Gateway revisions with the code this APK will use.
+
+### 3. Make the development export path work
+If a prerequisite is missing, implement the smallest safe fix required to make the development export flow work end to end.
+
+- Deploy only the necessary changes to the development environment.
+- Keep production and staging untouched.
+- Never make the private Worker publicly accessible.
+- Never create or expose service-account keys.
+- Preserve Supabase user authentication, server-derived identity, ownership checks, idempotency, retry safety, deletion protections, and server-authoritative Credit accounting.
+- Apply the upload-rejection retry fix to the deployed development service if it is not already present.
+- Do not enable exports silently. First report any required development-only gate or configuration change and its exact scope. Ask me for approval before changing a disabled export gate or performing a chargeable export.
+
+### 4. Perform one real end-to-end test
+After the required changes are identified and approved, use the development account I sign into on the installed APK and its existing personal resume data. Do not substitute fictional data or mock identities.
+
+Verify:
+1. I can sign in successfully.
+2. The app loads the correct account's resume data.
+3. Export creates a PDF from that account's current data.
+4. The PDF downloads successfully to the app/device and can be opened.
+5. The PDF contains the expected personal resume content and correct Arabic/English layout where applicable.
+6. Exactly one 2-Credit debit occurs for this new export.
+7. Replaying the same request does not create a duplicate charge or duplicate completed export.
+8. No reservation remains pending after completion.
+9. The PDF is accessible only to its authorized user.
+
+Do not fund my account, invent test Credits, or repeat the chargeable export. If my account lacks sufficient Credits, stop and tell me; do not modify the balance.
+
+### 5. Deliver a concise final report
+Provide:
+- **Export status: READY or NOT READY.**
+- Whether the APK builds successfully and its exact artifact path.
+- Which backend revisions/configurations are deployed.
+- What was fixed and what was not changed.
+- Evidence from the actual authenticated export test, including the debit and reservation outcome.
+- Any remaining blockers and the smallest next action.
+
+READY means the current APK and deployed development backend have successfully exported and downloaded a PDF from my own authenticated account and current resume data. Local tests, mock identities, a successful build, or a fictional-data test alone are not sufficient.
+
+Do not spend more time producing repeated generic readiness reports. Do the minimum work necessary to deliver the APK and prove the real export path works.

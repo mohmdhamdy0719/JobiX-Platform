@@ -280,3 +280,17 @@ mtime_ms = 1791421928678
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fa3eb370-26ea-49af-8134-96e72f640abc/ee73dbe5-f6c8-4d8c-be26-df3d4d12e168/e4cb862c-8047-41d8-860a-11a38d31f2ae"
 storage_version_token = "1791422040333724"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "kVsNn2LdquFzs8PzqkSB9"
+uri = "file://deliverables/jobix-phase3-m31/jobix-phase3-m31-debug.zip"
+type = "unspecified"
+title = "Jobix Phase 3 — Samsung M31 debug APK"
+description = "Extract the ZIP, then install jobix-phase3-m31-debug.apk. ARM64 debug build, package com.mhflow.jobix, version 1.0.0 (1). PDF UI enabled; server export gates remain closed. Not tested on a physical device."
+logical_id = "acfe4e4e-f37a-4859-b1dc-0a6096271402"
+content_hash = "sha256:8602d7cfef77276d325bf76e250f3c2f16d58e953d12ec2f69a90e0f9d76e24d"
+size = 56844847
+mtime_ms = 1791547436399
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fa3eb370-26ea-49af-8134-96e72f640abc/acfe4e4e-f37a-4859-b1dc-0a6096271402/99ef46f3-19c6-4ebe-abc8-f250c04f8661"
+storage_version_token = "1791547503874624"
+content_type = "application/octet-stream"

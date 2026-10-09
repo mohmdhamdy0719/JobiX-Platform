@@ -1,5 +1,38 @@
 # Jobix verification evidence
 
+## Current M31 APK and deployed Worker retry fix — personal export pending
+
+Export status **NOT READY** under the owner's explicit definition: the current
+APK/deployed backend have not yet exported/downloaded the owner's personal
+resume using their real authenticated development account.
+
+- ARM64 debug build succeeded, exact locked dependencies, `--no-pub`, existing
+  toolchains and client-only PDF UI define enabled. Lock hashes unchanged.
+  Package `com.mhflow.jobix`, version `1.0.0` (1), min API24, target API36.
+- Output `mobile/jobix/build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`;
+  SHA256 `49b7ce41f0085b91ddfbc3c8ad1339ebd930ca9bd75722f941fc68b5043fa214`.
+  APK signature valid and certificate matches prior M31 native-bugfix APK.
+  Download ZIP `deliverables/jobix-phase3-m31/jobix-phase3-m31-debug.zip`;
+  integrity checked; raw APK exceeds Library size limit. No physical test.
+- Managed allowlisted Worker build and image-only development deployment
+  succeeded. Ready `jobix-dev-pdf-export-00009-hg8`, digest
+  `sha256:69fd2947770a4be0e37b778a7ad7d6bf8063474de7febc3d8fd6b9b57e58e5ef`.
+  Gateway `00008-8p9` and its image unchanged; Edge resume-export v5 ACTIVE/JWT
+  verification true and configured Gateway URL matches hosted service.
+- Exact Worker container configuration except image, identity, Secret reference,
+  CA path and IAM bindings preserved. Worker private; storage uniform access,
+  no public binding. All export gates closed; deletion approval preserved.
+- Six post-deployment health/negative checks passed, no charge/data mutation.
+  Gateway health is startup evidence, not fresh owner-authenticated forwarding.
+  Existing green local suites were not repeated.
+
+Next requires owner APK sign-in/personal resume confirmation and account
+selection. Verify existing available Credits read-only, then ask explicit
+approval for only the four development export gates and one 2-Credit intent.
+No invented identity/data, funding, repeated export or unapproved gate opening.
+Personal device/authorization/debit/reservation/replay acceptance is pending.
+See backend/pdf/PHASE3_ACCEPTANCE.md for exact current scope and evidence.
+
 ## Rejected-upload local fix — verified; no cloud changes
 
 The production adapter now retains rejection status and privately binds

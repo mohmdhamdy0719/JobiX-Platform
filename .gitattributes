@@ -4,3 +4,4 @@ deliverables/jobix-core-shell/jobix-core-shell-dev-armv7.apk filter=lfs diff=lfs
 deliverables/jobix-profile-text/jobix-profile-text-dev-arm64.apk filter=lfs diff=lfs merge=lfs -text
 deliverables/jobix-builder-resume-foundation-arm64-dev.zip filter=lfs diff=lfs merge=lfs -text
 deliverables/jobix-m31-native-bugfix/jobix-m31-arm64-dev.apk filter=lfs diff=lfs merge=lfs -text
+deliverables/jobix-phase3-m31/jobix-phase3-m31-debug.zip filter=lfs diff=lfs merge=lfs -text
