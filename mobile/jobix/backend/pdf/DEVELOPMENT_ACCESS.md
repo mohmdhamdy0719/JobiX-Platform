@@ -6,6 +6,15 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Proven startup fix, local only:** exact revision configuration uses the
+managed `.a.run.app` worker hostname. The old hostname regex rejected it with
+EXPORT_NOT_READY during configuration, before metadata/IAM invocation.
+Both worker and Edge gateway-target URL validators now explicitly accept that
+format while preserving other restrictions. Tests pass 49/49 focused and
+88/88 full. No IAM or environment change is required for this mismatch; no
+additional image/revision was built/deployed. Gateway remains private/unready
+on its old code, worker processing remains off, deletion approval preserved.
+
 **Concrete rollout checkpoint:** both pinned images were built and pushed.
 Worker revision `00003-frp` is ready on 100% traffic with export processing
 disabled and the verified approved deletion-policy flag preserved as true.

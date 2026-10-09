@@ -1,5 +1,38 @@
 # Jobix verification evidence
 
+## Proven configuration mismatch — hostname validators fixed locally; no redeployment
+
+The owner-provided structured diagnostic event for revision `00002-cf9` is:
+`stage=configuration`, `code=EXPORT_NOT_READY`.
+Read the exact deployed revision (not just the service's current template).
+Its worker URL hostname is `jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app`.
+The original `workerTarget` regex accepted only
+`^jobix-dev-pdf-export-[a-z0-9-]+\.run\.app$`, excluding Google's `.a.run.app`
+format. HTTPS, root path, no credentials, no query and no fragment all passed.
+The public client key passed validation; project and closed-export settings
+match the expected configuration. The main environment guard has a distinct
+DEVELOPMENT_CONFIGURATION_REQUIRED error, not the reported error.
+
+Reproduced the exact EXPORT_NOT_READY failure locally with the deployed
+configuration in workerTarget, GatewayIdentity's constructor and createBridge's
+constructor. Thus failure occurs before metadata token acquisition or worker
+requests. This is proven URL-validation mismatch, not missing IAM or a probe
+timeout, and no setting or credential needs changing.
+
+Smallest local change: accept the explicit optional `.a` label in the worker
+hostname validator and the equivalent Edge gateway-target validator. Retain
+HTTPS, service-name prefix, anchored hostname and all credential/query/fragment/
+non-root-path rejections. Preserve previously accepted hostname format.
+Updated normal bridge/Edge fixtures to use managed `.a.run.app` hosts and added
+actual-worker constructor regression plus hostile URL rejection coverage.
+
+Focused gateway/startup tests: **49/49 passed**.
+Complete `node --test mobile/jobix/backend/pdf/test/*.test.mjs`: **88/88 passed**.
+No image build, revision deployment, IAM/secrets/settings/Credit/retention/RLS/
+production/staging change was performed. The deployed gateway still has the old
+validator and remains unready/private until the owner advances deployment.
+Post-deployment metadata/worker integration remains unverified.
+
 ## One approved private diagnostic revision deployed
 
 Gateway-only managed build `d7725a17-3b1b-4beb-8c61-21a3ba44fe04` succeeded;

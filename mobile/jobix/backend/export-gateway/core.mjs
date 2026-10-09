@@ -12,7 +12,7 @@ export function response(code,status=503) {
 }
 export function workerTarget(target) {
   const url=new URL(target);
-  if(url.protocol!=='https:'||!/^jobix-dev-pdf-export-[a-z0-9-]+\.run\.app$/.test(url.hostname)||
+  if(url.protocol!=='https:'||!/^jobix-dev-pdf-export-[a-z0-9-]+(?:\.a)?\.run\.app$/.test(url.hostname)||
     url.username||url.password||url.search||url.hash||url.pathname!=='/') {
     throw new TransportError('EXPORT_NOT_READY');
   }

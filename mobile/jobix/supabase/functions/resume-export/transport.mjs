@@ -55,7 +55,7 @@ export async function readCommand(request) {
 }
 export function gatewayTarget(target) {
   const url=new URL(target);
-  if(url.protocol!=='https:'||!/^jobix-dev-export-gateway-[a-z0-9-]+\.run\.app$/.test(url.hostname)||
+  if(url.protocol!=='https:'||!/^jobix-dev-export-gateway-[a-z0-9-]+(?:\.a)?\.run\.app$/.test(url.hostname)||
     url.username||url.password||url.search||url.hash||url.pathname!=='/') {
     throw new TransportError('EXPORT_NOT_READY');
   }

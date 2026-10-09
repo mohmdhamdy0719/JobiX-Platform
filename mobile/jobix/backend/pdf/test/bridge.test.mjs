@@ -14,7 +14,7 @@ import {ExportError,bundle,sha256} from '../document.mjs';
 const actor='11111111-1111-4111-8111-111111111111';
 const other='22222222-2222-4222-8222-222222222222';
 const profile='33333333-3333-4333-8333-333333333333';
-const target='https://jobix-dev-pdf-export-fixture.run.app';
+const target='https://jobix-dev-pdf-export-fixture.a.run.app';
 const clientKey='sb_publishable_fixture';
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status});
 function bearer(changes={}) {
@@ -184,7 +184,7 @@ test('timeout after commit replays unchanged command/key with one fixture reserv
 test('Edge forwarding preserves exact body and original user token without adding actor',async()=>{
   const r=request({action:'history',command:{request_id:'unchanged'}});
   const parsed=await readCommand(r);let sent;
-  await forwardCommand({target:'https://jobix-dev-export-gateway-fixture.run.app',...parsed,
+  await forwardCommand({target:'https://jobix-dev-export-gateway-fixture.a.run.app',...parsed,
     fetchImpl:async(url,options)=>{sent={url,options};return json({data:null,error:null});}});
   assert.equal(sent.options.body,parsed.raw);
   assert.equal(sent.options.headers.Authorization,parsed.token);
@@ -195,6 +195,36 @@ test('runtime targets and client keys reject substitutions and privileged keys',
   assert.throws(()=>gatewayTarget('https://jobix-dev-pdf-export-fixture.run.app'));
   assert.throws(()=>publicClientKey('not-a-public-key'));
   assert.throws(()=>publicClientKey('a.'+Buffer.from('{"role":"service_role"}').toString('base64url')+'.c'));
+});
+test('actual managed Cloud Run hostname format passes gateway configuration without acquiring credentials',()=>{
+  const actualWorker='https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app';
+  assert.equal(workerTarget(actualWorker),actualWorker);
+  assert.doesNotThrow(()=>new GatewayIdentity(actualWorker));
+  assert.doesNotThrow(()=>createBridge({target:actualWorker,clientKey,
+    exportsEnabled:false,identity:async()=>assert.fail('No startup credentials may be acquired here')}));
+  const gateway='https://jobix-dev-export-gateway-fixture.a.run.app';
+  assert.equal(gatewayTarget(gateway),gateway);
+});
+for(const [name,validate,prefix] of [
+  ['worker',workerTarget,'jobix-dev-pdf-export'],
+  ['gateway',gatewayTarget,'jobix-dev-export-gateway'],
+])test(name+' managed-hostname fix preserves fail-closed URL restrictions',()=>{
+  const host=prefix+'-fixture.a.run.app';
+  for(const invalid of [
+    'http://'+host,'https://'+host+'.evil.example',
+    'https://'+prefix+'-fixture.evil.run.app',
+    'https://unrelated-service-fixture.a.run.app',
+    'https://jobix-production-fixture.a.run.app',
+    'https://user@'+host,'https://user:password@'+host,
+    'https://'+host+'?redirect=evil','https://'+host+'#fragment',
+    'https://'+host+'/unexpected-path',
+  ])assert.throws(()=>validate(invalid),{code:'EXPORT_NOT_READY'});
+});
+test('existing accepted hostname format remains compatible',()=>{
+  assert.equal(workerTarget('https://jobix-dev-pdf-export-fixture.run.app'),
+    'https://jobix-dev-pdf-export-fixture.run.app');
+  assert.equal(gatewayTarget('https://jobix-dev-export-gateway-fixture.run.app'),
+    'https://jobix-dev-export-gateway-fixture.run.app');
 });
 test('metadata identity uses attached gateway account, not downloaded keys or impersonation',async()=>{
   const previous={project:process.env.GCP_PROJECT_ID,service:process.env.K_SERVICE};

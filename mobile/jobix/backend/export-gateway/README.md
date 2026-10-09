@@ -2,6 +2,14 @@
 
 ## Actual development rollout checkpoint
 
+The actual configuration failure is now proven: the deployed worker hostname
+ends in `.a.run.app`, which the old worker URL regex rejected before metadata
+authentication. Worker/gateway URL validators are fixed locally to accept that
+explicit managed-host label, retaining all existing safety restrictions.
+Focused tests pass 49/49; full tests pass 88/88. No further revision was deployed.
+Earlier unknown-cause notes below are superseded; live integration is still
+unverified until deployment of this verified fix.
+
 One separately approved private diagnostic revision (`00002-cf9`) is now
 deployed from a gateway-only build. It still fails closed at startup; no ready
 or public gateway exists. Obtain this new revision's structured stage/code

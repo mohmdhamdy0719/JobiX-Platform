@@ -23,6 +23,17 @@ resources to bypass missing access.
 
 ## Owner-selected development configuration
 
+Use provider-returned managed URL formats in configuration-validator fixtures,
+not only simplified hand-written hostnames.
+
+**Why:** Simplified `.run.app` fixtures passed while the real Google-generated
+`.a.run.app` hostname was rejected before authentication. A generic startup
+error obscured this mismatch and caused unnecessary remote readiness checks.
+
+**How to apply:** Reproduce validators against the actual non-secret configured
+URL before requesting IAM changes; keep precise hostname/HTTPS restrictions and
+add adversarial URL tests when correcting a legitimate provider format.
+
 Cloud startup failures must retain an allowlisted phase/error code while
 redacting raw exceptions, credentials and provider response bodies.
 

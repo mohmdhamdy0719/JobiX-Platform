@@ -29,6 +29,13 @@ inspect source and deployed configuration instead of requesting the same logs
 again. A diagnostic-only deployment before root identification needs separate
 approval; do not treat an observability fix as a verified runtime fix.
 
+The current configuration-fix request is local diagnosis, minimal fix and
+focused/regression verification, then evidence reported before another
+deployment. Stop requesting logs; do not deploy another revision in that step.
+
+**Why:** The owner explicitly requested this boundary after supplying the
+configuration-stage diagnostic event.
+
 The owner approved exactly one private diagnostic gateway revision to expose
 the startup stage. This is not blanket authorization for repeated diagnostic
 redeployments, worker changes, public invocation or relaxed authentication.
