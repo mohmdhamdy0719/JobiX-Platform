@@ -3,6 +3,17 @@ name: Native tooling constraints
 description: Package availability and SDK-root behavior differ across workspace tooling
 ---
 
+The owner confirmed that the current development APK installed, signed in,
+displayed their existing personal resume and downloaded/opened the generated
+PDF on Samsung M31.
+
+**Why:** This explicit owner confirmation is physical-device evidence that
+host widgets and a successful APK build cannot supply.
+
+**How to apply:** Distinguish owner-reported native success from agent-driven
+ADB instrumentation. It does not prove Arabic layout when the actual resume
+contains only English, or future APK/native-channel changes.
+
 For an installed Nix library, derive its prefix from the executable on PATH
 instead of recursively scanning or globbing the whole /nix/store.
 

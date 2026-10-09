@@ -4,6 +4,14 @@ description: User-specified product authority and implementation boundaries
 ---
 ## Current authorization: one real personal-account phone export
 
+The owner subsequently confirmed explicit Create/Export Again confirmation for
+the extra request and approved native recovery only after its natural expiry,
+only if it is the sole eligible job. Keep gates closed; do not force deadlines,
+create another export, fund/refund the account or manually edit balances.
+
+**Why:** The extra request was a separately confirmed intent, not duplicate
+same-key retry; cleanup must preserve the established reservation contract.
+
 The owner approved one controlled 2-Credit export and reported the current APK
 installed, signed in and showing their personal resume. Verify existing active
 account/profile and available Credits before temporarily opening only the four

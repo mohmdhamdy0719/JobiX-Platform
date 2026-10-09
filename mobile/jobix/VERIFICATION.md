@@ -1,5 +1,29 @@
 # Jobix verification evidence
 
+## Personal phone export and approved expiry cleanup — controlled milestone READY
+
+Owner confirmed current debug APK installed/signed in/personal resume visible,
+then first PDF downloaded and opened on Samsung M31. This is explicit owner
+device confirmation, not an automated agent device test. Backend first job was
+COMPLETED, one -2 debit, first reservation CONSUMED; PDF object/hash checked.
+Actual one-page English layout rendered/inspected, no clipping; no Arabic
+content in this actual resume. Anonymous actual PDF object GET returned 403.
+
+Owner confirmed a separate Create/Export Again confirmation caused the extra
+queued intent; not automatic duplicate replay. All gates closed before second
+render/debit. Owner approved existing native recovery after its unchanged
+deadline. Scope/expiry/unresolved-flight guards passed for the sole eligible
+job; native expiry recovery committed once. Extra job FAILED / RESERVATION_EXPIRED,
+reservation RELEASED; first PDF unchanged. Final account: 3 available/finalized,
+0 reserved, exactly one -2 debit, one COMPLETED PDF, no pending reservations.
+No funding, manual balances, forced timestamps, gate reopening, second PDF or
+second debit. Closed Worker/Gateway/Edge/database gates retained.
+
+Current personal export/download milestone READY. It is not permanent global
+enablement, production readiness, live Arabic proof or phone HTTP replay proof.
+Existing authoritative replay verification matched the first acknowledgement;
+remaining supplemental live failure/deletion/privacy/replay checks stay explicit.
+
 ## Personal phone export — first completion verified, additional intent stop
 
 One approved real-account phone-created job completed: one page, 127100 bytes,

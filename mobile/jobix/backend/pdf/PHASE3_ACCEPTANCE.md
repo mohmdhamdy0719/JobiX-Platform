@@ -1,6 +1,38 @@
-# Phase 3 acceptance — Worker fix deployed, personal phone export pending
+# Phase 3 development MVP — personal phone export verified
 
-## Personal phone window — first export completed; stopped on extra intent
+## Current outcome — READY for the controlled personal export milestone
+
+The owner confirmed the current APK installed/signed in/showed the existing
+personal resume, and that the first PDF downloaded and opened on Samsung M31.
+This is owner-reported physical-device evidence, not agent ADB instrumentation.
+Backend evidence proves one completed export from that account/current snapshot,
+one -2 debit and consumed first reservation. Actual PDF hash/header/object read
+verified; rendered English layout inspected with existing tools, no clipping.
+No Arabic content is present in this actual resume; live Arabic remains untested.
+Anonymous access to the actual stored PDF returned 403.
+
+The owner confirmed explicitly pressing Create/Export Again and confirming the
+second intent. It was not an automatic retry or same-key duplicate. Gates were
+closed before it rendered/debited. The owner separately approved expiry cleanup.
+After its original natural deadline, the existing native recovery RPC processed
+only this sole eligible queued job (including a guard against unrelated completed
+expiry rows and unresolved uploads), in a repeatable-read guarded transaction.
+It became FAILED / RESERVATION_EXPIRED; reservation RELEASED. No timestamp edits,
+gate reopening, refunds, manual wallet updates or new export work.
+
+Final checked accounting: finalized=available=3, reserved=0, exactly one -2 export
+debit, one COMPLETED export, one expired FAILED intent, no pending reservation.
+First PDF/hash remained unchanged. The extra immutable snapshot is not deleted:
+PDF expiry alone does not authorize snapshot deletion under the approved policy.
+
+All four export gates stay closed. Ready means this specific current-APK/private
+development-backend personal export/download milestone succeeded; it does NOT
+mean permanent export enablement or full production/staging acceptance.
+Original operation's replay was verified through the authoritative native RPC;
+real phone HTTP lost-response/replay and supplemental live fault/deletion checks
+remain separate test gaps. No further paid tests/AI/new implementation authorized.
+
+## Earlier personal phone window — first completion and extra-intent stop
 
 Owner approved one real-account export and reported APK installed, signed in,
 personal resume visible. Read-only baseline: active/confirmed account, one active
