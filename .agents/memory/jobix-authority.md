@@ -23,6 +23,12 @@ step once gates pass rather than repeating broad readiness reports. On a new
 permission/runtime blocker, report the exact command, principal, resource and
 single smallest resolution without broadening IAM or blindly retrying.
 
+For startup failure diagnosis, the owner requires identifying the actual cause
+and locally verifying the fix before redeployment. If logs omit the cause,
+inspect source and deployed configuration instead of requesting the same logs
+again. A diagnostic-only deployment before root identification needs separate
+approval; do not treat an observability fix as a verified runtime fix.
+
 **Why this verification discipline matters:** The owner explicitly asked to
 stop the repeated readiness-report cycle and not spend credits repeating
 checks that already passed.

@@ -1,22 +1,8 @@
 import {createServer} from 'node:http';
-import {createBridge,callWorker,gatewayIdentity,response} from './core.mjs';
+import {createBridge,gatewayIdentity,response} from './core.mjs';
 import {GatewayIdentity} from './identity.mjs';
-
-// Read-only boot verification uses an absent fixture actor. It cannot create
-// work, reserve/debit Credits, sign a URL or touch GCS. Not a user-auth bypass.
-async function verifyPrivateWorker(target,identity) {
-  const checked=await callWorker({target,identity,actor:'00000000-0000-4000-8000-000000000001',
-    action:'history',command:{}});
-  const body=await checked.json();
-  if(body.error?.code!=='ACCOUNT_DELETING')throw Error('PRIVATE_WORKER_CHECK_FAILED');
-  for(const path of ['/recover','/dispatch']) {
-    const result=await fetch(target+path,{method:'POST',redirect:'error',
-      signal:AbortSignal.timeout(10000),headers:{Authorization:'Bearer '+await identity(),
-        'Content-Type':'application/json'},body:'{}'});
-    const denied=await result.json();
-    if(result.status!==403||denied.error?.code!=='FORBIDDEN')throw Error('WORKER_PATH_CHECK_FAILED');
-  }
-}
+import {verifyPrivateWorker,startupDiagnostic} from './startup.mjs';
+let startupStage='configuration';
 async function main() {
   if(process.env.GCP_PROJECT_ID!=='mhflow-jobix'||process.env.K_SERVICE!=='jobix-dev-export-gateway'||
     !['false','true'].includes(process.env.JOBIX_EXPORT_ENABLED))throw Error('DEVELOPMENT_CONFIGURATION_REQUIRED');
@@ -26,6 +12,7 @@ async function main() {
     target,identity:token,exportsEnabled:process.env.JOBIX_EXPORT_ENABLED==='true'&&
       process.env.JOBIX_EXPORT_DELETION_POLICY_APPROVED==='true'});
   await verifyPrivateWorker(target,token);
+  startupStage='listen';
   const server=createServer({maxHeaderSize:16384},async(req,res)=>{
     let result;
     try {
@@ -59,4 +46,7 @@ async function main() {
   server.listen(Number(process.env.PORT??8080),'0.0.0.0');
   console.log('DEVELOPMENT_EXPORT_GATEWAY_READY_FLAGS_CLOSED');
 }
-main().catch(()=>{console.error('DEVELOPMENT_EXPORT_GATEWAY_NOT_READY');process.exitCode=1;});
+main().catch(error=>{
+  console.error(JSON.stringify(startupDiagnostic(error,startupStage)));
+  process.exitCode=1;
+});

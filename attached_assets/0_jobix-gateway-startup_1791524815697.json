@@ -1,0 +1,237 @@
+[
+  {
+    "insertId": "6ac8791e000656fc94be2f0a",
+    "labels": {
+      "instanceId": "0010dd86074f8467a1f7fd8c2c1ef7bc7dbab59b96edc321ba17d9f91259be9a10bc044ce5971c30ac065301f8804c34a883e7c5795b9dceabc012d1bed127a65d2866eec3a02437c7fe5f071b0a37fc68253a750318f3fb",
+      "scaling_reason": "DEPLOYMENT_ROLLOUT"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Fvarlog%2Fsystem",
+    "receiveTimestamp": "2026-10-09T05:18:22.418407728Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "jobix-dev-export-gateway",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "revision_name": "jobix-dev-export-gateway-00001-kqh",
+        "service_name": "jobix-dev-export-gateway"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "textPayload": "Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.",
+    "timestamp": "2026-10-09T05:18:22.415484Z"
+  },
+  {
+    "insertId": "6ac8791e000de8d12e387a24",
+    "labels": {
+      "instanceId": "0010dd86074f8467a1f7fd8c2c1ef7bc7dbab59b96edc321ba17d9f91259be9a10bc044ce5971c30ac065301f8804c34a883e7c5795b9dceabc012d1bed127a65d2866eec3a02437c7fe5f071b0a37fc68253a750318f3fb"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Fstderr",
+    "receiveTimestamp": "2026-10-09T05:18:22.917004871Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "jobix-dev-export-gateway",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "revision_name": "jobix-dev-export-gateway-00001-kqh",
+        "service_name": "jobix-dev-export-gateway"
+      },
+      "type": "cloud_run_revision"
+    },
+    "textPayload": "DEVELOPMENT_EXPORT_GATEWAY_NOT_READY",
+    "timestamp": "2026-10-09T05:18:22.911569Z"
+  },
+  {
+    "insertId": "6ac8791f00089d50847e6f5b",
+    "labels": {
+      "container_name": "export-gateway-1",
+      "instanceId": "0010dd86074f8467a1f7fd8c2c1ef7bc7dbab59b96edc321ba17d9f91259be9a10bc044ce5971c30ac065301f8804c34a883e7c5795b9dceabc012d1bed127a65d2866eec3a02437c7fe5f071b0a37fc68253a750318f3fb"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Fvarlog%2Fsystem",
+    "receiveTimestamp": "2026-10-09T05:18:23.751057423Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "jobix-dev-export-gateway",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "revision_name": "jobix-dev-export-gateway-00001-kqh",
+        "service_name": "jobix-dev-export-gateway"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "WARNING",
+    "textPayload": "Container called exit(1).",
+    "timestamp": "2026-10-09T05:18:23.564552352Z"
+  },
+  {
+    "insertId": "-fi8kfldjade",
+    "logName": "projects/mhflow-jobix/logs/cloudaudit.googleapis.com%2Fsystem_event",
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "methodName": "/Services.CreateService",
+      "resourceName": "namespaces/mhflow-jobix/revisions/jobix-dev-export-gateway-00001-kqh",
+      "response": {
+        "@type": "type.googleapis.com/google.cloud.run.v1.Revision",
+        "apiVersion": "serving.knative.dev/v1",
+        "kind": "Revision",
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "1",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/ingress": "all",
+            "run.googleapis.com/operation-id": "b8830aa2-0ac1-400c-9efd-d799195161e4",
+            "run.googleapis.com/sessionAffinity": "false",
+            "serving.knative.dev/creator": "jobix-deployer-dev@mhflow-jobix.iam.gserviceaccount.com"
+          },
+          "creationTimestamp": "2026-10-09T05:18:18.815924Z",
+          "generation": 1,
+          "labels": {
+            "cloud.googleapis.com/location": "me-central1",
+            "run.googleapis.com/satisfiesPzs": "true",
+            "run.googleapis.com/startupProbeType": "Custom",
+            "serving.knative.dev/configuration": "jobix-dev-export-gateway",
+            "serving.knative.dev/configurationGeneration": "1",
+            "serving.knative.dev/route": "jobix-dev-export-gateway",
+            "serving.knative.dev/service": "jobix-dev-export-gateway",
+            "serving.knative.dev/serviceUid": "dc0c3f68-7d60-46ff-b362-ff72fc8c18e1"
+          },
+          "name": "jobix-dev-export-gateway-00001-kqh",
+          "namespace": "850519041397",
+          "ownerReferences": [
+            {
+              "apiVersion": "serving.knative.dev/v1",
+              "blockOwnerDeletion": true,
+              "controller": true,
+              "kind": "Configuration",
+              "name": "jobix-dev-export-gateway",
+              "uid": "7f9ac455-0a67-4fd7-b0bc-1a7b1924f9ae"
+            }
+          ],
+          "resourceVersion": "AAZdYXo0fak",
+          "selfLink": "/apis/serving.knative.dev/v1/namespaces/850519041397/revisions/jobix-dev-export-gateway-00001-kqh",
+          "uid": "783da8f6-9fd7-413d-a791-5c41c1938f75"
+        },
+        "spec": {
+          "containerConcurrency": 20,
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "GCP_PROJECT_ID",
+                  "value": "mhflow-jobix"
+                },
+                {
+                  "name": "JOBIX_DEV_EXPORT_WORKER_URL",
+                  "value": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app"
+                },
+                {
+                  "name": "JOBIX_DEV_SUPABASE_CLIENT_KEY",
+                  "value": "sb_publishable_QXujyEqNvdIJAoSQvmKcsg_l3gQn4be"
+                },
+                {
+                  "name": "JOBIX_EXPORT_ENABLED",
+                  "value": "false"
+                },
+                {
+                  "name": "JOBIX_EXPORT_DELETION_POLICY_APPROVED",
+                  "value": "true"
+                }
+              ],
+              "image": "me-central1-docker.pkg.dev/mhflow-jobix/jobix-dev/export-gateway@sha256:1dc542a8ecd4a0ebc5bea8b2278cc8d88e783ce8f268c7f54471c948389b1598",
+              "name": "export-gateway-1",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1",
+                  "memory": "256Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 24,
+                "httpGet": {
+                  "path": "/ready",
+                  "port": 8080
+                },
+                "periodSeconds": 5,
+                "timeoutSeconds": 2
+              }
+            }
+          ],
+          "serviceAccountName": "jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com",
+          "timeoutSeconds": 60
+        },
+        "status": {
+          "conditions": [
+            {
+              "lastTransitionTime": "2026-10-09T05:18:23.735209Z",
+              "message": "The user-provided container failed the configured startup probe checks. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=mhflow-jobix&resource=cloud_run_revision/service_name/jobix-dev-export-gateway/revision_name/jobix-dev-export-gateway-00001-kqh&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22jobix-dev-export-gateway%22%0Aresource.labels.revision_name%3D%22jobix-dev-export-gateway-00001-kqh%22 \nFor more troubleshooting guidance, see https://docs.cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+              "reason": "HealthCheckContainerError",
+              "status": "False",
+              "type": "Ready"
+            },
+            {
+              "lastTransitionTime": "2026-10-09T05:18:23.735209Z",
+              "message": "The user-provided container failed the configured startup probe checks. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=mhflow-jobix&resource=cloud_run_revision/service_name/jobix-dev-export-gateway/revision_name/jobix-dev-export-gateway-00001-kqh&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22jobix-dev-export-gateway%22%0Aresource.labels.revision_name%3D%22jobix-dev-export-gateway-00001-kqh%22 \nFor more troubleshooting guidance, see https://docs.cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+              "reason": "HealthCheckContainerError",
+              "status": "False",
+              "type": "ContainerHealthy"
+            },
+            {
+              "lastTransitionTime": "2026-10-09T05:18:20.392887Z",
+              "message": "Container image import completed in 1.2s.",
+              "status": "True",
+              "type": "ContainerReady"
+            },
+            {
+              "lastTransitionTime": "2026-10-09T05:18:22.235232Z",
+              "message": "Provisioning imported containers completed in 1.84s. Checking container health. This will wait for up to 2m for the configured startup probe, including an initial delay of 0s.",
+              "status": "True",
+              "type": "ResourcesAvailable"
+            },
+            {
+              "lastTransitionTime": "2026-10-09T05:18:22.235232Z",
+              "message": "System will retry after 00:00 from lastTransitionTime for attempt 0.",
+              "reason": "ImmediateRetry",
+              "severity": "Info",
+              "status": "True",
+              "type": "Retry"
+            }
+          ],
+          "containerStatuses": [
+            {
+              "imageDigest": "me-central1-docker.pkg.dev/mhflow-jobix/jobix-dev/export-gateway@sha256:1dc542a8ecd4a0ebc5bea8b2278cc8d88e783ce8f268c7f54471c948389b1598",
+              "name": "export-gateway-1"
+            }
+          ],
+          "imageDigest": "me-central1-docker.pkg.dev/mhflow-jobix/jobix-dev/export-gateway@sha256:1dc542a8ecd4a0ebc5bea8b2278cc8d88e783ce8f268c7f54471c948389b1598",
+          "logUrl": "https://console.cloud.google.com/logs/viewer?project=mhflow-jobix&resource=cloud_run_revision/service_name/jobix-dev-export-gateway/revision_name/jobix-dev-export-gateway-00001-kqh&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22jobix-dev-export-gateway%22%0Aresource.labels.revision_name%3D%22jobix-dev-export-gateway-00001-kqh%22",
+          "observedGeneration": 1
+        }
+      },
+      "serviceName": "run.googleapis.com",
+      "status": {
+        "code": 9,
+        "message": "Ready condition status changed to False for Revision jobix-dev-export-gateway-00001-kqh with message: The user-provided container failed the configured startup probe checks. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=mhflow-jobix&resource=cloud_run_revision/service_name/jobix-dev-export-gateway/revision_name/jobix-dev-export-gateway-00001-kqh&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22jobix-dev-export-gateway%22%0Aresource.labels.revision_name%3D%22jobix-dev-export-gateway-00001-kqh%22 \nFor more troubleshooting guidance, see https://docs.cloud.google.com/run/docs/troubleshooting#container-failed-to-start"
+      }
+    },
+    "receiveTimestamp": "2026-10-09T05:18:24.084330441Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "jobix-dev-export-gateway",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "revision_name": "jobix-dev-export-gateway-00001-kqh",
+        "service_name": "jobix-dev-export-gateway"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-09T05:18:23.746412Z"
+  }
+]

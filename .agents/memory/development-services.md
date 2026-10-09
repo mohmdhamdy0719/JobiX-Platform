@@ -23,6 +23,17 @@ resources to bypass missing access.
 
 ## Owner-selected development configuration
 
+Cloud startup failures must retain an allowlisted phase/error code while
+redacting raw exceptions, credentials and provider response bodies.
+
+**Why:** A generic fail-closed startup catch erased the cause; even the
+administrator's uploaded logs could establish only that the process exited,
+not which authentication or worker check failed.
+
+**How to apply:** Preserve fail-closed checks and secret-safe diagnostics.
+Never infer a startup root cause from generic health-probe failure or replace
+security checks with permissive readiness merely to make deployment succeed.
+
 The owner approved the Phase 2 Volunteer migration and isolated live checks
 on the existing Jobix development Supabase project `lmouxhbjhtqdtiqijcee`.
 

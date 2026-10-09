@@ -2,6 +2,13 @@
 
 ## Actual development rollout checkpoint
 
+Uploaded logs establish a startup abort but omit its cause because the deployed
+catch handler discarded the error. Local code now provides allowlisted
+stage/code/status diagnostics while preserving every startup security check
+and fail-closed exit. Full suite passes 84/84. This diagnostic fix is NOT
+deployed, and the actual runtime startup cause is still unproven. Do not
+redeploy without root-cause evidence or explicit diagnostic-only authorization.
+
 The managed gateway image is built and pushed. Cloud Run gateway service exists,
 but its first revision failed startup probes; no public invocation was granted.
 The new private worker revision is ready with export processing disabled and

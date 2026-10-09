@@ -1,5 +1,37 @@
 # Jobix verification evidence
 
+## Uploaded startup logs — diagnosis evidence and local diagnostic fix
+
+The uploaded log records `DEVELOPMENT_EXPORT_GATEWAY_NOT_READY` at
+2026-10-09T05:18:22.911569Z, followed by `Container called exit(1)` at
+05:18:23.564552352Z and a failed startup probe at 05:18:23.746412Z.
+This establishes an explicit startup abort before the listener, not a probe
+timeout. The deployed server's catch handler discarded the exception; no log
+contains the failing stage, HTTP status or underlying error. The actual
+startup root cause therefore remains unproven.
+
+Read-only checks confirm the deployed gateway image/CMD/environment/probe
+match the source, account email matches and is enabled, export processing is
+false, approved deletion-policy flag is true, and identity is the dedicated
+gateway service account. Using the existing authorized backend identity, the
+actual private worker history request for the absent actor returned HTTP 503 /
+ACCOUNT_DELETING as expected. This is backend-identity evidence, NOT proof of
+the gateway's native metadata token or its complete startup sequence.
+
+Minimal local observability fix: separate startup checks into `startup.mjs`,
+retain fail-closed aborts, and emit only allowlisted stage/code/status. No token,
+raw exception, provider body, environment value or profile data is logged.
+Six new tests cover successful checks, metadata failure, history denial,
+Google ingress HTML versus application denial, forbidden-path enforcement,
+and redaction. Full regression suite passed **84/84**.
+
+No image was built or revision redeployed for this change: the owner requires
+root identification and local verification first. Missing evidence is the
+specific metadata/history/recover-denial/dispatch-denial failure stage.
+A separately approved private diagnostic-only gateway revision could obtain
+that evidence without changing IAM, secrets, worker or export gates. Do not
+claim the gateway startup is fixed or ask for the same already-insufficient logs.
+
 ## Concrete development bridge rollout — worker deployed, gateway startup blocked
 
 Targeted account policy now binds the deployer through
