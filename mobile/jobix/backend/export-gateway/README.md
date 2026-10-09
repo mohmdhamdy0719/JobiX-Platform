@@ -2,6 +2,24 @@
 
 ## Actual development rollout checkpoint
 
+The controlled real-user PDF milestone now passes: account A's approved
+fictional resume rendered as one valid page, consumed exactly 2 fixture
+Credits once, and downloaded through a generation-bound signed URL at zero
+additional cost. Same-key concurrent/completed replays match the durable
+acknowledgement; there is only one job/debit. Unsigned/tampered-generation
+object access is denied. Full evidence and the corrected test-envelope
+assertion are in mobile/jobix/VERIFICATION.md.
+
+Final Ready revisions: Gateway 00008-8p9, private Worker 00008-7cq.
+These are flag-only updates to the same pinned images below. All runtime and
+DB export-enabled gates are false again; approved deletion settings remain
+true (DB's previous false/default was aligned with the verified ADR).
+No new funding/export was performed when resuming verification of the
+already-completed job. Native acceptance and live fault/expiry/deletion
+injection are not claimed.
+
+### Earlier read-only checkpoint
+
 Approved read-only rollout is deployed: Gateway `00004-smz` and private Worker
 `00004-5hn` are Ready; Edge `resume-export` version 1 is ACTIVE with JWT
 verification enabled. Only Gateway received public invoker permission.

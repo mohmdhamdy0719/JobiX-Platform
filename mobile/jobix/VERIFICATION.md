@@ -1,6 +1,58 @@
 # Jobix verification evidence
 
-## Bounded 2-Credit export test — approved, stopped before funding
+## Controlled real-user PDF export — passed; development gates closed
+
+The owner subsequently authorized saved fictional data on development account
+A, including name/phone and the data needed for a presentable test resume.
+Ten normal authenticated `profile_mutate` saves supplied contacts, target role,
+summary, first-class Volunteer, education, four skills and English proficiency.
+The data is clearly fictional and retained as approved. Normal completeness
+and first-profile AI-latch rules applied; no weights, triggers or latch state
+were patched/reset. Supabase Auth identity/settings were not changed.
+Canonical preparation returned HTTP 200 with zero structural issues.
+Final read-only profile completeness is 85%, produced by normal saves rather
+than an override or new formula; Volunteer was not awarded extra percentage.
+
+Approved test outcome:
+- One +2 ADJUSTMENT fixture funding entry; one completed export on attempt 1.
+- Exactly one RESUME_EXPORT debit of -2 and one CONSUMED 2-Credit reservation.
+  Final account-A finalized/reserved balances are both zero; audit rows remain.
+- The initial concurrent calls created only one job. A test-helper parser
+  incorrectly inspected the outer Worker transport envelope rather than its
+  inner operation acknowledgement, so its first assertion failed after the
+  actual create. Authoritative SQL proved the job subsequently completed.
+  The helper was corrected; verification resumed using the existing saved
+  command/job, not new funding or a new export. Concurrent/completed replays
+  exactly matched the durable acknowledgement with no second debit.
+- Signed download returned the original valid one-page PDF, 152747 bytes,
+  SHA-256 e19cd6f0d50a274100973bc1ca43946ba79eec4d3ac9a767abd1727f7ec335ee.
+  Its bytes/hash/EOF/page/size proof matched the completed job. Download cost
+  zero; unsigned object access and tampered generation returned denial.
+  Seven-day expiry metadata was verified, not a real seven-day wait.
+- The downloaded page was visually checked using existing Poppler tooling:
+  readable, unclipped, separate Volunteer section, no photos. Temporary
+  verification PDF/image are under /tmp, not a new hosted download product.
+- Account B's wallet/ledger/profile/AI fingerprint was unchanged during the
+  resumed verification window; all profile/funding writes targeted A only.
+
+Final runtime revisions are Ready with JOBIX_EXPORT_ENABLED=false:
+- Gateway jobix-dev-export-gateway-00008-8p9.
+- Worker jobix-dev-pdf-export-00008-7cq.
+The existing pinned image digests and service identities are unchanged.
+Only existing runtime gates were toggled; no builds, IAM changes, credentials,
+Auth settings, schema/roles/RLS, Credit logic or policy changes were made.
+Edge's existing export gate was restored false. DB enabled=false;
+deletion_policy_approved=true now reflects the verified, already approved ADR
+(previous default false). Runtime deletion-approval settings stayed true.
+The private PDF/snapshot remain under the approved retention/deletion contract.
+
+The happy-path milestone is verified, not all Phase 3 failure acceptance.
+Live injected failure/recovery/expiry/deletion cases and native device/UI
+acceptance were not executed by this bounded one-export test. Do not rerun
+funding/creation merely because an assertion failed; inspect durable state and
+reuse the original idempotent command.
+
+## Earlier bounded-test preflight — before fictional-data authorization
 
 The owner approved account A fixture funding through the existing ADJUSTMENT
 type, one 2-Credit export and temporary existing development gates. Preflight
@@ -28,7 +80,7 @@ were performed in this preflight. Only temporary verification sessions were
 created and locally revoked. Profile-data completion approval is the remaining
 first blocker; the approved 2-Credit budget remains unspent.
 
-## Development real-user ingress — 36/36 passed; PDF/Credit gates remain closed
+## Earlier development real-user ingress — 36/36 passed
 
 Two existing development accounts authenticated against actual Supabase Auth.
 `tool/test_phase3_user_ingress_dev.mjs --approved-two-user-readonly

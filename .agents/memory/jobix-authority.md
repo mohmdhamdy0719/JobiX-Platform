@@ -159,12 +159,15 @@ The owner approved a +2-Credit fixture ADJUSTMENT on isolated account A, one
 existing development export gates and disabling them afterward. Preserve
 ledger audit history; compensate unused fixture funding only after reservations
 are released. Worker remains private; no new keys, unrelated IAM,
-production/staging or profile edits were included.
+production/staging changes. The owner subsequently approved saved fictional
+profile data on account A, including name, phone and everything needed for a
+good-looking test resume. Normal profile saves/scoring/latch behavior applies;
+retain that test data, never reset the latch or disable scoring triggers.
 
 **Why:** The owner explicitly selected the bounded 2-Credit controlled test.
 
 **How to apply:** Structural readiness must pass before funding or opening
-gates. Ask separately for needed profile-data edits; never bypass validity,
+gates. The subsequent fictional-data approval resolves the profile-edit gate; never bypass validity,
 disable normal completeness triggers or reset the 50% AI latch for fixtures.
 
 ## Earlier approval: scoped development read-only ingress rollout

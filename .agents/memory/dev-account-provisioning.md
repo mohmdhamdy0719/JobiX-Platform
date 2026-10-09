@@ -1,7 +1,22 @@
 ---
 name: Development account provisioning
-description: Successful Supabase test authentication is not proof of a provisioned Jobix app account.
+description: Verify app provisioning and reconcile funded tests through durable job/ledger state.
 ---
+
+## Funded development tests: authoritative reconciliation before retry
+
+An assertion, parsing error or caller timeout does not prove the export failed.
+Before funding again, refunding or using a new command key, inspect the durable
+job, reservation and ledger. Resume verification against the same original
+command/job when it already completed; never refund a consumed reservation.
+
+**Why:** A live test's transport-envelope assertion failed while the native
+worker completed the single export and consumed exactly the approved Credits.
+A fresh test attempt would have risked another funding/debit.
+
+**How to apply:** Any owner-approved bounded paid fixture test. Preserve
+ledger audit rows, close the permitted gates, and compensate unused funding
+only after authoritative terminal failure/release and reservation reconciliation.
 
 Check application-account provisioning separately from authentication before
 claiming a live core-product verification.
