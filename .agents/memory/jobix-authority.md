@@ -2,7 +2,26 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: actual development deployment and live integration
+## Current authorization: design only; B is a preferred direction, not implementation approval
+
+The owner accepted the comparison and approved B (Google-managed/Cloud Run
+gateway with native Google authentication to the private worker) as the
+preferred architectural direction only. Produce one concrete minimal proposal;
+do not restart planning, implement gateway authentication, change Supabase Auth,
+create credentials, change IAM/infrastructure/migrations/deployments or enable
+exports. No specific ingress product or public gateway exception is approved.
+
+**Why:** The owner explicitly said B is approved "as the preferred architectural
+direction only, not yet as authorization to implement a new gateway product or
+change authentication."
+
+**How to apply:** Keep Supabase Auth/Edge as the application's user-facing
+boundary and the PDF worker private in `mhflow-jobix` / `me-central1`. Do not
+mistake a proposed bridge, public ingress or identity policy for approved
+execution. A later explicit authorization must resolve those gates before
+resuming rollout.
+
+## Earlier authorization: actual development deployment and live integration
 
 The owner explicitly ended readiness-only work and authorized actual Phase 3
 development migration verification, worker activation, Scheduler recovery,
