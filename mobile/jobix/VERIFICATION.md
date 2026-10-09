@@ -1,5 +1,41 @@
 # Jobix verification evidence
 
+## Thin bridge local diagnosis/fix — PASS; deployment remains unverified
+
+The owner authorized only local diagnosis, a minimal fix and local verification.
+Reproduced the original fixture directly: Gateway was constructed without its
+canonicalizer; evaluating `this.canonicalizer.prepare` threw
+`TypeError: Cannot read properties of undefined (reading 'prepare')` before
+the awaited source/ownership lookup. Database authorization calls were **zero**.
+The mock worker serialized the uncoded exception as `error: {}`; bridge
+validation correctly rejected that unrecognized error as SERVICE_UNAVAILABLE.
+This was an incomplete test dependency, not an Auth verification outage.
+
+Checked the existing SQL contract: foreign profile ownership raises FORBIDDEN;
+an application account not ACTIVE raises ACCOUNT_DELETING. The minimal fix
+supplies the fixture's canonicalizer with a fail-if-called implementation.
+Assertions prove the authoritative checks execute and canonicalization does not.
+No production authentication, authorization, account-status or error mapping
+was weakened or changed.
+
+Added explicit mocked Auth network-outage/timeout and disabled-account cases;
+401/403 verification failures retain AUTH_REQUIRED and genuine outages retain
+SERVICE_UNAVAILABLE, without Google credential acquisition or worker calls.
+Application-account ACCOUNT_DELETING retains the existing worker HTTP mapping
+(503) and specific error code; Auth-level disabled account remains 403.
+
+Executed in the requested order:
+- Targeted original failing test: **1 passed, 0 failed, 38 excluded by pattern**.
+- `node --test mobile/jobix/backend/pdf/test/*.test.mjs`:
+  **75 passed, 0 failed, 0 skipped** (39 bridge tests and 36 existing regressions).
+
+All verification uses local/disposable mocks or loopback HTTP. No cloud/API
+administration, resource/IAM/secret/Auth configuration, image, deployment,
+export flag, real Credit transaction or billable export was changed or run.
+Bridge deployment and live gateway/worker integration remain unverified;
+Phase 3 is not ready or complete. The previous local security failure below
+is resolved.
+
 ## Approved thin bridge implementation — LOCAL SECURITY GATE FAILED
 
 The owner authorized development-only implementation/configuration, with an

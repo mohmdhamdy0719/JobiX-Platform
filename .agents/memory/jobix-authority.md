@@ -2,7 +2,22 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: approved development thin bridge, security fail-fast
+## Current authorization: local bridge diagnosis/verification only
+
+The owner explicitly authorized diagnosis and minimal local correction of
+the bridge security test, followed by targeted and complete local tests.
+Passing those checks is not authorization to resume cloud configuration,
+create resources/identities, change IAM/secrets/Auth, build images, deploy,
+enable exports or run real Credit/billable export transactions.
+
+**Why:** The owner said "Proceed with diagnosis, minimal fix, and local
+verification only" and prohibited all cloud changes.
+
+**How to apply:** Keep follow-on rollout separate from local security
+qualification. Do not claim Phase 3 readiness from mocked/loopback tests;
+wait for explicit authorization before resuming remote work.
+
+## Earlier authorization: approved development thin bridge, security fail-fast
 
 The owner authorized implementing `jobix-dev-export-gateway` in `mhflow-jobix`
 and `me-central1`, using dedicated `jobix-export-gateway-dev` identity. Public

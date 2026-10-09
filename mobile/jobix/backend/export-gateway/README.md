@@ -1,9 +1,14 @@
 # Development export authentication bridge
 
-Local implementation only. Deployment is blocked by the first security run:
-71/72 tests passed; the cross-account/inactive-account check expected FORBIDDEN
-but returned SERVICE_UNAVAILABLE. The owner requires stopping at test failure.
-No cloud service, service account, IAM binding or image was created.
+Local implementation only. The original failed security fixture omitted its
+canonicalizer and threw before the ownership lookup. Its uncoded exception
+was correctly mapped to SERVICE_UNAVAILABLE. The fixture dependency is fixed,
+with assertions that authorization runs and unauthorized content never renders.
+Targeted test passed, then the full suite passed 75/75, including explicit
+invalid-token, cross-account, inactive-account and verification-outage cases.
+No production error mapping or authorization was changed. No cloud service,
+service account, IAM binding or image was created. Deployment and live
+integration remain unverified; local test success is not rollout readiness.
 
 The bridge independently validates users through the fixed development
 Supabase Auth endpoint. Parsed JWT claims are rejection checks only; a verified

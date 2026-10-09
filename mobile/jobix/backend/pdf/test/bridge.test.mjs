@@ -29,13 +29,15 @@ function request(envelope={action:'history',command:{}},options={}) {
     headers:{Authorization:bearer(),'Content-Type':'application/json',...options.headers},
     body:JSON.stringify(envelope)});
 }
-function setup({user={id:actor},authStatus=200,worker,enabled=true}={}) {
+function setup({user={id:actor},authStatus=200,authFailure,worker,enabled=true}={}) {
   const authCalls=[],workerCalls=[];let identities=0;
   const handle=createBridge({target,clientKey,exportsEnabled:enabled,
     identity:async()=>{identities++;return 'google-id-token';},
     fetchImpl:async(url,options)=>{
       if(url===origin+'/auth/v1/user') {
-        authCalls.push(options);return json(user,authStatus);
+        authCalls.push(options);
+        if(authFailure)throw authFailure;
+        return json(user,authStatus);
       }
       assert.equal(url,target+'/command');
       const body=JSON.parse(options.body);workerCalls.push(body);
@@ -66,6 +68,17 @@ test('missing bearer fails closed',async()=>{
 for(const authStatus of [401,403,500])test('Auth verification rejection '+authStatus+' fails closed',async()=>{
   const f=setup({authStatus}),result=await f.handle(request());
   assert.equal(result.status,authStatus===500?503:401);assert.equal(f.workerCalls.length,0);
+  assert.equal((await result.json()).error.code,authStatus===500?'SERVICE_UNAVAILABLE':'AUTH_REQUIRED');
+  assert.equal(f.identities(),0);
+});
+for(const [name,authFailure] of [
+  ['network outage',new TypeError('fixture network failure')],
+  ['timeout',new DOMException('fixture verification timeout','TimeoutError')],
+])test('genuine Supabase verification '+name+' fails closed as SERVICE_UNAVAILABLE',async()=>{
+  const f=setup({authFailure}),result=await f.handle(request());
+  assert.equal(result.status,503);
+  assert.equal((await result.json()).error.code,'SERVICE_UNAVAILABLE');
+  assert.equal(f.authCalls.length,1);assert.equal(f.workerCalls.length,0);assert.equal(f.identities(),0);
 });
 test('valid-looking unverified claims cannot override the Auth response',async()=>{
   const f=setup({user:{id:other}});
@@ -74,6 +87,11 @@ test('valid-looking unverified claims cannot override the Auth response',async()
 test('Auth-deleted user cannot reach worker',async()=>{
   const f=setup({user:{id:actor,deleted_at:'2026-01-01'}});
   assert.equal((await f.handle(request())).status,403);assert.equal(f.workerCalls.length,0);
+});
+test('authenticated but disabled Auth account is ACCOUNT_DELETING, not a verification outage',async()=>{
+  const f=setup({user:{id:actor,disabled:true}}),result=await f.handle(request());
+  assert.equal(result.status,403);assert.equal((await result.json()).error.code,'ACCOUNT_DELETING');
+  assert.equal(f.authCalls.length,1);assert.equal(f.workerCalls.length,0);assert.equal(f.identities(),0);
 });
 for(const forged of [
   {action:'history',command:{},actor:other},
@@ -110,8 +128,11 @@ test('unexpected upstream error body is never reflected',async()=>{
   assert.ok(!(await result.text()).includes('must-not-be-returned'));
 });
 test('cross-account access and inactive app account fail through authoritative Gateway checks',async()=>{
-  let active=true;
-  const gateway=new Gateway({enabled:true,db:{call:async(name,args)=>{
+  let active=true,renderCalls=0;const dbCalls=[];
+  const gateway=new Gateway({enabled:true,canonicalizer:{prepare:async()=>{
+    renderCalls++;assert.fail('Unauthorized/inactive requests must not reach canonicalization');
+  }},db:{call:async(name,args)=>{
+    dbCalls.push({name,args});
     if(!active)throw new ExportError('ACCOUNT_DELETING');
     if(name==='source'&&(args.actor!==actor||args.profile!==profile))throw new ExportError('FORBIDDEN');
     return {};
@@ -121,9 +142,17 @@ test('cross-account access and inactive app account fail through authoritative G
     catch(error){return json({data:null,error:{code:error.code}},error.code==='FORBIDDEN'?403:503);}
   }});
   const denied=await f.handle(request({action:'document',command:{profile_id:other}}));
+  assert.equal(denied.status,403);
   assert.equal((await denied.json()).error.code,'FORBIDDEN');
+  assert.deepEqual(dbCalls,[{name:'source',args:{actor,profile:other}}]);
+  assert.equal(renderCalls,0);
   active=false;const deleted=await f.handle(request());
+  // Preserve the existing worker's HTTP mapping, while retaining the specific
+  // application-account error instead of mislabelling it a verification outage.
+  assert.equal(deleted.status,503);
   assert.equal((await deleted.json()).error.code,'ACCOUNT_DELETING');
+  assert.equal(dbCalls[1].name,'history');assert.equal(dbCalls[1].args.actor,actor);
+  assert.equal(f.authCalls.length,2);assert.equal(f.workerCalls.length,2);assert.equal(renderCalls,0);
 });
 test('timeout after commit replays unchanged command/key with one fixture reservation',async()=>{
   let reservations=0,loseResponse=true;const records=new Map();

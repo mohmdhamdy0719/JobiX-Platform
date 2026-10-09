@@ -6,14 +6,19 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
-**Latest gate: local bridge security verification failed; no cloud changes.**
-The approved bridge and Edge/worker restrictions are implemented locally only.
-The first security run passed 71 of 72 tests. The combined cross-account/
-inactive-account test expected `FORBIDDEN` but received `SERVICE_UNAVAILABLE`.
-Stopped as directed, without fixing/rerunning or beginning cloud operations.
-No bridge service/account/IAM binding/build/deployment exists from this attempt.
+**Latest checkpoint: local bridge security suite passes; cloud work not resumed.**
+The owner authorized a local-only correction. The failing fixture omitted the
+canonicalizer and threw before database authorization; its uncoded error was
+correctly mapped to SERVICE_UNAVAILABLE. Supplying that test dependency and
+adding explicit denial/outage assertions resolves the original failure.
+Targeted test passed, then the complete suite passed **75/75**. No production
+authorization/error mapping changed. These are local/mock checks, not live
+deployment/integration proof.
+No bridge service/account/IAM binding/build/deployment exists from this work.
 Existing runtime resources are unchanged; export/client flags were not enabled.
-The earlier remote metadata-access blocker below remains unresolved.
+Deployment/live integration remains unverified and the earlier remote
+metadata-access blocker below remains unresolved. Do not resume cloud work
+under the local-only diagnosis authorization.
 
 **Current actual rollout blocker: development gateway metadata access HTTP 403.**
 Backend invocation passes and the actual pinned worker is active on ready
