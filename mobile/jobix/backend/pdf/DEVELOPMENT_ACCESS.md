@@ -6,6 +6,21 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Latest Gateway rollout preflight: BLOCKED.** The private worker has the
+expected gateway `roles/run.invoker` member. The account-scoped deployer
+effective-permission test returned no actAs/get/getIamPolicy/key-list
+permissions; account and account-policy reads are denied. The supplied
+`jobixGatewayAttach` role definition is not readable with the current deployer,
+so its exact binding cannot be verified. Cloud Build/Run project permissions,
+worker update/IAM-policy permissions, worker-runtime/builder actAs, Artifact
+Registry access, and build-source bucket create/get passed the checks.
+
+The actual worker currently reports both `JOBIX_EXPORT_ENABLED=true` and
+`JOBIX_EXPORT_DELETION_POLICY_APPROVED=true`. These were not changed; this
+conflicts with the deployment requirement to keep export gates disabled.
+Stop deployment until the account-scoped role binding is effective and the
+worker flags are disabled. No cloud changes were made by this audit.
+
 **Latest: gateway worker invocation binding verified; deployer actAs missing.**
 The worker policy now contains unconditional Run Invoker for the exact gateway
 member and remains IAM-private without public bindings. Direct account-scoped
