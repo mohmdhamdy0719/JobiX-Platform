@@ -562,44 +562,49 @@ void main() {
       isEmpty,
     );
   });
-  testWidgets('worker retry progress reaches completion on the same operation', (
-    tester,
-  ) async {
-    await mount(tester, initial: true);
-    await tap(tester, 'Create PDF — 2 Credits');
-    await tap(tester, 'Create — 2 Credits');
-    workerState = 'RETRYABLE_FAILURE';
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('RETRYABLE_FAILURE'), findsWidgets);
-    workerState = 'COMPLETED';
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('COMPLETED'), findsWidgets);
-    expect(accepted, 1);
-    final states = commands.where((c) => c['action'] == 'status');
-    expect(states.length, greaterThanOrEqualTo(2));
-    expect(states.every((c) => (c['command'] as Map)['export_id'] == jobId), true);
-    expect(await db.setting('resume:$actor:export:$profileId'), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-  testWidgets('terminal worker failure is visible without automatic new export', (
-    tester,
-  ) async {
-    await mount(tester, initial: true);
-    await tap(tester, 'Create PDF — 2 Credits');
-    await tap(tester, 'Create — 2 Credits');
-    workerState = 'FAILED';
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('FAILED'), findsWidgets);
-    final count = commands.where((c) => c['action'] == 'status').length;
-    await tester.pump(const Duration(seconds: 9));
-    expect(commands.where((c) => c['action'] == 'status').length, count);
-    expect(accepted, 1);
-    expect(commands.where((c) => c['action'] == 'again'), isEmpty);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
+  testWidgets(
+    'worker retry progress reaches completion on the same operation',
+    (tester) async {
+      await mount(tester, initial: true);
+      await tap(tester, 'Create PDF — 2 Credits');
+      await tap(tester, 'Create — 2 Credits');
+      workerState = 'RETRYABLE_FAILURE';
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Recovery pending'), findsWidgets);
+      workerState = 'COMPLETED';
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Ready'), findsWidgets);
+      expect(accepted, 1);
+      final states = commands.where((c) => c['action'] == 'status');
+      expect(states.length, greaterThanOrEqualTo(2));
+      expect(
+        states.every((c) => (c['command'] as Map)['export_id'] == jobId),
+        true,
+      );
+      expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+  testWidgets(
+    'terminal worker failure is visible without automatic new export',
+    (tester) async {
+      await mount(tester, initial: true);
+      await tap(tester, 'Create PDF — 2 Credits');
+      await tap(tester, 'Create — 2 Credits');
+      workerState = 'FAILED';
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Failed — reservation released'), findsWidgets);
+      final count = commands.where((c) => c['action'] == 'status').length;
+      await tester.pump(const Duration(seconds: 9));
+      expect(commands.where((c) => c['action'] == 'status').length, count);
+      expect(accepted, 1);
+      expect(commands.where((c) => c['action'] == 'again'), isEmpty);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   testWidgets(
     'confirmed conflict requires explicit current Preview before a new intent',
     (tester) async {

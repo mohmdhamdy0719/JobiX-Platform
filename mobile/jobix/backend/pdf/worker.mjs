@@ -1,4 +1,5 @@
 import {sha256,bundle,fontChecksums,ExportError} from './document.mjs';
+import {isDefinitiveUploadRejection} from './google.mjs';
 
 export const systemClock={now:()=>Date.now(),setTimeout,clearTimeout,setInterval,clearInterval};
 export class Worker {
@@ -87,7 +88,7 @@ export class Worker {
               await this.db.call('upload_settle',{operation,fence,generation:String(object.generation)});
               return object;
             }).catch(async error=>{
-              if(error.code==='OBJECT_EXISTS') {
+              if(error.code==='OBJECT_EXISTS'||isDefinitiveUploadRejection(error,path,fence)) {
                 await this.db.call('upload_settle',{operation,fence,generation:null});
               }
               // Network/timeout ambiguity stays SENT: never assume quiescence.

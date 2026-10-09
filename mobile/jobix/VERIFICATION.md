@@ -1,6 +1,31 @@
 # Jobix verification evidence
 
-## Focused Phase 3 acceptance — BLOCKED, successful export preserved
+## Rejected-upload local fix — verified; no cloud changes
+
+The production adapter now retains rejection status and privately binds
+trustworthy no-write evidence to the exact upload path/fence. The Worker settles
+only that rejected original flight; ambiguous timeouts/network/lost responses
+remain unresolved and cannot bypass deletion quiescence.
+Focused adapter **11/11**, disposable acceptance **8/8** and full backend
+**101/101** pass. HTTP403 retry completes with no SENT flights/pending balance,
+one debit, and no stale/duplicate object/charge changes.
+
+Flutter's exact locked packages were restored with lockfile enforcement and
+all tracked lockfile checksums unchanged. Default-off **4/4** pass.
+Enabled widget cases are now all verified: initial **16 pass / 2 expectation
+failures**, corrected to existing UI labels, followed by focused **2/2 pass**.
+No Flutter product/UI logic was changed. Existing real SQLCipher was supplied
+to the test process; no dependency/library/toolchain upgrade was performed.
+Mocked native channels do not establish Android WebView/file-save acceptance.
+
+Existing SDK platforms 34/35/36 and build tools 34/35 are present, but ADB has
+no device, no emulator/system image/AVD is installed and only Linux is detected.
+The next native prerequisite is an ADB-visible Android target. No APK/signing
+or emulator setup was undertaken. No cloud mutation/gate change/funding/new
+real export occurred; the hosted worker has NOT received this local fix.
+See backend/pdf/PHASE3_ACCEPTANCE.md for the current scope and earlier root cause.
+
+## Earlier focused Phase 3 diagnosis — successful export preserved
 
 See `backend/pdf/PHASE3_ACCEPTANCE.md` for the per-case matrix and exact scopes.
 The existing completed real PDF/snapshot/ledger were confirmed read-only and

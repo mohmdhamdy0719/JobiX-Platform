@@ -3,6 +3,16 @@ name: Native tooling constraints
 description: Package availability and SDK-root behavior differ across workspace tooling
 ---
 
+For an installed Nix library, derive its prefix from the executable on PATH
+instead of recursively scanning or globbing the whole /nix/store.
+
+**Why:** Both global store scans timed out while the required SQLCipher
+installation was already discoverable through its executable.
+
+**How to apply:** Resolve the installed binary, then inspect only its sibling
+library directory. Supply test-specific library paths to the test process,
+not global runtime libc/environment settings.
+
 Do not treat an existing Dart package_config as proof locked packages are
 still cached. Missing pub-cache files can produce cascading undefined-symbol
 errors that look like Flutter API/version failures.

@@ -12,6 +12,7 @@ import {Canonicalizer,subprocess} from '../document.mjs';
 import {containsText} from '../renderer.mjs';
 import {ExportCleanup} from '../cleanup.mjs';
 import {ExportError} from '../document.mjs';
+import {GoogleStorage} from '../google.mjs';
 
 const socket=process.env.JOBIX_DISPOSABLE_PG_SOCKET;
 if(!socket?.startsWith('/tmp/jobix-rls.') || !socket.endsWith('/socket'))throw new Error('Disposable guard');
@@ -321,11 +322,22 @@ async function acceptanceFixture() {
 }
 {
  const f=await acceptanceFixture();let calls=0;
- // Deterministic definitive provider rejection: no physical create/object.
- // SERVICE_UNAVAILABLE is today's storage adapter mapping of non-412 errors.
- const denied={...storage,create:async()=>{calls++;throw new ExportError('SERVICE_UNAVAILABLE');}};
+ // Use the production adapter and an intercepted provider response, not forged
+ // error properties. No real HTTP/credential/cloud operation is performed.
+ const rejectedStorage=new GoogleStorage({token:async()=>'synthetic-only'});
+ const denied={...storage,create:async(...args)=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async(url,options)=>{
+   assert.equal(new URL(url).hostname,'storage.googleapis.com');
+   assert.equal(options.method,'POST');calls++;
+   return new Response('{}',{status:403});
+  };
+  try{return await rejectedStorage.create(...args);}
+  finally{globalThis.fetch=original;}
+ }};
  await new Worker({db,storage:denied,renderer:f.r,enabled:true}).run(f.j);
  assert.equal(f.row().state,'RETRYABLE_FAILURE');assert.equal(f.balance(),'5,2');
+ assert.equal(sql(`select state from export_upload_flights where operation=${quote(f.j.id)}`),'SETTLED');
  sql(`update export_jobs set next_attempt_at=now() where id=${quote(f.j.id)}`);
  const [retry]=await db.call('claim',{capacity:1});
  await new Worker({db,storage,renderer:f.r,enabled:true}).run(retry);
@@ -333,4 +345,12 @@ async function acceptanceFixture() {
   state:f.row().state,attempts:f.row().attempt_count,providerCreateCalls:calls,charges:f.charges(),
   unresolvedFlights:Number(sql(`select count(*) from export_upload_flights where operation=${quote(f.j.id)} and state='SENT'`))}));
  assert.equal(f.row().state,'COMPLETED','Definitively rejected upload must allow safe same-job retry after provider recovery');
+ assert.equal(f.balance(),'3,0');assert.equal(f.charges(),1);
+ const objectsBefore=storageMap.size;
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(f.j); // old fence
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(retry); // duplicate callback
+ assert.equal(storageMap.size,objectsBefore);assert.equal(f.balance(),'3,0');assert.equal(f.charges(),1);
+ assert.equal(sql(`select count(*) from export_upload_flights where operation=${quote(f.j.id)} and state='SENT'`),'0');
+ assert.deepEqual(await gateway.handle(f.a,'create',f.command),f.accepted);
+ console.log('PASS acceptance: real adapter HTTP403 settles exact flight; retry completes, stale/duplicate runs preserve object and one debit');
 }

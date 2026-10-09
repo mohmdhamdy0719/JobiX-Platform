@@ -1,0 +1,31 @@
+Continue Phase 3 from the recorded acceptance checkpoint. Do not repeat completed tests or modify cloud resources yet.
+
+**Priority 1 — Fix rejected-upload retry safely**
+
+Inspect the production storage adapter, upload-flight state transitions, and `CLEANUP_UNVERIFIED` handling.
+
+- Preserve the original, trustworthy HTTP rejection classification instead of converting every rejection to `SERVICE_UNAVAILABLE`.
+- For a definitive rejection, permit settlement/retry only when the adapter's evidence establishes that no object write occurred for that exact upload attempt.
+- Keep timeouts, connection failures, lost responses, and other ambiguous outcomes unresolved until object state is verified.
+- Preserve fencing, idempotency, reservation accounting, and exactly-once debit behavior.
+- Add regression tests for definitive HTTP 403 rejection followed by retry, ambiguous timeout, response loss after a successful write, stale leases, and duplicate retries.
+- Prove that the rejected-upload scenario no longer leaves an unsafe `SENT` marker or pending reservation, without causing duplicate debits or deleting another attempt's object.
+
+Run the focused adapter/acceptance tests first, then the full backend regression suite. Fix any failures before proceeding.
+
+**Priority 2 — Restore Flutter test prerequisites**
+
+Inspect the repository's exact package lockfiles and restore the locked dependency versions without upgrades or lockfile regeneration. Run the relevant widget tests and report any remaining environment limitation.
+
+**Priority 3 — Android acceptance readiness**
+
+Check whether an existing Android SDK/device/emulator target can be used. Do not install or upgrade toolchains without approval. If no target exists, give me the smallest concrete setup step needed.
+
+Constraints:
+- No production/staging changes or cloud deployment in this task.
+- Do not open export gates, add Credits, or repeat the completed export.
+- Preserve the approved Credit, retention, and deletion contracts.
+- Do not claim live cloud fault/expiry/deletion acceptance based on local tests.
+- Avoid repeating already-passing tests unless the fix affects them.
+
+Report the root cause, files changed, exact test totals, and the single next action required from me. Prioritize implementation over another readiness-only report.

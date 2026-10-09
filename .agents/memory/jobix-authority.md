@@ -152,7 +152,24 @@ readiness exercise, but honor fail-fast. Missing permissions do not authorize
 adding grants, making a private service public or using another runtime identity.
 Keep the overall task incomplete when a failure stops the vertical slice.
 
-## Current approval: one bounded development PDF/Credit test
+## Current approval: local retry fix, locked packages, Android target check
+
+The owner authorized implementing the rejected-upload settlement fix locally,
+focused tests then backend regression, exact locked Flutter package restoration
+without upgrades/lock regeneration, widget tests and read-only Android target
+readiness. No cloud changes/deployment/gate opening/funding/repeated real export
+or toolchain installation/upgrade is authorized by this increment.
+
+**Why:** The owner attached a priority-ordered continuation from the recorded
+acceptance checkpoint, explicitly separating local implementation from cloud
+and Android setup approval.
+
+**How to apply:** Preserve the accepted real export. Verify exact-attempt
+no-write evidence without weakening ambiguous-flight fencing/quiescence.
+An absent Android target calls for the smallest setup prerequisite, not
+unapproved emulator/SDK installation.
+
+## Earlier approval: one bounded development PDF/Credit test
 
 The controlled development happy-path result is now accepted and protected.
 The owner said: "Preserve this successful result and do not repeat or
