@@ -2,6 +2,19 @@
 
 ## Actual development rollout checkpoint
 
+Gateway revision `00003-whw` is now Ready after one controlled Gateway-only
+deployment of the hostname fix. Authenticated private `/ready` returned 200
+and verifies native Gateway-to-Worker authentication plus worker-only path
+denials. Eight recorded live checks passed, including invalid application token,
+actor overrides and anonymous Worker rejection. Both services remain private,
+exports are disabled, deletion-policy approval is preserved and no Credit/PDF
+operation was executed. The worker was not rebuilt or redeployed.
+
+Full valid-Supabase-user ingress and two-active-user ownership lookups remain
+untested live; actor-override checks do not prove those journeys. The valid
+88/88 local suite was reused, not rerun. Earlier failed/local-only checkpoints
+below are historical.
+
 The actual configuration failure is now proven: the deployed worker hostname
 ends in `.a.run.app`, which the old worker URL regex rejected before metadata
 authentication. Worker/gateway URL validators are fixed locally to accept that

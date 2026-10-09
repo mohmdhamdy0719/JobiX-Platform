@@ -29,6 +29,8 @@ not only simplified hand-written hostnames.
 **Why:** Simplified `.run.app` fixtures passed while the real Google-generated
 `.a.run.app` hostname was rejected before authentication. A generic startup
 error obscured this mismatch and caused unnecessary remote readiness checks.
+The owner explicitly accepted this hostname rejection as the configuration
+failure's root cause and accepted the local fix.
 
 **How to apply:** Reproduce validators against the actual non-secret configured
 URL before requesting IAM changes; keep precise hostname/HTTPS restrictions and

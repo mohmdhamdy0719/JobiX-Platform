@@ -1,5 +1,48 @@
 # Jobix verification evidence
 
+## One controlled Gateway-only fix deployment — Ready; safe live checks passed
+
+Managed gateway-only build `be9b115a-14e8-4651-9893-64bbb22c788f` succeeded.
+Deployed exactly one revision: **`jobix-dev-export-gateway-00003-whw`**.
+Pinned gateway image:
+`sha256:f41511f939d44072946ed85f03392b55e23520890c708dd0822a112b9eec269d`.
+Latest-created and latest-ready revisions match; no startup operation error.
+Configuration-stage hostname validation and authenticated native metadata
+Gateway-to-Worker startup checks pass.
+
+Existing deployer `run.routes.invoke` on this private Gateway was verified;
+an operator Google ID token obtained with the existing deployment credential
+allowed actual GET `/ready` (200). Its response confirms worker authentication,
+both worker-only path denials, and exportsEnabled=false. This operator token
+is never used as a Supabase user credential or a bridge runtime credential.
+
+Executed live checks:
+- Operator-authenticated Gateway readiness / Worker integration: 200.
+- Valid Google token rejected as a non-Supabase application-user token:
+  401 AUTH_REQUIRED.
+- Top-level foreign actor override and nested foreign user_id: both 403 FORBIDDEN.
+- Worker-only action recover at Gateway: 400 VALIDATION_FAILED.
+- Anonymous Worker `/command`: 403.
+- Gateway identity `/recover` and `/dispatch` at Worker: both 403, enforced
+  and evidenced by the successful hosted startup verification.
+- Worker revision/gates and both services' private IAM policies preserved.
+All eight recorded live checks passed.
+
+Worker remains revision `00003-frp`; it was not rebuilt or redeployed.
+Both services retain export=false and the approved deletion-policy=true.
+No IAM bindings, secrets, Supabase Auth, Credit/reservation logic, deletion/
+retention policy, production/staging or keys were changed. No real Credit
+transaction or billable PDF was attempted.
+
+The tested gateway source was not altered during deployment; reuse the valid
+49/49 focused and 88/88 full local results without rerunning them. Only
+operational deployment-mode/audience guards were adjusted and syntax-checked.
+Deferred honestly: a valid Supabase-user ingress journey and actual two-active-
+user profile/job ownership lookup were NOT exercised. Live actor-override
+denials are not a substitute for that ownership test. Exports remain closed;
+the Gateway is private under the no-IAM-change instruction. No further
+deployment or flag enablement was attempted.
+
 ## Proven configuration mismatch — hostname validators fixed locally; no redeployment
 
 The owner-provided structured diagnostic event for revision `00002-cf9` is:

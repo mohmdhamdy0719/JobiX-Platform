@@ -2,18 +2,17 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: conditional development gateway deployment after preflight
+## Current authorization: one controlled development Gateway-only fix deployment
 
-The owner authorized a development Gateway build/deployment and necessary
-worker authorization changes only after read-only IAM/deployment preconditions
-pass. Keep the worker private, require Supabase token verification, keep export
-processing disabled, and do not run real Credits/billable exports before
-security and live integration checks pass. Never touch production/staging or
-create service-account keys. Stop on missing permissions and report exact
-resource scope; do not broaden IAM or correct bindings without authorization.
+The owner accepted the proven hostname root cause/fix and approved one
+controlled development-only Gateway rebuild/deployment. Do not rebuild or
+redeploy the Worker without a concrete dependency. Keep export processing off,
+approved deletion-policy setting preserved, Worker private, and IAM/secrets/
+Supabase Auth/Credits/retention/production/staging untouched. Stop on a new
+startup/integration failure; never automatically create another revision.
 
-**Why:** The owner approved this next rollout phase conditionally on verified
-least-privilege readiness, while expressly preserving privacy and disabled flags.
+**Why:** The owner explicitly approved this single tested-fix deployment and
+forbade changes outside that development Gateway scope.
 
 **How to apply:** Recheck only the target account binding/current worker
 configuration; reuse passing deployment-permission checks. Do not change the
@@ -29,7 +28,7 @@ inspect source and deployed configuration instead of requesting the same logs
 again. A diagnostic-only deployment before root identification needs separate
 approval; do not treat an observability fix as a verified runtime fix.
 
-The current configuration-fix request is local diagnosis, minimal fix and
+The earlier configuration-fix request was local diagnosis, minimal fix and
 focused/regression verification, then evidence reported before another
 deployment. Stop requesting logs; do not deploy another revision in that step.
 

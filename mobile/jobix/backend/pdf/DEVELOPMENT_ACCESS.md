@@ -6,6 +6,16 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Gateway Ready:** revision `00003-whw` runs the verified hostname fix.
+Private operator-authenticated readiness returned 200 and native
+Gateway-to-Worker startup authentication/privileged-path denial passed.
+Live invalid-application-token/actor-override/worker-action/anonymous-Worker
+negative checks passed. Worker remains untouched at `00003-frp`; both services
+are private with export=false and approved deletion-policy=true.
+No IAM/secret/Auth/Credit/policy/production/staging changes were applied.
+Valid Supabase-user ingress and true two-user ownership tests remain deferred;
+do not describe actor-override tests as complete live ownership verification.
+
 **Proven startup fix, local only:** exact revision configuration uses the
 managed `.a.run.app` worker hostname. The old hostname regex rejected it with
 EXPORT_NOT_READY during configuration, before metadata/IAM invocation.

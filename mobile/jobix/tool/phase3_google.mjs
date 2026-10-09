@@ -67,7 +67,8 @@ export async function google() {
   };
   const identityToken=async audience=>{
     const target=new URL(audience);
-    if(target.protocol!=='https:'||!target.hostname.startsWith('jobix-dev-pdf-export-')||
+    if(target.protocol!=='https:'||!['jobix-dev-pdf-export-','jobix-dev-export-gateway-']
+      .some(prefix=>target.hostname.startsWith(prefix))||
       !target.hostname.endsWith('.run.app')||target.pathname!=='/'||target.search||target.hash)
       throw new CloudFailure(0,'DEV_AUDIENCE_GUARD');
     // Existing deployer identity only, for an authorized read-only service check.
