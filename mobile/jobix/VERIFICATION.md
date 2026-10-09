@@ -1,5 +1,29 @@
 # Jobix verification evidence
 
+## One approved private diagnostic revision deployed
+
+Gateway-only managed build `d7725a17-3b1b-4beb-8c61-21a3ba44fe04` succeeded;
+no worker image was rebuilt. Its pinned image is
+`sha256:f81e3787be50f6af7525e6fe1ccd2a3f767a878662f14502d043d04c331adddb`.
+Updated only the existing gateway container image using its service etag.
+New diagnostic revision **`jobix-dev-export-gateway-00002-cf9`** still fails
+closed at startup (`HEALTH_CHECK_CONTAINER_ERROR`, operation code 9).
+No ready gateway revision and no public invocation binding were established.
+Startup probe, runtime identity, configuration, export=false and approved
+deletion-policy=true were preserved. No IAM/secret/policy changes were made.
+
+Worker remains unchanged at ready revision `00003-frp`, IAM enforcement on,
+export processing false and deletion-policy approval true. Gateway code/tests
+are unchanged since the 84/84 pass; only gateway-only build/deploy tooling was
+added/adjusted and syntax-checked.
+
+The new diagnostic log read is still rejected with 403 under the deployer.
+Need the NEW revision's structured event
+`DEVELOPMENT_EXPORT_GATEWAY_NOT_READY` (stage/code/status), not another copy of
+the old generic log. The single diagnostic-deployment approval has been
+performed; no further revision should be deployed before reviewing evidence.
+Actual startup root cause and hosted integration remain unverified.
+
 ## Uploaded startup logs — diagnosis evidence and local diagnostic fix
 
 The uploaded log records `DEVELOPMENT_EXPORT_GATEWAY_NOT_READY` at

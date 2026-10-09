@@ -29,6 +29,14 @@ inspect source and deployed configuration instead of requesting the same logs
 again. A diagnostic-only deployment before root identification needs separate
 approval; do not treat an observability fix as a verified runtime fix.
 
+The owner approved exactly one private diagnostic gateway revision to expose
+the startup stage. This is not blanket authorization for repeated diagnostic
+redeployments, worker changes, public invocation or relaxed authentication.
+Review its evidence before another revision; further diagnostic exceptions
+require explicit approval.
+
+**Why:** The owner selected "Approve one private diagnostic revision".
+
 **Why this verification discipline matters:** The owner explicitly asked to
 stop the repeated readiness-report cycle and not spend credits repeating
 checks that already passed.

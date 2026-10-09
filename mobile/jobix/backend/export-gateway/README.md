@@ -2,6 +2,13 @@
 
 ## Actual development rollout checkpoint
 
+One separately approved private diagnostic revision (`00002-cf9`) is now
+deployed from a gateway-only build. It still fails closed at startup; no ready
+or public gateway exists. Obtain this new revision's structured stage/code
+event using administrator log access, not the old generic log. The worker
+was not rebuilt or redeployed by this diagnostic step. No further diagnostic
+deployment is authorized by the single-revision approval.
+
 Uploaded logs establish a startup abort but omit its cause because the deployed
 catch handler discarded the error. Local code now provides allowlisted
 stage/code/status diagnostics while preserving every startup security check

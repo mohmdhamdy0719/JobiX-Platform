@@ -8,13 +8,14 @@ if(!process.argv.includes('--build-development')) {
   console.error('EXPLICIT_DEVELOPMENT_BUILD_REQUIRED');process.exit(1);
 }
 const root=resolve(import.meta.dirname,'..');
-const files=['.dockerignore','backend/pdf/Dockerfile','backend/pdf/package.json','backend/pdf/pnpm-lock.yaml',
+const gatewayOnly=process.argv.includes('--gateway-only');
+const files=gatewayOnly?['.dockerignore']:['.dockerignore','backend/pdf/Dockerfile','backend/pdf/package.json','backend/pdf/pnpm-lock.yaml',
  'tool/prepare_resume_document.dart','lib/features/career_profile/career_profile.dart',
  'lib/features/career_profile/profile_sections.dart','lib/features/resume/resume_render.dart',
  'lib/features/resume/resume_document.dart','assets/fonts/Inter.ttf','assets/fonts/IBMPlexSansArabic-Regular.ttf',
  'assets/fonts/OFL.txt','assets/fonts/OFL-IBMPlexSansArabic.txt','assets/certs/supabase-root-2021.crt',
  ...(await readdir(resolve(root,'backend/pdf'))).filter(name=>name.endsWith('.mjs')).map(name=>'backend/pdf/'+name)];
-const includeGateway=process.argv.includes('--include-development-gateway');
+const includeGateway=gatewayOnly||process.argv.includes('--include-development-gateway');
 if(includeGateway)files.push('backend/export-gateway/Dockerfile',
  'supabase/functions/resume-export/transport.mjs',
  ...(await readdir(resolve(root,'backend/export-gateway'))).filter(name=>name.endsWith('.mjs'))
@@ -42,12 +43,12 @@ try {
   const build=await g.request(`https://cloudbuild.googleapis.com/v1/projects/${project}/locations/${region}/builds`,
     {method:'POST',write:true,body:{
       source:{storageSource:{bucket,object:name,generation:String(object.generation)}},
-       steps:[{name:'gcr.io/cloud-builders/docker',args:['build','-f','backend/pdf/Dockerfile','-t',image,'.']},
+       steps:[...(gatewayOnly?[]:[{name:'gcr.io/cloud-builders/docker',args:['build','-f','backend/pdf/Dockerfile','-t',image,'.']}]),
          ...(includeGateway?[{name:'gcr.io/cloud-builders/docker',
            args:['build','-f','backend/export-gateway/Dockerfile','-t',gatewayImage,'.']}]:[])],
-       images:[image,...(includeGateway?[gatewayImage]:[])],timeout:'1800s',tags:['jobix','development','pdf-export'],
+       images:[...(gatewayOnly?[]:[image]),...(includeGateway?[gatewayImage]:[])],timeout:'1800s',tags:['jobix','development','pdf-export'],
     }});
-   console.log(JSON.stringify({operation:build.name,image,...(includeGateway?{gatewayImage}:{})}));
+   console.log(JSON.stringify({operation:build.name,...(gatewayOnly?{}:{image}),...(includeGateway?{gatewayImage}:{})}));
 }catch(error) {
   // Archive is retained, not deleted under a test-object cleanup authorization.
   console.error(JSON.stringify({operation:'DEVELOPMENT_BUILD_BLOCKED',status:error.status??0,
