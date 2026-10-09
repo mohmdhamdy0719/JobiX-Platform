@@ -2,6 +2,7 @@ import {createHash,randomUUID,createPublicKey,verify} from 'node:crypto';
 import {ExportError} from './document.mjs';
 const backend='jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com';
 const scheduler='jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com';
+const bridge='jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com';
 const encode=value=>encodeURIComponent(value).replace(/[!'()*]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase());
 const digest=value=>createHash('sha256').update(value).digest('hex');
 async function checked(url,options={}) {
@@ -107,7 +108,7 @@ export async function authenticateInternal(header,audience) {
     const claims=JSON.parse(Buffer.from(parts[1],'base64url'));
     if(head.alg!=='RS256' || !['https://accounts.google.com','accounts.google.com'].includes(claims.iss) ||
       claims.aud!==audience || claims.exp<=Date.now()/1000 || claims.iat>Date.now()/1000+60 ||
-      claims.email_verified!==true || ![backend,scheduler].includes(claims.email))throw new Error();
+      claims.email_verified!==true || ![backend,scheduler,bridge].includes(claims.email))throw new Error();
     if(Date.now()>keysUntil) {
       keys=(await (await checked('https://www.googleapis.com/oauth2/v3/certs')).json()).keys;
       keysUntil=Date.now()+300000;

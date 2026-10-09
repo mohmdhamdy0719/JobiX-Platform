@@ -17,6 +17,9 @@ export function server({gateway,worker,cleanup,authenticate}) {
     try {
       if(req.method!=='POST')throw new ExportError('FORBIDDEN');
       const caller=await authenticate(req.headers.authorization);
+      if(caller==='jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com' && req.url!=='/command') {
+        throw new ExportError('FORBIDDEN');
+      }
       if(caller==='jobix-scheduler-dev@mhflow-jobix.iam.gserviceaccount.com' && req.url!=='/recover') {
         throw new ExportError('FORBIDDEN');
       }
@@ -26,6 +29,10 @@ export function server({gateway,worker,cleanup,authenticate}) {
         chunks.push(chunk);
       }
       const input=JSON.parse(Buffer.concat(chunks));
+      if(caller==='jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com' &&
+        !['document','create','again','status','history','download'].includes(input.action)) {
+        throw new ExportError('FORBIDDEN');
+      }
       let result;
       if(req.url==='/recover') {
         result=await worker.recover();

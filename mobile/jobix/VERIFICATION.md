@@ -1,5 +1,34 @@
 # Jobix verification evidence
 
+## Approved thin bridge implementation — LOCAL SECURITY GATE FAILED
+
+The owner authorized development-only implementation/configuration, with an
+explicit stop on any implementation/security-test failure. Implemented locally:
+independent Supabase Auth verification, actor/identity-header rejection, closed
+export gating, native attached-service-account ID-token acquisition, Edge
+forwarding without Google private keys, and bridge-only worker path restrictions.
+Added a lightweight non-root bridge image definition without new dependencies.
+These changes are not deployed.
+
+Executed once:
+`node --test mobile/jobix/backend/pdf/test/*.test.mjs`
+
+Result: **72 tests; 71 passed; 1 failed**. Existing 36 regression tests passed;
+35 new bridge/security tests passed. Failure:
+
+`cross-account access and inactive app account fail through authoritative Gateway checks`
+
+At `backend/pdf/test/bridge.test.mjs:124`, the assertion expected
+`FORBIDDEN` but received `SERVICE_UNAVAILABLE`. This combined test did not
+establish cross-account/inactive-account correctness. Do not claim the bridge
+security gate passed. Stopped without fixing/rerunning or beginning cloud work.
+
+No new service account, service, IAM binding, image build, deployment,
+migration, export-flag change, real Credit transaction or billable export.
+Existing deployed worker, Scheduler and private bucket were not modified.
+Supabase signing configuration and native Flutter/Android code are unchanged.
+Overall Phase 3 remains incomplete.
+
 ## Existing Scheduler resumed — PASS; gateway access checkpoint — BLOCKED
 
 Following the administrator's Scheduler service-scoped Run Invoker correction,

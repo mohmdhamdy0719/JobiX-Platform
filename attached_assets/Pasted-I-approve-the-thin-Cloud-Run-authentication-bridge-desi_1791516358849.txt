@@ -1,0 +1,30 @@
+I approve the thin Cloud Run authentication bridge design for the Jobix DEVELOPMENT environment only, subject to the following constraints.
+
+You are authorized to implement the bridge and its required development-only configuration.
+
+1. Create `jobix-dev-export-gateway` in `mhflow-jobix`, region `me-central1`, using the proposed dedicated identity:
+   `jobix-export-gateway-dev@mhflow-jobix.iam.gserviceaccount.com`
+
+2. The bridge must independently verify Supabase user tokens using the approved development Supabase Auth verification endpoint. Fail closed on invalid tokens, verification failures, wrong-project tokens, or deleted/inactive accounts.
+
+3. Derive the actor exclusively from verified identity claims. Reject caller-supplied actor overrides and identity headers.
+
+4. Grant the bridge identity only `roles/run.invoker` on `jobix-dev-pdf-export`. Do not grant database, GCS, Secret Manager, signing, or general impersonation permissions.
+
+5. Public invocation (`allUsers → roles/run.invoker`) is authorized on the new bridge only, because the bridge enforces application-level authentication. Never make the PDF worker public.
+
+6. Preserve the existing Edge Function as the application-facing entry point. Remove its private-key-backed Google authentication path and forward the original user token and unchanged command/request/idempotency identifiers to the bridge.
+
+7. Update worker authorization so the new bridge identity can invoke only the approved application command path. It must not invoke recovery, dispatch, cleanup, retention, or deletion-control paths.
+
+8. Preserve the existing Credit ledger/reservations, idempotency, immutable snapshots, restricted database role, RLS, private GCS bucket, Scheduler/recovery, seven-day PDF retention, and deletion contract.
+
+9. Add and run security tests for invalid/expired tokens, forged actors, cross-account access, deleted accounts, anonymous worker access, forbidden worker paths, replay/idempotency, and timeouts after commit.
+
+10. Keep export/client feature flags disabled. Do not run real Credit transactions or billable end-to-end exports until the bridge's security tests pass and the gateway/worker integration is verified.
+
+11. Development only. Do not touch production/staging, change Supabase Auth signing settings, create service-account keys, create a WIF pool/provider, broaden unrelated IAM, or bypass any security checks.
+
+12. Before applying any destructive operation, stop and ask for approval. If an implementation or security test fails, stop and report the exact failure.
+
+Proceed with implementation and development-only verification. Do not return another design-only report. Report the exact resources and IAM changes made, tests passed/failed, and any remaining blocker.

@@ -2,7 +2,28 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: design only; B is a preferred direction, not implementation approval
+## Current authorization: approved development thin bridge, security fail-fast
+
+The owner authorized implementing `jobix-dev-export-gateway` in `mhflow-jobix`
+and `me-central1`, using dedicated `jobix-export-gateway-dev` identity. Public
+`allUsers` Run Invoker is authorized on this bridge only; its runtime identity
+may have only worker-scoped Run Invoker. The PDF worker must remain private.
+Supabase Edge stays the application boundary; the bridge independently verifies
+users, derives actors and cannot invoke worker-only paths. Keep export/client
+flags disabled and no real Credit transactions or billable exports until
+security tests pass and integration is verified. Stop on an implementation or
+security-test failure; ask before destructive operations.
+
+**Why:** The owner explicitly approved the thin bridge implementation and its
+development-only configuration with these constraints.
+
+**How to apply:** No private keys, deployer credentials at runtime, WIF,
+Supabase Auth signing changes, unrelated IAM, production/staging or policy
+changes. Preserve Credit/idempotency, snapshots, restricted DB/RLS, GCS and
+existing recovery/retention/deletion. A failed security gate is a stop condition,
+not permission to deploy, enable exports or silently retry fixes.
+
+## Earlier authorization: design only; B is a preferred direction, not implementation approval
 
 The owner accepted the comparison and approved B (Google-managed/Cloud Run
 gateway with native Google authentication to the private worker) as the
