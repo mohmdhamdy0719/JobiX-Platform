@@ -5,6 +5,21 @@ description: Verify app provisioning and reconcile funded tests through durable 
 
 ## Funded development tests: authoritative reconciliation before retry
 
+Global development export flags do not enforce a one-intent test budget.
+An additional key can reserve Credits after the approved job completes.
+Close gates on unexpected additional work and inspect authoritative records
+without inventing a refund, changing expiry times or repeating the paid test.
+Downloads are currently gated too; reopening for download can also resume
+unapproved queued work, so reconcile that work before reopening.
+
+**Why:** A personal-phone window completed its one approved debit, then observed
+a distinct queued intent/reservation. The safe stop protected against a second
+debit but did not itself release the extra reservation.
+
+**How to apply:** Any bounded real-user test. Distinguish same-key replay from
+a new intent and distinguish final balance, reserved balance and available
+balance. Use approved native expiry/recovery rules, not manual wallet changes.
+
 An assertion, parsing error or caller timeout does not prove the export failed.
 Before funding again, refunding or using a new command key, inspect the durable
 job, reservation and ledger. Resume verification against the same original

@@ -1,5 +1,23 @@
 # Jobix verification evidence
 
+## Personal phone export — first completion verified, additional intent stop
+
+One approved real-account phone-created job completed: one page, 127100 bytes,
+hash `105b24b7daa65ce48111965f280ad12a7a635b3338732392fc13d069e46e6a16`;
+trusted-backend object/header/hash checked. One -2 debit and consumed reservation,
+balance 5 -> 3, reserved 0 at completion. Original operation's authoritative
+replay RPC matched its acknowledgement without a new create/charge. It does not
+prove phone HTTP replay or physical download/open/layout.
+
+A second distinct-key queued job was subsequently detected. All four gates
+closed automatically. Post-stop balance 3 finalized, 2 reserved (1 available),
+one debit only; second reservation still PENDING, no manual refund/release/
+balance adjustment. Origin must be clarified before attributing it to UI/user.
+Closed revisions Worker `00011-tnk`, Gateway `00010-4rp`, images unchanged;
+Edge/database gates closed, approved deletion-policy preserved. Do not reopen
+and dispatch the queued job to verify a supposedly free download.
+Personal acceptance remains NOT READY pending reconciliation and device evidence.
+
 ## Current M31 APK and deployed Worker retry fix — personal export pending
 
 Export status **NOT READY** under the owner's explicit definition: the current

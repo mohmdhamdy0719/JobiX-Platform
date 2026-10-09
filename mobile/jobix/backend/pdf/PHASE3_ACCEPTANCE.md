@@ -1,5 +1,37 @@
 # Phase 3 acceptance — Worker fix deployed, personal phone export pending
 
+## Personal phone window — first export completed; stopped on extra intent
+
+Owner approved one real-account export and reported APK installed, signed in,
+personal resume visible. Read-only baseline: active/confirmed account, one active
+profile, 5 finalized/available Credits, zero reserved, no prior exports/debits.
+Only the four approved development gates opened; no funding/profile edits or
+export creation by operational tooling. A bounded monitor watched the phone.
+
+The first real job completed: one page, 127100 bytes, PDF SHA256
+`105b24b7daa65ce48111965f280ad12a7a635b3338732392fc13d069e46e6a16`.
+Exact object read/hash/header verified through trusted backend access, not
+phone download proof. One -2 debit, reservation CONSUMED, finalized balance 3
+and reserved balance 0 at completion. The original operation's native replay
+RPC returned the same acknowledgement in a rolled-back transaction; no new
+create call or second charge. This is database replay, not phone HTTP replay.
+
+The monitor then observed a second job with a distinct idempotency key, about
+three minutes after the first request. It closed all four gates immediately,
+without refunding/altering Credit data. Post-stop: one COMPLETED job, second
+QUEUED job with PENDING 2-Credit reservation, finalized balance 3, reserved 2
+(available 1), exactly one debit. Origin/user action is not yet established;
+do not assume automatic client retry or blame user action.
+
+Closed Worker `00011-tnk`, Gateway `00010-4rp`; same deployed image digests.
+Edge and database export gates closed; deletion-policy approval unchanged.
+No second test/export may be started. Do not reopen gates merely for download:
+download is also gated and reopening Worker can run the queued second job.
+Use only established expiry/recovery semantics after reconciling this job;
+no forced expiry, fabricated cancellation/refund or manual balance change.
+Phone download/open/layout and actual request replay/ownership evidence remain
+unverified. Overall status NOT READY; task acceptance is not complete.
+
 ## Current development delivery — export status NOT READY
 
 The owner authorized a current debug APK and only necessary development backend

@@ -2,7 +2,24 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: real-user read-only path; explain ingress fix before cloud changes
+## Current authorization: one real personal-account phone export
+
+The owner approved one controlled 2-Credit export and reported the current APK
+installed, signed in and showing their personal resume. Verify existing active
+account/profile and available Credits before temporarily opening only the four
+approved development export gates. No funding, invented identity/data, repeated
+paid intent, contract/IAM changes or production/staging work.
+
+**Why:** The owner explicitly approved the one-export phone window, rather than
+another fictional/local test or broad permanent export enablement.
+
+**How to apply:** Observe the phone-created job; never create a substitute
+request. Close gates on an unexpected additional intent, failure, confirmation
+or the bounded deadline. Reconcile all jobs/reservations/ledger before any
+reopening or compensation. Do not claim device download/open/layout from a
+server completion or database replay; obtain actual device evidence.
+
+## Earlier authorization: real-user read-only path; explain ingress fix before cloud changes
 
 The owner requests the real Flutter/Edge/Gateway/Worker authenticated path and
 two authenticated development users' profile/job ownership tests, while export
