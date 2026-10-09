@@ -22,7 +22,8 @@ export async function google() {
   if(!response.ok||!auth.access_token)throw new CloudFailure(response.status,'CREDENTIAL_UNAVAILABLE');
   const hosts=new Set(['storage.googleapis.com','iam.googleapis.com','iamcredentials.googleapis.com',
     'run.googleapis.com','cloudbuild.googleapis.com','artifactregistry.googleapis.com',
-    'cloudscheduler.googleapis.com','secretmanager.googleapis.com','serviceusage.googleapis.com','logging.googleapis.com']);
+    'cloudscheduler.googleapis.com','secretmanager.googleapis.com','serviceusage.googleapis.com','logging.googleapis.com',
+    'cloudresourcemanager.googleapis.com']);
   const request=async(url,{method='GET',body,token=auth.access_token,write=false,headers={},text=false}={})=>{
     const target=new URL(url);
     const scopedLogRead=target.hostname==='logging.googleapis.com'&&target.pathname==='/v2/entries:list'&&
@@ -30,8 +31,10 @@ export async function google() {
       body.resourceNames[0]===`projects/${project}`;
     const scopedBuildLog=target.hostname==='storage.googleapis.com'&&method==='GET'&&
       new RegExp(`^/storage/v1/b/${projectNumber}\\.cloudbuild-logs\\.googleusercontent\\.com/o/log-[0-9a-f-]{36}\\.txt$`).test(target.pathname);
+    const approvedRoleRead=target.hostname==='iam.googleapis.com'&&method==='GET'&&
+      ['/v1/roles/iam.serviceAccountUser','/v1/roles/run.invoker'].includes(target.pathname);
     if(target.protocol!=='https:'||!hosts.has(target.hostname)||
-      !(scopedLogRead||scopedBuildLog||target.pathname.includes(project)||target.pathname.includes(bucket)||
+      !(scopedLogRead||scopedBuildLog||approvedRoleRead||target.pathname.includes(project)||target.pathname.includes(bucket)||
         target.pathname.includes(`/projects/${projectNumber}/`)))throw new CloudFailure(0,'DEV_RESOURCE_GUARD');
     if(text&&!scopedBuildLog)throw new CloudFailure(0,'SCOPED_BUILD_LOG_ONLY');
     const readOnlyPost=scopedLogRead||/:(testIamPermissions|getIamPolicy|generateAccessToken|generateIdToken|signBlob)$/.test(target.pathname);
@@ -45,6 +48,10 @@ export async function google() {
       const message=data.error?.message??data.message??(typeof data.error==='string'?data.error:'');
       const permission=message.match(/\b(?:iam|secretmanager|cloudbuild|storage|run|serviceusage)\.[a-zA-Z.]+\b/)?.[0];
       const error=new CloudFailure(r.status,permission);
+      // Safe provider classification only; never retain raw credential bodies.
+      const info=data.error?.details?.find(detail=>detail?.['@type']==='type.googleapis.com/google.rpc.ErrorInfo');
+      if(typeof info?.reason==='string')error.reason=info.reason;
+      if(typeof info?.metadata?.service==='string')error.service=info.metadata.service;
       // Build requests contain only allowlisted source references/public image
       // names, never environment values, credentials or customer documents.
       if(target.hostname==='cloudbuild.googleapis.com')error.buildReason=message.slice(0,300);

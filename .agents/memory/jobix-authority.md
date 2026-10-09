@@ -2,7 +2,23 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: read-only development bridge deployment readiness
+## Current authorization: dedicated bridge identity and narrow grants only
+
+The owner authorized creating only `jobix-export-gateway-dev` in `mhflow-jobix`
+without user-managed keys, worker-service-scoped Run Invoker, and a narrow
+service-account-level deployer actAs grant only if needed. Verify existing/
+resulting policies and stop on unexpected bindings, broader permissions or
+changes outside this scope. No gateway service, image build/deployment,
+exports, real Credits, Auth/secrets/DB changes or unrelated IAM is authorized.
+
+**Why:** The owner explicitly limited approval to the dedicated identity and
+its invocation/deployment permissions, not gateway deployment or live exports.
+
+**How to apply:** Audit before mutating; preserve worker privacy and existing
+principals. Do not activate project APIs or add unrelated roles as an implicit
+workaround. A blocked audit must be reported for separate resolution.
+
+## Earlier authorization: read-only development bridge deployment readiness
 
 The owner authorized checking existing local/development state without rerunning
 the green local suite. Do not change token scopes or create credentials. Keep

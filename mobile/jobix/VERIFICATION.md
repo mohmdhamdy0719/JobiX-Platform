@@ -1,5 +1,31 @@
 # Jobix verification evidence
 
+## Scoped gateway identity prerequisite attempt — BLOCKED before mutations
+
+The owner approved only the dedicated development account, worker-scoped Run
+Invoker and narrowly scoped deployer attachment permission, with a stop on
+unexpected/broader permissions or changes outside those resources.
+
+Before mutations, queried the standard `roles/iam.serviceAccountUser` definition.
+It contains actAs plus service-account/project metadata read permissions.
+No role was granted; an actAs-only requirement must not be silently expanded.
+The next project-scoped preflight request:
+`POST https://cloudresourcemanager.googleapis.com/v1/projects/mhflow-jobix:testIamPermissions`
+returned **403**, with Google ErrorInfo reason **SERVICE_DISABLED** and service
+**cloudresourcemanager.googleapis.com**. This does not prove a missing IAM role.
+
+Stopped before creating the account or changing any policy. Project/inherited
+policy auditing, actual new-account actAs evaluation, key listing, resulting
+policy verification and deployment readiness could not be completed. No new
+gateway service/image/build/deployment, real Credit or flag change occurred.
+
+The local Google operations helper now allows the approved project's Resource
+Manager audit endpoint and read-only definitions of the two approved roles,
+and reports safe ErrorInfo classification without provider bodies/credentials.
+Smallest next resolution: separately authorize/administrator-enable the
+Resource Manager API for the approved development project, then rerun the
+pre-change audit; do not add a broad IAM role to solve SERVICE_DISABLED.
+
 ## Development bridge deployment-readiness check — identity prerequisite missing
 
 Inspected the committed local bridge changes without rerunning the green suite.

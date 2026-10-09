@@ -6,6 +6,18 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Latest provisioning blocker: pre-change audit API is disabled.** Before any
+account/IAM mutation, project-scoped Resource Manager `testIamPermissions`
+returned HTTP 403 / Google reason `SERVICE_DISABLED` for
+`cloudresourcemanager.googleapis.com`. No account or binding was created.
+API activation is outside the owner's account/grant-only approval and was not
+performed. Administrator/separate approval for development API activation is
+the smallest next step, then recheck inherited policies and scoped capabilities.
+Do not infer IAM_PERMISSION_DENIED or grant broader roles from this response.
+The existing `roles/iam.serviceAccountUser` definition includes metadata reads
+as well as actAs; no role was applied and no extra permission was assumed
+approved. New-account effective attachment permission remains unverified.
+
 **Latest readiness blocker: missing dedicated bridge identity and invocation
 grant.** Read-only lookup of `jobix-export-gateway-dev` returned 404; the private
 worker has no Run Invoker binding for it. The planned bridge service is also
