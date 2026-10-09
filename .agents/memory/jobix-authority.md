@@ -2,7 +2,23 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
-## Current authorization: dedicated bridge identity and narrow grants only
+## Current authorization: read-only identity permission/custom-role audit
+
+The owner authorized Resource Manager API and requested a read-only audit
+first, with results reported before any changes. Prefer an actAs-only custom
+role bound on the new service account if supported; do not expand to the
+standard role automatically. If required resource/permission scope differs
+from the existing account-and-grants approval, stop and request approval.
+
+**Why:** The owner explicitly said "Report the audit results before making
+changes" and retained the no-deployment/no-export safeguards.
+
+**How to apply:** Verify actual API state, caller permissions and existing
+bindings. Authorization is not proof an API is enabled. A new custom role's
+project-level definition must not be confused with a service-account-level
+permission binding or silently treated as already authorized.
+
+## Earlier authorization: dedicated bridge identity and narrow grants only
 
 The owner authorized creating only `jobix-export-gateway-dev` in `mhflow-jobix`
 without user-managed keys, worker-service-scoped Run Invoker, and a narrow

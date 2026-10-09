@@ -1,5 +1,31 @@
 # Jobix verification evidence
 
+## Resumed read-only prerequisite audit — API still DISABLED
+
+Following the owner's API authorization, the read-only Service Usage lookup
+for `projects/850519041397/services/cloudresourcemanager.googleapis.com`
+returned state **DISABLED**. Authorization is not proof of activation.
+Stopped the dependent caller-permission/inherited-policy audit; no API, account,
+role, IAM binding, key, image, service, deployment or export flag was changed.
+
+Google's Cloud Run service-identity documentation supports attachment through
+a custom role providing `iam.serviceAccounts.actAs`. Prefer an existing exact
+actAs-only project custom role, bound on the new service account alone. A new
+custom-role definition would be a separate project resource; determine whether
+one is needed and obtain approval before creating it. No existing custom role
+or deployer effective permission was claimed verified in this blocked audit.
+
+Required action permissions, not grants applied or caller capabilities proven:
+account creation needs iam.serviceAccounts.create on mhflow-jobix; worker grant
+editing needs run.services.getIamPolicy/setIamPolicy on the worker; deployer
+attachment needs iam.serviceAccounts.actAs on the dedicated account; editing
+that account policy needs iam.serviceAccounts.getIamPolicy/setIamPolicy.
+Custom-role reuse needs iam.roles.list/get for audit; definition creation, if
+approved and necessary, needs iam.roles.create. No Token Creator, signing,
+database, GCS or Secret Manager grant is required for the gateway identity.
+First resolution remains activation of the already-authorized Resource Manager
+API, then complete the read-only audit and report before any mutation.
+
 ## Scoped gateway identity prerequisite attempt — BLOCKED before mutations
 
 The owner approved only the dedicated development account, worker-scoped Run

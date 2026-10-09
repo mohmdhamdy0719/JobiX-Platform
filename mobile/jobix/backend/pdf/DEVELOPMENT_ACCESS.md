@@ -6,6 +6,15 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Latest read-only recheck:** the owner authorized Resource Manager API, but
+Service Usage still reports `cloudresourcemanager.googleapis.com` as DISABLED
+in the approved development project. No API activation or other mutation was
+performed. Dependent caller-permission/project-policy auditing remains blocked.
+Cloud Run documents that a custom role granting actAs can attach the identity;
+an existing exact role must be audited before reuse. Creating a new custom-role
+definition is a separate resource/approval question, not an implicit standard
+Service Account User grant. Report the completed audit before making changes.
+
 **Latest provisioning blocker: pre-change audit API is disabled.** Before any
 account/IAM mutation, project-scoped Resource Manager `testIamPermissions`
 returned HTTP 403 / Google reason `SERVICE_DISABLED` for
