@@ -1,5 +1,23 @@
 # Jobix verification evidence
 
+## Focused Phase 3 acceptance — BLOCKED, successful export preserved
+
+See `backend/pdf/PHASE3_ACCEPTANCE.md` for the per-case matrix and exact scopes.
+The existing completed real PDF/snapshot/ledger were confirmed read-only and
+not recreated or charged. No live gate/configuration/cloud changes were made.
+Backend regression 90/90 and an additional adapter diagnostic 1/1 pass.
+Guarded disposable SQL adds seven passing fault/expiry/deletion cases and one
+failing definitive-upload-rejection retry: unresolved SENT flight blocks the
+new lease from creating an object. The production adapter's HTTP-403 mapping
+loses rejection classification. No fail-closed guard was weakened.
+
+Two Flutter retry/failure widget cases were added, but no widget test loaded:
+locked pub-cache packages are absent despite package_config.json existing.
+Formatting encounters the same absent-cache issue. Only Linux is detected,
+so actual Android WebView/download/file-save acceptance remains unverified.
+Stopped; propose local typed upload-settlement handling, exact locked-package
+restore and an Android target, without deployment or new paid exports.
+
 ## Controlled real-user PDF export — passed; development gates closed
 
 The owner subsequently authorized saved fictional data on development account

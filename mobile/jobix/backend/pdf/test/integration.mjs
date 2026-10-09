@@ -11,6 +11,7 @@ import {Database} from '../database.mjs';
 import {Canonicalizer,subprocess} from '../document.mjs';
 import {containsText} from '../renderer.mjs';
 import {ExportCleanup} from '../cleanup.mjs';
+import {ExportError} from '../document.mjs';
 
 const socket=process.env.JOBIX_DISPOSABLE_PG_SOCKET;
 if(!socket?.startsWith('/tmp/jobix-rls.') || !socket.endsWith('/socket'))throw new Error('Disposable guard');
@@ -173,3 +174,163 @@ assert.equal(sql(`select finalized_balance||','||reserved_balance from credit_ac
 assert.equal(sql(`select count(*) from credit_transactions where user_id=${quote(largeActor)} and delta=-2`),'0');
 sql('update export_settings set enabled=false,deletion_policy_approved=false');
 console.log('PASS: disposable SQL + canonical Dart/Chromium PDF + concurrent replay + atomic rollback + duplicate callback + Export Again + retention + real >20-page rejection before upload/debit. Storage is in-memory, not GCS.');
+
+// Focused acceptance fixtures: actual lifecycle/ledger SQL, injected renderer
+// and storage failures only. No live credentials, GCS or paid export are used.
+async function acceptanceFixture() {
+ const a=randomUUID();
+ sql(`insert into auth.users(id,email) values(${quote(a)},'fault-${a}@example.invalid');
+ update export_settings set enabled=true,deletion_policy_approved=true;
+ update profile_personal_data set full_name='Fault Fixture',email='fixture@example.invalid',
+ phone='+12025550147' where profile_id=(select id from career_profiles where user_id=${quote(a)});
+ insert into profile_volunteer_experiences(id,profile_id,organization,role,start_month,is_current)
+ select '${randomUUID()}',id,'Fictional Group','Volunteer','2025-01-01',true from career_profiles where user_id=${quote(a)};`);
+ const p=sql(`select id from career_profiles where user_id=${quote(a)}`);
+ const doc=await gateway.handle(a,'document',{profile_id:p});
+ const command={request_id:randomUUID(),idempotency_key:randomUUID(),expected_profile_version:doc.profile_version,
+  payload:{profile_id:p,expected_configuration_version:doc.configuration_version,
+   expected_document_sha256:doc.document_sha256,renderer_bundle_version:doc.bundle}};
+ const accepted=await gateway.handle(a,'create',command);
+ const [j]=await db.call('claim',{capacity:1});
+ assert.equal(j.id,accepted.operation_id);
+ const r={render:async()=>Buffer.from('%PDF-fixture-only'),validate:async()=>1};
+ const row=()=>JSON.parse(sql(`select to_jsonb(j) from export_jobs j where id=${quote(j.id)}`));
+ const balance=()=>sql(`select finalized_balance||','||reserved_balance from credit_accounts where user_id=${quote(a)}`);
+ const charges=()=>Number(sql(`select count(*) from credit_transactions where user_id=${quote(a)} and reference_type='RESUME_EXPORT'`));
+ return {a,p,doc,command,accepted,j,r,row,balance,charges};
+}
+{
+ const f=await acceptanceFixture();
+ f.r.render=async()=>{throw new ExportError('VALIDATION_FAILED');};
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(f.j);
+ assert.equal(f.row().state,'FAILED');assert.equal(f.balance(),'5,0');assert.equal(f.charges(),0);
+ console.log('PASS acceptance: terminal renderer failure releases reservation; no object/debit');
+}
+{
+ const f=await acceptanceFixture();
+ f.r.render=async()=>{throw new ExportError('SERVICE_UNAVAILABLE');};
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(f.j);
+ assert.equal(f.row().state,'RETRYABLE_FAILURE');assert.equal(f.balance(),'5,2');
+ sql(`update export_jobs set next_attempt_at=now() where id=${quote(f.j.id)}`);
+ const [retry]=await db.call('claim',{capacity:1});
+ assert.equal(retry.id,f.j.id);assert.notEqual(retry.lease_token,f.j.lease_token);
+ f.r.render=async()=>Buffer.from('%PDF-fixture-only');
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(retry);
+ assert.equal(f.row().state,'COMPLETED');assert.equal(f.balance(),'3,0');assert.equal(f.charges(),1);
+ assert.deepEqual(await gateway.handle(f.a,'create',f.command),f.accepted);
+ console.log('PASS acceptance: transient renderer retry uses same job/new fence; exactly one debit');
+}
+{
+ const f=await acceptanceFixture();let responseLost=false;
+ const interrupted={call:async(method,args)=>{
+  const result=await db.call(method,args);
+  if(method==='finish'&&args.proof&&!responseLost) {
+   responseLost=true;throw new ExportError('SERVICE_UNAVAILABLE');
+  }
+  return result;
+ }};
+ await new Worker({db:interrupted,storage,renderer:f.r,enabled:true}).run(f.j);
+ assert.ok(responseLost);assert.equal(f.row().state,'COMPLETED');
+ assert.equal(f.balance(),'3,0');assert.equal(f.charges(),1);
+ assert.deepEqual(await gateway.handle(f.a,'create',f.command),f.accepted);
+ console.log('PASS acceptance: response timeout after committed finish reconciles without new job/debit');
+}
+{
+ const f=await acceptanceFixture();
+ // Clock injection fires the existing hard deadline without sleeping 30m.
+ // SQL fixture timestamps simulate the same elapsed deadline, not new policy.
+ let now=Date.now();const callbacks=new Map();let next=0;
+ const clock={now:()=>now,setTimeout:(fn,ms)=>{callbacks.set(++next,{fn,at:now+ms});return next;},
+  clearTimeout:id=>callbacks.delete(id),setInterval:fn=>{callbacks.set(++next,{fn,at:Infinity});return next;},
+  clearInterval:id=>callbacks.delete(id)};
+ let rendering=false;
+ f.r.render=async()=>{rendering=true;return new Promise(()=>{});};
+ const running=new Worker({db,storage,renderer:f.r,enabled:true,clock}).run(f.j);
+ for(let i=0;i<200&&!rendering;i++)await new Promise(resolve=>setTimeout(resolve,1));
+ assert.ok(rendering);
+ now=Date.parse(f.j.deadline)+1;
+ for(const timer of [...callbacks.values()])if(timer.at<=now)await timer.fn();
+ await running;
+ assert.equal(f.balance(),'5,2');assert.equal(f.charges(),0);
+ sql(`update export_jobs set deadline=now()-interval '1 second' where id=${quote(f.j.id)}`);
+ await db.call('recover');await db.call('recover');
+ assert.equal(f.row().state,'FAILED');assert.equal(f.balance(),'5,0');assert.equal(f.charges(),0);
+ console.log('PASS acceptance: stalled worker deadline + authoritative recovery releases once; no debit');
+}
+{
+ const f=await acceptanceFixture();let renderCount=0,createCount=0;
+ const lost={...storage,create:async(...args)=>{
+  createCount++;await storage.create(...args);
+  throw new ExportError('SERVICE_UNAVAILABLE');
+ }};
+ f.r.render=async()=>{renderCount++;return Buffer.from('%PDF-fixture-only');};
+ await new Worker({db,storage:lost,renderer:f.r,enabled:true}).run(f.j);
+ assert.equal(f.row().state,'RETRYABLE_FAILURE');assert.equal(f.balance(),'5,2');
+ sql(`update export_jobs set next_attempt_at=now() where id=${quote(f.j.id)}`);
+ const [retry]=await db.call('claim',{capacity:1});
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(retry);
+ assert.equal(f.row().state,'COMPLETED');assert.equal(f.charges(),1);
+ assert.equal(renderCount,1);assert.equal(createCount,1);
+ console.log('PASS acceptance: upload committed/response lost adopts verified object; no rerender/second debit');
+}
+{
+ const f=await acceptanceFixture();
+ // Expiry must reject before storage signing and must leave snapshot/ledger.
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(f.j);
+ sql(`update export_jobs set expires_at=now()-interval '1 second' where id=${quote(f.j.id)}`);
+ await assert.rejects(gateway.handle(f.a,'download',{export_id:f.j.id}),{code:'EXPORT_EXPIRED'});
+ assert.equal(f.charges(),1);assert.equal(f.balance(),'3,0');
+ assert.equal(sql(`select count(*) from export_snapshots where id=${quote(f.accepted.data.snapshot_id)}`),'1');
+ sql(`update profile_summaries set text='changed source' where profile_id=${quote(f.p)};
+ insert into profile_summaries(profile_id,text) values(${quote(f.p)},'changed current source')
+ on conflict(profile_id) do update set text=excluded.text;
+ update career_profiles set profile_version=profile_version+1 where id=${quote(f.p)}`);
+ const current=await gateway.handle(f.a,'document',{profile_id:f.p});
+ const again=await gateway.handle(f.a,'again',{request_id:randomUUID(),idempotency_key:randomUUID(),
+  expected_profile_version:current.profile_version,payload:{...f.command.payload,
+   expected_document_sha256:current.document_sha256,expected_configuration_version:current.configuration_version,
+   historical_export_id:f.j.id}});
+ assert.notEqual(again.operation_id,f.j.id);assert.equal(again.data.reserved_credits,2);
+ assert.notEqual(again.data.document_sha256,f.accepted.data.document_sha256);
+ assert.equal(f.balance(),'3,2');
+ const [claimedAgain]=await db.call('claim',{capacity:1});
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(claimedAgain);
+ assert.equal(f.balance(),'1,0');assert.equal(f.charges(),2);
+ console.log('PASS acceptance: expired download no debit/regeneration; explicit Again uses current source and new 2-Credit job');
+}
+{
+ const f=await acceptanceFixture();
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(f.j);
+ const before=storageMap.size,original=f.row();
+ const peerPath=`exports/${randomUUID()}/peer.pdf`;storageMap.set(peerPath,{generation:'700'});
+ const ownerOrphan=`exports/${f.a}/orphan.pdf`;storageMap.set(ownerOrphan,{generation:'701'});
+ storage.listPrefix=async prefix=>[...storageMap].filter(([name])=>name.startsWith(prefix))
+  .map(([name,object])=>({name,...object}));
+ sql(`update users set status='DELETING' where id=${quote(f.a)}`);
+ await assert.rejects(gateway.handle(f.a,'create',f.command),{code:'ACCOUNT_DELETING'});
+ const cleaned=await new ExportCleanup({db,storage,enabled:true}).freeze(f.a);
+ assert.equal(cleaned.state,'EXPORT_DATA_REMOVED');assert.equal(cleaned.snapshots_verified,true);
+ for(const table of ['export_jobs','export_snapshots','credit_reservations'])
+  assert.equal(sql(`select count(*) from ${table} where user_id=${quote(f.a)}`),'0');
+ assert.equal(sql(`select count(*) from idempotency_records where operation_id=${quote(f.j.id)}`),'0');
+ assert.equal(sql(`select count(*) from export_upload_flights where operation=${quote(f.j.id)}`),'0');
+ assert.ok(!storageMap.has(original.object_path)&&!storageMap.has(ownerOrphan)&&storageMap.has(peerPath));
+ assert.equal(storageMap.size,before); // one owner PDF + orphan removed; peer added
+ assert.equal(f.charges(),1); // immutable completed ledger remains until account deletion
+ console.log('PASS acceptance: account freeze denies replay; exact object/orphan removal and zero export rows; peer object/ledger preserved');
+}
+{
+ const f=await acceptanceFixture();let calls=0;
+ // Deterministic definitive provider rejection: no physical create/object.
+ // SERVICE_UNAVAILABLE is today's storage adapter mapping of non-412 errors.
+ const denied={...storage,create:async()=>{calls++;throw new ExportError('SERVICE_UNAVAILABLE');}};
+ await new Worker({db,storage:denied,renderer:f.r,enabled:true}).run(f.j);
+ assert.equal(f.row().state,'RETRYABLE_FAILURE');assert.equal(f.balance(),'5,2');
+ sql(`update export_jobs set next_attempt_at=now() where id=${quote(f.j.id)}`);
+ const [retry]=await db.call('claim',{capacity:1});
+ await new Worker({db,storage,renderer:f.r,enabled:true}).run(retry);
+ console.log(JSON.stringify({acceptance:'definitive_upload_rejection_retry',
+  state:f.row().state,attempts:f.row().attempt_count,providerCreateCalls:calls,charges:f.charges(),
+  unresolvedFlights:Number(sql(`select count(*) from export_upload_flights where operation=${quote(f.j.id)} and state='SENT'`))}));
+ assert.equal(f.row().state,'COMPLETED','Definitively rejected upload must allow safe same-job retry after provider recovery');
+}

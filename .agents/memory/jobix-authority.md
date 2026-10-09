@@ -154,6 +154,17 @@ Keep the overall task incomplete when a failure stops the vertical slice.
 
 ## Current approval: one bounded development PDF/Credit test
 
+The controlled development happy-path result is now accepted and protected.
+The owner said: "Preserve this successful result and do not repeat or
+refabricate the same export." Focused deterministic failure/recovery,
+expiry/deletion and Flutter acceptance are authorized, with gates disabled
+outside explicitly controlled development tests and no unnecessary funding
+or duplicate exports. Stop at a real blocker and propose the smallest fix.
+
+**Why:** The owner explicitly confirmed the successful result and limited the
+next acceptance scope; this is not permission to repeat its funding/export or
+delete its account merely to exercise deletion.
+
 The owner approved a +2-Credit fixture ADJUSTMENT on isolated account A, one
 2-Credit PDF export, free same-key replay/download verification, temporary
 existing development export gates and disabling them afterward. Preserve

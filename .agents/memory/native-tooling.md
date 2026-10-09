@@ -3,6 +3,17 @@ name: Native tooling constraints
 description: Package availability and SDK-root behavior differ across workspace tooling
 ---
 
+Do not treat an existing Dart package_config as proof locked packages are
+still cached. Missing pub-cache files can produce cascading undefined-symbol
+errors that look like Flutter API/version failures.
+
+**Why:** The package config survived while critical locked test/UI packages
+and even the included formatter/lint options disappeared from the cache.
+
+**How to apply:** Diagnose the first missing-file error before changing app
+code or SDK versions. Restore exact locked packages, not upgrades, within
+the owner's setup approval; distinguish zero tests loaded from failed tests.
+
 Do not assume a package that evaluates in Nixpkgs is available through the
 workspace system-package installer, or that an SDK manager honors its
 command-line SDK-root option.

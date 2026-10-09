@@ -239,6 +239,7 @@ void main() {
   bool paginate = false;
   bool expiredDownload = true;
   bool loseResponse = false;
+  String workerState = 'QUEUED';
   String? rejected;
   int accepted = 0;
   Map<String, dynamic>? observedDocument;
@@ -289,6 +290,7 @@ void main() {
     observedDocument = null;
     accepted = 0;
     loseResponse = false;
+    workerState = 'QUEUED';
     rejected = null;
     paginate = false;
     expiredDownload = true;
@@ -335,7 +337,7 @@ void main() {
               {
                 'id': jobId,
                 'profile_id': profileId,
-                'state': acknowledgement == null ? 'COMPLETED' : 'QUEUED',
+                'state': acknowledgement == null ? 'COMPLETED' : workerState,
                 'created_at': '2026-10-08T12:00:00Z',
               },
             ],
@@ -374,7 +376,7 @@ void main() {
           }
           result = acknowledgement;
         } else if (action == 'status') {
-          result = {'state': 'QUEUED'};
+          result = {'state': workerState};
         } else if (action == 'download') {
           if (!expiredDownload) {
             return http.Response(
@@ -559,6 +561,44 @@ void main() {
       commands.where((c) => c['action'] == 'create' || c['action'] == 'again'),
       isEmpty,
     );
+  });
+  testWidgets('worker retry progress reaches completion on the same operation', (
+    tester,
+  ) async {
+    await mount(tester, initial: true);
+    await tap(tester, 'Create PDF — 2 Credits');
+    await tap(tester, 'Create — 2 Credits');
+    workerState = 'RETRYABLE_FAILURE';
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('RETRYABLE_FAILURE'), findsWidgets);
+    workerState = 'COMPLETED';
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('COMPLETED'), findsWidgets);
+    expect(accepted, 1);
+    final states = commands.where((c) => c['action'] == 'status');
+    expect(states.length, greaterThanOrEqualTo(2));
+    expect(states.every((c) => (c['command'] as Map)['export_id'] == jobId), true);
+    expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+  testWidgets('terminal worker failure is visible without automatic new export', (
+    tester,
+  ) async {
+    await mount(tester, initial: true);
+    await tap(tester, 'Create PDF — 2 Credits');
+    await tap(tester, 'Create — 2 Credits');
+    workerState = 'FAILED';
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('FAILED'), findsWidgets);
+    final count = commands.where((c) => c['action'] == 'status').length;
+    await tester.pump(const Duration(seconds: 9));
+    expect(commands.where((c) => c['action'] == 'status').length, count);
+    expect(accepted, 1);
+    expect(commands.where((c) => c['action'] == 'again'), isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
   testWidgets(
     'confirmed conflict requires explicit current Preview before a new intent',
