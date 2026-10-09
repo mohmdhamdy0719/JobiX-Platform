@@ -294,3 +294,17 @@ mtime_ms = 1791547436399
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fa3eb370-26ea-49af-8134-96e72f640abc/acfe4e4e-f37a-4859-b1dc-0a6096271402/99ef46f3-19c6-4ebe-abc8-f250c04f8661"
 storage_version_token = "1791547503874624"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "roolqUSba743XAYge2zMN"
+uri = "file://deliverables/jobix-production-readiness-2026-10-09.html"
+type = "html"
+title = "JobiX V2 — Production Readiness Assessment"
+description = "Detailed read-only assessment: readiness score, verified development inventory, threat matrix, proposed limits, capacity estimates, cost models, launch checklist and prioritized backlog."
+logical_id = "7ca80941-3a5b-43f0-bc26-2b4c0e557047"
+content_hash = "sha256:8c57c2bf7d67381930e305d21e86aceb7a2e56b31d69a10e502b385f154baded"
+size = 63768
+mtime_ms = 1791554595441
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fa3eb370-26ea-49af-8134-96e72f640abc/7ca80941-3a5b-43f0-bc26-2b4c0e557047/66670eb4-3085-4ca5-a89c-76862540f65a"
+storage_version_token = "1791554650422517"
+content_type = "text/html"

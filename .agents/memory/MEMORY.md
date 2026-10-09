@@ -13,3 +13,4 @@
 - [Read-only Git/LFS checks](plan-mode-lfs.md) — git status can invoke LFS and attempt temporary writes; avoid repair or filter bypass in Plan mode.
 - [Resume print verification](resume-print-verification.md) — bidi extraction and font boxes can cause false failures; keep logical-source and physical-print checks separate.
 - [PDF runtime verification](pdf-runtime-verification.md) — host Chromium success does not verify pinned Playwright; avoid mixing libc paths into Node.
+- [Cloud cost evidence](cloud-cost-evidence.md) — region lists do not prove selected prices; distinguish alert budgets from current service spend-cap support.

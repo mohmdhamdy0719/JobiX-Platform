@@ -1,0 +1,206 @@
+# JobiX V2 — Production Readiness, Scalability, Security & Cost-Control Assessment
+
+The Jobix development app is now working: I can sign in, use the application, and export and download a PDF successfully.
+
+My next goal is to prepare Jobix for production and public availability. Before we continue with UI/UX improvements and open PDF export to all eligible users, I need a rigorous, evidence-based assessment of our current architecture.
+
+**This task is an assessment and planning task, not an implementation or deployment task.**
+
+Do not modify application code, deploy services, change export gates, change account balances, run chargeable exports, upgrade dependencies, or alter production/staging resources during this assessment.
+
+Use the current repository, architecture documents, deployed development configuration, database schema and migrations, service settings, relevant logs/metrics, and existing test results as evidence. Do not rely on assumptions or merely repeat previous reports. Clearly distinguish verified facts, estimates, unknowns, and recommendations.
+
+## 1. Executive production-readiness verdict
+
+Give me:
+- An overall production-readiness score from 0–100%, with a transparent breakdown by category.
+- A separate score for security, cost control, reliability, scalability, PDF export/download, observability, and operational readiness.
+- The exact blockers that prevent public launch.
+- What is already good enough and should not be rewritten.
+- The smallest practical set of improvements required before launch.
+
+Do not inflate the score because local tests pass. A passing test suite is not proof of production capacity or reliable operation at scale.
+
+## 2. Audit the actual architecture
+
+Inspect the current implementation and deployment for:
+- Flutter application and Supabase Auth.
+- Supabase Edge Functions.
+- Export Gateway and private PDF Worker.
+- Database, schema, indexes, transactions, connection pooling and migrations.
+- PDF rendering, upload, private object storage, signed downloads and expiration.
+- Credit balances, grants, reservations, immutable ledger entries, refunds and idempotency.
+- Recovery jobs, queue processing, retries, cleanup, account deletion and stale-worker handling.
+- Rate limiting, quotas, concurrency controls and abuse prevention.
+
+Use our existing architecture and approved policies as the baseline. Identify any mismatch between the documented architecture, local code and deployed development environment.
+
+For every critical finding, provide the exact component/file/configuration or database mechanism and supporting evidence. If you cannot verify something, explicitly mark it UNKNOWN and explain how it can be verified safely.
+
+## 3. Security and Credit-abuse threat model
+
+Assume a malicious user may try to:
+- Modify the mobile app or call backend endpoints directly.
+- Forge or replay export requests.
+- Change user IDs or access another user's resume or PDF.
+- Reuse, forge, duplicate, or race Credit grants and reservations.
+- Exploit retries, timeouts, concurrent requests, stale workers, recovery jobs or partial failures.
+- Repeatedly create accounts to obtain signup bonuses or daily Credits.
+- Abuse referral rewards or other free-Credit mechanisms, if present.
+- Submit extremely large resumes or malicious input that increases rendering time or resource consumption.
+- Flood export, preview, download, authentication or other endpoints.
+- Guess object names, reuse expired links, or attempt unauthorized downloads.
+- Exploit public service endpoints or privileged service credentials.
+
+For each attack, assess:
+1. Whether the current implementation is vulnerable, protected, or unverified.
+2. The enforcement layer: client, Edge Function, Gateway, Worker, database, storage or infrastructure.
+3. The financial impact if exploited.
+4. The exact mitigation and its priority.
+
+Treat the backend and database as authoritative. Never trust client-supplied balances, user IDs, Credit amounts, export status, ownership claims or pricing.
+
+Verify that every export charge is tied to one valid, server-authorized operation and cannot be multiplied by concurrent calls, retries, replays or client manipulation. Failed exports must follow the approved reservation and refund rules.
+
+## 4. Design a robust cost-control system
+
+Recommend a layered cost-control policy that prevents a user from generating an unreasonable bill, even if they automate thousands of requests.
+
+Evaluate:
+- Per-user export limits per minute, hour, day and month.
+- Global export and rendering quotas.
+- Maximum concurrent jobs and queue depth.
+- Maximum input size, page count, render duration, retries and worker memory/CPU.
+- Signup bonus and daily Credit limits.
+- Account-creation abuse, referral abuse and suspicious multi-account activity.
+- Per-user and global monetary budgets, alerts and automatic circuit breakers.
+- Emergency controls that stop new expensive work without corrupting completed exports or Credit accounting.
+- Fair-use limits and clear user-facing errors when limits are reached.
+
+Recommend concrete starting limits for a small launch, but label them as proposed policy values, not existing settings. Explain which limits belong in the database, application backend, cloud infrastructure or billing controls.
+
+Explain how we can guarantee that a user cannot obtain unlimited effective Credits simply by manipulating the app or making repeated requests. If signup bonuses or daily Credits cannot be protected completely against multiple accounts, explain the residual risk and the most cost-effective mitigations.
+
+## 5. Capacity and reliability assessment
+
+Assess whether the current architecture can support:
+- 500 monthly active users.
+- 1,000 monthly active users.
+- 5,000 monthly active users.
+- 10,000 monthly active users.
+
+Model both normal and bursty usage. Do not assume monthly user count alone determines capacity.
+
+For each scenario, estimate:
+- PDF exports per month and per day under clearly stated usage assumptions.
+- Concurrent export jobs and likely bottlenecks.
+- Database, Edge Function, Gateway, Worker and storage pressure.
+- Expected failure modes and user impact.
+- Which limits can be addressed by configuration and which require architecture changes.
+
+Distinguish a reasoned estimate from a capacity claim proven by load testing. Recommend a safe, staged load-test plan before public launch, including measurable acceptance criteria and spending limits.
+
+## 6. PDF export cost model
+
+Build an explicit monthly cost model for:
+- 500 PDF exports/month.
+- 1,000 PDF exports/month.
+- 5,000 PDF exports/month.
+- 10,000 PDF exports/month.
+
+Also show example user populations, such as 500 and 1,000 monthly users, with light, normal and heavy export usage.
+
+Break costs down by actual billing drivers:
+- PDF Worker CPU and memory/runtime.
+- Cloud Run requests and networking, where billable.
+- Supabase Edge Function and database usage.
+- Database compute, storage and connection pooling.
+- PDF object storage, operations, downloads and retention.
+- Scheduler/recovery activity.
+- Logging, monitoring, bandwidth and any other material charges.
+
+Use current verified provider prices and our actual resource configuration wherever possible. Clearly identify free-tier allowances, regional pricing assumptions, fixed monthly costs, variable costs and costs that cannot yet be estimated.
+
+Do not invent exact prices or claim a zero cost based only on free-tier eligibility. Cite official current pricing sources and state the currency and billing assumptions. If you cannot retrieve a verified price, show the formula and mark the price UNKNOWN.
+
+Provide low, expected and high-cost scenarios, with the assumptions behind each.
+
+## 7. Optimize cost without damaging reliability
+
+Identify the highest-value cost reductions, ordered by impact and implementation risk.
+
+Evaluate, where relevant:
+- Reusing an existing valid PDF instead of regenerating it.
+- Avoiding duplicate jobs and duplicate rendering.
+- Efficient Chromium/PDF worker lifecycle and concurrency.
+- Worker CPU/memory and timeout configuration.
+- Retention and cleanup policy.
+- Database indexes and query efficiency.
+- Storage and download bandwidth.
+- Queue/recovery frequency.
+- Logging volume and retention.
+- Whether any current component is unnecessarily complex or expensive.
+
+Do not recommend replacing the current architecture simply because another architecture is theoretically cheaper. Compare the actual costs and operational risks of keeping the current design versus targeted changes.
+
+## 8. Credits, signup bonuses and pricing policy
+
+Evaluate whether our current Credit rules are sustainable:
+- Initial signup Credits.
+- Daily free Credits, if implemented.
+- Cost of a new PDF export.
+- Free downloads of an existing valid export.
+- Cost of Export Again.
+- Failed export reservation release/refund.
+- Referral rewards, if present.
+
+Build a simple unit-economics table showing, for several proposed policies, the maximum expected export volume per user and the estimated business cost.
+
+Recommend practical starting limits and explain which policies should be configurable without changing application code.
+
+Do not change any existing Credit rules during this assessment.
+
+## 9. Production observability and incident response
+
+Specify the minimum production dashboard, metrics, alerts and operational runbooks needed to monitor:
+- Export success and failure rates.
+- Queue depth and waiting time.
+- Export latency percentiles.
+- Rendering CPU/memory and timeouts.
+- Stuck reservations and unresolved upload flights.
+- Credit ledger inconsistencies and duplicate charges.
+- Storage failures and download failures.
+- Cost per successful export and total daily/monthly spend.
+- Abnormal account creation and export patterns.
+
+Recommend alert thresholds and an incident response procedure for excessive spending, service failure, suspected Credit abuse and data exposure.
+
+Ensure logs and metrics do not leak resumes, access tokens, personal information or signed URLs.
+
+## 10. Production launch checklist and final recommendation
+
+Finish with:
+1. A prioritized P0/P1/P2 backlog.
+2. A launch checklist with explicit pass/fail criteria.
+3. A staged rollout plan: internal accounts, limited beta, then broader public availability.
+4. The conditions under which export should be automatically throttled or temporarily disabled.
+5. A decision: KEEP the current architecture, MODIFY specific components, or REARCHITECT—with evidence and a cost/risk comparison.
+
+For every recommended change, estimate its implementation effort, expected benefit, risk and whether it is required before launch.
+
+### Required output format
+
+Deliver:
+- A concise executive summary first.
+- A verified current-state inventory.
+- A security/abuse risk matrix.
+- Capacity assumptions and limits.
+- Cost tables with formulas and sources.
+- A prioritized implementation backlog.
+- A clear list of unknowns and the exact checks needed to resolve them.
+
+Avoid generic best-practice advice unless it is tied to a concrete Jobix component or risk.
+
+Do not perform implementation or deployment in this task. We will review the findings and approve the smallest necessary changes before starting UI/UX work and public rollout.
+
+The main objective is to make Jobix secure, reliable, affordable to operate, and capable of growing without exposing users' personal data or allowing uncontrolled infrastructure costs.
