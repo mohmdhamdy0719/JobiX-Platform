@@ -1,6 +1,19 @@
 # Jobix verification evidence
 
-## Real-user ingress trace — local read-only implementation; cloud proposal pending
+## Real-user ingress trace — local read-only implementation; approved rollout blocked
+
+The owner approved the scoped read-only ingress rollout and conditional
+disposable terminal-job fixtures. The first cloud write, POST to development
+`/v1/projects/lmouxhbjhtqdtiqijcee/secrets` for only the three approved
+non-credential Edge settings, returned **403**. Scoped metadata read returned
+200 and confirmed all three are absent. No Edge/Cloud Run deployment, build,
+public invocation grant or fixture/Credit mutation was performed.
+Official endpoint documentation requires fine-grained
+`edge_functions_secrets_write` (OAuth umbrella `secrets:write`), not merely
+read access. No token scope/credential was changed. An administrator can set
+the three approved settings directly, preserving the existing credential;
+the rollout helper then skips the write when read-only metadata matches.
+Edge deployment permission `edge_functions_write` remains unproven.
 
 Existing Flutter `_call` invokes `resume-export` using the signed-in Supabase
 client and action/command body. The Edge source verifies the user through
@@ -24,14 +37,15 @@ logic changes. Local two-identity fixtures prove own profile/job reads and
 foreign profile FORBIDDEN / foreign job NOT_FOUND. These are mocked Auth/DB
 tests, not two real Supabase sessions. Full suite passed **90/90**.
 
-Smallest proposed cloud change: `allUsers -> roles/run.invoker` on ONLY
+Smallest approved cloud change: `allUsers -> roles/run.invoker` on ONLY
 `jobix-dev-export-gateway`, retaining mandatory independent Supabase
 verification and server-derived actor. Worker IAM remains private. Deploy
 the Edge function with platform verify_jwt enabled (official Supabase
 auth-headers documentation confirms asymmetric signing-key support), its
 existing handler verification, Gateway URL, export=false and preserved
 deletion approval. Roll out the read-only Gateway/Worker changes; no migrations.
-No cloud changes have been applied for this request; exposure approval pending.
+No cloud changes were accepted for this request; the approved rollout is
+blocked on development Edge configuration write access.
 
 Prefer the existing two isolated test accounts and reusable test jobs.
 Every export_jobs row requires a credit_reservations reference; do not pretend

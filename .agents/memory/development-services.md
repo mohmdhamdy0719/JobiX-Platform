@@ -23,6 +23,19 @@ resources to bypass missing access.
 
 ## Owner-selected development configuration
 
+Supabase Management read access is not proof of runtime-configuration write
+access. When a write is denied, prefer administrator configuration of only the
+approved non-credential Edge settings over widening or replacing the PAT.
+Do not confuse the Supabase token principal with the Google deployment identity.
+
+**Why:** The owner forbids unapproved token broadening/new credentials; successful
+metadata reads previously concealed a separate Edge-setting write prerequisite.
+
+**How to apply:** Compare only approved settings before requesting writes; skip
+unnecessary updates, report the endpoint's documented fine-grained permission
+without guessing the particular policy that denied access, and keep credentials
+and unrelated configuration unchanged.
+
 Use provider-returned managed URL formats in configuration-validator fixtures,
 not only simplified hand-written hostnames.
 

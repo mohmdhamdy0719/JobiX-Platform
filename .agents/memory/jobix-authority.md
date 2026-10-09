@@ -152,6 +152,22 @@ readiness exercise, but honor fail-fast. Missing permissions do not authorize
 adding grants, making a private service public or using another runtime identity.
 Keep the overall task incomplete when a failure stops the vertical slice.
 
+## Current approval: scoped development read-only ingress rollout
+
+The owner approved Gateway-only public invocation, deployment of the existing
+Edge handler and the tested Gateway/Worker read-only routing. Export processing
+must remain disabled and Worker invocation private. The owner also approved
+disposable terminal-job fixture snapshots and released reservation rows if
+reusable isolated test jobs are absent; balances/ledger must remain unchanged,
+with no reserve/finalize calls, PDFs/GCS objects and cleanup afterward.
+
+**Why:** The owner explicitly approved both the ingress rollout and optional
+terminal-fixture scope so the real two-user authenticated path can be verified.
+
+**How to apply:** Development only. Reuse existing identities/credentials;
+collect test-account credentials securely. Do not repeat passed broad audits,
+change Credit logic/retention/Auth signing or enable billable exports.
+
 ## Broader authorization: Phase 3 development implementation and deployment
 
 The owner explicitly authorized the complete PDF Export + Credits vertical slice,
