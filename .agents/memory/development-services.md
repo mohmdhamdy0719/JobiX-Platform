@@ -36,6 +36,18 @@ unnecessary updates, report the endpoint's documented fine-grained permission
 without guessing the particular policy that denied access, and keep credentials
 and unrelated configuration unchanged.
 
+Regional managed builds can return legacy-shaped operation references whose
+global metadata lookup fails even while the regional build is progressing.
+New public invocation changes can also temporarily produce upstream token
+rejections instead of the application's expected error envelope.
+
+**Why:** Treating an observation failure or unsettled authorization as an
+application failure risks duplicate builds, revisions or unnecessary IAM changes.
+
+**How to apply:** Poll the provider-returned build ID in its actual region;
+inspect response layer/code and repeat only failed HTTP probes after settling.
+Do not change expected security outcomes or redeploy without a proven code fault.
+
 Use provider-returned managed URL formats in configuration-validator fixtures,
 not only simplified hand-written hostnames.
 

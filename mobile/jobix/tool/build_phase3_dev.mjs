@@ -48,7 +48,8 @@ try {
            args:['build','-f','backend/export-gateway/Dockerfile','-t',gatewayImage,'.']}]:[])],
        images:[...(gatewayOnly?[]:[image]),...(includeGateway?[gatewayImage]:[])],timeout:'1800s',tags:['jobix','development','pdf-export'],
     }});
-   console.log(JSON.stringify({operation:build.name,...(gatewayOnly?{}:{image}),...(includeGateway?{gatewayImage}:{})}));
+   console.log(JSON.stringify({operation:build.name,buildId:build.metadata?.build?.id,
+     buildName:build.metadata?.build?.name,...(gatewayOnly?{}:{image}),...(includeGateway?{gatewayImage}:{})}));
 }catch(error) {
   // Archive is retained, not deleted under a test-object cleanup authorization.
   console.error(JSON.stringify({operation:'DEVELOPMENT_BUILD_BLOCKED',status:error.status??0,

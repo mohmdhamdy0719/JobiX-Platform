@@ -2,23 +2,28 @@
 
 ## Actual development rollout checkpoint
 
-The owner approved read-only ingress rollout. It is currently blocked before
-build/deployment/IAM changes: development Edge setting creation returned 403,
-requiring `edge_functions_secrets_write`. All three approved settings are
-absent. Administrator configuration of only those settings can avoid widening
-the existing PAT; the helper checks their metadata and skips redundant writes.
+Approved read-only rollout is deployed: Gateway `00004-smz` and private Worker
+`00004-5hn` are Ready; Edge `resume-export` version 1 is ACTIVE with JWT
+verification enabled. Only Gateway received public invoker permission.
+Existing credentials/identities and Worker IAM were preserved. Export
+processing remains false; approved deletion policy remains true.
+Native Gateway-to-Worker authentication and 10/10 public security probes passed.
+No Credits/PDFs or terminal fixtures were created. Actual two-user ownership
+tests remain pending the missing configured test-account credentials.
 
-Real-user path work now has local authenticated read-only routing for document
+The earlier Edge-settings 403 is resolved: the approved write returned 201
+with the existing credential, and the handler deployed successfully.
+
+Real-user path work now has deployed authenticated read-only routing for document
 preview/history/status while exports remain off. Mutation/signing paths still
 fail closed. Local full suite passes 90/90, including two mocked verified
-identities and profile/job isolation. This is not deployed/live two-user proof.
-Private Gateway IAM currently prevents Edge's Supabase bearer from reaching
-the handler, and the Edge function is absent in the development inventory.
-The approved change is public invocation only on this independently
-authenticating Gateway, never the Worker; resolve the Edge configuration
-write blocker before proceeding.
+identities and profile/job isolation. These mocks are not live two-user proof.
+Public invocation was added only on this independently authenticating Gateway,
+never the Worker. Keep exports off until actual two-user ownership tests pass.
 
-Gateway revision `00003-whw` is now Ready after one controlled Gateway-only
+## Historical rollout checkpoints (superseded by the current checkpoint above)
+
+Earlier Gateway revision `00003-whw` became Ready after one controlled Gateway-only
 deployment of the hostname fix. Authenticated private `/ready` returned 200
 and verifies native Gateway-to-Worker authentication plus worker-only path
 denials. Eight recorded live checks passed, including invalid application token,

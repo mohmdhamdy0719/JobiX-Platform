@@ -1,6 +1,45 @@
 # Jobix verification evidence
 
-## Real-user ingress trace — local read-only implementation; approved rollout blocked
+## Development read-only ingress rollout — deployed; real-user ownership pending
+
+The existing credential's approved Edge-settings write now returned **201**.
+All three non-credential settings were configured; the existing Edge source
+was deployed as `resume-export` **version 1 / ACTIVE / verify_jwt=true**.
+No token scope/credential was changed by the agent.
+
+Managed regional build `39398957-2069-426b-9fae-90bab12f92c4` succeeded.
+Pinned images deployed to the existing services:
+- Gateway `jobix-dev-export-gateway-00004-smz`, Ready:
+  `sha256:4754a7409e471ecb8aef8ebf41bf3607de55915fd09246e7da697dc4e69d573d`.
+- Worker `jobix-dev-pdf-export-00004-5hn`, Ready:
+  `sha256:253d2e62e0f884bb6ba227d994cadf40d0b491e8556939e3173d840ab01cd946`.
+
+Only Gateway received `allUsers -> roles/run.invoker`; prior bindings were
+preserved. Worker invocation IAM remained enforced and its policy unchanged.
+Existing attached identities, database Secret/version/CA, runtime settings and
+approved deletion flag were preserved. Export processing is false in Edge,
+Gateway and Worker. No migrations, Auth signing/IAM beyond Gateway public
+invocation, Credit operations, PDF generation or fixture creation occurred.
+Build source archives are not generated-PDF/test objects.
+
+Hosted native Google Gateway-to-Worker authentication and Worker-only-path
+denials passed. Ten public HTTP security probes passed: missing/invalid user
+tokens in Edge and Gateway, top-level/nested actor forgery, forbidden action
+and two forbidden Gateway paths, and anonymous private-Worker access.
+Immediately after the IAM write, five probes with Authorization returned 401
+without application envelopes; only those failed probes were repeated after
+settling, then returned the expected application 403/400/404. No code,
+expectations, IAM or revision changes were made to obtain those results.
+
+The 90/90 local suite remains valid and was not unnecessarily rerun.
+Two actual Supabase-session profile/job ownership checks remain **unverified**:
+the four configured A/B test credential entries are absent. Collect existing
+isolated account credentials securely before testing; do not create accounts,
+backfill app users or mutate real Credit state as a workaround. Approved
+terminal fixtures may be created only if reusable test jobs are absent.
+Do not enable exports or claim Phase 3 complete.
+
+## Earlier ingress/configuration blocker — resolved by the rollout above
 
 The owner approved the scoped read-only ingress rollout and conditional
 disposable terminal-job fixtures. The first cloud write, POST to development
