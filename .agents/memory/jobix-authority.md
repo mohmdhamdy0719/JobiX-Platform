@@ -167,6 +167,12 @@ terminal-fixture scope so the real two-user authenticated path can be verified.
 **How to apply:** Development only. Reuse existing identities/credentials;
 collect test-account credentials securely. Do not repeat passed broad audits,
 change Credit logic/retention/Auth signing or enable billable exports.
+Passing read-only authenticated ownership checks is not approval to fund
+wallets or enable exports. Propose a bounded controlled test and obtain its
+explicit Credit budget/configuration approval first.
+
+**Why:** The owner said to propose a controlled development export test only
+after the authenticated path passes, not to start Credit transactions then.
 
 ## Broader authorization: Phase 3 development implementation and deployment
 

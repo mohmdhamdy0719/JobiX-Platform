@@ -1,6 +1,46 @@
 # Jobix verification evidence
 
-## Development read-only ingress rollout — deployed; real-user ownership pending
+## Development real-user ingress — 36/36 passed; PDF/Credit gates remain closed
+
+Two existing development accounts authenticated against actual Supabase Auth.
+`tool/test_phase3_user_ingress_dev.mjs --approved-two-user-readonly
+--approved-terminal-fixtures` passed **36/36 live checks** through the deployed
+Edge/Gateway/Worker and directly through the public authentication Gateway.
+The requests reproduce Flutter's authenticated action/command transport; no
+Flutter UI/device automation or new APK was performed.
+
+Both actors' own previews returned 200 with source hashes matching their
+authoritative DB source and HTML hashes matching the response. Foreign profiles
+returned 403 FORBIDDEN. Own status/history returned 200; foreign jobs and foreign
+history cursors returned the existing non-disclosing NOT_FOUND contract (503,
+null data), not another actor's metadata. Create/again/download returned 503
+EXPORT_NOT_READY for each actor through both entry points.
+
+No reusable test jobs existed. Exactly two approved fixture sets were inserted:
+RELEASED reservations, immutable source/HTML snapshots and FAILED jobs with no
+object path. No reserve/finalize operation, pending Credit reservation, ledger
+transaction, PDF generation or GCS mutation occurred. Exact fixture jobs,
+snapshots and reservations were deleted and cleanup verified. Before/after
+whole-row fingerprints confirmed existing application users, career profiles,
+Credit accounts/transactions/reservations, AI allowance accounts, export
+jobs/snapshots and export settings remained identical.
+
+Only the two newly created login sessions were signed out with scope=local;
+other sessions/devices were not signed out. Credentials/tokens/customer HTML
+were not printed or persisted in the test report.
+
+No deployment, flags, IAM, Auth settings, roles, RLS, retention/deletion policy,
+production or staging changed in this verification turn. Existing 90/90 local
+and 10/10 public-boundary results remain valid and were not rerun.
+
+The authenticated ownership prerequisite is now verified, but Phase 3 is not
+complete. Exports remain false. Both isolated test wallets have zero available
+Credits and no live pending export jobs exist. A controlled real-PDF test needs
+separate approval for bounded development gate enablement and test funding via
+the existing ADJUSTMENT ledger type; never invent signup/ad rewards, silently
+fund accounts, delete ledger history or change the Credit algorithm.
+
+## Development read-only ingress rollout — deployed (earlier checkpoint)
 
 The existing credential's approved Edge-settings write now returned **201**.
 All three non-credential settings were configured; the existing Edge source
@@ -32,11 +72,8 @@ settling, then returned the expected application 403/400/404. No code,
 expectations, IAM or revision changes were made to obtain those results.
 
 The 90/90 local suite remains valid and was not unnecessarily rerun.
-Two actual Supabase-session profile/job ownership checks remain **unverified**:
-the four configured A/B test credential entries are absent. Collect existing
-isolated account credentials securely before testing; do not create accounts,
-backfill app users or mutate real Credit state as a workaround. Approved
-terminal fixtures may be created only if reusable test jobs are absent.
+At that checkpoint, actual two-user ownership remained unverified pending
+secure test credentials. It is now verified by the current checkpoint above.
 Do not enable exports or claim Phase 3 complete.
 
 ## Earlier ingress/configuration blocker — resolved by the rollout above

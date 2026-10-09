@@ -8,8 +8,16 @@ verification enabled. Only Gateway received public invoker permission.
 Existing credentials/identities and Worker IAM were preserved. Export
 processing remains false; approved deletion policy remains true.
 Native Gateway-to-Worker authentication and 10/10 public security probes passed.
-No Credits/PDFs or terminal fixtures were created. Actual two-user ownership
-tests remain pending the missing configured test-account credentials.
+Actual two-user verification now passes 36/36: owned previews/status/history,
+foreign profile denial, non-disclosing foreign jobs/cursors, and closed
+create/again/download paths through Edge and directly through Gateway.
+Two approved terminal fixture sets were required and fully removed. Whole-row
+baseline checks confirmed unchanged existing account/profile/Credit/AI/export
+state. No ledger transactions, pending reservations, PDFs or GCS mutations.
+Test login sessions alone were revoked; other devices/sessions were preserved.
+The real-user ingress prerequisite is verified, not the complete PDF/Credit
+vertical slice. Both test wallets are zero; controlled export/funding approval
+is still required. Do not enable exports automatically.
 
 The earlier Edge-settings 403 is resolved: the approved write returned 201
 with the existing credential, and the handler deployed successfully.
@@ -17,9 +25,9 @@ with the existing credential, and the handler deployed successfully.
 Real-user path work now has deployed authenticated read-only routing for document
 preview/history/status while exports remain off. Mutation/signing paths still
 fail closed. Local full suite passes 90/90, including two mocked verified
-identities and profile/job isolation. These mocks are not live two-user proof.
+identities and profile/job isolation, supplemented by the 36 live checks above.
 Public invocation was added only on this independently authenticating Gateway,
-never the Worker. Keep exports off until actual two-user ownership tests pass.
+never the Worker. Keep exports off until the controlled PDF test is authorized.
 
 ## Historical rollout checkpoints (superseded by the current checkpoint above)
 
