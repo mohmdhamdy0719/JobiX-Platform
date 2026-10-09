@@ -308,3 +308,17 @@ mtime_ms = 1791554595441
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:fa3eb370-26ea-49af-8134-96e72f640abc/7ca80941-3a5b-43f0-bc26-2b4c0e557047/66670eb4-3085-4ca5-a89c-76862540f65a"
 storage_version_token = "1791554650422517"
 content_type = "text/html"
+
+[[outputs]]
+id = "oH8aOeM7sFKwmYk7R7oRn"
+uri = "file://deliverables/jobix-beta-policy-cost-assessment-2026-10-09.md"
+type = "text"
+title = "JobiX V2 — Beta Policy & Cost Assessment"
+description = "Assessment-only A–J report covering export admission, verified signup grants, retention, storage growth, regional and AI costs, implementation anchors and approval decisions."
+logical_id = "7a467ad8-f314-4a07-bb6a-c6c6a21477fe"
+content_hash = "sha256:82667ab401a32f787134f774c390e1742e7757ab3a80ca7e8c733a6c905c3be2"
+size = 35406
+mtime_ms = 1791566649787
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/7a467ad8-f314-4a07-bb6a-c6c6a21477fe/955af38d-c517-452d-a655-b78f5f58f3c0"
+storage_version_token = "1791566676461563"
+content_type = "text/markdown"
