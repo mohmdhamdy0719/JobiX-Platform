@@ -1,8 +1,10 @@
 # Jobix
 
 Jobix is a native Flutter career-profile and resume app backed by Supabase.
-Start with `PROJECT_HANDOFF.md`; the root pnpm workspace is supporting Replit
-infrastructure, not another Jobix client.
+Start with `README.md`, `PROJECT_STATUS.md`, and `docs/AI_HANDOFF.md` for the
+2026-10-09 handoff. `PROJECT_HANDOFF.md` is an earlier, superseded snapshot.
+The root pnpm workspace is supporting Replit infrastructure, not another
+Jobix client.
 
 ## Stack and project map
 
@@ -22,7 +24,7 @@ From the workspace root:
 
 ```sh
 cd mobile/jobix
-flutter pub get
+flutter pub get --enforce-lockfile
 flutter gen-l10n
 flutter pub run build_runner build
 
@@ -45,10 +47,13 @@ disposable PostgreSQL permission tests passed. No application code was changed.
 ## Native launch requirements
 
 The current app has Android/iOS targets, not a browser or Linux desktop target.
-The imported Android SDK path is missing and no Android device is connected.
-Only local automated checks were requested for this setup; no Android tooling
-was installed, APK built, or app run on a device. Supporting web-service
-workflows are not a running Jobix mobile app.
+At the 2026-10-07 import check, the Android SDK path was missing and only local
+automated checks were requested. Subsequent authorized work restored Android
+tooling, built the ARM64 debug APK and obtained owner-confirmed personal PDF
+download/open evidence on Samsung M31. These ignored local toolchains do not
+transfer in a Git clone. No device is attached to the Replit workspace; do not
+confuse the owner's phone confirmation with ADB instrumentation. Supporting
+web-service workflows are not a running Jobix mobile app.
 
 To run Android later, restore a compatible Android SDK/NDK, obtain SDK-license
 acceptance, and connect an authorized Android device. Follow the native README

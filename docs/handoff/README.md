@@ -37,15 +37,14 @@ An earlier GitHub check and the migration guide are historical evidence only.
 This checkout currently has a GitHub-hosted `origin` and local tracking refs,
 but the destination branch/history and remote LFS payload transfer were not
 re-fetched or written during the 2026-10-09 documentation handoff. The current
-local branch has 65 reachable commits and seven LFS-managed APK/archive
+source baseline had 65 reachable commits and seven LFS-managed APK/archive
 deliverables; `git lfs fsck --objects` passed locally. No push, force push,
 rebase, or history rewrite was performed in this handoff. Verify both Git and
 LFS access and compare commit graphs before publishing.
 
-Current native setup commands and environment limits are in
-`mobile/jobix/README.md` and the root README. The Node PDF package is not part
-of the pnpm workspace and lacks its own lockfile; do not assume the root
-workspace lock reproduces it.
+Current native setup commands and environment limits are in the root README.
+The Node PDF package is not part of the root pnpm workspace and has its own
+tracked frozen lock; do not assume the root workspace install restores it.
 
 Replit internal task, plan and checkpoint records are not guaranteed to be
 available after cloning. Preserved task text in `.local/tasks/` is workspace

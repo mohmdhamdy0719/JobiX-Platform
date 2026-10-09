@@ -1,7 +1,8 @@
 # JobiX V2 — AI coding handoff
 
-**Snapshot:** 2026-10-09  
-**Product:** native Flutter/Supabase JobiX V2.  
+**Snapshot:** 2026-10-09
+
+**Product:** native Flutter/Supabase JobiX V2.
 **Current posture:** development happy path verified on the owner's Samsung
 M31; public production is **NO-GO**. The owner requested repository
 documentation/hygiene only in the source account. Do not treat this document or
@@ -61,8 +62,13 @@ put privileged database/provider credentials in Flutter or Supabase secrets.
 - Volunteer is first-class unpaid career evidence, separate from paid Work
   Experience; its Phase 2 approval explicitly excluded completeness percentage
   and algorithm changes.
+- Preserve completeness weights: Contact 15 (5 + 5 + 5), Evidence 45 (30 + 15),
+  Skills 15, Summary 10, Languages 10, Target Role 5, and the existing 50% AI
+  transition/latch. Volunteer must not reset, duplicate or add to these states.
 - AI, subscriptions and public production rollout are separate, unimplemented
-  scopes.
+  scopes. The approved AI default is `gemini-3.5-flash` on the global endpoint
+  for Arabic quality; that decision is not deployed inference, and silent
+  model substitution is not approved.
 
 ## Current verified result and deployed development facts
 
@@ -94,6 +100,26 @@ put privileged database/provider credentials in Flutter or Supabase secrets.
 All service revisions, identities, and flag values above are dated facts. They
 are safe operational identifiers, not credentials, and must be freshly
 verified only when a separately approved task requires them.
+
+### Important fixes to preserve
+
+- **Gateway startup hostname validation:** the actual Cloud Run `.a.run.app`
+  hostname must pass the approved strict target validation. Preserve the tested
+  fix without weakening the host/target checks
+  (`mobile/jobix/backend/pdf/test/bridge.test.mjs`).
+- **Verification error mapping:** invalid tokens fail closed; authenticated
+  cross-account/inactive-account denial remains distinct from a genuine
+  Supabase verification outage. Preserve actor/ownership checks and the bridge
+  security tests, rather than changing expected errors to hide an outage.
+- **Definitively rejected upload:** only trustworthy no-write evidence tied to
+  the original upload fence can settle that exact flight. Timeouts/lost success
+  responses remain ambiguous; preserve adoption/fencing and exactly-once Credit
+  behavior (`mobile/jobix/backend/pdf/test/upload-rejection.test.mjs` and the recorded
+  11/11 adapter plus 8/8 guarded acceptance).
+- **Closed new-export gates:** current local source permits authenticated free
+  downloads and safe reservation expiry without dispatch when new export gates
+  are closed. Do not claim it is deployed until image/source drift is resolved
+  (`mobile/jobix/backend/pdf/test/worker-gates.test.mjs` and the current acceptance record).
 
 ## Authority and evidence
 
@@ -146,23 +172,53 @@ The recorded PDF Node test command from the repository root is:
 node --test mobile/jobix/backend/pdf/test/*.test.mjs
 ```
 
-The PDF Node package has no standalone lockfile and is not in the pnpm
-workspace. Root `pnpm install --frozen-lockfile` does not establish a frozen
-install for it. Its package requires Node `>=20.20.0`, but the workspace's Node
-20.20 line is end-of-life. Do not create lockfiles, upgrade dependencies, or
-invent clean-install commands during documentation-only handoff work.
+The PDF Node package has its own tracked `pnpm-lock.yaml` and is not in the root
+pnpm workspace. Its Dockerfile pins pnpm 10.26.1 and uses:
+
+```sh
+cd mobile/jobix/backend/pdf
+pnpm install --ignore-workspace --frozen-lockfile --prod
+```
+
+Root `pnpm install --frozen-lockfile` does not restore that isolated package.
+Browser/PDF tools remain separate prerequisites; do not run a Debian
+`--with-deps` recipe in the Replit NixOS shell as an assumed setup step. The
+package requires Node `>=20.20.0`, but the workspace's Node 20.20 line is
+end-of-life. Do not upgrade dependencies, regenerate locks, or change runtime
+images during documentation-only handoff work.
 
 The verified Android development build command is recorded in
 `mobile/jobix/VERIFICATION.md`:
 
 ```sh
 cd mobile/jobix
-flutter build apk --debug --target-platform android-arm64 --split-per-abi \
-  --dart-define-from-file=config/dev.local.json
+flutter build apk --debug --no-pub --target-platform android-arm64 --split-per-abi \
+  --dart-define-from-file=config/dev.local.json \
+  --dart-define=JOBIX_ENABLE_PDF_EXPORT=true
 ```
 
 No release signing or production build is established. Do not rebuild the
-working M31 APK unless an approved fix requires it.
+working M31 APK unless an approved fix requires it. The PDF client UI define
+does not enable server export gates or authorize billing.
+
+### Configuration names only
+
+The following names come from the current source/example config. Their values
+are not part of this handoff:
+
+| Boundary | Names |
+|---|---|
+| Flutter ignored public config | `APP_ENV`, `APP_VERSION`, `SUPABASE_URL`, `SUPABASE_CLIENT_KEY`; development client UI build define `JOBIX_ENABLE_PDF_EXPORT` |
+| Local encrypted-database tests | `JOBIX_SQLCIPHER_LIBRARY` |
+| Supabase export Edge Function | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `JOBIX_DEV_EXPORT_GATEWAY_URL`, `JOBIX_EXPORT_ENABLED`, `JOBIX_EXPORT_DELETION_POLICY_APPROVED` |
+| Cloud Run Gateway | `GCP_PROJECT_ID`, `K_SERVICE`, `PORT`, `JOBIX_DEV_EXPORT_WORKER_URL`, `JOBIX_DEV_SUPABASE_CLIENT_KEY`, `JOBIX_EXPORT_ENABLED`, `JOBIX_EXPORT_DELETION_POLICY_APPROVED` |
+| Private PDF Worker | `GCP_PROJECT_ID`, `PORT`, `JOBIX_DEV_EXPORT_WORKER_URL`, `JOBIX_DEV_EXPORT_DATABASE_URL`, `JOBIX_DEV_DATABASE_CA_FILE`, `JOBIX_EXPORT_ENABLED`, `JOBIX_EXPORT_DELETION_POLICY_APPROVED`; optional executable override `JOBIX_CANONICAL_EXECUTABLE` |
+| Explicitly authorized operational/live-test scripts only | `JOBIX_DEV_DATABASE_URL`, `JOBIX_DEV_GCP_DEPLOYER_JSON`, `JOBIX_DEV_SUPABASE_ACCESS_TOKEN`, `JOBIX_DEV_TEST_EMAIL_A`, `JOBIX_DEV_TEST_EMAIL_B`, `JOBIX_DEV_TEST_PASSWORD_A`, `JOBIX_DEV_TEST_PASSWORD_B` |
+
+The operational credentials are not Gateway/Worker runtime credentials. Keep
+runtime database access restricted; never substitute the deployer JSON or
+Supabase management/service-role credential. Standard Google runtime identity
+comes from the attached service account, not a downloaded private key.
 
 ## Current work limits
 

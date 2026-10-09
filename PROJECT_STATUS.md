@@ -1,8 +1,9 @@
 # JobiX V2 — Project status
 
-**Snapshot date:** 2026-10-09  
+**Snapshot date:** 2026-10-09
+
 **Local source revision at the start of this handoff update:** `20696923c17c` on
-`main` (65 commits reachable locally).  
+`main` (65 commits reachable locally).
 **Assessment:** Development MVP has a verified, bounded authenticated PDF
 happy path; **public production is NO-GO**. No tests, cloud checks, exports,
 builds, migrations, or deploys were run for this documentation update.
@@ -66,11 +67,12 @@ cloud evidence.
 4. **Node runtime:** PDF package declares Node `>=20.20.0`; the local
    environment is Node 20.20.0, whose major line is end-of-life. No Node upgrade
    is authorized here.
-5. **PDF dependency reproducibility:** `mobile/jobix/backend/pdf` is outside
-   `pnpm-workspace.yaml` and has no standalone dependency lockfile. A frozen,
-   clean-clone install command for its `pg`/Playwright dependencies is therefore
-   not established. Do not generate a lockfile or upgrade dependencies without
-   approval.
+5. **Fresh-account setup unverified:** Flutter and the PDF backend both have
+   tracked locks. The PDF backend is outside `pnpm-workspace.yaml` and must use
+   its own `pnpm-lock.yaml` with the existing isolated frozen install command.
+   A new-account restore/build has not been run here; ignored Android, Gradle,
+   browser and SQLCipher tooling must be checked separately. Do not regenerate
+   locks or upgrade dependencies as a setup workaround.
 6. **Retention/cost:** PDF logical expiry is seven days. The readiness
    assessment found a separate seven-day GCS soft-delete recovery window after
    object deletion. That is not a download entitlement, but it needs explicit
@@ -104,6 +106,30 @@ These are review recommendations, not approved product behavior:
 
 Do not implement these merely because they appear in the production-readiness
 assessment. See `docs/NEXT_STEPS.md` for the scoped review gates.
+
+## Repository hygiene findings
+
+- Existing root/native ignore rules cover `.env`, local client configs, build
+  directories, dependency caches and common signing stores. This handoff added
+  narrowly named private-key/service-account download patterns; public `.crt`
+  certificates and source examples remain trackable.
+- Current tracked text was checked for high-confidence private-key/token
+  patterns without printing values. The only prefix-shaped match was an
+  explicitly named fake credential in `mobile/jobix/test/static_checks_test.dart`,
+  not a runtime secret. This is a limited hygiene check, not a formal
+  whole-history secret audit.
+- Contact-like pattern matches in sampled design/verification/diagnostic text
+  were service identities, illustrative contact fields, or false positives.
+  Values were withheld. Binary APK/archive/image payloads and historical Git
+  blobs were not content-scanned; review them before sharing beyond the
+  intended private repository.
+- Five tracked APKs total 530,677,572 bytes and two tracked archives total
+  113,641,437 bytes (about 615 MiB combined). They are LFS-managed and were
+  preserved. Local `git lfs fsck --objects` passed; remote LFS access/transfer
+  remains unverified. Ignore rules do not untrack existing deliverables.
+- No manual staging, commit, push, reset, rebase or history rewrite was executed
+  by the agent. Replit created an automatic checkpoint during this handoff;
+  inspect current `git status` and HEAD before the owner's publication step.
 
 ## Current development configuration
 

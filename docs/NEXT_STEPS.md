@@ -12,11 +12,12 @@ or staging without a separate scoped approval.
 
 - **Objective:** preserve the current source history and deliverable pointers
   while making the repository usable from the destination Replit account.
-- **Status:** local `main` is at `20696923c17c`; the local tree was clean apart
-  from the newly attached handoff brief before these uncommitted documentation
-  edits. Git LFS integrity passes locally for seven tracked APK/archive
-  deliverables. The configured GitHub `origin` and destination branch were not
-  fetched or written during this task.
+- **Status:** the source baseline at the start of handoff was `20696923c17c` on
+  `main` (65 reachable commits). Replit may advance HEAD through automatic
+  checkpoints; inspect current Git state before publication. Git LFS integrity
+  passes locally for seven tracked APK/archive deliverables. The configured
+  GitHub `origin` and destination branch were not fetched or written during
+  this task.
 - **Relevant files:** `.gitattributes`, `.gitignore`, `docs/handoff/10_MIGRATION_GUIDE.md`,
   `docs/handoff/history/GIT_HISTORY.md`, `deliverables/`.
 - **Dependencies:** owner reviews these docs and explicitly stages/commits/
@@ -102,21 +103,23 @@ acceptance
 
 ## P1 — Reliability, cost, retention and production preparation
 
-### P1.1 — Resolve the PDF backend runtime and dependency reproducibility
+### P1.1 — Qualify a supported PDF backend runtime and fresh-account setup
 
 - **Objective:** have a supported Node runtime and a reproducible, frozen
   dependency restore for a fresh clone.
 - **Status:** Node 20.20.0 satisfies the package engine range but Node 20 is
-  end-of-life. The PDF package has no standalone lockfile and is excluded from
-  the root pnpm workspace.
+  end-of-life. The PDF package has its own tracked `pnpm-lock.yaml` and is
+  intentionally outside the root workspace; the Dockerfile pins pnpm 10.26.1
+  and an isolated frozen install. Fresh-account browser/SDK toolchain setup has
+  not been verified.
 - **Relevant files:** `mobile/jobix/backend/pdf/package.json`,
   `mobile/jobix/backend/pdf/Dockerfile`, `pnpm-workspace.yaml`, Node lockfiles.
-- **Dependencies:** P0.2 approval and a package-manager decision that preserves
-  existing dependency versions before generating/committing any lock.
-- **Acceptance:** choose a supported Node line; lock exact existing compatible
-  packages without opportunistic upgrades; demonstrate a clean install and
-  complete tests; update runtime images only under a separate development
-  deployment approval.
+- **Dependencies:** P0.2 approval; first reproduce current locked packages with
+  the existing command, without changing locks.
+- **Acceptance:** choose a supported Node line only under approval; preserve
+  exact compatible packages without opportunistic upgrades; demonstrate clean
+  installation and complete tests; update runtime images only under a separate
+  development deployment approval.
 - **Approval/cost:** dependency/runtime changes require approval. Local test is
   no-cost; image builds/deployments may incur cloud cost.
 

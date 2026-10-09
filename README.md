@@ -119,24 +119,36 @@ The previously successful build command, from `mobile/jobix` with the existing
 development-only config and local Android/Gradle tooling, is:
 
 ```sh
-flutter build apk --debug --target-platform android-arm64 --split-per-abi \
-  --dart-define-from-file=config/dev.local.json
+flutter build apk --debug --no-pub --target-platform android-arm64 --split-per-abi \
+  --dart-define-from-file=config/dev.local.json \
+  --dart-define=JOBIX_ENABLE_PDF_EXPORT=true
 ```
 
 The recorded M31 APK output is
 `mobile/jobix/build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk`. Do not
-rebuild it merely to reproduce the previous phone result. The convenience
+rebuild it merely to reproduce the previous phone result. The last define
+enables the client UI only; it must not reopen backend export/billing gates.
+The convenience
 `tool/build_android.sh` checks all three environment configs; a fresh workspace
 without staging/production configs should use only the documented development
 command after verifying its dev configuration. No release build/signing recipe
 is approved.
 
 The backend PDF `package.json` specifies Node `>=20.20.0`, but this workspace's
-Node 20.20.0 line is end-of-life. Also, the PDF backend is not a pnpm workspace
-member and currently has no standalone lockfile. The root `pnpm-lock.yaml` is
-for the Replit starter, not a reproducible install lock for that backend. Do not
-invent a clean-clone Node install command or change dependencies without a
-separate approved resolution.
+Node 20.20.0 line is end-of-life. The backend is outside the root pnpm workspace
+and has its own tracked `pnpm-lock.yaml`. Its Dockerfile pins pnpm **10.26.1**
+and uses this isolated frozen install:
+
+```sh
+cd mobile/jobix/backend/pdf
+pnpm install --ignore-workspace --frozen-lockfile --prod
+```
+
+The root `pnpm-lock.yaml` is for the Replit starter, not this backend. Browser/
+PDF tools are separate prerequisites: inspect the existing PDF README and
+Dockerfile rather than assuming Debian's browser installation recipe works in
+Replit's NixOS shell. Do not upgrade dependencies or regenerate either lockfile
+as a handoff step.
 
 ## Source-of-truth and handoff documents
 
