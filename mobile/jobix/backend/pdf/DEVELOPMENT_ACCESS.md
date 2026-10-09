@@ -6,6 +6,16 @@ the deployment/admin database credential in the application.
 
 ## Current runtime checkpoint
 
+**Latest audit: Resource Manager is ENABLED; caller IAM now blocks the audit.**
+Project-scoped permission testing succeeded but returned no permissions from
+the tested provisioning/audit set for `jobix-deployer-dev`. Account creation
+and project IAM-policy read were not granted at project scope; actual project
+`getIamPolicy` returned 403. Worker edit permission, account-scoped attachment
+and reusable custom-role audit were not reached. No mutations were applied.
+Use administrator-scoped setup or explicitly approved exact audit/provisioning
+permissions; do not broaden to Owner/Editor/IAM Admin. Earlier API-DISABLED
+observations below are historical and resolved.
+
 **Latest read-only recheck:** the owner authorized Resource Manager API, but
 Service Usage still reports `cloudresourcemanager.googleapis.com` as DISABLED
 in the approved development project. No API activation or other mutation was

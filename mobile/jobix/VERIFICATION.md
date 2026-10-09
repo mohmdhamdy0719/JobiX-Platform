@@ -1,5 +1,23 @@
 # Jobix verification evidence
 
+## Resource Manager enabled — read-only audit blocked on caller IAM
+
+Latest Service Usage check now confirms Resource Manager API **ENABLED**.
+Project-scoped `testIamPermissions` executes successfully, but returns no
+granted permissions from the tested provisioning/audit set for
+`jobix-deployer-dev@mhflow-jobix.iam.gserviceaccount.com`.
+In particular, project account creation (`iam.serviceAccounts.create`) and
+project IAM-policy read (`resourcemanager.projects.getIamPolicy`) were not
+granted. The subsequent project `getIamPolicy` request returned **HTTP 403**.
+
+Stopped before auditing worker-policy edit permission, the proposed account,
+account-scoped actAs, user-managed keys or reusable custom roles. Project-level
+results do not establish permissions on individual accounts/services.
+No API/resource/role/IAM/key/build/deployment/export/Credit change was made.
+Next resolution is administrator-performed scoped setup or separately approved
+exact caller audit/provisioning permissions, not broad IAM Admin/Owner/Editor.
+The earlier API-DISABLED blocker below is resolved.
+
 ## Resumed read-only prerequisite audit — API still DISABLED
 
 Following the owner's API authorization, the read-only Service Usage lookup
