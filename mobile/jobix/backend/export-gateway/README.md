@@ -16,8 +16,11 @@ baseline checks confirmed unchanged existing account/profile/Credit/AI/export
 state. No ledger transactions, pending reservations, PDFs or GCS mutations.
 Test login sessions alone were revoked; other devices/sessions were preserved.
 The real-user ingress prerequisite is verified, not the complete PDF/Credit
-vertical slice. Both test wallets are zero; controlled export/funding approval
-is still required. Do not enable exports automatically.
+vertical slice. The bounded +2 fixture funding/one-export test is approved,
+but A's only profile fails structural validity (`personal.email`,
+`career_content`). Funding and all export gates remain untouched.
+Profile-data completion needs separate approval. Contact updates trigger
+normal completeness computation; do not bypass it or reverse an AI latch.
 
 The earlier Edge-settings 403 is resolved: the approved write returned 201
 with the existing credential, and the handler deployed successfully.

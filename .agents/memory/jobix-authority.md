@@ -152,7 +152,22 @@ readiness exercise, but honor fail-fast. Missing permissions do not authorize
 adding grants, making a private service public or using another runtime identity.
 Keep the overall task incomplete when a failure stops the vertical slice.
 
-## Current approval: scoped development read-only ingress rollout
+## Current approval: one bounded development PDF/Credit test
+
+The owner approved a +2-Credit fixture ADJUSTMENT on isolated account A, one
+2-Credit PDF export, free same-key replay/download verification, temporary
+existing development export gates and disabling them afterward. Preserve
+ledger audit history; compensate unused fixture funding only after reservations
+are released. Worker remains private; no new keys, unrelated IAM,
+production/staging or profile edits were included.
+
+**Why:** The owner explicitly selected the bounded 2-Credit controlled test.
+
+**How to apply:** Structural readiness must pass before funding or opening
+gates. Ask separately for needed profile-data edits; never bypass validity,
+disable normal completeness triggers or reset the 50% AI latch for fixtures.
+
+## Earlier approval: scoped development read-only ingress rollout
 
 The owner approved Gateway-only public invocation, deployment of the existing
 Edge handler and the tested Gateway/Worker read-only routing. Export processing

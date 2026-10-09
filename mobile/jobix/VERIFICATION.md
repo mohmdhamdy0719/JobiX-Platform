@@ -1,5 +1,33 @@
 # Jobix verification evidence
 
+## Bounded 2-Credit export test — approved, stopped before funding
+
+The owner approved account A fixture funding through the existing ADJUSTMENT
+type, one 2-Credit export and temporary existing development gates. Preflight
+found that A has only one active profile and canonical structural issues
+`personal.email` and `career_content`; contact email is blank. The Gateway
+correctly refuses creation when canonical issues exist. No other ready A
+profile is available. Do not bypass validity, silently hide evidence, or
+edit profile data under a test scope that explicitly excluded profile edits.
+
+Live trigger metadata confirms contact data updates invoke
+`jobix_contact_score_trigger`. Temporary email fixtures cannot be assumed
+neutral to completeness or the monotonic first-profile AI transition.
+Do not disable triggers or reverse a latch as fixture cleanup. Normal,
+explicitly approved test-profile completion is safer than a patch-and-rollback.
+
+The DB export-settings switches remain enabled=false and
+deletion_policy_approved=false; runtime Edge/Gateway/Worker flags remain false
+with runtime deletion approval true. The approved seven-day contract was
+re-read and confirmed; DB configuration alignment is still pending and must
+not be confused with changing that contract.
+
+There are no queued/active/retryable jobs or pending reservations. No funding,
+Credit transactions, gate changes, new revisions/jobs, PDFs or GCS mutations
+were performed in this preflight. Only temporary verification sessions were
+created and locally revoked. Profile-data completion approval is the remaining
+first blocker; the approved 2-Credit budget remains unspent.
+
 ## Development real-user ingress — 36/36 passed; PDF/Credit gates remain closed
 
 Two existing development accounts authenticated against actual Supabase Auth.
