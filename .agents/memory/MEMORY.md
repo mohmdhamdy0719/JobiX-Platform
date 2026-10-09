@@ -14,3 +14,4 @@
 - [Resume print verification](resume-print-verification.md) — bidi extraction and font boxes can cause false failures; keep logical-source and physical-print checks separate.
 - [PDF runtime verification](pdf-runtime-verification.md) — host Chromium success does not verify pinned Playwright; avoid mixing libc paths into Node.
 - [Cloud cost evidence](cloud-cost-evidence.md) — region lists do not prove selected prices; distinguish alert budgets from current service spend-cap support.
+- [Beta policy proposals](beta-policy-proposals.md) — owner proposes 10 exports per rolling 7 days, not 30; implementation and global budgets remain unapproved.

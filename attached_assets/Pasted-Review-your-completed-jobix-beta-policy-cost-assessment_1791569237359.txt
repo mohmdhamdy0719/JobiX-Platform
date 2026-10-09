@@ -1,0 +1,80 @@
+Review your completed `jobix-beta-policy-cost-assessment-2026-10-09.md`. Do not repeat the full audit, and do not implement anything yet.
+
+The report is useful and the current Architecture V2 should remain in place. Before we approve implementation, produce a concise decision-ready addendum addressing these points:
+
+### 1. Confirm the intended user export policy
+
+Our intended per-user limits are:
+
+- 1 new logical export per rolling 5 minutes.
+- 3 per rolling hour.
+- 5 per rolling 24 hours.
+- 10 per rolling 7 days.
+- Maximum 1 active export intent per user/profile.
+
+Treat these as proposed owner policy values, not implemented settings. Explain exactly how they replace the existing 5-jobs-per-10-minute rule, how retries and Export Again count, and how legitimate users will be treated after failures. Do not add stricter per-user limits without approval.
+
+### 2. Separate user limits from global cost controls
+
+Review the proposed global ceilings, including 100 exports/day, 1,500 exports/30 days, render-attempt limits, preparation limits, and AI budgets.
+
+For each value, state whether it is:
+
+- Supported by actual usage/cost measurements.
+- A conservative temporary beta limit.
+- Merely an unverified proposal.
+
+Do not activate or present unverified values as mandatory final settings. Recommend a configurable, server-enforced budget strategy that protects us financially without unnecessarily blocking legitimate users. Define what happens at 50%, 80%, and 90% of an approved budget, and what happens when the hard application-level admission ceiling is reached.
+
+### 3. Resolve the first-signup bonus semantics
+
+Our intended behavior is 5 Credits for an eligible first-time signup only after account confirmation. A second account must not automatically receive another bonus.
+
+Provide a realistic privacy-conscious design, migration/backfill strategy, and residual abuse risks. Explicitly distinguish “once per Auth identity/account” from “once per human.” Do not claim that email verification or device identification guarantees one bonus per human. Do not revoke or rewrite existing Credit ledger entries.
+
+### 4. Make the seven-day retention promise accurate
+
+Confirm the distinction between:
+
+- PDF download availability for seven days.
+- Signed URL validity.
+- GCS lifecycle deletion.
+- Soft-delete/version recovery.
+- Database snapshot retention.
+- Backups and logs.
+
+Recommend the exact user-facing promise we can safely make with the currently verified configuration. Identify any policy changes requiring approval. Do not shorten soft-delete, delete snapshots, or change retention settings.
+
+### 5. Clarify storage and preview cost
+
+The report estimates approximately 0.99 MB of stored HTML per export from only three snapshots.
+
+Do not treat that small sample as a reliable forecast. Specify the smallest read-only measurement that would establish total database growth per export, including indexes and other relevant overhead, without inspecting personal resume contents. Give us a monitoring and warning strategy. Do not delete data or enable cleanup jobs.
+
+### 6. Correct the regional and monthly cost conclusions
+
+The current figures use Iowa reference prices and an assumed $25.14 monthly baseline. They are not verified Doha or Frankfurt bills.
+
+Keep them labeled as sensitivity scenarios. Identify the exact missing provider/SKU/billing evidence required for a reliable total-cost comparison. Do not recommend migrating regions until estimated savings and end-to-end latency justify the operational risk.
+
+Separate fixed costs, export costs, storage/egress, retries, and AI costs. Clearly label all unknowns. Do not run paid workloads.
+
+### 7. AI must remain disabled until its contract is proven
+
+The report mentions `gemini-3.5-flash` and candidate token/request budgets. Verify which model and inference operations are actually implemented versus merely approved or planned. Do not assume an approved model decision means paid generation is operational.
+
+Recommend a configurable AI cost budget and admission mechanism, but do not activate inference, rewards, daily grants, or any new paid feature.
+
+### 8. Return only the decision addendum
+
+Provide:
+
+- Decisions that are already sufficiently clear to approve.
+- Decisions requiring my explicit approval.
+- Unsupported assumptions or numbers that should not be used yet.
+- The smallest safe P0 implementation slice, with exact files/SQL objects, tests, rollback considerations, and measurable acceptance criteria.
+- The exact evidence still required before production rollout.
+
+Keep all code, schema, cloud configuration, Credits, gates, retention, and deployment unchanged. Do not build an APK, repeat a personal export, run paid tests, or modify Git history.
+
+Stop after delivering this addendum and wait for approval.
