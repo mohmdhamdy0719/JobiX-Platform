@@ -1,0 +1,20 @@
+Continue the approved JobiX V2 P0 planning, but do not edit files or implement anything yet.
+
+The owner has approved the P0 scope in principle:
+- Replace the existing 5-jobs-per-10-minute rule with 1 export/5 minutes, 3/hour, 5/rolling 24 hours, and 10/rolling 7 days.
+- Enforce at most one active export intent per user/profile.
+- Preserve idempotency, existing Credit accounting, free valid-PDF downloads, and the current architecture.
+- Failed accepted exports release their Credit reservation but count toward quota by default.
+- A failed export may receive one automatic quota exception only when objective, testable evidence proves an internal JobiX failure.
+
+Before implementation, inspect the existing source and tests and return a concise technical decision report covering:
+
+1. Exact current export job states and transitions, including deletion/recovery interactions.
+2. Existing structured failure codes and where each is produced and consumed.
+3. Which failure codes objectively prove an internal JobiX failure, which indicate user/network/input issues, and which are ambiguous. Do not invent codes that are not implemented.
+4. The safest atomic database representation of a one-time quota exception per logical export, preserving auditability and idempotency without rewriting Credit ledger entries.
+5. Whether the existing architecture can grant an exception and safely retry the same logical operation, or whether it needs an explicit retry/new-intent transition. Explain charging and quota implications.
+6. Exact SQL migration/function and backend/Edge/Flutter files that would require changes, plus local tests for rolling-window boundaries, concurrency, replay, exception uniqueness, and retry-after.
+7. Any unresolved decisions, risks, or missing test infrastructure.
+
+Do not change code, schema, migrations, cloud configuration, Credits, gates, retention, deployment, APK, Git history, or run paid exports. Do not create commits. Return only the technical decision report and wait for explicit implementation authorization.
