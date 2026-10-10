@@ -1,0 +1,42 @@
+We need a narrowly scoped, READ-ONLY migration readiness review for JobiX V2. Do not re-analyze the entire project.
+
+**Known production database findings:**
+- `public.jobix_export_migrations` exists.
+- Its latest recorded migration is `202610080017_resume_export_deletion`.
+- The following relations are currently absent in the inspected production database:
+  - `public.export_cost_budget_policy`
+  - `public.export_cost_reservations`
+  - `public.export_admission_events`
+- Production inspection was read-only.
+
+**Local migration files previously implemented:**
+- `mobile/jobix/supabase/migrations/202610080018_resume_export_admission.sql`
+- `mobile/jobix/supabase/migrations/202610100019_resume_export_cost_protection.sql`
+- `mobile/jobix/supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql`
+
+**Your task — inspect only, do not modify anything:**
+
+1. Confirm these exact files exist and inspect their SQL.
+2. Inspect the definition and usage of `public.jobix_export_migrations`, especially how migrations are registered and how SHA-256 checksums are calculated and validated.
+3. Compare migrations 018–020 against the existing migration 017 and the repository's established migration runner/deployment procedure.
+4. Determine whether these migrations are designed to be applied by the repository's normal migration runner, and identify the exact documented command or script for applying them.
+5. Check migration dependencies and ordering. Identify any prerequisites, possible conflicts with the existing production schema, non-idempotent operations, or destructive operations.
+6. Check whether the migration runner rejects checksum mismatches or already-applied migrations.
+7. Confirm whether the migration files have been tested together in order, and report the exact relevant existing test commands/results if available. Do not rerun broad test suites.
+
+**Safety constraints:**
+- Do NOT connect to Supabase or any remote database.
+- Do NOT apply, generate, rewrite, rename, or reformat migrations.
+- Do NOT change files, commit, deploy, or run production commands.
+- Do NOT reveal environment variables, credentials, tokens, or secrets.
+- Do NOT enable `accounting_ready`.
+- Do NOT assume that missing tables alone prove a migration is safe to apply.
+
+**Output only a concise report with:**
+A. Confirmed files and migration versions.
+B. Exact migration registration/checksum mechanism.
+C. Exact normal application command/script, if verified from repository source.
+D. Production risks or unresolved prerequisites.
+E. A clear verdict: `READY FOR A CONTROLLED MIGRATION PLAN` or `NOT READY`, with specific reasons.
+
+If any detail cannot be verified from repository files, explicitly label it UNKNOWN. Do not guess.
