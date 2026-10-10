@@ -1,0 +1,45 @@
+We are continuing the existing JobiX V2 project. Do NOT rebuild the app, re-audit the entire repository, or make unrelated changes.
+
+## Objective
+Perform one focused, read-only investigation of the current resume-export 503 errors and the compatibility prerequisites for migrations 018–020.
+
+## Known facts
+- Supabase project reference inspected: `lmouxhbjhtqdtiqijcee`.
+- Existing GCP project: `mhflow-jobix`, region `me-central1`.
+- Existing Cloud Run services:
+  - `jobix-dev-export-gateway`
+  - `jobix-dev-pdf-export`
+- Current inspected Gateway and Worker revisions have `JOBIX_EXPORT_ENABLED=false` and `JOBIX_EXPORT_DELETION_POLICY_APPROVED=true`.
+- Supabase `export_settings` showed `enabled=false` and `deletion_policy_approved=true`.
+- Supabase has `public.jobix_export_migrations` entries through migration 017, with local checksums verified for 012–017.
+- Relations introduced by migrations 018–020 were absent in the inspected database.
+- The Edge Function `resume-export` is deployed as version 12 in the inspected dashboard and has historical HTTP 503 responses. Available logs show boot/shutdown events but no confirmed exception explaining the 503.
+- Its source reads `JOBIX_DEV_EXPORT_GATEWAY_URL` and forwards commands through `transport.mjs`.
+- Local disposable validation of migrations 017–020 previously passed using `bash tool/test_rls.sh --resume-export-only`.
+- Persistent-environment `accounting_ready` must remain false until cost assumptions are independently verified and approved.
+
+## Strict scope
+1. Inspect only the relevant Edge Function source, `transport.mjs`, Gateway request handling, relevant error mapping/logging, migrations 017–020, and their existing focused tests.
+2. Trace every path that could produce HTTP 503. Identify which paths are consistent with the observed response and what evidence would distinguish them.
+3. Check whether the source contains safe, non-secret diagnostics sufficient to identify the failure. Recommend the smallest targeted diagnostic improvement if needed; do not implement it yet.
+4. Check the migration prerequisites and the existing migration runner/ledger handling. Identify the exact remaining compatibility checks needed before a controlled application of 018–020.
+5. Provide exact file paths, relevant function names, and a concise evidence-based report.
+
+## Hard restrictions
+- READ ONLY: do not edit files, create commits, apply SQL, deploy, call provider APIs, or change settings/secrets.
+- Do not print, request, or expose secrets, access tokens, database URLs, or environment-variable values.
+- Do not enable export gates or set `accounting_ready=true`.
+- Do not create a new GCP or Supabase project, registry, bucket, service, or paid resource.
+- Do not run the full test suite. Do not rerun tests already reported as passing. No broad repository audit.
+- Do not infer live provider state from source code or historical screenshots. Mark unverified items as UNKNOWN.
+- If required source evidence is missing, report that limitation instead of guessing.
+
+## Final response format
+Return only:
+1. Confirmed findings.
+2. Most likely 503 paths, with evidence and confidence (do not claim a root cause without proof).
+3. Exact remaining blockers before migrations 018–020.
+4. The single smallest next action.
+5. Explicit statement: no files changed, no tests run, no remote access, and no deployments.
+
+Stop after the report. Do not implement the next action.
