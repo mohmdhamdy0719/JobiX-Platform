@@ -7,7 +7,36 @@ if [[ $# -gt 1 || ( "$mode" != "full" && "$mode" != "--resume-export-only" ) ]];
   exit 2
 fi
 work="$(mktemp -d /tmp/jobix-rls.XXXXXX)"
-trap 'pg_ctl -D "$work/data" stop -m immediate >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
+if [[ "$mode" == "--resume-export-only" ]]; then
+  cleanup_focused() {
+    local exit_status=$?
+    trap - EXIT
+    trap '' INT TERM
+    if [[ -S "$work/socket/.s.PGSQL.55439" ]] &&
+      pg_ctl -D "$work/data" status >/dev/null 2>&1; then
+      psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
+        >/dev/null 2>&1 <<'SQL' || true
+DO $cleanup$
+BEGIN
+  IF to_regclass('public.export_cost_budget_policy') IS NOT NULL THEN
+    EXECUTE 'UPDATE public.export_cost_budget_policy
+      SET accounting_ready=false,updated_at=clock_timestamp()
+      WHERE singleton AND accounting_ready IS DISTINCT FROM false';
+  END IF;
+END
+$cleanup$;
+SQL
+    fi
+    pg_ctl -D "$work/data" stop -m immediate >/dev/null 2>&1 || true
+    rm -rf "$work" || true
+    exit "$exit_status"
+  }
+  trap cleanup_focused EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+else
+  trap 'pg_ctl -D "$work/data" stop -m immediate >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
+fi
 initdb -D "$work/data" --username=runner --auth=trust --no-locale --encoding=UTF8 >/dev/null
 mkdir "$work/socket"
 pg_ctl -D "$work/data" -l "$work/server.log" \
@@ -83,7 +112,7 @@ PSQL
   JOBIX_DISPOSABLE_PG_SOCKET="$work/socket" node backend/pdf/test/integration.mjs
   JOBIX_DISPOSABLE_PG_SOCKET="$work/socket" bash tool/test_export_cost_concurrency.sh
 
-  "${local_psql[@]}" -c "UPDATE public.export_cost_budget_policy SET accounting_ready=false,updated_at=clock_timestamp() WHERE singleton"
+  "${local_psql[@]}" -c "UPDATE public.export_cost_budget_policy SET accounting_ready=false,updated_at=clock_timestamp() WHERE singleton AND accounting_ready IS DISTINCT FROM false"
   ready_state="$("${local_psql[@]}" -Atc "SELECT coalesce(bool_and(NOT accounting_ready),false) FROM public.export_cost_budget_policy")"
   if [[ "$ready_state" != "t" ]]; then
     echo "FAIL: accounting_ready did not return to false in disposable PostgreSQL" >&2
