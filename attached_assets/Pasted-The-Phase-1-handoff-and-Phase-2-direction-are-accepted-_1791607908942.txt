@@ -1,0 +1,21 @@
+The Phase 1 handoff and Phase 2 direction are accepted, but I am not yet authorizing Phase 2 implementation.
+
+Do not repeat the broad audit or rerun the previously passed Phase 1 tests.
+
+Please make only these focused refinements to the Phase 2 plan:
+
+1. **Legacy quota history:** Do not automatically block all users from creating exports for seven days. Propose the smallest safe mitigation for accounts whose pre-migration history was erased by profile purges. Keep valid downloads, status queries, recovery, and cleanup available. Do not change or apply the migration yet.
+
+2. **The $10 weekly budget:** Keep the initial limit at USD $10 per rolling seven-day window, centrally configurable. Clarify exactly which controllable costs are included, how shared/fixed costs are conservatively allocated, and which costs remain outside immediate enforcement. Do not claim this is a guaranteed invoice ceiling.
+
+3. **Atomic cost reservations:** Confirm that concurrent requests cannot collectively reserve more than the remaining budget, that retries/replays reuse the same logical reservation, and that accepted in-flight jobs remain accounted for until settled or safely reconciled. Define how reservations are released after definitive failures and retained during ambiguous outcomes.
+
+4. **Safe admission:** New expensive work must be rejected with HTTP 503 / `SERVICE_UNAVAILABLE` and the exact message “Service is temporarily unavailable. Please try again later.” when the enforceable budget is exhausted or its authoritative admission accounting is unavailable. Existing valid downloads, status, deletion, and essential recovery/accounting paths must remain available.
+
+5. **Cost measurement:** Do not make real-time provider billing data a prerequisite if the provider does not supply it reliably in real time. Use bounded, conservative server-side estimates for admission, measure actual runtime and output usage, and reconcile with provider billing data when available. State the residual risk clearly.
+
+6. **Scope and cost:** Keep this to one additive migration, the minimum necessary backend changes, and focused tests. Do not add paid services, credentials, deployment changes, APK builds, paid tests, AI inference, unrelated refactors, or retention changes.
+
+Return only the revised implementation plan: exact files and SQL objects, transaction/reservation lifecycle, legacy-history mitigation, rollback strategy, and focused test cases. Do not edit files, run tests, apply migrations, or deploy anything. Then wait for my explicit approval.
+
+After I approve the revised plan, implement only that scope and stop for review before any live migration or deployment.
