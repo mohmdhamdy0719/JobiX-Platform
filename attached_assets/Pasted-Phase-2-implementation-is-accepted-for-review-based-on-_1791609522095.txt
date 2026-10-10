@@ -1,0 +1,19 @@
+Phase 2 implementation is accepted for review based on the reported test results. Do not repeat the same tests or start another planning cycle.
+
+Perform a focused final code review of the actual Phase 1 and Phase 2 diffs, migration `202610100019_resume_export_cost_protection.sql`, and the cost-protection tests.
+
+Check only these release-critical points:
+
+1. The new migration works when applied after migration 018, preserves existing policies and grants, and does not accidentally disable valid downloads or essential recovery.
+2. The $10 budget calculation correctly combines the rolling seven-day shared-cost reserve, settled estimates, and outstanding reservations without double-counting or allowing concurrent oversubscription.
+3. Reservation settlement, definitive failure release, ambiguous outcomes, retry/recovery, and idempotent replay are consistent across SQL and backend code.
+4. `accounting_ready=false` blocks only new expensive admissions, not downloads, status, deletion, recovery, or required accounting.
+5. Legacy admission history and profile-purge handling do not fabricate evidence or impose an unintended global block.
+6. The 503 code/message and Arabic/English UI behavior are consistent end to end.
+7. No secrets, unrelated changes, destructive migration behavior, or unintended changes to the previously working PDF flow were introduced.
+
+Do not rerun the already-passed suites unless the review identifies a specific defect requiring a targeted test. Report only concrete findings, with file/function references and severity. If no blocking issue is found, say so explicitly.
+
+Then prepare the minimal non-production rollout checklist for applying migrations 018 and 019 to a disposable/staging database, configuring a conservative initial budget, and verifying that new exports can be enabled without disabling downloads or recovery.
+
+Do not apply any live migration, access billing credentials, change cloud settings, deploy, build an APK, run paid tests, or edit additional files. Do not enable `accounting_ready` until the cost assumptions are explicitly configured and reviewed. Stop after the focused review and checklist.
