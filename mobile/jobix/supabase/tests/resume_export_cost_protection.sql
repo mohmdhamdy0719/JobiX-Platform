@@ -82,4 +82,8 @@ UPDATE public.export_cost_budget_policy SET accounting_ready=true,
  output_cost_microusd_per_gib_7d=0,storage_operation_cost_microusd=0,
  per_export_overhead_microusd=1,updated_at=clock_timestamp()
 WHERE singleton;
+-- Simulate a held reservation left without its job by the pre-020 purge path.
+INSERT INTO public.export_cost_reservations(operation,admitted_at,reserved_microusd,
+ model_version,max_pdf_bytes)
+VALUES('93000000-0000-0000-0000-000000000001',clock_timestamp(),100,1,10485760);
 COMMIT;

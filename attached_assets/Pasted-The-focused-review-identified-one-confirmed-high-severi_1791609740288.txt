@@ -1,0 +1,36 @@
+The focused review identified one confirmed high-severity blocker. Fix this issue only; do not restart planning or perform another broad audit.
+
+**Bug:** An export job can be purged while its cost reservation remains `HELD`. The current settle/reconcile/resolve paths depend on the job row, so the reservation may become permanently stranded and block new exports for all users.
+
+Relevant locations:
+- `202610080017_resume_export_deletion.sql`: `jobix_export_quiescent`, `jobix_export_purge`
+- `202610100019_resume_export_cost_protection.sql`: `jobix_export_cost_settle`, `jobix_export_cost_reconcile`, `jobix_export_cost_resolve`
+
+## Required fix
+
+Inspect the actual SQL and backend lifecycle, then implement the smallest safe, additive fix that ensures deleting or purging a job cannot leave an unrecoverable cost reservation.
+
+Requirements:
+1. Preserve deletion safeguards, job quiescence, upload reconciliation, Credit accounting, and existing user-deletion behavior.
+2. Do not silently mark ambiguous work as zero-cost or release its reservation merely because the job is being deleted.
+3. Ensure every held reservation remains safely resolvable even if its job row is purged. Prefer retaining the minimum necessary operation identity and reconciliation evidence in the reservation/accounting records rather than weakening deletion protections.
+4. Define a safe terminal or reconciliation state for deletion-related reservations. If the actual outcome is ambiguous, retain the hold until it can be resolved through a path that no longer requires the purged job.
+5. Ensure reconciliation cannot double-count settled costs and cannot silently discard unresolved holds.
+6. Keep admission behavior, the $10 rolling-seven-day budget, and the valid download/status/recovery paths unchanged except where necessary for correctness.
+
+## Tests
+
+Add focused regression tests proving:
+- A definitive pre-render failure can safely release unused cost reservation.
+- A completed or partially incurred operation settles the correct amount before or during deletion.
+- A job with an ambiguous outcome can be purged without losing its reconciliation path.
+- A held reservation with no job remains discoverable and resolvable.
+- Unresolved reservations continue to count against the budget.
+- Resolved reservations are not counted twice.
+- Existing deletion/quiescence and Credit invariants still pass.
+
+Run only the relevant SQL/backend regression tests and `git diff --check`. Do not repeat the full suites unless a targeted failure requires it.
+
+Do not apply migrations to any live database, deploy, access billing credentials, enable billing exports, create paid resources, build an APK, or change Git history. Do not enable `accounting_ready`.
+
+When finished, report the exact files/migration changes and focused test results. If the fix requires a new migration, make it additive and compatible with migration 019. Stop for review afterward; do not start another phase.

@@ -55,6 +55,8 @@ psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
 psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
   -f supabase/tests/resume_export_cost_protection.sql \
+  -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
+  -f supabase/tests/resume_export_cost_purge.sql \
   -f supabase/tests/resume_export_admission.sql \
   -f supabase/tests/resume_export_recovery.sql \
   -f supabase/tests/resume_export_deletion.sql
