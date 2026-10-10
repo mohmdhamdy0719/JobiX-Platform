@@ -1,0 +1,51 @@
+JobiX V2 — Consolidate the remaining export-readiness work.
+
+We need to finish this phase efficiently and return to testing the actual MVP. Do not repeat broad audits or completed UI tests.
+
+Current state:
+- Migrations 018–020 are applied and verified in Development.
+- Migration 021 was added locally to correct the seven-day output-cost formula; its isolated local test passed.
+- Export remains disabled, `accounting_ready=false`, and all five cost inputs are unset.
+- Deployed Gateway/Worker source provenance does not match current allowlisted archives.
+- Some inherited IAM/public-access-policy checks remain unverified.
+
+## Complete the remaining preparation in one pass
+
+1. Review the exact Migration 021 diff and its test. Confirm the formula and field units are internally consistent, and ensure the fixed-Development runner's new 021 mode preserves all existing safeguards and leaves 018–020 behavior unchanged.
+
+2. Run the focused relevant local tests and static checks. Do not rerun the entire application test suite or rebuild the Android APK unless a real dependency requires it.
+
+3. Prepare a single ordered Development execution procedure for:
+   - Applying Migration 021 through its dedicated fixed-Development mode.
+   - Verifying its ledger checksum, formula behavior, and unchanged gates/accounting readiness.
+   - Building compatible Gateway and Worker images from the pinned current source.
+   - Updating the existing services using a narrowly scoped path that preserves service identities, private Worker access, request authentication, bucket privacy, and rollback capability.
+
+   Do not execute migrations, upload source archives, start Cloud Build, deploy, or modify live resources in this preparation pass.
+
+4. Resolve the cost assumptions without inventing values:
+   - Clearly distinguish documented provider prices, derived estimates, and unpriced costs.
+   - Identify the minimum human-approved shared-cost reserve and how download egress, Supabase, and shared recovery/cleanup costs will be handled.
+   - Explain whether the current estimator can safely admit even a limited test without these assumptions. Do not change rates or `accounting_ready`.
+
+5. Provide exact instructions for the authorized administrator to perform the three narrow IAM reads and verify effective inherited public-access prevention. Do not request project-admin access or broaden permissions.
+
+6. Prepare a small controlled test procedure with bounded concurrency, a known test account, one export at a time, verification of authorized download/history/Credit accounting, and immediate gate rollback. Do not run the live test.
+
+## Boundaries
+
+- Do not enable export gates or set `accounting_ready=true`.
+- Do not configure cost rates or change the $10/seven-day policy.
+- Do not apply migrations, deploy, create Cloud Build jobs, upload source archives, change IAM, or create paid resources.
+- Do not modify the APK or unrelated application code.
+- Do not investigate historical 503 errors.
+
+## Final response
+
+Return one concise, actionable report with:
+- Whether Migration 021 is ready to apply.
+- The exact ordered commands for later separately approved execution.
+- The exact remaining human decisions and permission checks.
+- Whether live export is safe to authorize yet.
+
+Do not create another planning phase after this report. Once the prerequisites are satisfied, we should execute the prepared steps and finish the live PDF test.
