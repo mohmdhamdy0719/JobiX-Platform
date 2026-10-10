@@ -25,8 +25,10 @@ BEGIN
   input->>'source_sha256',doc_hash,repeat('a',64),html,'jobix-resume-export-1');
  job:=(ack->>'operation_id')::uuid;
  ASSERT (SELECT count(*) FROM public.export_admission_events WHERE user_id=actor)=1;
+ ASSERT (SELECT count(*) FROM public.export_cost_reservations WHERE operation=job)=1;
  ASSERT public.jobix_export_replay(actor,(SELECT idempotency_key FROM public.export_jobs WHERE id=job),
   repeat('a',64))=ack;
+ ASSERT (SELECT count(*) FROM public.export_cost_reservations WHERE operation=job)=1;
  BEGIN
   PERFORM public.jobix_export_create(actor,gen_random_uuid(),gen_random_uuid(),profile,v,0,
    input->>'source_sha256',doc_hash,repeat('b',64),html,'jobix-resume-export-1');
@@ -37,6 +39,7 @@ BEGIN
  END;
  ASSERT (SELECT count(*) FROM public.export_admission_events WHERE user_id=actor)=1;
  ASSERT (SELECT count(*) FROM public.export_jobs WHERE user_id=actor)=1;
+ ASSERT (SELECT count(*) FROM public.export_cost_reservations WHERE operation=job)=1;
  ASSERT (SELECT reserved_balance FROM public.credit_accounts WHERE user_id=actor)=2;
 
  -- Terminal accepted failures keep their quota event but release the reserve.

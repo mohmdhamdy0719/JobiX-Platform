@@ -3,6 +3,7 @@
 - [Native tooling constraints](native-tooling.md) — SDK availability/root quirks, native build limits, and real-time clocks for live Flutter UI verification.
 - [Database network access](database-network-access.md) — Supabase HTTPS reachability does not imply direct database reachability; IPv6-only endpoints may need a pooler.
 - [Policy RPC compatibility](policy-rpc-compatibility.md) — absent live policies must fail closed; SDK empty-result behavior can differ from fixtures.
+- [PL/pgSQL parameter qualification](plpgsql-parameter-ambiguity.md) — qualify function arguments and table columns in SQL statements; use named constraints in ambiguous conflict targets.
 - [Dev accounts and fixture Credits](dev-account-provisioning.md) — verify provisioning; reconcile durable job/ledger state before retrying a funded test or refunding.
 - [Completeness authority](completeness-authority.md) — Contact is 5% + 5% + 5%; preserve the 50% AI transition without an unapproved cap or new prerequisite.
 - [Development service boundary](development-services.md) — owner-specified Google Cloud/AdMob resources; deployment access and pending configuration must be verified.

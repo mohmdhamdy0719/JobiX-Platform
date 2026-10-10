@@ -364,6 +364,7 @@
   "reapplyMyChanges": "Keep my changes",
   "exportRateLimited": "You have reached the export limit. Please wait before retrying the saved request.",
   "exportRateLimitedRetry": "You have reached the export limit. Wait {seconds} seconds, then retry the saved request.",
+  "exportTemporarilyUnavailable": "Service is temporarily unavailable. Please try again later.",
   "@exportRateLimitedRetry": {
     "placeholders": {
       "seconds": {

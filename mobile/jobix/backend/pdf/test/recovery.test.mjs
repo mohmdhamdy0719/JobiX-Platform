@@ -25,6 +25,7 @@ const flush=async()=>{for(let i=0;i<100;i++)await Promise.resolve();};
 function fixture() {
   const clock=new Clock(),calls=[],objects=new Map();
   const job={id:randomUUID(),user_id:randomUUID(),lease_token:randomUUID(),
+    max_pdf_bytes:10485760,
     deadline:new Date(clock.now()+1800000).toISOString(),
     snapshot:{canonical_html:'html',document_sha256:sha256('html'),source_sha256:sha256('source'),bundle}};
   const path=`exports/${job.user_id}/${job.id}/${job.snapshot.source_sha256}.pdf`;
@@ -46,9 +47,9 @@ test('disabled export recovery reconciles reservations without claiming or dispa
   const calls=[];
   const worker=new Worker({enabled:false,db:{call:async name=>{calls.push(name);return 1;}}});
   await worker.recover();
-  assert.deepEqual(calls,['recover']);
+  assert.deepEqual(calls,['recover','cost_reconcile']);
   await assert.rejects(worker.dispatch(),{code:'EXPORT_NOT_READY'});
-  assert.deepEqual(calls,['recover']);
+  assert.deepEqual(calls,['recover','cost_reconcile']);
 });
 test('independent heartbeat during a stalled browser; hard deadline releases local slots',async()=>{
   const f=fixture();let rendering=false;

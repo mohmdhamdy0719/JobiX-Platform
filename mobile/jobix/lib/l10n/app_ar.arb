@@ -302,6 +302,7 @@
   "reapplyMyChanges": "الاحتفاظ بتعديلاتي",
   "exportRateLimited": "وصلت إلى الحد المسموح للتصدير. يرجى الانتظار قبل إعادة محاولة الطلب المحفوظ.",
   "exportRateLimitedRetry": "وصلت إلى الحد المسموح للتصدير. انتظر {seconds} ثانية ثم أعد محاولة الطلب المحفوظ.",
+  "exportTemporarilyUnavailable": "الخدمة غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى لاحقًا.",
   "@exportRateLimitedRetry": {
     "placeholders": {
       "seconds": {

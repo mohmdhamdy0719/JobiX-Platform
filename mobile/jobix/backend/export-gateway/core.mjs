@@ -8,7 +8,10 @@ const known=new Set(['AUTH_REQUIRED','FORBIDDEN','ACCOUNT_DELETING','EXPORT_NOT_
   'EXPORT_IN_PROGRESS','RATE_LIMITED','NOT_FOUND','EXPORT_EXPIRED','EXPORT_OBJECT_MISSING',
   'STALE_LEASE','INVALID_STATE','CLEANUP_UNVERIFIED','SERVICE_UNAVAILABLE']);
 export function response(code,status=503) {
-  return new Response(JSON.stringify({data:null,error:{code}}),{status,headers});
+  return new Response(JSON.stringify({data:null,error:{code,
+    ...(code==='SERVICE_UNAVAILABLE'
+      ?{message:'Service is temporarily unavailable. Please try again later.'}:{})}}),
+    {status,headers});
 }
 export function workerTarget(target) {
   const url=new URL(target);

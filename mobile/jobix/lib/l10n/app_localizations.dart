@@ -1868,6 +1868,12 @@ abstract class AppLocalizations {
   /// **'You have reached the export limit. Wait {seconds} seconds, then retry the saved request.'**
   String exportRateLimitedRetry(int seconds);
 
+  /// No description provided for @exportTemporarilyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Service is temporarily unavailable. Please try again later.'**
+  String get exportTemporarilyUnavailable;
+
   /// No description provided for @exportInProgress.
   ///
   /// In en, this message translates to:

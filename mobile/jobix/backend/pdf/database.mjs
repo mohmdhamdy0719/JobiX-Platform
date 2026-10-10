@@ -10,6 +10,9 @@ const contracts = {
   freeze:['actor','profile'], retention:[],cleaned:['operation','generation'],
   upload_begin:['operation','fence'],upload_settle:['operation','fence','generation'],
   quiescent:['actor','profile'],purge:['actor','profile','objects_verified'],deletions:[],
+  cost_attempt_start:['operation','fence'],
+  cost_attempt_finish:['operation','fence','runtime_ms','pdf_bytes','storage_operations'],
+  cost_settle:['operation'],cost_reconcile:[],
 };
 const jsonArgs = new Set(['proof','asset_manifest']);
 export class Database {

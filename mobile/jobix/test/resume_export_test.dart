@@ -745,6 +745,35 @@ void main() {
   }
   for (final language in ['en', 'ar']) {
     testWidgets(
+      '$language cost-budget rejection uses the safe temporary-unavailable message',
+      (tester) async {
+        rejected = 'SERVICE_UNAVAILABLE';
+        await mount(tester, language: language, initial: true);
+        await tap(
+          tester,
+          language == 'en' ? 'Create PDF — 2 Credits' : 'إنشاء PDF — رصيدان',
+        );
+        await tap(
+          tester,
+          language == 'en' ? 'Create — 2 Credits' : 'إنشاء — رصيدان',
+        );
+        final strings = AppLocalizations.of(
+          tester.element(find.byType(ResumeExportPanel)),
+        )!;
+        expect(find.text(strings.exportTemporarilyUnavailable), findsOneWidget);
+        if (language == 'en') {
+          expect(
+            strings.exportTemporarilyUnavailable,
+            'Service is temporarily unavailable. Please try again later.',
+          );
+        }
+        expect(accepted, 0);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+  for (final language in ['en', 'ar']) {
+    testWidgets(
       '$language active profile intent explains status without inventing a wait time',
       (tester) async {
         rejected = 'EXPORT_IN_PROGRESS';

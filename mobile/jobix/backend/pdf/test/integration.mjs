@@ -78,7 +78,22 @@ const packet={request_id:randomUUID(),idempotency_key:randomUUID(),
  expected_configuration_version:document.configuration_version,
  expected_document_sha256:document.document_sha256,renderer_bundle_version:document.bundle}};
 const ack=await gateway.handle(actor,'create',packet);
+assert.equal(sql(`select count(*) from export_cost_reservations where operation=${quote(ack.operation_id)}`),'1');
+const replay=await gateway.handle(actor,'create',packet);
+assert.equal(replay.operation_id,ack.operation_id);
+assert.equal(sql(`select count(*) from export_cost_reservations where operation=${quote(ack.operation_id)}`),'1');
 await new Worker({enabled:true,db,storage,renderer}).dispatch();
+const costState=sql(`select json_build_object('reservation',r.state,
+ 'unknown_prior_attempts',r.unknown_prior_attempts,'model_version',r.model_version,
+ 'policy_version',p.model_version,'job',j.state,
+ 'attempts',(select json_agg(json_build_object('finished',a.finished_at,
+   'runtime_ms',a.runtime_ms,'pdf_bytes',a.pdf_bytes,'storage_operations',a.storage_operations))
+  from export_cost_attempts a where a.operation=r.operation),
+ 'uploads',(select json_agg(f.state) from export_upload_flights f where f.operation=r.operation))
+ from export_cost_reservations r cross join export_cost_budget_policy p
+ join export_jobs j on j.id=r.operation where p.singleton and r.operation=${quote(ack.operation_id)}`);
+assert.match(sql(`select state||':'||settled_microusd from export_cost_reservations where operation=${quote(ack.operation_id)}`),
+  /^SETTLED:[1-9][0-9]*$/,`worker settlement failed; state=${costState}`);
 assert.equal((await gateway.handle(actor,'status',{export_id:ack.operation_id})).state,'COMPLETED');
 assert.deepEqual(await gateway.handle(actor,'create',{...packet,request_id:randomUUID()}),ack);
 await gateway.handle(actor,'download',{export_id:ack.operation_id});

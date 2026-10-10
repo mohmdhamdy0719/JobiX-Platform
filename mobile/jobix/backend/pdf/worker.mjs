@@ -8,6 +8,8 @@ export class Worker {
   }
   async recover() {
     await this.db.call('recover');
+    try {await this.db.call('cost_reconcile');}
+    catch {process.stderr.write('EXPORT_COST_RECONCILIATION_PENDING\n');}
     // Recovery only reconciles durable reservations and expired jobs. Dispatch
     // remains controlled by the export gate and cannot run while it is closed.
     if (this.enabled) return this.dispatch();
@@ -27,6 +29,9 @@ export class Worker {
     let heartbeatInFlight=false;
     const operation=job.id,fence=job.lease_token;
     const remaining=()=>Date.parse(job.deadline)-this.clock.now();
+    const attemptStartedAt=this.clock.now();
+    let attemptStarted=false,attemptFinished=false,pdfBytes=0,storageOperations=0;
+    const maxPdfBytes=job.max_pdf_bytes;
     // Race even adapters that fail to honor cancellation; no late result can finalize.
     const step=async(callback)=>{
       if(signal.aborted || remaining()<=0)throw new ExportError('STALE_LEASE');
@@ -53,7 +58,20 @@ export class Worker {
       if(!Number.isInteger(pages)||pages<1||pages>20)throw new ExportError('VALIDATION_FAILED');
       return pages;
     };
+    const storageStep=callback=>{storageOperations++;return step(callback);};
+    const finishAttempt=()=>step(()=>this.db.call('cost_attempt_finish',{
+      operation,fence,runtime_ms:Math.max(0,this.clock.now()-attemptStartedAt),
+      pdf_bytes:pdfBytes,storage_operations:storageOperations,
+    }));
+    const settleIfTerminal=async state=>{
+      if(!['COMPLETED','FAILED','EXPIRED','MISSING_OBJECT','DELETED'].includes(state))return;
+      try {await this.db.call('cost_settle',{operation});}
+      catch {process.stderr.write('EXPORT_COST_SETTLEMENT_PENDING\n');}
+    };
     try {
+      if(!Number.isSafeInteger(maxPdfBytes)||maxPdfBytes<1)throw new ExportError('SERVICE_UNAVAILABLE');
+      await step(()=>this.db.call('cost_attempt_start',{operation,fence}));
+      attemptStarted=true;
       const snapshot=job.snapshot;
       if(snapshot.bundle!==bundle || sha256(snapshot.canonical_html)!==snapshot.document_sha256 ||
         (Array.isArray(snapshot.asset_manifest?.font_checksums) && JSON.stringify(snapshot.asset_manifest.font_checksums)!==
@@ -64,11 +82,11 @@ export class Worker {
       }
       const path=`exports/${job.user_id}/${operation}/${snapshot.source_sha256}.pdf`;
       await step(()=>this.db.call('stage',{operation,fence,stage:'GENERATING'}));
-      let metadata=await step(()=>this.storage.inspect(path,null,signal)),pdf;
+      let metadata=await storageStep(()=>this.storage.inspect(path,null,signal)),pdf;
       if(metadata) {
         if(metadata.metadata?.document_sha256!==snapshot.document_sha256 ||
           metadata.metadata?.source_sha256!==snapshot.source_sha256)throw new ExportError('VALIDATION_FAILED');
-        pdf=await step(()=>this.storage.read(path,metadata.generation,signal));
+        pdf=await storageStep(()=>this.storage.read(path,metadata.generation,signal));
         if(metadata.metadata.upload_fence) {
           await step(()=>this.db.call('upload_settle',{operation,
             fence:metadata.metadata.upload_fence,generation:String(metadata.generation)}));
@@ -77,13 +95,16 @@ export class Worker {
         pdf=await step(()=>this.renderer.render(snapshot.canonical_html,
           {signal,timeout:Math.min(600000,remaining())}));
       }
+      if(!Buffer.isBuffer(pdf))throw new ExportError('VALIDATION_FAILED');
+      pdfBytes=Math.max(pdfBytes,pdf.length);
+      if(pdfBytes>maxPdfBytes)throw new ExportError('VALIDATION_FAILED');
       await validate(pdf,snapshot.canonical_html);
       await step(()=>this.db.call('heartbeat',{operation,fence}));
       await step(()=>this.db.call('stage',{operation,fence,stage:'UPLOADING'}));
       if(!metadata) {
         await step(()=>this.db.call('upload_begin',{operation,fence}));
         try {
-          metadata=await step(()=>this.storage.create(path,pdf,{
+          metadata=await storageStep(()=>this.storage.create(path,pdf,{
             document_sha256:snapshot.document_sha256,source_sha256:snapshot.source_sha256,
             pdf_sha256:sha256(pdf),upload_fence:fence},signal).then(async object=>{
               await this.db.call('upload_settle',{operation,fence,generation:String(object.generation)});
@@ -97,24 +118,35 @@ export class Worker {
             }));
         } catch(error) {
           if(error.code!=='OBJECT_EXISTS')throw error;
-          metadata=await step(()=>this.storage.inspect(path,null,signal));
+          metadata=await storageStep(()=>this.storage.inspect(path,null,signal));
         }
       }
       if(!metadata || metadata.contentType!=='application/pdf' ||
         metadata.metadata?.document_sha256!==snapshot.document_sha256 ||
         metadata.metadata?.source_sha256!==snapshot.source_sha256)throw new ExportError('VALIDATION_FAILED');
-      const stored=await step(()=>this.storage.read(path,metadata.generation,signal));
+      const stored=await storageStep(()=>this.storage.read(path,metadata.generation,signal));
+      if(!Buffer.isBuffer(stored))throw new ExportError('VALIDATION_FAILED');
+      pdfBytes=Math.max(pdfBytes,stored.length);
+      if(pdfBytes>maxPdfBytes)throw new ExportError('VALIDATION_FAILED');
       const pages=await validate(stored,snapshot.canonical_html);
       if(!stored.length || metadata.metadata?.pdf_sha256!==sha256(stored))throw new ExportError('VALIDATION_FAILED');
-      await step(()=>this.db.call('finish',{operation,fence,proof:{
+      await finishAttempt();attemptFinished=true;
+      const state=await step(()=>this.db.call('finish',{operation,fence,proof:{
         path,generation:String(metadata.generation),pdf_sha256:sha256(stored),
         document_sha256:snapshot.document_sha256,pages,size:stored.length,
         content_type:'application/pdf',created_at:metadata.timeCreated,
       },terminal:false}));
+      await settleIfTerminal(state);
     } catch(error) {
       if(!signal.aborted && error.code!=='STALE_LEASE') {
-        try {await step(()=>this.db.call('finish',{operation,fence,proof:null,
-          terminal:error.code==='VALIDATION_FAILED'}));} catch { /* Durable recovery owns ambiguity. */ }
+        if(attemptStarted&&!attemptFinished) {
+          try {await finishAttempt();attemptFinished=true;} catch { /* Keep the full hold if metering is uncertain. */ }
+        }
+        try {
+          const state=await step(()=>this.db.call('finish',{operation,fence,proof:null,
+            terminal:error.code==='VALIDATION_FAILED'}));
+          await settleIfTerminal(state);
+        } catch { /* Durable recovery owns ambiguity. */ }
       }
     } finally {
       this.clock.clearInterval(timer);this.clock.clearTimeout(deadline);controller.abort();

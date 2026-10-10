@@ -53,10 +53,13 @@ psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/migrations/202610080018_resume_export_admission.sql \
   -f supabase/tests/resume_export.sql
 psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
+  -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
+  -f supabase/tests/resume_export_cost_protection.sql \
   -f supabase/tests/resume_export_admission.sql \
   -f supabase/tests/resume_export_recovery.sql \
   -f supabase/tests/resume_export_deletion.sql
-echo "PASS: Disabled-by-default private export/credits/snapshot/lifecycle/concurrency (disposable PostgreSQL)"
+ echo "PASS: Export cost reservations/admission/recovery/deletion (disposable PostgreSQL)"
 if [[ -f backend/pdf/test/integration.mjs ]]; then
   JOBIX_DISPOSABLE_PG_SOCKET="$work/socket" node backend/pdf/test/integration.mjs
 fi
+ JOBIX_DISPOSABLE_PG_SOCKET="$work/socket" bash tool/test_export_cost_concurrency.sh

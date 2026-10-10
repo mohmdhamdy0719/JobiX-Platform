@@ -980,6 +980,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get exportTemporarilyUnavailable =>
+      'Service is temporarily unavailable. Please try again later.';
+
+  @override
   String get exportInProgress =>
       'An export for this profile is already in progress. Check its status before starting another.';
 

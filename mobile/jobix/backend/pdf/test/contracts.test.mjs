@@ -95,6 +95,7 @@ test('transient object probe does not label a file missing',async()=>{
     {code:'SERVICE_UNAVAILABLE'});assert.deepEqual(calls,['status']);
 });
 function job(){return {id:randomUUID(),user_id:randomUUID(),lease_token:randomUUID(),
+  max_pdf_bytes:10485760,
   deadline:new Date(Date.now()+1800000).toISOString(),
   snapshot:{canonical_html:'html',document_sha256:sha256('html'),source_sha256:sha256('source'),bundle}};}
 test('worker verifies uploaded bytes before successful finalization',async()=>{
@@ -123,7 +124,7 @@ test('stale worker cannot finalize or release',async()=>{
   const calls=[];
   const worker=new Worker({enabled:true,db:{call:async(name)=>{calls.push(name);
     throw new ExportError('STALE_LEASE');}},storage:{}});
-  await worker.run(job());assert.deepEqual(calls,['stage']);
+  await worker.run(job());assert.deepEqual(calls,['cost_attempt_start']);
 });
 test('dispatch capacity is reserved before concurrent claims',async()=>{
   let finishClaim;const blocked=new Promise(resolve=>{finishClaim=resolve;});let claims=0;

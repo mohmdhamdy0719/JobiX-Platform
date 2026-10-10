@@ -61,7 +61,10 @@ export function server({gateway,worker,cleanup,authenticate,exportsEnabled=true}
       res.statusCode=code==='FORBIDDEN'?403:code==='VALIDATION_FAILED'?400:
         code==='RATE_LIMITED'?429:code==='EXPORT_IN_PROGRESS'?409:503;
       if(retryAfter!==null)res.setHeader('Retry-After',String(retryAfter));
-      res.end(JSON.stringify({data:null,error:{code,...(retryAfter===null?{}:{retry_after_seconds:retryAfter})}}));
+      res.end(JSON.stringify({data:null,error:{code,
+        ...(code==='SERVICE_UNAVAILABLE'
+          ?{message:'Service is temporarily unavailable. Please try again later.'}:{}),
+        ...(retryAfter===null?{}:{retry_after_seconds:retryAfter})}}));
     }
   });
 }

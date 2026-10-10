@@ -970,6 +970,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get exportTemporarilyUnavailable =>
+      'الخدمة غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى لاحقًا.';
+
+  @override
   String get exportInProgress =>
       'يوجد تصدير قيد التنفيذ لهذا الملف الشخصي. تحقق من حالته قبل بدء تصدير آخر.';
 

@@ -157,6 +157,7 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               'The file is unavailable. No automatic regeneration or charge.',
               'الملف غير متاح. لا توجد إعادة إنشاء أو رسوم تلقائية.',
             ),
+            'SERVICE_UNAVAILABLE' => l10n.exportTemporarilyUnavailable,
             'RATE_LIMITED' =>
               retryAfter == null
                   ? l10n.exportRateLimited
