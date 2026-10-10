@@ -1,0 +1,25 @@
+The focused end-to-end validation results are accepted. Do not repeat the completed tests or restart the planning process.
+
+We are moving to production-readiness execution, but this is NOT authorization to deploy or modify live services yet.
+
+Prepare the application for launch through the following narrowly scoped steps:
+
+1. **Final targeted regression:** Add and run a small test proving repeated cost settlement is idempotent and cannot double-count a settled reservation. Reuse the existing disposable test infrastructure; do not rerun unrelated suites.
+
+2. **Release and deployment inventory:** Inspect the repository and available configuration to identify the exact current versions and deployment status of the Supabase Edge Function, Cloud Run Gateway, Worker, database migrations, private GCS bucket, and Android build/signing configuration. Clearly distinguish verified current state from old reports or unknown provider state. Do not access secrets or print sensitive configuration.
+
+3. **Real cost configuration:** Identify the minimum provider-specific information needed to configure conservative cost estimates and the shared-cost reserve for the $10 rolling-seven-day budget. Do not invent rates. Keep `accounting_ready=false` in every persistent environment until the assumptions are reviewed and explicitly approved.
+
+4. **Production blockers only:** List the concrete remaining blockers to a safe first release, prioritizing:
+   - runtime/dependency support;
+   - Android release signing and build reproducibility;
+   - production migration ordering and rollback;
+   - backup/restore and essential monitoring;
+   - PDF rendering, private downloads, and deletion/recovery;
+   - cost budget configuration and enforcement.
+
+5. **Practical release checklist:** Provide the shortest ordered sequence from the current verified state to a first controlled production release, including staging verification and rollback gates. Do not reopen settled architecture decisions or propose unrelated features.
+
+Do not apply live migrations, deploy services, change cloud settings, enable billing exports, access billing credentials, create paid resources, build or distribute a release APK, change Git history, or enable `accounting_ready` outside disposable tests.
+
+Return the focused test result, a concise verified/unknown deployment inventory, the concrete production blockers, and the ordered release checklist. Stop before any live change and wait for my explicit approval.

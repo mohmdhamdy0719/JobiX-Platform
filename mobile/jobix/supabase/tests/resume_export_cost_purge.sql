@@ -2,6 +2,8 @@
 BEGIN;
 DO $test$
 DECLARE rejected boolean:=false; used_before numeric; used_after numeric;
+ used_once numeric; used_twice numeric; settled_once bigint; settled_twice bigint;
+ settled_at_once timestamptz; settled_at_twice timestamptz; result text;
 BEGIN
  IF NOT EXISTS(SELECT FROM public.export_cost_reservations r
   WHERE r.operation='93000000-0000-0000-0000-000000000001'
@@ -48,9 +50,54 @@ BEGIN
  WHERE p.singleton GROUP BY p.shared_cost_reserve_microusd,p.rolling_window;
  IF used_after<>used_before THEN RAISE EXCEPTION 'settlement double-counted or discarded the orphan hold'; END IF;
 
- UPDATE public.export_cost_budget_policy SET budget_microusd=used_after+1 WHERE singleton;
+  -- A verified-purge marker lets recovery settle a finished attempt after its job row is gone.
+  INSERT INTO public.export_cost_reservations(operation,admitted_at,reserved_microusd,
+   model_version,max_pdf_bytes,job_purged_at)
+  VALUES('93000000-0000-0000-0000-000000000005',clock_timestamp(),100,1,10485760,clock_timestamp());
+  INSERT INTO public.export_cost_attempts(operation,fence,finished_at,runtime_ms,pdf_bytes,storage_operations)
+  VALUES('93000000-0000-0000-0000-000000000005',gen_random_uuid(),
+   clock_timestamp(),0,0,0);
+  result:=public.jobix_export_cost_settle('93000000-0000-0000-0000-000000000005');
+  IF result<>'SETTLED' THEN RAISE EXCEPTION 'known post-purge usage was not settled'; END IF;
+  SELECT r.settled_microusd,r.settled_at INTO settled_once,settled_at_once
+  FROM public.export_cost_reservations r
+  WHERE r.operation='93000000-0000-0000-0000-000000000005' AND r.state='SETTLED';
+  IF settled_once<>1 OR settled_at_once IS NULL THEN
+   RAISE EXCEPTION 'known post-purge usage has an unexpected settled amount';
+  END IF;
+  SELECT p.shared_cost_reserve_microusd+coalesce(sum(CASE
+    WHEN r.state='HELD' THEN r.reserved_microusd
+    WHEN r.state='SETTLED' AND r.admitted_at>clock_timestamp()-p.rolling_window
+     THEN r.settled_microusd ELSE 0 END),0)
+  INTO used_once
+  FROM public.export_cost_budget_policy p
+  LEFT JOIN public.export_cost_reservations r ON r.state<>'RELEASED'
+  WHERE p.singleton GROUP BY p.shared_cost_reserve_microusd,p.rolling_window;
+
+  result:=public.jobix_export_cost_settle('93000000-0000-0000-0000-000000000005');
+  SELECT r.settled_microusd,r.settled_at INTO settled_twice,settled_at_twice
+  FROM public.export_cost_reservations r
+  WHERE r.operation='93000000-0000-0000-0000-000000000005' AND r.state='SETTLED';
+  SELECT p.shared_cost_reserve_microusd+coalesce(sum(CASE
+    WHEN r.state='HELD' THEN r.reserved_microusd
+    WHEN r.state='SETTLED' AND r.admitted_at>clock_timestamp()-p.rolling_window
+     THEN r.settled_microusd ELSE 0 END),0)
+  INTO used_twice
+  FROM public.export_cost_budget_policy p
+  LEFT JOIN public.export_cost_reservations r ON r.state<>'RELEASED'
+  WHERE p.singleton GROUP BY p.shared_cost_reserve_microusd,p.rolling_window;
+  IF result<>'SETTLED' OR settled_twice<>settled_once
+   OR settled_at_twice<>settled_at_once OR used_twice<>used_once
+  THEN RAISE EXCEPTION 'repeated settlement changed the settled reservation or double-counted cost'; END IF;
+  IF used_once<>used_after+1 THEN RAISE EXCEPTION 'settled reservation was not counted exactly once'; END IF;
+
+  UPDATE public.export_cost_budget_policy SET budget_microusd=used_twice+1 WHERE singleton;
  IF public.jobix_export_cost_reserve('93000000-0000-0000-0000-000000000003')<>1
  THEN RAISE EXCEPTION 'resolved reservation was counted more than once'; END IF;
+  DELETE FROM public.export_cost_attempts
+   WHERE operation='93000000-0000-0000-0000-000000000005';
+  DELETE FROM public.export_cost_reservations
+   WHERE operation='93000000-0000-0000-0000-000000000005';
  DELETE FROM public.export_cost_reservations
   WHERE operation='93000000-0000-0000-0000-000000000003';
  DELETE FROM public.export_cost_reservations
