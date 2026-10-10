@@ -1,0 +1,22 @@
+Good. Phase 1 local verification is accepted as reported. Do not repeat the same tests or perform another broad audit.
+
+Before moving on, provide a concise implementation handoff containing:
+
+1. The exact migration filename and the names of the changed files.
+2. Confirmation that the quota checks are atomic under concurrent requests and use server-side timestamps.
+3. Confirmation that Credit reservation/debit/release, idempotent replay, valid existing PDF downloads, active-job recovery, and account/profile deletion safeguards remain intact.
+4. Explain precisely how quota history is stored, how long it is retained, and what happens when a profile is purged.
+5. Explain whether accounts whose old quota history was erased before this migration could exceed the intended limits immediately after rollout, and what the safest minimal mitigation is.
+6. Confirm the migration has not been applied to any live database and no deployment or paid operation occurred.
+
+Then prepare the next implementation plan only: **a configurable $10 USD rolling-seven-day cost-protection mechanism**.
+
+Keep this plan focused. Identify the actual billable services in the current architecture, the available usage/billing data for each, which costs can be measured or estimated during admission, which costs are delayed or uncontrollable, and the exact files/configuration/database objects needed.
+
+The budget must be centrally configurable and enforce admission server-side under concurrency. When the enforceable budget is exhausted, new expensive operations should return SERVICE_UNAVAILABLE with a safe user message: "Service is temporarily unavailable. Please try again later." Preserve valid PDF downloads, status queries, and essential recovery/accounting operations.
+
+Do not create a decorative counter. Clearly explain how the mechanism prevents new spending and the remaining risk from delayed provider billing, fixed charges, or already-running work. Propose warning thresholds and a safe fail-closed behavior if budget accounting becomes unavailable.
+
+Do not include unrelated signup-credit changes, AI activation, retention changes, infrastructure scaling, deployments, APK builds, paid tests, or broad refactoring.
+
+Do not edit files or run additional tests yet. Return the concise Phase 1 handoff and the exact Phase 2 plan, then wait for my approval.
