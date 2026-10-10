@@ -364,7 +364,10 @@ approved deletion policy, and kept all remote gates closed.
 
 **How to apply:** Use disposable fixtures only; preserve snapshot/history/dedupe
 while unresolved, and report runtime/policy blockers rather than substituting
-engines, weakening verification or proceeding remotely.
+engines, weakening verification or proceeding remotely. `accounting_ready=true`
+is permitted only temporarily with synthetic rates in an ephemeral disposable
+database; restore it to false before cleanup and never enable it in persistent
+staging or production.
 
 ### Accepted Phase 3 product decisions
 The owner accepted the technical direction but explicitly said not to start
