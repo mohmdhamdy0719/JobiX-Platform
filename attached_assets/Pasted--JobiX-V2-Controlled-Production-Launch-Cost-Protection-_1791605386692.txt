@@ -1,0 +1,223 @@
+# JobiX V2 — Controlled Production Launch & Cost Protection
+
+## Role and objective
+
+You are the engineering owner responsible for bringing the existing JobiX V2 MVP to a reliable, secure, cost-controlled production launch.
+
+I am providing you with the existing production-readiness plan prepared by another Replit account. Treat that plan as the starting point and review it against the actual repository and implementation.
+
+My goal is to get JobiX live with working authentication, correct server-authoritative Credits, secure PDF generation and downloads, reliable recovery, and protection against abuse and unexpected infrastructure bills.
+
+**Optimize for verified progress, not long analysis.** I do not want repeated audits, duplicated documentation, unnecessary rewrites, or expensive experiments. Inspect only what is necessary for the next decision or implementation increment. Reuse the existing architecture and working code unless concrete evidence proves a change is necessary.
+
+## 1. Non-negotiable rules
+
+1. Preserve the existing Architecture V2 and working development MVP unless a concrete, documented defect requires a targeted change.
+2. Do not rewrite the application or migrate providers/regions based on speculation.
+3. Never expose service-role credentials, Google service-account keys, private Worker endpoints, or other secrets.
+4. Credits, quotas, export ownership, idempotency, reservations, and final job states must be enforced server-side and transactionally. The client is never authoritative.
+5. Preserve private GCS objects, authenticated downloads, immutable export snapshots, Arabic RTL and English LTR rendering, selectable PDF text, and the existing PDF generation path.
+6. Never charge twice for a replay or internal retry of the same logical operation.
+7. Existing valid PDF downloads remain free and should continue working when new exports are temporarily disabled by a budget limit.
+8. Do not silently reopen terminal FAILED jobs, rewrite financial history, delete audit evidence, or weaken account-deletion protections.
+9. Do not run chargeable exports, AI inference, load tests, cloud mutations, deployments, APK builds, or production changes without the specific authorization described below.
+10. Do not spend time generating another broad assessment when the requested next action can be established from a small, targeted repository inspection.
+
+## 2. Required operating method
+
+Use the supplied production-readiness plan as the baseline. Perform only a focused reconciliation against the repository, existing tests, current configuration, and available deployment evidence.
+
+Then work in small, independently verifiable increments:
+
+- State the next increment and its expected outcome.
+- Identify the exact files, SQL objects, and tests needed.
+- Implement only the approved increment.
+- Run the cheapest relevant local tests first.
+- Report actual results, failures, unavailable dependencies, and remaining risks.
+- Stop at the next meaningful approval gate.
+
+Do not repeatedly reread or rewrite the entire plan. Do not invent evidence. Clearly label facts as **verified**, **inferred**, or **unknown**.
+
+If an essential detail is unknown, inspect the smallest relevant source or configuration. Ask me only when a genuine product/security/cost decision cannot be inferred safely.
+
+## 3. Weekly cost protection — initial hard ceiling of $10
+
+I want a configurable weekly spending ceiling, initially **USD $10 per rolling seven-day period**, covering the billable resources that JobiX actually uses.
+
+The limit must be centrally configurable so it can be raised as usage grows, without changing the application code unnecessarily. Keep separate configuration for the ceiling, warning thresholds, accounting window, and enforcement behavior.
+
+### Required behavior
+
+- Measure or conservatively estimate cost from server-side usage and the actual provider/SKU pricing applicable to the deployed regions.
+- Include relevant billable resources such as PDF rendering, Cloud Run, database/hosting, storage, network transfer, retries, and any AI provider usage that is later explicitly enabled.
+- Do not assume that an application-side counter equals the provider's actual invoice.
+- Provider billing exports can be delayed. Therefore, use an application-controlled usage budget and conservative cost estimates for immediate protection, then reconcile it with provider billing data when available.
+- Prevent new expensive work before starting it if the remaining safe budget is insufficient.
+- When the enforced weekly budget is exhausted, reject new billable operations with a stable machine-readable error such as `SERVICE_UNAVAILABLE` and a safe user-facing message: **“Service is temporarily unavailable. Please try again later.”**
+- Return a meaningful retry time when it can be calculated reliably. Do not promise that service will resume at an exact time if billing data or accounting windows are uncertain.
+- Keep existing valid PDF downloads, job-status queries, account deletion, and essential recovery/accounting operations available where safely possible.
+- Do not abandon accepted jobs, leave Credit reservations stranded, double-charge users, or lose track of jobs because the budget was reached.
+- If an operation has already been accepted, follow a defined safe completion/recovery policy. Do not blindly kill workers in a way that corrupts state or causes repeated expensive retries.
+- Apply the budget to every relevant billable entry point, not just the mobile UI or a single API route.
+- Make enforcement atomic under concurrent requests. A burst of simultaneous requests must not bypass the remaining budget.
+- Prevent an exhausted or unavailable accounting system from silently allowing unlimited new spending. Define a safe fail-closed policy for new expensive work while preserving essential recovery and valid downloads.
+
+### Configuration and safeguards
+
+Use a centralized, server-side configuration or budget table with appropriate access controls. Avoid hardcoded limits scattered across the codebase.
+
+The initial weekly ceiling is $10. The threshold percentages and alert delivery mechanism should be proposed briefly and implemented only after the underlying cost accounting is trustworthy. Do not invent a notification provider or add paid infrastructure without approval.
+
+Before implementation, identify which services can be gated immediately and which provider costs cannot be measured accurately in real time. Propose the smallest safe implementation that provides an enforceable application-level ceiling and clearly documents any unavoidable billing-delay exposure.
+
+**Do not claim that a $10 cap guarantees the provider invoice can never exceed $10** if committed capacity, delayed billing, background jobs, or other charges can exceed the application’s control. Quantify these limitations and propose practical safeguards.
+
+## 4. Export and Credits correctness
+
+Implement and validate the previously approved export policy:
+
+- Maximum 1 new logical export per rolling 5 minutes.
+- Maximum 3 per rolling hour.
+- Maximum 5 per rolling 24 hours.
+- Maximum 10 per rolling 7 days.
+- One active export intent per user/profile.
+- A replay using the same idempotency key returns the original logical operation and must not create another quota count or Credit debit.
+- An internal retry uses the same job/reservation and does not create a second logical export.
+- “Export Again” is a new logical export and counts against quotas.
+- A rejected request that was never accepted must not be counted as an accepted logical export or charged.
+- Accepted failures count toward quotas by default, even when the reservation is released.
+- An automatic quota exception is permitted only when objective, testable server-side evidence proves an internal JobiX failure. Ambiguous outcomes must not qualify.
+- A terminal FAILED job remains FAILED. If a verified exception is granted, the user must explicitly create a new operation with a new idempotency key. The replacement counts normally and costs 2 Credits on success.
+- New Resume PDF export costs 2 Credits, with reservation and final debit handled atomically and server-side.
+- Failed exports release their reservations. Existing valid downloads cost 0 Credits.
+- Profile deletion/purge must not accidentally erase the recent history needed to enforce rolling quotas. Propose a minimal privacy-conscious solution before changing deletion semantics.
+
+Inspect the current implementation first. The existing SQL limit may differ from the policy above; do not assume the approved quotas are already deployed.
+
+Do not implement speculative global spending budgets for unrelated categories, automatic failure exceptions, or a new pre-render reservation lifecycle in the same increment unless separately approved.
+
+## 5. Signup Credits
+
+The intended product policy is +5 signup Credits only after the required account verification/eligibility conditions are satisfied.
+
+Inspect the current trigger and grant path. Do not change it as part of the first export-quota increment. Later, prepare a separate, small implementation plan that prevents duplicate grants and account-level farming, preserves existing ledger history, and explains how existing accounts will be handled without silently changing their balances.
+
+Do not claim that email/device/IP checks alone reliably identify one human.
+
+## 6. PDF production reliability
+
+The existing personal development PDF flow has worked before. Preserve it.
+
+Verify the source and deployed version of the Edge Function, Gateway, Worker, database migrations, and private GCS configuration before any release. Treat older deployment reports as dated evidence, not proof of the current state.
+
+Prioritize:
+
+- Authentication and strict user ownership.
+- Idempotency and concurrency safety.
+- Reservation/debit/release correctness.
+- Worker leases, fencing, retry and recovery behavior.
+- Upload ambiguity and reconciliation.
+- PDF validation and authenticated downloads.
+- Seven-day user-facing PDF availability and its relationship to actual GCS deletion/soft-delete retention.
+- Arabic/English rendering, fonts, page layout, and selectable text.
+- Account deletion and cleanup safeguards.
+- Runtime/dependency support, Android release signing, backups/restore, logs, alerts, and operational runbooks.
+
+Do not change retention periods, deploy new infrastructure, or replace the current PDF pipeline without separate approval and evidence.
+
+## 7. Execution plan and scope boundaries
+
+### Phase 0 — Focused evidence reconciliation
+
+Review the supplied plan and inspect only the necessary repository files and available deployment/configuration evidence.
+
+Return a short delta list:
+- What is verified and working.
+- What is missing or unsafe.
+- Which findings are stale or unverified.
+- The smallest next implementation increment.
+- Any critical cost-cap limitation.
+
+Do not produce another long general architecture report.
+
+### Phase 1 — Export protection
+
+The first implementation increment should be limited to:
+
+- Atomic rolling export quotas.
+- Active-intent exclusion.
+- Structured quota errors and retry-after behavior.
+- Safe preservation of idempotency, Credits, retries, valid downloads, and deletion semantics.
+- The minimum required quota-history protection across profile purge.
+- Focused SQL, backend, and Flutter tests.
+
+Before editing anything, give me the exact file/SQL change list, migration and rollback approach, and test plan. Wait for my explicit approval of that plan.
+
+### Phase 2 — Weekly budget enforcement
+
+After Phase 1 is verified, propose a separate, narrowly scoped implementation plan for the configurable $10 rolling-week cost ceiling, usage metering, concurrency-safe admission, safe `SERVICE_UNAVAILABLE` behavior, and essential recovery exceptions.
+
+First establish the actual provider services, regions, pricing sources, metering options, and unavoidable billing lag. Do not implement a decorative counter that does not enforce real admission decisions.
+
+Wait for approval before making these changes.
+
+### Phase 3 — Failure evidence and overload protection
+
+Review verified failure evidence, retry storms, queue depth, concurrency, circuit breaking, and recovery. Use measured evidence and explicit approval. Do not blindly introduce a three-failure cooldown or global ceilings that might disable legitimate users.
+
+### Phase 4 — Signup, security, and recovery
+
+Handle verified signup Credits, anti-farming limitations, access-control verification, backup/restore evidence, and retention consistency as separate changes with their own tests and approvals.
+
+### Phase 5 — Release readiness
+
+Only after the prior gates pass, prepare a concise release checklist for staging validation, Android release signing, deployment coherence, budget safeguards, rollback, monitoring, and production rollout. Ask separately before any paid tests, APK builds, deployments, or production mutations.
+
+## 8. Testing and proof requirements
+
+Use the cheapest relevant local tests first. Avoid repeated test suites that add no new evidence.
+
+For export and budget controls, test at minimum:
+
+- Requests at and around rolling-window boundaries.
+- Concurrent requests trying to exceed the quota or budget.
+- Idempotent replay and payload mismatch.
+- Active-intent conflicts.
+- Accepted failure and reservation release.
+- Internal retry without duplicate debit.
+- Terminal failure and approved evidence-based exception behavior, when that later feature is implemented.
+- Profile purge and quota-history preservation.
+- Budget exhaustion and recovery after the accounting window advances.
+- Existing valid PDF downloads while new exports are blocked.
+- Worker recovery and in-flight operations near the budget limit.
+- Cross-user access and ownership isolation.
+
+Do not run real paid PDF exports or AI inference merely to demonstrate functionality. Use mocks, local fixtures, disposable databases, or a specifically approved staging test when appropriate.
+
+If a dependency, database, or runtime is unavailable, report the exact blocker and the smallest next step. Do not disguise an unrun test as a pass.
+
+## 9. Cost and time discipline
+
+I have limited Replit credits and want to avoid spending them on repetitive analysis.
+
+- Reuse the supplied plan and prior findings.
+- Do not repeatedly inspect every file if the next increment only requires a few.
+- Do not generate multiple versions of the same report.
+- Do not make unrelated refactors or formatting changes.
+- Do not install dependencies or provision paid services without a reason and approval.
+- Do not run full test suites unnecessarily.
+- Prefer one focused implementation, one relevant test pass, and a concise result summary.
+- Do not create commits, push to GitHub, change account integrations, or alter project history unless separately requested.
+
+## 10. Immediate instruction
+
+Start with Phase 0, but keep it focused and time-bounded. Then present:
+
+1. The top critical blockers to getting JobiX live safely.
+2. A brief assessment of how the $10 weekly cap can actually be enforced and what it cannot guarantee.
+3. The exact proposed scope and file/migration/test list for Phase 1.
+4. Any genuinely unresolved decision that blocks Phase 1.
+
+**Do not edit files or execute implementation yet. Do not deploy or spend money. Wait for my explicit approval of the exact Phase 1 plan.**
+
+Once I approve that specific plan, implement only that increment, test it, and report the evidence. Then stop and ask for approval of the next increment.

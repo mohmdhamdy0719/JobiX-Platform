@@ -1,0 +1,284 @@
+# JobiX V2 — Production readiness and cost-efficient launch plan
+
+**Planning only.** No application, SQL, schema, Credits, cloud configuration, gates, retention, deployment or Git history changes were made. No builds or paid workloads were run. Only the existing P0 task’s planning draft was updated.
+
+## 1. Executive assessment
+
+**JobiX is not yet ready for public production.** It has a working development MVP with a recorded personal PDF export/download and substantial local correctness tests. That establishes a useful foundation—not production capacity, operational readiness or a fully verified deployed release.
+
+**Keep Architecture V2**, including the authenticated Gateway/private Worker separation. There is no quantified justification for rebuilding, moving regions or adding infrastructure.
+
+The launch strategy should be:
+
+1. Close specific evidence gaps.
+2. Implement and locally verify P0 admission and exception safeguards.
+3. Establish operational budgets, security and recovery controls.
+4. Run separately approved, budget-capped staging qualification.
+5. Release gradually within measured capacity.
+
+## 2. Verified architecture and important unknowns
+
+| Area | Status | Evidence and limitation |
+|---|---|---|
+| Flutter/Riverpod/Drift client | **Implemented** | Existing native application; owner-confirmed M31 development journey. Production release qualification remains incomplete. |
+| Supabase Auth/PostgreSQL/Edge | **Implemented; deployment evidence dated** | Authenticated export path, privileged RPCs and server-side accounting exist. Current production configuration is **UNKNOWN**. |
+| Gateway/private Worker | **Implemented; partially verified** | `backend/export-gateway/`, `backend/pdf/`; preserve separation. Exact source/image/revision consistency remains unresolved. |
+| Durable jobs, reservations, replay, fencing | **Implemented/local-tested** | Migrations 010 and 012–017; SQL and backend fixtures. Not equivalent to full deployed failure acceptance. |
+| PDF availability/deletion | **Partially verified** | Logical expiry, generation-bound signing and fenced cleanup exist. Effective versioning/locks/backups remain **UNKNOWN**. |
+| Approved user quotas | **Proposed implementation** | Current source still checks five jobs/ten minutes, not the approved four rolling windows. |
+| Automatic quota exception | **Proposed** | No safe code-only allowlist or durable causal-evidence mechanism currently exists. |
+| Confirmed-eligible signup bonus | **Not implemented as intended** | Current trigger grants +5 once per account without waiting for confirmation. |
+| AI | **Planned** | Approved future model decision; allowance foundation exists. No operational inference found in inspected source. |
+| Production runtime/release | **Incomplete** | PDF Dockerfile pins Node `20.20.0`; prior assessment identifies support-lifecycle risk. Android release currently uses debug signing. |
+| Capacity, actual costs, restore readiness | **UNKNOWN** | No qualifying load evidence, complete regional billing model or demonstrated production restore. |
+
+**Document reconciliation**
+
+- Architecture authority: `attached_assets/JobiX_Architecture_V2_1790975874316.md`; summary: `docs/handoff/02_ARCHITECTURE.md`.
+- Current planning/status sources: `PROJECT_STATUS.md`, `docs/AI_HANDOFF.md`, `docs/NEXT_STEPS.md`.
+- Historical implementation plans are under `docs/handoff/history/`; no exact root `architecture.md` or `implementation-plan.md` was found.
+- The latest P0 technical decision report is in this conversation.
+- The assessment’s **10/30-days user proposal is superseded by 10/rolling 7 days**.
+- Recorded test counts describe different runs/scopes; they are not fresh results from this planning session.
+
+## 3. Ranked P0 launch blockers
+
+| Priority | Blocker | Required closure |
+|---|---|---|
+| 1 — Financial/data correctness | New quotas, active-intent exclusion and exception evidence are absent | Atomic SQL enforcement and local concurrency/failure proof; no ledger rewrite or terminal-job reopening. |
+| 2 — Release correctness | Source/deployed gate and recovery behavior is not fully reconciled | One release manifest mapping source, images, Edge revision, migrations and effective configuration. |
+| 3 — Unbounded resource exposure | Preparation precedes final reservation; free preview, failures and signup grants can consume resources independently of Credits | Reviewed admission lifecycle, measured capacity and explicitly approved operational budgets. |
+| 4 — Operational recovery | Production isolation, backup/restore, alert ownership and incident procedures lack sufficient evidence | Verified configuration and an approved disposable restore/recovery exercise. |
+| 5 — Runtime and Android release | Node baseline requires support/security review; release uses debug signing | Separately reviewed runtime change, dependency/image checks and proper release-signing configuration. |
+| 6 — Identity and retention promises | Signup timing differs from intended policy; physical deletion/backup promises remain incomplete | Separate grant implementation and approved, evidence-backed retention wording. |
+| 7 — Capacity and cost | Safe concurrency, queue throughput and actual regional costs are unknown | Bounded qualification and provider billing/SKU evidence before expanding traffic. |
+
+**Additional quota risk:** profile purge currently deletes export jobs. Counting only those rows could let profile deletion erase recent user-quota history. Decide whether a minimal seven-day admission-event record must survive profile purge; do not silently change deletion semantics.
+
+## 4. Phased roadmap
+
+All paths below are relative to `mobile/jobix/` unless stated otherwise.
+
+### Phase 0 — Evidence and launch blockers
+
+**Status:** partially documented; current deployment and production evidence unknown.
+
+- **Value:** prevents deploying an inconsistent or unsupported release.
+- **Sequence:** reconcile existing evidence → obtain narrowly scoped read-only provider metadata → produce release manifest and blocker register → agree acceptance criteria.
+- **Anchors:** root `PROJECT_STATUS.md`, `docs/AI_HANDOFF.md`, `docs/NEXT_STEPS.md`; `backend/pdf/PHASE3_ACCEPTANCE.md`, `Dockerfile`, `package.json`; Gateway, Worker, Edge and migration inventory.
+- **Acceptance/definition of done:** every release component has a dated source/configuration reference; each unresolved item has an owner and verification method. No unverified claim is marked passing.
+- **Risk/rollback:** stale evidence can create false confidence. This phase changes no runtime, so no operational rollback is needed.
+- **Cost/approval:** local comparison is free of cloud workload cost; provider reads require authorized access. Paid verification is excluded.
+- **Local completion:** documentation/source reconciliation yes; provider facts require read-only evidence.
+
+### Phase 1 — P0 export quotas and exception safety
+
+**Status:** proposed; existing accounting/retry foundation implemented.
+
+**Dependency:** Phase 0 establishes the target baseline.
+
+1. Replace five/ten-minute admission with **1/5m, 3/hour, 5/24h, 10/7d**.
+2. Enforce one active intent per user/profile.
+3. Propagate authoritative retry-after.
+4. Add trusted failure evidence and one-time exceptions after predicate approval.
+5. Separately review and implement safe pre-preparation admission/reservation ordering.
+
+**Exact anchors**
+
+- New additive migration after `202610080017_resume_export_deletion.sql`.
+- Latest `jobix_export_create` in migration 015; `jobix_export_replay`, `export_jobs`, `credit_reservations`, `credit_accounts`, `credit_transactions`, `idempotency_records`.
+- Proposed private failure-evidence/exception records; changes to `jobix_export_finish`, recovery and purge only as necessary.
+- `backend/pdf/{database,gateway,worker,server,document,renderer,google,cleanup}.mjs`.
+- `backend/export-gateway/core.mjs`.
+- `supabase/functions/resume-export/{transport.mjs,index.ts}`.
+- `lib/features/resume/resume_export_panel.dart`.
+
+**Tests/definition of done:** rolling boundaries, real concurrent SQL sessions, same-key replay, single active intent, exception uniqueness, forged/ambiguous evidence rejection, retry-after, deletion races and exactly-once charging pass.
+
+Use:
+- `supabase/tests/resume_export.sql`
+- `supabase/tests/resume_export_recovery.sql`
+- `supabase/tests/resume_export_deletion.sql`
+- `backend/pdf/test/{integration,contracts.test,recovery.test,upload-rejection.test,bridge.test}.mjs`
+- `test/resume_export_test.dart`
+
+**Risk/rollback:** reservation timing and failure attribution are higher-risk changes than quota queries. Use reviewed increments and corrective migrations; preserve evidence and ledger records.
+
+**Cost/approval/local:** local synthetic testing is sufficient for implementation proof. Missing dependency/test-environment restoration needs authorization. No deployed verification or gate activation is implied.
+
+### Phase 2 — Reliability and overload protection
+
+**Status:** queue/retry/fencing implemented; capacity and overload policy proposed/unknown.
+
+**Dependency:** Phase 1 correctness.
+
+- **Value:** absorb bursts without excessive resource spending or stranded reservations.
+- **Sequence:** measure queue/worker/DB behavior → choose safe capacity → add bounded queue admission and appropriate backoff → qualify failure-domain circuit breakers → evaluate scaling.
+- **Anchors:** `worker.mjs`, `renderer.mjs`, `database.mjs`; `jobix_export_claim`, heartbeat/stage/recover; `export_upload_flights`; Cloud Run effective allocation/concurrency/min/max-instance settings.
+- **Acceptance/definition of done:** queue drains inside the reservation deadline with safety margin; no duplicate debit/upload; DB connection use remains below an approved reserve; latency/memory/error targets are measured.
+- **Risk/rollback:** higher concurrency can exhaust memory or DB connections. Revert to the last measured capacity; do not increase allocation merely to hide failures.
+- **Cost/approval:** local simulation first; cloud benchmarking/scaling requires a separate budget and approval.
+- **Local completion:** logic and fault injection yes; real Cloud Run capacity no.
+
+**Three-failure cooldown:** evaluate, do not adopt blindly. Only verified failures in the same service/dependency domain should contribute. Specify a rolling observation window, cooldown, bounded half-open probe and success/reopening rules. User validation errors must not open the breaker. Probe workloads must themselves be authorized.
+
+### Phase 3 — Observability and cost controls
+
+**Status:** provider metrics exist; complete dashboards/budgets/runbooks unknown.
+
+**Dependencies:** Phase 0 billing evidence; Phase 2 capacity informs final budgets. Measurement design can start earlier.
+
+- **Value:** detect overspending and degradation before users lose service.
+- **Anchors:** existing Gateway/Worker instrumentation points, admission SQL, queue/reservation/upload-flight tables, GCP Monitoring/Billing, Supabase Usage.
+- **Sequence:** define privacy-safe metrics → establish attribution → approve budgets → implement atomic budget admission → validate exhaustion behavior.
+- **Acceptance/definition of done:** a synthetic test reconciles admitted work, attempts, reservations and budget consumption; dashboards expose queue age, failure cause, stuck reservations, cleanup lag, preview bytes and cost forecasts.
+- **Budget behavior:** **50%** notify/forecast; **80%** investigate; **90%** urgent capacity review; **hard ceiling** stop new work in the exhausted category while preserving accounting, status, recovery and eligible downloads.
+- **Risk/rollback:** incorrect counters can block legitimate users. Version policies and preserve reserved completion capacity. Provider caps can interrupt downloads/recovery.
+- **Cost/approval/local:** logic tests local; telemetry storage/provider configuration may cost money and needs approval. No previous arbitrary global ceiling is activated.
+
+### Phase 4 — Security, backups, recovery and production operations
+
+**Status:** security mechanisms partially implemented; production acceptance incomplete.
+
+**Dependencies:** Phase 0 inventory and stable Phase 1 interfaces. Security review begins early; its final gate is here.
+
+- **Value:** protect resumes, balances and recovery capability.
+- **Anchors:** `supabase/tests/rls.sql`, export SQL tests, privileged RPC grants, Edge authentication, `google.mjs`, `cleanup.mjs`, `ADR-retention-deletion.md`, provider IAM/backup settings.
+- **Sequence:** verify authorization and least privilege → review dependencies/images → validate logging/privacy and deletion → rehearse restore and rollback → assign incident ownership.
+- **Acceptance/definition of done:** cross-account access denied; no public PDF access; scoped signed URLs; no sensitive payloads in logs; approved RPO/RTO achieved in a disposable restore; reconciliation preserves balances and export state.
+- **Risk/rollback:** restored database/object state can disagree. Recovery must handle generation identity, reservations and upload ambiguity before reopening creation.
+- **Cost/approval/local:** most authorization fixtures local; restore/provider exercises require explicit environment and cost approval.
+- **Separate work:** Task #19, **Grant signup Credits only after verified eligibility, without duplicate rewards**, remains independently reviewed. No historical ledger rewrite.
+
+### Phase 5 — Controlled load testing and release
+
+**Status:** proposed; production capacity unknown.
+
+**Dependencies:** Phases 1–4 passing.
+
+- **Value:** release within demonstrated capacity rather than assumed user counts.
+- **Anchors:** existing synthetic PDF fixtures, worker/SQL integration tests, `android/app/build.gradle.kts`, locked dependencies and release manifest.
+- **Sequence:** approve staging budget/data → execute bounded load/failure tests → set validated capacity → prepare signed Android release → approve gradual production rollout.
+- **Acceptance/definition of done:** approved throughput/latency/error limits met; no financial/data-integrity violations; backup/rollback ready; Arabic/English, RTL, selectable text, A4 layout and preview/export parity pass.
+- **Risk/rollback:** stop tests on hard cost/resource thresholds; halt rollout on integrity failures. Revert to a known-compatible release without discarding audit data.
+- **Cost/approval/local:** cloud load, signing/build/release and deployment all require separate authorization. No APK or staging workload during planning.
+
+### Phase 6 — Post-launch verification
+
+**Status:** proposed.
+
+**Dependency:** explicit Phase 5 launch approval.
+
+- **Value:** catch workload-dependent failures and prevent premature expansion.
+- **Anchors:** release manifest, queue/accounting/cost dashboards, incident and rollback runbooks.
+- **Acceptance/definition of done:** reconcile successful exports with debits, review failure/retry amplification, confirm cleanup and budget behavior, and expand only after an agreed observation period.
+- **Cadence:** propose daily operational review during initial rollout, weekly cost/capacity review afterward, and review after every release/incident.
+- **Risk/rollback:** financial inconsistency, authorization failure or stale-writer resurrection requires immediate containment of new work; preserve recovery/download paths where safe.
+- **Cost/approval/local:** real production observation is required; cohort expansion and any new spending need approval.
+
+## 5. Cost model and measurement plan
+
+**Do not use the Iowa sensitivity totals or assumed $25.14 baseline as actual bills.**
+
+Separate:
+
+| Category | Evidence required |
+|---|---|
+| Fixed platform/database | Actual Supabase subscription, compute/add-ons, shared credits and other project allocations. |
+| Export compute | Regional CPU/RAM/request SKUs, billing mode, effective minimum instances, billed allocation and successful/failed attempt duration. |
+| Storage | Active/recoverable PDF bytes; selected GCS SKU; total DB growth, allocated disk, WAL and backup usage. |
+| Egress/downloads | Run↔Supabase/GCS transfer and destination-specific user download bytes/rates. |
+| Failures/retries | Attempt count, duration and cost by outcome—not just successful jobs. |
+| Free preview | Preparation CPU, DB calls, response bytes and request volume. |
+| Future AI | Approved operation contract, actual token distribution and applicable model pricing; currently no operational usage baseline. |
+
+### Cost per 1,000 operations
+
+For a defined observation period:
+
+- **Incremental export cost/1,000 successes**  
+  `1,000 × attributable export cost, including failed/retried work ÷ successful exports`
+- **Fully allocated export cost:** show fixed-cost allocation separately, with its allocation rule.
+- **Preview cost/1,000 requests:** calculate separately; report success rate and bytes/request.
+- Avoid double-counting shared preparation and shared instance time.
+- Record region, workload mix, discounts, measurement window and uncertainty.
+
+**Storage measurement:** two aggregate samples around naturally occurring authorized exports, including relation/index/TOAST sizes and total DB/provider disk usage. Account for unrelated writes and maintenance. The three-snapshot 0.99 MB mean remains a small-sample illustration, not a dependable forecast.
+
+## 6. Reliability and capacity criteria
+
+Use local fixtures first, then separately approved staging tests.
+
+Test:
+
+- Short/long English and Arabic resumes, fonts, RTL and images.
+- Cold and warm starts.
+- Increasing concurrency and bounded bursts.
+- Worker termination, lease loss, lost responses and dependency slowdown.
+- Upload ambiguity, deletion races and recovery.
+- Free preview and download traffic alongside rendering.
+
+A capacity level qualifies only when:
+
+- **Zero** duplicate debits, cross-user disclosures or stale-worker finalizations occur.
+- Queued jobs complete or safely terminate before their reservation deadline.
+- Queue age returns to baseline after a burst.
+- CPU/memory/DB connections retain an approved safety margin.
+- Measured p95/p99 latency, failure rate and cost stay within owner-approved targets.
+
+No numerical throughput claim or concurrency increase is justified yet. Avoid cross-user private-content caches; evaluate Chromium reuse only with proven isolation and lifecycle cleanup.
+
+## 7. Security, recovery and release checklist
+
+Before launch, require evidence for:
+
+- Server-derived identity; owner checks; RLS and privileged RPC least privilege.
+- Private Worker/GCS and generation-bound, expiry-capped signed URLs.
+- No secrets, resume content or full signed URLs in logs.
+- Supported runtime and reviewed dependency/image findings.
+- Consistent source, migrations, image digests and deployed revisions.
+- Production environment and credential separation.
+- Confirmed-eligible signup grants with non-destructive backfill.
+- Accurate retention wording: seven-day availability is not guaranteed day-seven physical erasure.
+- Backup/PITR configuration, restore proof and approved RPO/RTO.
+- Named operators, alerts, incident response and tested rollback.
+- Proper Android release signing, environment configuration, permissions, privacy/store declarations and Arabic/English device checks.
+- AI and unapproved reward features remain inactive.
+
+## 8. Decisions requiring explicit approval
+
+1. Trusted internal-failure evidence predicates and automatic-exception eligibility.
+2. Minimal quota-history retention across profile deletion.
+3. Pre-preparation reservation/admission lifecycle.
+4. Measured queue/concurrency limits, operational budgets and circuit-breaker conditions.
+5. Signup identity/link/recovery/deletion eligibility.
+6. Snapshot, soft-delete, backup and log retention promises.
+7. Runtime/dependency remediation and local test-environment restoration.
+8. Staging workload budget, acceptance targets and stop conditions.
+9. Production configuration, Android release, initial cohort and deployment.
+
+The user quotas and preservation of existing Credit semantics are already policy targets; approval of those targets is not deployment authorization.
+
+## 9. Smallest next implementation task
+
+Proceed with the first reviewed increment of **Task #18 — Prevent repeat exports from consuming unnecessary Credits and rendering budget**:
+
+**Atomic rolling quotas + active-intent exclusion + structured retry-after**, with local SQL/backend/Flutter tests.
+
+Preserve replay, successful-only charging, failed-attempt counting and free downloads. Do not quietly include terminal-job reopening, arbitrary global ceilings or a speculative exception allowlist.
+
+The task draft now contains the full P0 scope in staged increments. Completing the first increment must not be presented as completing the exception mechanism or beta readiness.
+
+## 10. Rollback and release gates
+
+- Use additive migrations and reviewed corrective migrations—not edited migration history.
+- Keep prior release/image references and compatibility evidence.
+- Preserve ledger, failure and exception audit records.
+- Separate stopping **new creation** from stopping downloads, status and recovery.
+- Do not enable creation until local correctness, deployment coherence, operational budget and recovery gates pass.
+- Do not broaden traffic until measured capacity and cost evidence support it.
+- Any gate change, rollback deployment or production release requires authorization.
+
+**Proposed execution sequence:** reconcile evidence → implement/test quota increment → approve and implement failure evidence/exception safety and pre-preparation admission → qualify overload/budgets → complete signup/security/restore/release prerequisites → run approved bounded staging tests → approve gradual launch → monitor before expansion.
+
+**Awaiting owner approval.**
