@@ -11,21 +11,47 @@ import '../career_profile/career_profile.dart';
 import '../career_profile/profile_sections.dart';
 import 'builder_scaffold.dart';
 import 'entity_labels.dart';
+import 'resume_journey.dart';
 
 /// Step 6: every saved section, each with an Edit entry that returns here.
-class ReviewPage extends ConsumerWidget {
+class ReviewPage extends ConsumerStatefulWidget {
   const ReviewPage({super.key});
+  @override
+  ConsumerState<ReviewPage> createState() => _ReviewPageState();
+}
+
+class _ReviewPageState extends ConsumerState<ReviewPage> {
+  bool busy = false;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
     final async = ref.watch(firstProfileProvider);
     final profile = async.valueOrNull;
     return BuilderScaffold(
       step: 6,
-      continueLabel: copy.doneAction,
+      busy: busy,
+      continueLabel: Localizations.localeOf(context).languageCode == 'ar'
+          ? 'معاينة وتصدير'
+          : 'Preview & Export',
       continueKey: const Key('review-done'),
-      onContinue: () => context.go('/career'),
+      onContinue: profile == null || busy || !minimumResumeContent(profile)
+          ? null
+          : () async {
+              setState(() => busy = true);
+              try {
+                await completeResumeJourney(ref, profile.id);
+                if (context.mounted) context.go('/resume');
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(copy.saveFailed)));
+                }
+              } finally {
+                if (mounted) setState(() => busy = false);
+              }
+            },
       child: profile == null
           ? Center(
               child: async.hasError
@@ -35,7 +61,21 @@ class ReviewPage extends ConsumerWidget {
                     )
                   : const FormLoadingState(),
             )
-          : _ReviewBody(profile: profile),
+          : Column(
+              children: [
+                if (!minimumResumeContent(profile))
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(bottom: 16),
+                    child: Text(
+                      Localizations.localeOf(context).languageCode == 'ar'
+                          ? 'أضف اسمًا ووسائل اتصال صالحة وعنصرًا مهنيًا صالحًا للمعاينة.'
+                          : 'Add a name, valid contact details and at least one valid career item to preview.',
+                      style: const TextStyle(color: TokensV0.warning),
+                    ),
+                  ),
+                _ReviewBody(profile: profile),
+              ],
+            ),
     );
   }
 }

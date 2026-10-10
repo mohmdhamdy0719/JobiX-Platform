@@ -10,6 +10,7 @@ import '../core_mvp/authenticated_navigation.dart';
 import '../builder/builder_scaffold.dart';
 import '../builder/profile_overview.dart';
 import '../core_mvp/core_api.dart';
+import '../builder/resume_journey.dart';
 
 final unfinishedDraftProvider = FutureProvider.family<bool, String>((
   ref,
@@ -132,6 +133,7 @@ class HomePage extends ConsumerWidget {
             ),
             data: (CareerProfile value) {
               final remaining = sectionsRemaining(value);
+              final journey = ref.watch(resumeJourneyProvider(value.id));
               return SliceCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,11 +220,24 @@ class HomePage extends ConsumerWidget {
                     const SizedBox(height: TokensV0.space16),
                     PrimaryAction(
                       key: const Key('continue-career'),
-                      label: copy.continueProfile,
+                      label: journey.valueOrNull?.complete == true
+                          ? copy.careerTitle
+                          : copy.continueProfile,
                       icon: Icons.arrow_forward,
-                      onPressed: () =>
-                          context.go('/builder/${nextBuilderStep(value)}'),
+                      onPressed: journey.isLoading || journey.hasError
+                          ? null
+                          : () => context.go(
+                              journey.valueOrNull?.complete == true
+                                  ? '/career'
+                                  : '/builder/${journey.valueOrNull?.step ?? 1}',
+                            ),
                     ),
+                    if (journey.hasError)
+                      TextButton(
+                        onPressed: () =>
+                            ref.invalidate(resumeJourneyProvider(value.id)),
+                        child: Text(copy.retry),
+                      ),
                   ],
                 ),
               );

@@ -1,0 +1,92 @@
+# JobiX V2 — Build the Resume Creation, Preview, Export, and History Experience
+
+Implement the actual MVP experience directly in the existing project. Do not produce a separate planning document or repeat broad architecture audits. Inspect only the relevant existing code, preserve working functionality, implement the required UI/UX and integrations, run focused tests, and prepare a testable Android APK.
+
+The five uploaded screenshots are the primary visual references:
+- Resume Export
+- Preview Resume
+- Waiting Screen
+- Credit and Export History
+- Resume Details
+
+Use their visual direction and information hierarchy, adapting responsively to the existing app design system.
+
+## A. User journey
+
+1. On first entry into resume creation, begin with Personal Information and preserve the existing multi-step Career Profile flow.
+2. Save progress reliably. If the user leaves before completing Review, Home must offer a clear Continue action that resumes the last incomplete step.
+3. Reaching Review does not mean every field is valid. Enable Preview & Export only when the defined minimum profile content is satisfied.
+4. Pressing Preview & Export from Review marks the profile setup complete and opens Resume Export.
+5. Pressing the corresponding action from Home for an already-completed profile opens Career, not Review.
+6. Resume Export lets the user choose resume content language independently of app language and shows only compatible available templates.
+7. Each template has a representative illustrative preview image and an enlarged preview action. Use clearly fictional placeholder content; do not imply the sample is the user's generated resume.
+8. Show optional formatting settings only when they are genuinely supported by the existing PDF renderer. Keep unsupported controls out of the UI.
+9. Preview displays the actual resume content with pagination for multipage documents. Typography, accent color, spacing, and other controls must affect the actual PDF output if exposed.
+10. Export requires an explicit confirmation showing the applicable Credit charge.
+11. Show a processing/waiting screen with status and resume configuration details. Update it while the screen is open. When the export completes, expose Download. If the user leaves, preserve the operation and its status in Export History.
+12. Export History and Resume Details must support the states Completed/Download Available, Queued or Processing, Expired, and Failed. Display the appropriate actions and Credit impact for each state.
+13. Download an existing valid PDF without additional Credits. Expired PDFs must not silently regenerate. An explicit re-export is a new billable operation under the existing policy.
+14. Restrict all records, details, downloads, and actions to the authorized user.
+
+## B. Credits, idempotency, and abuse prevention
+
+- Preserve the current Credit pricing and reward policy. Do not change signup rewards to 10 Credits or change AI/Cover Letter pricing.
+- Do not implement AI improvement or Cover Letter generation in this task.
+- Enforce Credit balance and reservation checks server-side; UI disabling is only a usability aid.
+- Prevent duplicate charges and duplicate operations on rapid taps, retries, timeouts, and unreliable networks using the existing idempotency and reservation model.
+- Preserve the existing per-user limits: one export per rolling 5 minutes, 3 per hour, 5 per 24 hours, and 10 per 7 days, plus the existing one-active-intent rule. Inspect the current implementation and enforce the existing agreed policy; do not silently change its semantics.
+- Failed exports must release reservations and must not incur a final Credit charge. Retrying must follow the existing operation lifecycle rules; never reopen a terminal FAILED operation in place.
+- Keep valid existing downloads free. Re-export is a new operation and incurs the current configured Credit price.
+- Keep PDF retention at 7 days. Never regenerate automatically after expiry or missing-file detection.
+- Prevent excessive concurrent work. Reuse the existing queue, admission controls, Cloud Run Gateway/Worker, private storage, and budget protections rather than introducing a second processing architecture.
+- Respect server-side cost admission and stop accepting new billable work when the configured budget policy denies admission. Do not rely on the mobile client or Supabase UI flags alone as the security boundary.
+
+## C. Signup and account eligibility
+
+- Preserve existing authentication and Credit reward behavior.
+- Inspect the current email-confirmation and first-account/device eligibility implementation. Do not assume that a client-provided device identifier alone securely prevents multiple accounts.
+- Fix a clearly identified defect only if it can be done safely within this task and without weakening authentication or privacy.
+- Do not introduce invasive device fingerprinting, collect unnecessary identifiers, or change the Credit reward policy.
+- If eligibility cannot be securely enforced by the existing backend, document that precise blocker rather than claiming it is solved.
+
+## D. UI/UX quality
+
+- Match the uploaded references' clean, professional blue-and-white style.
+- Provide polished loading, empty, disabled, success, expired, queued, and failure states.
+- Use accessible touch targets, consistent typography, responsive layouts, and clear Arabic/English direction handling where supported.
+- Avoid fake progress percentages or invented precise completion-time estimates. Use an actual estimate only if the backend provides a reliable basis; otherwise show a truthful processing status.
+- Keep the main journey smooth and prevent duplicate actions during in-flight requests.
+- Do not add unrelated screens or features.
+
+## E. Execution and validation
+
+Work directly in the existing codebase. Inspect only the files necessary for the journey and implement the work; do not stop after producing a plan.
+
+Preserve the existing Flutter/Riverpod/Drift and Supabase/Cloud Run architecture. Reuse existing components and services where practical. Keep changes focused and avoid unrelated refactors.
+
+Before enabling live export:
+1. Run focused local tests for profile progress, minimum-content validation, Credit admission, idempotency, queue state transitions, failed-operation reservation release, download authorization, expiry, and relevant concurrency behavior.
+2. Build the Android APK and report the exact output path and build result.
+3. Verify existing migrations 018–020 remain applied and do not reapply them.
+4. Keep live export gates closed while implementing UI and running local tests.
+5. Do not reset credentials, disable TLS, expose secrets, or create paid infrastructure.
+
+If a missing configuration or real blocker prevents a required step, report that specific blocker and continue with independent work where safe. Do not fake a successful integration.
+
+## F. Final end-to-end export test
+
+After the UI and APK are ready, prepare one controlled live-export test using the existing Development services. Before enabling any live gate, verify that the server-side budget/admission configuration is genuinely ready, cost assumptions are approved, the existing Gateway/Worker configuration is correct, and rollback/disable steps are clear.
+
+Do not enable live export or configure cost rates automatically. Stop at this explicit activation checkpoint and report what is ready, what remains blocked, and the exact minimal action needed to authorize the live test.
+
+Once live activation is separately approved, verify the entire flow: app → Supabase Edge Function → Gateway → Worker → private PDF storage → authorized download → Export History and Details. Test success, duplicate requests, insufficient Credits, concurrent requests, failure/refund, and expiry behavior. Keep costs and concurrency controlled.
+
+## Deliverables
+
+- Implemented UI and working navigation.
+- Actual integration with existing backend services; no fake export success or hardcoded history records.
+- Focused test results and any genuine unresolved blockers.
+- Android APK artifact with an exact verified path.
+- A concise report of changes and the remaining explicit live-export activation requirement.
+
+Do not perform unrelated audits, investigate historical 503 errors, modify signup rewards/pricing, implement AI features, or enable export automatically.

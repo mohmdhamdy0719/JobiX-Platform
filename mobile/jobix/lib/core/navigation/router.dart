@@ -8,6 +8,7 @@ import '../../features/auth/auth_page.dart';
 import '../../features/boot/startup.dart';
 import '../../features/core_mvp/career_page.dart';
 import '../../features/resume/resume_page.dart';
+import '../../features/resume/resume_operation_page.dart';
 import '../../features/core_mvp/credits_page.dart';
 import '../../features/core_mvp/settings_page.dart';
 import '../../features/home/home_page.dart';
@@ -57,6 +58,9 @@ String? sliceRedirect({
         path == '/settings' ||
         path == '/credits' ||
         path == '/resume' ||
+        path == '/export-history' ||
+        path.startsWith('/resume-status/') ||
+        path.startsWith('/resume-details/') ||
         builderPath.hasMatch(path) ||
         path.startsWith('/career/')) {
       return null;
@@ -164,7 +168,28 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
               GoRoute(path: '/home', builder: (_, __) => const HomePage()),
               GoRoute(path: '/career', builder: (_, __) => const CareerPage()),
-              GoRoute(path: '/resume', builder: (_, __) => const ResumePage()),
+              GoRoute(
+                path: '/resume',
+                builder: (_, state) => ResumePage(
+                  historicalExportId: state.uri.queryParameters['again'],
+                ),
+              ),
+              GoRoute(
+                path: '/export-history',
+                builder: (_, __) => const CreditsPage(initialTab: 1),
+              ),
+              GoRoute(
+                path: '/resume-status/:id',
+                builder: (_, state) => ResumeOperationPage(
+                  exportId: state.pathParameters['id']!,
+                  waiting: true,
+                ),
+              ),
+              GoRoute(
+                path: '/resume-details/:id',
+                builder: (_, state) =>
+                    ResumeOperationPage(exportId: state.pathParameters['id']!),
+              ),
               GoRoute(
                 path: '/settings',
                 builder: (_, __) => const SettingsPage(),

@@ -1,21 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../career_profile/career_profile.dart';
 import 'resume_document.dart';
-
-class ExportFailure implements Exception {
-  const ExportFailure(this.code, {this.retryAfterSeconds});
-  final String code;
-  final int? retryAfterSeconds;
-}
+import 'resume_experience_widgets.dart';
+import 'resume_export_service.dart';
+export 'resume_export_service.dart' show ExportFailure;
 
 /// Rollout is closed by default; this widget never grants/debits Credits.
 class ResumeExportPanel extends ConsumerStatefulWidget {
@@ -25,16 +20,23 @@ class ResumeExportPanel extends ConsumerStatefulWidget {
     required this.showDocument,
     required this.canPrepare,
     this.initialDocument,
+    this.experience = false,
+    this.historyOnly = false,
+    this.historicalExportId,
+    this.onOperation,
   });
   final String profileId;
   final bool canPrepare;
   final Map<String, dynamic>? initialDocument;
+  final bool experience, historyOnly;
+  final String? historicalExportId;
+  final ValueChanged<String>? onOperation;
   final Future<void> Function(Map<String, dynamic>) showDocument;
   @override
-  ConsumerState<ResumeExportPanel> createState() => _ResumeExportPanelState();
+  ResumeExportPanelState createState() => ResumeExportPanelState();
 }
 
-class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
+class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   static const enabled = bool.fromEnvironment('JOBIX_ENABLE_PDF_EXPORT');
   Map<String, dynamic>? document, current;
   List<Map<String, dynamic>> jobs = [];
@@ -45,11 +47,31 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   Timer? timer;
   bool get ar => Localizations.localeOf(context).languageCode == 'ar';
   String t(String en, String arabic) => ar ? arabic : en;
+  bool get creationEnabled => enabled;
+  Future<void> preparePreview() => _run(_prepare);
+  Future<void> createPdf() => _run(() => _submit(widget.historicalExportId));
   @override
   void initState() {
     super.initState();
     document = widget.initialDocument;
-    if (enabled) _run(_load);
+    ref.listenManual(
+      authSessionProvider.select((session) => session.valueOrNull?.user.id),
+      (previous, next) {
+        if (previous != null && previous != next) {
+          timer?.cancel();
+          if (mounted) {
+            setState(() {
+              jobs = [];
+              current = null;
+              document = null;
+              pending = null;
+              cursor = null;
+            });
+          }
+        }
+      },
+    );
+    _run(_load);
   }
 
   @override
@@ -70,46 +92,19 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   ) async {
     final client = await ref.read(supabaseClientProvider.future);
     final user = client.auth.currentUser?.id;
-    if (user == null) throw StateError('AUTH_REQUIRED');
-    late FunctionResponse response;
+    if (user == null) throw const ExportFailure('AUTH_REQUIRED');
     try {
-      response = await client.functions
-          .invoke('resume-export', body: {'action': action, 'command': command})
-          .timeout(const Duration(seconds: 50));
-    } on FunctionException catch (error) {
-      final details = error.details;
-      final failure = details is Map && details['error'] is Map
-          ? details['error'] as Map
-          : const {};
-      final retry = failure['retry_after_seconds'];
-      throw ExportFailure(
-        failure['code'] is String
-            ? failure['code'] as String
-            : 'SERVICE_UNAVAILABLE',
-        retryAfterSeconds: retry is int && retry > 0 ? retry : null,
-      );
+      return await ResumeExportService(client).call(action, command);
+    } finally {
+      if (client.auth.currentUser?.id != user) {
+        final db = await ref.read(databaseProvider.future);
+        await db.removeSetting(storageKey(user));
+      }
     }
-    if (client.auth.currentUser?.id != user) {
-      final db = await ref.read(databaseProvider.future);
-      await db.removeSetting(storageKey(user));
-      throw StateError('AUTH_REQUIRED');
-    }
-    final envelope = Map<String, dynamic>.from(response.data as Map);
-    if (envelope['error'] != null) {
-      final failure = envelope['error'] as Map;
-      final retry = failure['retry_after_seconds'];
-      throw ExportFailure(
-        failure['code'] is String
-            ? failure['code'] as String
-            : 'SERVICE_UNAVAILABLE',
-        retryAfterSeconds: retry is int && retry > 0 ? retry : null,
-      );
-    }
-    return Map<String, dynamic>.from(envelope['data'] as Map);
   }
 
   Future<void> _run(Future<void> Function() operation) async {
-    if (busy || !enabled) return;
+    if (busy) return;
     if (mounted) {
       setState(() {
         busy = true;
@@ -182,10 +177,16 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     final db = await ref.read(databaseProvider.future);
     final raw = await db.setting(storageKey(user));
     final history = await _call('history', {});
+    final decorated = await Future.wait([
+      for (final job in history['jobs'] as List)
+        ResumeExportService(
+          client,
+        ).withDisplay(Map<String, dynamic>.from(job as Map), db.setting),
+    ]);
     if (!mounted || client.auth.currentUser?.id != user) return;
     setState(() {
       pending = raw;
-      jobs = List<Map<String, dynamic>>.from(history['jobs'] as List);
+      jobs = decorated;
       cursor = history['next_cursor'] as String?;
     });
   }
@@ -198,7 +199,24 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   }
 
   Future<void> _submit([String? historicalId]) async {
-    if (document == null || pending != null) return;
+    if (!enabled ||
+        document == null ||
+        pending != null ||
+        (document!['issues'] as List? ?? []).isNotEmpty) {
+      return;
+    }
+    // Re-read the durable request before allocating a new intent. This also
+    // protects against an initial history load still in flight.
+    final client = await ref.read(supabaseClientProvider.future);
+    final database = await ref.read(databaseProvider.future);
+    final actor = client.auth.currentUser?.id;
+    if (actor == null) throw const ExportFailure('AUTH_REQUIRED');
+    final frozen = await database.setting(storageKey(actor));
+    if (frozen != null) {
+      if (mounted) setState(() => pending = frozen);
+      return;
+    }
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -222,10 +240,23 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    final client = await ref.read(supabaseClientProvider.future);
-    final user = client.auth.currentUser!.id;
+    if (client.auth.currentUser?.id != actor) {
+      throw const ExportFailure('AUTH_REQUIRED');
+    }
+    final user = actor;
+    final exportLanguage = document!['language'];
+    if (!['en', 'ar'].contains(exportLanguage)) {
+      throw const ExportFailure('VALIDATION_FAILED');
+    }
     final packet = {
       'action': historicalId == null ? 'create' : 'again',
+      'display': {
+        'profile_id': widget.profileId,
+        'language': exportLanguage,
+        'template': exportLanguage == 'ar'
+            ? 'resume_ats_ar_v1'
+            : 'resume_ats_en_v1',
+      },
       'command': {
         'request_id': newCommandKey(),
         'idempotency_key': newCommandKey(),
@@ -273,6 +304,16 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     final ack = await _call(packet['action'] as String, command);
     final db = await ref.read(databaseProvider.future);
     if (client.auth.currentUser?.id != user) throw StateError('AUTH_REQUIRED');
+    if (packet['display'] is Map) {
+      final jobId = ack['operation_id'] as String;
+      await db.setSetting(
+        exportDisplayKey(user, jobId),
+        jsonEncode(packet['display']),
+      );
+      if (client.auth.currentUser?.id != user) {
+        throw StateError('AUTH_REQUIRED');
+      }
+    }
     await db.removeSetting(storageKey(user));
     if (!mounted) return;
     setState(() {
@@ -285,6 +326,10 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     });
     final id = ack['operation_id'] as String;
     timer?.cancel();
+    if (widget.onOperation != null) {
+      if (mounted) widget.onOperation!.call(id);
+      return;
+    }
     timer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!busy && mounted) {
         _run(() async {
@@ -335,34 +380,9 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
 
   Future<void> _download(String id) async {
     final client = await ref.read(supabaseClientProvider.future);
-    final user = client.auth.currentUser!.id;
-    final result = await _call('download', {'export_id': id});
-    final uri = Uri.parse(result['url'] as String);
-    if (uri.scheme != 'https' || uri.host != 'storage.googleapis.com') {
-      throw StateError('FORBIDDEN');
-    }
-    final http = HttpClient();
+    savingPdf = true;
     try {
-      final request = await http.getUrl(uri);
-      request.followRedirects = false;
-      final response = await request.close().timeout(
-        const Duration(seconds: 30),
-      );
-      if (response.statusCode != 200) throw StateError('EXPORT_NOT_READY');
-      final builder = BytesBuilder(copy: false);
-      await for (final chunk in response) {
-        builder.add(chunk);
-      }
-      if (client.auth.currentUser?.id != user) {
-        throw StateError('AUTH_REQUIRED');
-      }
-      // Bytes and URL are memory-only. Android SAF saves only to a user-chosen file.
-      savingPdf = true;
-      final saved = await const MethodChannel('jobix/pdf_save')
-          .invokeMethod<bool>('save', {
-            'bytes': builder.takeBytes(),
-            'name': '$id.pdf',
-          });
+      final saved = await ResumeExportService(client).download(id);
       if (mounted) {
         setState(
           () => message = saved == true
@@ -372,7 +392,6 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       }
     } finally {
       savingPdf = false;
-      http.close(force: true);
     }
   }
 
@@ -392,31 +411,31 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   };
   @override
   Widget build(BuildContext context) {
-    if (!enabled) {
-      return Text(
-        t(
-          'PDF export is disabled pending development rollout. No Credits can be charged.',
-          'تصدير PDF معطّل حتى تفعيل بيئة التطوير. لا يمكن خصم أرصدة.',
-        ),
-      );
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (message != null) Text(message!),
-        if (busy) const LinearProgressIndicator(),
-        TextButton(
-          onPressed: busy || !widget.canPrepare || pending != null
-              ? null
-              : () => _run(_prepare),
-          child: Text(
+        if (!enabled && !widget.historyOnly)
+          Text(
             t(
-              'Prepare online Preview — free',
-              'تجهيز المعاينة المتصلة — مجاني',
+              'New PDF exports are currently disabled. Preview and existing valid downloads remain available.',
+              'التصديرات الجديدة معطّلة حاليًا. المعاينة وتنزيل الملفات الصالحة الموجودة متاحان.',
             ),
           ),
-        ),
-        if (document != null) ...[
+        if (message != null) Text(message!),
+        if (busy) const LinearProgressIndicator(),
+        if (!widget.experience && !widget.historyOnly)
+          TextButton(
+            onPressed: busy || !widget.canPrepare || pending != null
+                ? null
+                : () => _run(_prepare),
+            child: Text(
+              t(
+                'Prepare online Preview — free',
+                'تجهيز المعاينة المتصلة — مجاني',
+              ),
+            ),
+          ),
+        if (document != null && !widget.historyOnly) ...[
           for (final section in ResumePresentation.sectionKeys)
             CheckboxListTile(
               title: Text(sectionLabel(section)),
@@ -432,21 +451,24 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                   : (value) => _run(() => _visibility(section, value == true)),
             ),
           for (final issue in document!['issues'] as List)
-            Text(
-              t(
-                'Fix or explicitly hide the invalid section: $issue',
-                'أصلح القسم غير الصالح أو أخفه صراحةً: $issue',
+            if (!widget.historyOnly)
+              Text(
+                t(
+                  'Fix or explicitly hide the invalid section: $issue',
+                  'أصلح القسم غير الصالح أو أخفه صراحةً: $issue',
+                ),
               ),
+          if (!widget.experience)
+            TextButton(
+              onPressed:
+                  !enabled ||
+                      busy ||
+                      pending != null ||
+                      (document!['issues'] as List).isNotEmpty
+                  ? null
+                  : () => _run(_submit),
+              child: Text(t('Create PDF — 2 Credits', 'إنشاء PDF — رصيدان')),
             ),
-          TextButton(
-            onPressed:
-                busy ||
-                    pending != null ||
-                    (document!['issues'] as List).isNotEmpty
-                ? null
-                : () => _run(_submit),
-            child: Text(t('Create PDF — 2 Credits', 'إنشاء PDF — رصيدان')),
-          ),
         ],
         if (pending != null)
           TextButton(
@@ -486,42 +508,90 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
           onPressed: busy ? null : () => _run(_load),
           child: Text(t('Refresh export history', 'تحديث سجل التصدير')),
         ),
-        for (final job in jobs)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(stateLabel(job['state'] as String)),
-              Text(job['created_at'] as String),
-              Wrap(
-                children: [
-                  if (job['state'] == 'COMPLETED' &&
-                      job['download_eligible'] != false)
+        if (widget.experience && !widget.historyOnly)
+          TextButton.icon(
+            onPressed: () => context.go('/export-history'),
+            icon: const Icon(Icons.history),
+            label: Text(t('Credit & Export History', 'سجل الأرصدة والتصدير')),
+          ),
+        if (widget.historyOnly && jobs.isEmpty && !busy && message == null)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              t(
+                'No resume exports yet. Your exports will appear here.',
+                'لا توجد تصديرات بعد. ستظهر ملفاتك هنا.',
+              ),
+            ),
+          ),
+        if (widget.experience && widget.historyOnly)
+          for (final job in jobs)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(bottom: 12),
+              child: ResumeJobCard(
+                job: job,
+                onDetails: () => context.go('/resume-details/${job['id']}'),
+                onDownload:
+                    busy ||
+                        job['state'] != 'COMPLETED' ||
+                        job['download_eligible'] == false
+                    ? null
+                    : () => _run(() => _download(job['id'] as String)),
+                onAgain:
+                    busy ||
+                        !enabled ||
+                        pending != null ||
+                        job['profile_id'] != widget.profileId ||
+                        ![
+                          'COMPLETED',
+                          'FAILED',
+                          'EXPIRED',
+                          'MISSING_OBJECT',
+                        ].contains(job['state'])
+                    ? null
+                    : () => context.go('/resume?again=${job['id']}'),
+              ),
+            ),
+        if (!widget.experience)
+          for (final job in jobs)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(stateLabel(job['state'] as String)),
+                Text(job['created_at'] as String),
+                Wrap(
+                  children: [
+                    if (job['state'] == 'COMPLETED' &&
+                        job['download_eligible'] != false)
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                        ),
+                        onPressed: busy
+                            ? null
+                            : () => _run(() => _download(job['id'] as String)),
+                        child: Text(t('Download — free', 'تنزيل — مجاني')),
+                      ),
                     TextButton(
                       style: TextButton.styleFrom(
                         minimumSize: const Size(0, 48),
                       ),
-                      onPressed: busy
+                      onPressed:
+                          !enabled ||
+                              busy ||
+                              job['profile_id'] != widget.profileId ||
+                              document == null ||
+                              pending != null ||
+                              (document!['issues'] as List).isNotEmpty
                           ? null
-                          : () => _run(() => _download(job['id'] as String)),
-                      child: Text(t('Download — free', 'تنزيل — مجاني')),
+                          : () => _run(() => _submit(job['id'] as String)),
+                      child: Text(t('Export Again — 2', 'تصدير جديد — رصيدان')),
                     ),
-                  TextButton(
-                    style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
-                    onPressed:
-                        busy ||
-                            job['profile_id'] != widget.profileId ||
-                            document == null ||
-                            pending != null ||
-                            (document!['issues'] as List).isNotEmpty
-                        ? null
-                        : () => _run(() => _submit(job['id'] as String)),
-                    child: Text(t('Export Again — 2', 'تصدير جديد — رصيدان')),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        if (cursor != null)
+                  ],
+                ),
+              ],
+            ),
+        if (cursor != null && (!widget.experience || widget.historyOnly))
           TextButton(
             onPressed: busy
                 ? null

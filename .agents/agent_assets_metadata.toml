@@ -322,3 +322,31 @@ mtime_ms = 1791566649787
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:7005f565-7252-4483-b49b-104861b30342/7a467ad8-f314-4a07-bb6a-c6c6a21477fe/955af38d-c517-452d-a655-b78f5f58f3c0"
 storage_version_token = "1791566676461563"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "lDviS6NNafozNC0a6Xuzo"
+uri = "file://.local/jobix-native-verification/JobiX-V2-resume-arm64-development.zip"
+type = "unspecified"
+title = "JobiX V2 — ARM64 Development APK (ZIP)"
+description = "Extract before installation. Export creation remains disabled. Signature differs from the earlier APK: do not uninstall or clear app data to bypass the update restriction."
+logical_id = "2de2b580-ec84-4817-a5af-0bf94570a556"
+content_hash = "sha256:a184f7d05b0ad2c62fb1ea061c941b483582cf3e16a366516e30ea6a0a9603db"
+size = 56906966
+mtime_ms = 1791654202587
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/2de2b580-ec84-4817-a5af-0bf94570a556/d20dc784-10f3-49b6-8c40-f25cfba1fea4"
+storage_version_token = "1791654459593290"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "up6biazSWzZnEY67LPT47"
+uri = "file://mobile/jobix/RESUME_EXPERIENCE.md"
+type = "text"
+title = "JobiX resume experience — implementation and verification report"
+description = "Actual local test/build results, read-only Development verification, signing limitation, and live activation checkpoint."
+logical_id = "0b2e4fed-e854-41f2-a686-5f49abefe5e4"
+content_hash = "sha256:93b1f7272d82fb828879b064110049170b7620c9d91472304d25b6c5ecd879f5"
+size = 10157
+mtime_ms = 1791654323683
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/0b2e4fed-e854-41f2-a686-5f49abefe5e4/1b0f91e0-fc95-4f35-be08-4be50e9853da"
+storage_version_token = "1791654460243607"
+content_type = "text/markdown"

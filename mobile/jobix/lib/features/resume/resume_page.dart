@@ -1,32 +1,34 @@
 import 'dart:convert';
 import '../../core/navigation/back_policy.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
-import 'resume_render.dart';
 import 'resume_export_panel.dart';
+import 'resume_preview_page.dart';
+import 'resume_experience_widgets.dart';
+import '../builder/profile_overview.dart';
 
 /// Configuration references the Career Profile; it never copies editable data.
 class ResumePage extends ConsumerStatefulWidget {
-  const ResumePage({super.key});
+  const ResumePage({this.historicalExportId, super.key});
+  final String? historicalExportId;
   @override
   ConsumerState<ResumePage> createState() => _ResumePageState();
 }
 
 class _ResumePageState extends ConsumerState<ResumePage> {
   CareerProfile? profile;
+  String? ownerId;
   String? language;
   int version = 0;
   bool busy = false, failed = false, saved = false, pending = false;
-  WebViewController? preview;
+  final exportKey = GlobalKey<ResumeExportPanelState>();
   String? message;
   Map<String, dynamic>? preparedDocument;
   bool configurationConflict = false;
@@ -43,13 +45,19 @@ class _ResumePageState extends ConsumerState<ResumePage> {
     try {
       final p = await ref.read(firstProfileProvider.future);
       final client = await ref.read(supabaseClientProvider.future);
+      final actor = client.auth.currentUser?.id;
+      if (actor == null) throw StateError('AUTH_REQUIRED');
       final data = await client
           .rpc('read_resume_configuration', params: {'requested_profile': p.id})
           .timeout(const Duration(seconds: 15));
       final db = await ref.read(databaseProvider.future);
-      final raw = await db.setting(key(client.auth.currentUser!.id, p.id));
+      final raw = await db.setting(key(actor, p.id));
       if (!mounted) return;
+      if (client.auth.currentUser?.id != actor) {
+        throw StateError('AUTH_REQUIRED');
+      }
       profile = p;
+      ownerId = actor;
       if (data is Map) {
         language = data['language'] as String;
         version = data['version'] as int;
@@ -106,46 +114,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
         pending = false;
         await db.removeSetting(storageKey);
       }
-      final fresh = await (await ref.read(
-        draftRepositoryProvider.future,
-      )).load(freshOnly: true);
-      final extras = await client.rpc(
-        'read_profile_extras',
-        params: {'requested_profile': fresh.id},
-      );
-      final latin = await rootBundle.load('assets/fonts/Inter.ttf');
-      final arabic = await rootBundle.load(
-        'assets/fonts/IBMPlexSansArabic-Regular.ttf',
-      );
-      final html = ResumeRender.html(
-        profile: fresh,
-        language: language!,
-        latinFontBase64: base64Encode(
-          latin.buffer.asUint8List(latin.offsetInBytes, latin.lengthInBytes),
-        ),
-        arabicFontBase64: base64Encode(
-          arabic.buffer.asUint8List(arabic.offsetInBytes, arabic.lengthInBytes),
-        ),
-        additionalLinks: List<Map<String, dynamic>>.from(
-          (extras as Map)['links'] as List,
-        ),
-      );
-      final controller = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.disabled)
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onNavigationRequest: (request) => request.url == 'about:blank'
-                ? NavigationDecision.navigate
-                : NavigationDecision.prevent,
-          ),
-        );
-      await controller.loadHtmlString(html);
-      if (mounted) {
-        setState(() {
-          preview = controller;
-          profile = fresh;
-        });
-      }
+      if (mounted) setState(() {});
+      await exportKey.currentState?.preparePreview();
     } on PostgrestException catch (error) {
       if (mounted) {
         setState(() {
@@ -175,42 +145,16 @@ class _ResumePageState extends ConsumerState<ResumePage> {
     return JobixBackHandler(
       onBack: () {
         if (busy) return;
-        if (preview != null) {
-          setState(() => preview = null);
-        } else {
-          context.go('/career');
-        }
+        context.go('/career');
       },
       child: frame(context),
     );
   }
 
   Widget frame(BuildContext context) {
-    if (preview != null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(t('Resume Preview', 'معاينة السيرة الذاتية')),
-          leading: IconButton(
-            icon: const BackButtonIcon(),
-            onPressed: () => requestJobixBack(context),
-          ),
-        ),
-        body: SafeArea(child: WebViewWidget(controller: preview!)),
-        bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              t(
-                'Draft A4 preview • selectable text • Export uses a separately confirmed online document.',
-                'معاينة مسودة A4 • نص قابل للتحديد • التصدير يستخدم مستندًا متصلًا مؤكدًا بشكل منفصل.',
-              ),
-            ),
-          ),
-        ),
-      );
-    }
     return SliceScaffold(
-      title: t('Build your resume', 'إنشاء سيرتك الذاتية'),
+      title: t('Resume Export', 'تصدير السيرة الذاتية'),
+      actions: const [CreditsPill()],
       leading: IconButton(
         icon: const BackButtonIcon(),
         onPressed: () => requestJobixBack(context),
@@ -237,34 +181,106 @@ class _ResumePageState extends ConsumerState<ResumePage> {
               children: [
                 Text(
                   t(
-                    'Uses your saved Career Profile. Changing language or template never creates a new profile or translates your content.',
-                    'تستخدم ملفك المهني المحفوظ. تغيير اللغة أو القالب لا ينشئ ملفًا جديدًا ولا يترجم المحتوى.',
+                    'Choose an ATS-friendly layout for your saved Career Profile.',
+                    'اختر تصميمًا متوافقًا مع ATS لملفك المهني المحفوظ.',
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: busy ? null : () => context.go('/career'),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Text(
+                    t('Edit profile content', 'تعديل محتوى الملف المهني'),
                   ),
                 ),
                 const SizedBox(height: 20),
-                for (final code in ['en', 'ar'])
-                  RadioListTile<String>(
-                    value: code,
-                    groupValue: language,
-                    title: Text(
-                      code == 'en'
-                          ? 'English — ATS Professional'
-                          : 'العربية — قالب مهني متوافق مع ATS',
-                    ),
-                    onChanged: busy || pending
-                        ? null
-                        : (value) => setState(() {
-                            language = value;
-                            saved = false;
-                          }),
+                Wrap(
+                  spacing: 12,
+                  children: [
+                    for (final code in ['en', 'ar'])
+                      ChoiceChip(
+                        label: Text(
+                          code == 'en' ? 'English (LTR)' : 'العربية (RTL)',
+                        ),
+                        selected: language == code,
+                        onSelected: busy || pending
+                            ? null
+                            : (_) => setState(() {
+                                language = code;
+                                saved = false;
+                              }),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  t(
+                    'Resume language is independent of app language. Your content is not automatically translated.',
+                    'لغة السيرة مستقلة عن لغة التطبيق. لا تتم ترجمة محتواك تلقائيًا.',
                   ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  t('Layout Template', 'قالب التصميم'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                if (language != null)
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: ResumeTemplateCard(
+                      language: language!,
+                      onInspect: () => showDialog<void>(
+                        context: context,
+                        builder: (dialog) => Dialog(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ResumeTemplateCard(
+                                  language: language!,
+                                  enlarged: true,
+                                  onInspect: () => Navigator.pop(dialog),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(dialog),
+                                  child: Text(
+                                    t('Close sample', 'إغلاق النموذج'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                SliceCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t('Standard ATS typography', 'خط قياسي متوافق مع ATS'),
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        t(
+                          'A4 • Single column • Fixed margins and typography. Only renderer-supported options are shown.',
+                          'A4 • عمود واحد • هوامش وخط ثابتان. تظهر الخيارات المدعومة فقط.',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 20),
                 if (message != null)
                   Text(message!, style: const TextStyle(color: TokensV0.error)),
                 PrimaryAction(
                   label: t(
-                    pending ? 'Retry saved request' : 'Save & preview',
-                    pending ? 'إعادة محاولة الطلب المحفوظ' : 'حفظ ومعاينة',
+                    pending ? 'Retry saved request' : 'Preview & Export',
+                    pending ? 'إعادة محاولة الطلب المحفوظ' : 'معاينة وتصدير',
                   ),
                   busy: busy,
                   onPressed: language == null ? null : showPreview,
@@ -298,24 +314,28 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                   ),
                 const SizedBox(height: 16),
                 ResumeExportPanel(
+                  key: exportKey,
                   profileId: profile!.id,
+                  experience: true,
+                  historicalExportId: widget.historicalExportId,
+                  onOperation: (id) => context.go('/resume-status/$id'),
                   canPrepare: saved && !pending && !busy,
                   initialDocument: preparedDocument,
                   showDocument: (document) async {
-                    final controller = WebViewController()
-                      ..setJavaScriptMode(JavaScriptMode.disabled)
-                      ..setNavigationDelegate(
-                        NavigationDelegate(
-                          onNavigationRequest: (_) =>
-                              NavigationDecision.prevent,
+                    if (mounted) {
+                      preparedDocument = document;
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ResumePreviewPage(
+                            document: document,
+                            ownerId: ownerId!,
+                            exportEnabled:
+                                exportKey.currentState?.creationEnabled == true,
+                            onExport: () async =>
+                                exportKey.currentState?.createPdf(),
+                          ),
                         ),
                       );
-                    await controller.loadHtmlString(document['html'] as String);
-                    if (mounted) {
-                      setState(() {
-                        preparedDocument = document;
-                        preview = controller;
-                      });
                     }
                   },
                 ),

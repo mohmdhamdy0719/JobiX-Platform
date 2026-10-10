@@ -8,9 +8,12 @@ import '../../l10n/app_localizations.dart';
 import '../../core/providers.dart';
 import 'authenticated_navigation.dart';
 import 'core_api.dart';
+import '../auth/auth_controller.dart';
+import '../resume/resume_export_panel.dart';
 
 class CreditsPage extends ConsumerStatefulWidget {
-  const CreditsPage({super.key});
+  const CreditsPage({this.initialTab = 0, super.key});
+  final int initialTab;
 
   @override
   ConsumerState<CreditsPage> createState() => _CreditsPageState();
@@ -24,10 +27,12 @@ class _CreditsPageState extends ConsumerState<CreditsPage> {
   bool _loadingMore = false;
   bool _hasLoaded = false;
   int _generation = 0;
+  late int tab;
 
   @override
   void initState() {
     super.initState();
+    tab = widget.initialTab;
     ref.listenManual(
       authSessionProvider.select((state) => state.valueOrNull?.user.id),
       (previous, next) {
@@ -97,18 +102,15 @@ class _CreditsPageState extends ConsumerState<CreditsPage> {
   Widget build(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    final ar = Localizations.localeOf(context).languageCode == 'ar';
+    final profile = ref.watch(firstProfileProvider).valueOrNull;
     return SliceScaffold(
-      title: copy.creditHistoryTitle,
+      title: ar ? 'سجل الأرصدة والتصدير' : 'Credit & Export History',
       leading: const BrandMark(size: 32),
       bottom: const AuthenticatedNavigation(selected: 1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeading(
-            title: copy.creditHistoryTitle,
-            subtitle: copy.creditHistorySubtitle,
-          ),
-          const SizedBox(height: TokensV0.space20),
           ref
               .watch(coreSummaryProvider)
               .when(
@@ -125,87 +127,147 @@ class _CreditsPageState extends ConsumerState<CreditsPage> {
                     ],
                   ),
                 ),
-                data: (summary) => SliceCard(
+                data: (summary) => Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: TokensV0.onSurface,
+                    borderRadius: BorderRadius.circular(TokensV0.cardRadius),
+                  ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.account_balance_wallet_outlined,
-                        color: TokensV0.deepBlue,
+                        color: TokensV0.inverseOnSurface,
                       ),
                       const SizedBox(width: TokensV0.space12),
-                      Expanded(child: Text(copy.availableCredits)),
+                      Expanded(
+                        child: Text(
+                          copy.availableCredits,
+                          style: const TextStyle(
+                            color: TokensV0.inverseOnSurface,
+                          ),
+                        ),
+                      ),
                       Text(
                         '${summary.balance.available}',
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: TokensV0.inverseOnSurface),
                       ),
                     ],
                   ),
                 ),
               ),
           const SizedBox(height: TokensV0.space20),
-          if (_loading)
-            const _HistoryLoading()
-          else if (!_hasLoaded || _error != null && _items.isEmpty)
-            SliceCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(copy.creditHistoryLoadFailed),
-                  const SizedBox(height: TokensV0.space8),
-                  TextButton.icon(
-                    onPressed: _loadFirstPage,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(copy.retry),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final index in [0, 1, 2])
+                ChoiceChip(
+                  label: Text(
+                    ar
+                        ? ['الكل', 'السير الذاتية', 'الأرصدة'][index]
+                        : ['All', 'Resumes', 'Credits'][index],
                   ),
-                ],
-              ),
-            )
-          else if (_items.isEmpty)
-            SliceCard(
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.receipt_long_outlined,
-                    size: 32,
-                    color: TokensV0.textSecondary,
-                  ),
-                  const SizedBox(height: TokensV0.space12),
-                  Text(
-                    copy.creditHistoryEmpty,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                ],
-              ),
-            )
-          else ...[
-            for (var index = 0; index < _items.length; index++) ...[
-              if (index > 0) const SizedBox(height: TokensV0.space8),
-              _TransactionCard(item: _items[index], locale: locale, copy: copy),
+                  selected: tab == index,
+                  onSelected: (_) => setState(() => tab = index),
+                ),
             ],
-            if (_error != null) ...[
-              const SizedBox(height: TokensV0.space12),
+          ),
+          const SizedBox(height: 12),
+          if (tab != 2) ...[
+            if (tab == 0)
+              Text(
+                ar ? 'عمليات تصدير السير الذاتية' : 'Resume exports',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            if (profile != null)
+              ResumeExportPanel(
+                profileId: profile.id,
+                canPrepare: false,
+                experience: true,
+                historyOnly: true,
+                showDocument: (_) async {},
+              )
+            else if (ref.watch(firstProfileProvider).hasError)
+              Text(copy.creditHistoryLoadFailed)
+            else
+              const LinearProgressIndicator(),
+            const SizedBox(height: 16),
+          ],
+          if (tab == 0)
+            Text(
+              ar ? 'حركة الأرصدة' : 'Credit transactions',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          if (tab != 1) ...[
+            if (_loading)
+              const _HistoryLoading()
+            else if (!_hasLoaded || _error != null && _items.isEmpty)
               SliceCard(
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: Text(copy.moreTransactionsFailed)),
-                    TextButton(onPressed: _loadMore, child: Text(copy.retry)),
+                    Text(copy.creditHistoryLoadFailed),
+                    const SizedBox(height: TokensV0.space8),
+                    TextButton.icon(
+                      onPressed: _loadFirstPage,
+                      icon: const Icon(Icons.refresh),
+                      label: Text(copy.retry),
+                    ),
                   ],
                 ),
-              ),
-            ],
-            if (_nextCursor != null) ...[
-              const SizedBox(height: TokensV0.space12),
-              OutlinedButton(
-                onPressed: _loadingMore ? null : _loadMore,
-                child: _loadingMore
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(copy.loadMore),
-              ),
+              )
+            else if (_items.isEmpty)
+              SliceCard(
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.receipt_long_outlined,
+                      size: 32,
+                      color: TokensV0.textSecondary,
+                    ),
+                    const SizedBox(height: TokensV0.space12),
+                    Text(
+                      copy.creditHistoryEmpty,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                  ],
+                ),
+              )
+            else ...[
+              for (var index = 0; index < _items.length; index++) ...[
+                if (index > 0) const SizedBox(height: TokensV0.space8),
+                _TransactionCard(
+                  item: _items[index],
+                  locale: locale,
+                  copy: copy,
+                ),
+              ],
+              if (_error != null) ...[
+                const SizedBox(height: TokensV0.space12),
+                SliceCard(
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(copy.moreTransactionsFailed)),
+                      TextButton(onPressed: _loadMore, child: Text(copy.retry)),
+                    ],
+                  ),
+                ),
+              ],
+              if (_nextCursor != null) ...[
+                const SizedBox(height: TokensV0.space12),
+                OutlinedButton(
+                  onPressed: _loadingMore ? null : _loadMore,
+                  child: _loadingMore
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(copy.loadMore),
+                ),
+              ],
             ],
           ],
         ],

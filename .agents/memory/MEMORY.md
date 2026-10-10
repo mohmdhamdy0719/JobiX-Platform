@@ -16,3 +16,4 @@
 - [PDF runtime verification](pdf-runtime-verification.md) — host Chromium success does not verify pinned Playwright; avoid mixing libc paths into Node.
 - [Cloud cost evidence](cloud-cost-evidence.md) — region lists do not prove selected prices; distinguish alert budgets from current service spend-cap support.
 - [Beta policy proposals](beta-policy-proposals.md) — owner proposes 10 exports per rolling 7 days, not 30; implementation and global budgets remain unapproved.
+- [Native resume experience](native-resume-experience.md) — explicit setup completion, renderer-supported presentation, and the owner’s live-activation boundary.

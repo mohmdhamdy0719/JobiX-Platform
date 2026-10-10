@@ -16,6 +16,10 @@ import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/resume/resume_document.dart';
 import 'package:jobix/features/resume/resume_export_panel.dart';
 import 'package:jobix/features/resume/resume_render.dart';
+import 'package:jobix/features/resume/resume_operation_page.dart';
+import 'package:jobix/features/auth/auth_controller.dart';
+import 'package:jobix/features/builder/resume_journey.dart';
+import 'package:jobix/features/resume/resume_export_service.dart';
 import 'package:jobix/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -198,7 +202,7 @@ void main() {
   if (!enabled) {
     for (final language in ['en', 'ar']) {
       testWidgets(
-        '$language default-off panel acquires no client or database',
+        '$language default-off admissions retain history and reconnect controls',
         (tester) async {
           await tester.pumpWidget(
             app(
@@ -219,7 +223,7 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(find.byType(TextButton), findsNothing);
+          expect(find.byType(TextButton), findsWidgets);
           expect(tester.takeException(), isNull);
         },
       );
@@ -386,7 +390,17 @@ void main() {
           }
           result = acknowledgement;
         } else if (action == 'status') {
-          result = {'state': workerState};
+          result = {
+            'id': jobId,
+            'profile_id': profileId,
+            'state': workerState,
+            'page_count': 1,
+            'object_size': 2048,
+            'download_eligible': workerState == 'COMPLETED',
+            'expires_at': DateTime.now()
+                .add(const Duration(days: 7))
+                .toIso8601String(),
+          };
         } else if (action == 'download') {
           if (!expiredDownload) {
             return http.Response(
@@ -606,7 +620,10 @@ void main() {
       workerState = 'FAILED';
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Failed — reservation released'), findsWidgets);
+      expect(
+        find.textContaining('Failed — reservation released'),
+        findsWidgets,
+      );
       final count = commands.where((c) => c['action'] == 'status').length;
       await tester.pump(const Duration(seconds: 9));
       expect(commands.where((c) => c['action'] == 'status').length, count);
@@ -809,6 +826,115 @@ void main() {
         ResumeDocument.issues(invalid, ResumePresentation(language: 'en')),
         contains('personal.portfolio_url'),
       );
+    },
+  );
+  testWidgets(
+    'processing screen polls the same job and exposes the completed download without creating an intent',
+    (tester) async {
+      await db.setSetting(
+        exportDisplayKey(actor, jobId),
+        jsonEncode({
+          'profile_id': profileId,
+          'language': 'en',
+          'template': 'resume_ats_en_v1',
+        }),
+      );
+      await tester.pumpWidget(
+        app(
+          const SizedBox(
+            width: 390,
+            height: 780,
+            child: ResumeOperationPage(exportId: jobId, waiting: true),
+          ),
+          overrides: [
+            supabaseClientProvider.overrideWith((_) async => client),
+            databaseProvider.overrideWith((_) async => db),
+            firstProfileProvider.overrideWith(
+              (_) async => CareerProfile.fromJson(savedProfile),
+            ),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Your resume is being prepared'), findsOneWidget);
+      expect(find.textContaining('English'), findsWidgets);
+      expect(find.text('resume_ats_en_v1'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      workerState = 'COMPLETED';
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byIcon(Icons.download_outlined), findsOneWidget);
+      expect(
+        commands.where((c) => c['action'] == 'status').length,
+        greaterThanOrEqualTo(2),
+      );
+      expect(
+        commands.where((c) => ['create', 'again'].contains(c['action'])),
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+  test(
+    'account cleanup removes only its own resume journey completion',
+    () async {
+      const peer = '70000000-0000-4000-8000-000000000099';
+      final value = const ResumeJourney(step: 6, complete: true).encode();
+      await db.setSetting(journeyKey(actor, profileId), value);
+      await db.setSetting(journeyKey(peer, profileId), value);
+      await db.clearAccount(actor);
+      expect(await db.setting(journeyKey(actor, profileId)), isNull);
+      expect(await db.setting(journeyKey(peer, profileId)), value);
+    },
+  );
+  test(
+    'frozen display metadata cannot grant entitlement or override job state',
+    () async {
+      final job = {
+        'id': jobId,
+        'profile_id': profileId,
+        'state': 'QUEUED',
+        'download_eligible': false,
+      };
+      await db.setSetting(
+        exportDisplayKey(actor, jobId),
+        jsonEncode({
+          'profile_id': profileId,
+          'language': 'ar',
+          'template': 'resume_ats_ar_v1',
+          'state': 'COMPLETED',
+          'download_eligible': true,
+          'page_count': 20,
+        }),
+      );
+      final shown = await ResumeExportService(
+        client,
+      ).withDisplay(job, db.setting);
+      expect(shown['language'], 'ar');
+      expect(shown['state'], 'QUEUED');
+      expect(shown['download_eligible'], false);
+      expect(shown['page_count'], isNull);
+      await db.setSetting(
+        exportDisplayKey(actor, jobId),
+        jsonEncode({
+          'profile_id': 'foreign',
+          'language': 'ar',
+          'template': 'resume_ats_ar_v1',
+        }),
+      );
+      expect(
+        (await ResumeExportService(
+          client,
+        ).withDisplay(job, db.setting))['language'],
+        isNull,
+      );
+      await db.removeSetting(exportDisplayKey(actor, jobId));
+      expect(
+        await ResumeExportService(client).withDisplay(job, db.setting),
+        job,
+      );
+      expect(accepted, 0);
     },
   );
 }

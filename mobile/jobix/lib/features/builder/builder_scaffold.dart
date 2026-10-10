@@ -5,6 +5,7 @@ import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import 'jobix_improvement.dart';
+import 'resume_journey.dart';
 
 const builderSteps = 6;
 
@@ -58,7 +59,11 @@ class BuilderScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return JobixBackHandler(
       onBack: busy ? () {} : onBack,
-      child: frame(context),
+      child: ResumeJourneyRecorder(
+        step: step,
+        enabled: !reviewEditor,
+        child: frame(context),
+      ),
     );
   }
 

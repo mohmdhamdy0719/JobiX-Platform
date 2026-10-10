@@ -204,3 +204,16 @@ unconditional database push, contrary to the owner's native/service boundary.
 **How to apply:** Keep post-merge setup scope-aware. Test a native no-op hook
 directly if the combined setup runner would restart unauthorized supporting
 workflows; do not claim workflow reconciliation has been verified in that case.
+
+An installed JDK does not prove Kotlin compiler-daemon IPC works in this
+restricted workspace. Prefer process-scoped in-process Kotlin compilation and
+explicit installed-JDK discovery when daemon startup fails, rather than
+changing application Gradle settings or upgrading pinned dependencies.
+
+**Why:** The compiler daemon exited after announcing readiness and reported a
+missing file. The same SDK/dependency versions produced a signed APK using
+in-process compilation, an explicit JDK root, and limited worker concurrency.
+
+**How to apply:** First identify whether failure is compiler startup, application
+compilation, or Android packaging. Apply host-tool workarounds only to the build
+process; do not weaken tests or treat success at one stage as a complete build.

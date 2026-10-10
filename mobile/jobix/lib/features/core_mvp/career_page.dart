@@ -10,6 +10,7 @@ import '../auth/auth_controller.dart';
 import '../builder/builder_scaffold.dart';
 import '../builder/entity_labels.dart';
 import '../builder/profile_overview.dart';
+import '../builder/resume_journey.dart';
 import '../career_profile/career_profile.dart';
 import '../career_profile/profile_sections.dart';
 import 'authenticated_navigation.dart';
@@ -49,12 +50,12 @@ class CareerPage extends ConsumerWidget {
   }
 }
 
-class _CareerBody extends StatelessWidget {
+class _CareerBody extends ConsumerWidget {
   const _CareerBody({required this.profile});
   final CareerProfile profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final copy = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).languageCode;
@@ -108,6 +109,7 @@ class _CareerBody extends StatelessWidget {
       'email',
       'phone',
     ].where((f) => field(f).isNotEmpty).length;
+    final journey = ref.watch(resumeJourneyProvider(profile.id));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -118,7 +120,13 @@ class _CareerBody extends StatelessWidget {
               ? 'إنشاء السيرة الذاتية'
               : 'Build resume',
           icon: Icons.description_outlined,
-          onPressed: () => context.go('/resume'),
+          onPressed: journey.isLoading || journey.hasError
+              ? null
+              : () => context.go(
+                  journey.valueOrNull?.complete == true
+                      ? '/resume'
+                      : '/builder/${journey.valueOrNull?.step ?? 1}',
+                ),
         ),
         const SizedBox(height: TokensV0.space16),
         SliceCard(
