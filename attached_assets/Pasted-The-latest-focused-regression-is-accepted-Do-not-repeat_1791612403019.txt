@@ -1,0 +1,30 @@
+The latest focused regression is accepted. Do not repeat the completed tests or produce another general production-readiness report.
+
+Proceed with the next two narrowly scoped tasks:
+
+### Task 1 — Supported Node.js runtime
+
+Inspect both server Dockerfiles, package manifests/lockfiles, and the actual runtime requirements of the Gateway and PDF Worker.
+
+- Replace the Node.js 20.20.0 base image with a currently supported LTS release compatible with the existing application and dependencies.
+- Keep the Gateway and Worker architecture and PDF rendering path unchanged.
+- Do not upgrade unrelated dependencies or regenerate lockfiles unnecessarily.
+- Run the smallest relevant local build/compatibility checks and focused backend tests.
+- Report the exact base-image change, compatibility evidence, and any blocker.
+
+Do not deploy the images.
+
+### Task 2 — Read-only deployment-state verification plan
+
+Identify the minimum read-only commands or provider-console checks needed to verify the current Supabase Edge Function, Cloud Run Gateway/Worker revisions and image digests, persistent database migration state, private GCS bucket settings, and current admission/accounting flags.
+
+First inspect which provider CLI tools and authorized connections are already available. Do not print secrets, access billing credentials, or change any provider settings. If authentication or read permissions are unavailable, report the exact limitation rather than guessing the deployed state.
+
+### Constraints
+
+- Do not edit migrations or application logic unrelated to Node runtime compatibility.
+- Do not apply migrations, deploy services, enable billing exports, change budget flags, create paid resources, build an APK, or modify Git history.
+- Do not enable `accounting_ready` in any persistent environment.
+- Do not repeat the completed cost-protection, deletion, or concurrency suites unless a specific regression requires it.
+
+Return concise results for both tasks and stop. We will review before authorizing any deployment or live database change.

@@ -6,7 +6,7 @@ COPY lib/features/resume/resume_render.dart lib/features/resume/resume_document.
 COPY tool/prepare_resume_document.dart tool/
 RUN dart compile exe tool/prepare_resume_document.dart -o /canonical
 
-FROM node:20.20.0-bookworm
+FROM node:24.21.0-bookworm
 ENV NODE_ENV=production PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     JOBIX_CANONICAL_EXECUTABLE=/opt/jobix/canonical \
     JOBIX_DEV_DATABASE_CA_FILE=/opt/jobix/assets/certs/supabase-root-2021.crt
