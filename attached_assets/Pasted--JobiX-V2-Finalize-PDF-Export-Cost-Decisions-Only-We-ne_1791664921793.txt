@@ -1,0 +1,44 @@
+**JobiX V2 — Finalize PDF Export Cost Decisions Only**
+
+We need to unblock the existing PDF export readiness work. Do NOT perform another broad audit or repeat already-passed tests.
+
+### Current state
+- Migration 021 is locally tested but not applied to Development.
+- Export is disabled, `accounting_ready=false`, and all five cost inputs are unset.
+- The configured admission budget is $10 per rolling 7 days, but this is not a total provider-invoice cap.
+- The previous GCP-only estimate was approximately $0.097044 per export under stated assumptions. It excludes download egress, Supabase charges, and shared recovery/cleanup costs.
+- No live export has been authorized.
+
+### Your task: resolve the cost decision with evidence
+
+1. Identify the exact five cost inputs required by the current `public.export_cost_budget_policy` schema. For each input, report:
+   - Exact column name and unit.
+   - Current value/state.
+   - Source or calculation supporting a proposed value.
+   - Whether it is a directly verifiable provider price, a workload assumption, or an owner decision.
+   - Whether it is safe to configure now, or must remain unset.
+
+2. Recheck the existing estimator and Migration 021 only as needed to establish:
+   - What costs are included in each estimate.
+   - Which costs are excluded or unpriced.
+   - Whether shared recovery/cleanup costs are already included elsewhere, to avoid double counting.
+   - Whether download egress and Supabase costs can be reliably bounded for one controlled test from currently available evidence.
+
+3. Propose the smallest defensible cost model for **one controlled Development export**, without inventing rates, assuming zero for unknown costs, or claiming that the $10 admission budget caps the actual provider invoice.
+
+4. If a numeric shared reserve cannot be justified from evidence, say so explicitly. Explain the minimum owner decision needed and provide the exact question I must answer. Do not choose a reserve on my behalf.
+
+5. Give a clear go/no-go conclusion:
+   - Can the existing system safely authorize one test export with the available evidence?
+   - If not, identify only the specific unresolved blockers.
+   - Distinguish an admission-cost estimate from a hard spending limit.
+
+### Strict boundaries
+- Do not apply Migration 021.
+- Do not set any rates or reserve.
+- Do not set `accounting_ready=true` or enable export.
+- Do not build, upload source archives, start Cloud Build, deploy, change IAM, create paid resources, or execute a live export.
+- Do not change pricing, Credit rewards, migrations, or production behavior.
+- Do not repeat broad tests or audits unless a specific result is needed to answer the cost questions.
+
+Return a concise decision report with the five inputs, evidence, excluded costs, the exact owner decision required, and the next single action. Stop after that report.
