@@ -1,0 +1,31 @@
+We need to finish this migration task now and return to the actual JobiX MVP. Do not run more optional audits or add suggested tasks.
+
+The implementation of `--apply-development-resume-export-018-020` is complete, and I explicitly approve applying migrations 018, 019, and 020 to the fixed Development Supabase project `lmouxhbjhtqdtiqijcee`.
+
+## Execute now
+
+1. Run the new migration command once, using the existing Development database URL and verified CA-file configuration:
+   `node mobile/jobix/tool/apply_phase3_dev.mjs --apply-development-resume-export-018-020 --ca-file "$JOBIX_DEV_DATABASE_CA_FILE"`
+
+2. Do not print, expose, or include database credentials, connection strings, or secret values in logs or the report.
+
+3. Let the runner perform its built-in preflight. If it rejects the target, finds schema drift, finds active export jobs or unsettled uploads, detects checksum/ledger inconsistencies, or encounters any other safety failure, stop immediately. Do not bypass safeguards, modify migrations to force success, manually apply SQL, or switch targets. Report the exact non-sensitive failure and the single action needed to unblock it.
+
+4. If successful, perform only the essential post-application verification:
+   - Migration ledger records 018, 019, and 020 with the exact source checksums.
+   - Expected relations, functions, indexes, and purge-recovery schema exist.
+   - `accounting_ready=false` and all cost-rate fields remain unset.
+   - Export enablement and deletion-approval gate values are unchanged from their pre-migration values.
+   - No migration was partially applied.
+
+5. Do not enable export, change secrets, configure cost rates, deploy services, create resources, or run paid operations.
+
+## Final report
+
+Return one concise report stating:
+- Whether all three migrations were applied successfully.
+- The post-application verification results.
+- Any blocker, only if one actually occurred.
+- Confirmation that export remains disabled and accounting remains unready.
+
+Do not repeat previous audits, investigate historical 503 errors, or suggest optional testing tasks. Once the migration and essential verification succeed, stop this work so we can resume implementing the actual JobiX MVP.
