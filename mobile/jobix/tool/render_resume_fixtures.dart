@@ -2,8 +2,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../lib/features/career_profile/career_profile.dart';
-import '../lib/features/resume/resume_render.dart';
+import 'package:jobix/features/career_profile/career_profile.dart';
+import 'package:jobix/features/resume/resume_render.dart';
 
 void main(List<String> arguments) {
   final regression = arguments.length == 2 && arguments.last == '--regression';
