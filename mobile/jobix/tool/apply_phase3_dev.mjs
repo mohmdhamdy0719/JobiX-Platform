@@ -14,6 +14,7 @@ const resumeExportCostVersions=[
  '202610100019_resume_export_cost_protection',
  '202610100020_resume_export_cost_purge_recovery',
 ];
+const resumeExportCostOutputUnitVersion='202610100021_resume_export_cost_output_unit';
 export async function migrate({caFile,approved=false}) {
   if(!approved||!caFile)throw Error('EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED');
   const uri=new URL(process.env.JOBIX_DEV_DATABASE_URL);
@@ -51,7 +52,7 @@ export async function migrate({caFile,approved=false}) {
     await client.query('ROLLBACK').catch(()=>{});throw error;
   } finally {client.release();await pool.end();}
 }
-export async function migrateResumeExportCost({caFile,approved=false}) {
+export async function migrateResumeExportCost({caFile,approved=false,outputUnitFix=false}) {
   if(!approved||!caFile)throw Error('EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED');
   const uri=new URL(process.env.JOBIX_DEV_DATABASE_URL);
   if(!['postgres:','postgresql:'].includes(uri.protocol)||!uri.username.endsWith('.'+ref)||
@@ -59,6 +60,8 @@ export async function migrateResumeExportCost({caFile,approved=false}) {
   for(const key of ['sslmode','sslrootcert','sslcert','sslkey'])uri.searchParams.delete(key);
   const pool=new Pool({connectionString:uri.toString(),max:1,connectionTimeoutMillis:15000,
     ssl:{rejectUnauthorized:true,ca:await readFile(caFile,'utf8')},statement_timeout:30000});
+  const expectedVersions=outputUnitFix?[...versions,...resumeExportCostVersions]:versions;
+  const migrationPlan=outputUnitFix?[resumeExportCostOutputUnitVersion]:resumeExportCostVersions;
   let client,transactionOpen=false;
   try {
     client=await pool.connect();
@@ -79,20 +82,27 @@ export async function migrateResumeExportCost({caFile,approved=false}) {
       to_regclass('public.export_snapshots') IS NOT NULL AS snapshots,
       to_regclass('public.export_jobs') IS NOT NULL AS exports,
       to_regclass('public.export_upload_flights') IS NOT NULL AS flights,
+      to_regclass('public.export_cost_budget_policy') IS NOT NULL AS cost_policy,
+      to_regclass('public.export_cost_reservations') IS NOT NULL AS cost_reservations,
+      to_regprocedure('public.jobix_export_cost_estimate(bigint,bigint,integer)') IS NOT NULL AS cost_estimator,
       to_regclass('public.jobix_export_migrations') IS NOT NULL AS ledger`)).rows[0];
     if(!baseline.volunteer||!baseline.configurations||!baseline.users||!baseline.profiles||
       !baseline.idempotency||!baseline.accounts||!baseline.credit_reservations||
       !baseline.credit_transactions||
       !baseline.settings||!baseline.snapshots||!baseline.exports||!baseline.flights||
-      !baseline.ledger)throw Error('BASELINE_SCHEMA_DRIFT');
+      !baseline.ledger||
+      (outputUnitFix&&(!baseline.cost_policy||!baseline.cost_reservations||!baseline.cost_estimator))) {
+      throw Error('BASELINE_SCHEMA_DRIFT');
+    }
 
     const ledger=(await client.query(
       'SELECT version,sha256 FROM public.jobix_export_migrations ORDER BY version')).rows;
-    if(ledger.length!==versions.length||versions.some((version,index)=>ledger[index]?.version!==version)) {
+    if(ledger.length!==expectedVersions.length||
+      expectedVersions.some((version,index)=>ledger[index]?.version!==version)) {
       throw Error('MIGRATION_LEDGER_STATE_CONFLICT');
     }
-    for(let index=0;index<versions.length;index++) {
-      const source=await readFile(resolve(import.meta.dirname,'../supabase/migrations',versions[index]+'.sql'),'utf8');
+    for(let index=0;index<expectedVersions.length;index++) {
+      const source=await readFile(resolve(import.meta.dirname,'../supabase/migrations',expectedVersions[index]+'.sql'),'utf8');
       const hash=createHash('sha256').update(source).digest('hex');
       if(ledger[index].sha256!==hash)throw Error('MIGRATION_CHECKSUM_CONFLICT');
     }
@@ -183,25 +193,27 @@ export async function migrateResumeExportCost({caFile,approved=false}) {
     if(gateRows.length!==1||gateRows[0].enabled!==false||
       gateRows[0].deletion_policy_approved!==true)throw Error('EXPORT_GATES_NOT_EXPECTED');
 
-    const conflictingRelations=(await client.query(`SELECT name
-      FROM unnest($1::text[]) AS expected(name)
-      WHERE to_regclass('public.'||expected.name) IS NOT NULL`,[[
-        'export_admission_events','export_admission_events_owner_time',
-        'export_cost_budget_policy','export_cost_reservations',
-        'export_cost_reservations_window','export_cost_attempts',
-        'export_cost_provider_observations','export_admission_legacy_holds',
-        'export_cost_reservations_orphans',
-      ]])).rows;
-    const conflictingFunctions=(await client.query(`SELECT DISTINCT p.proname
-      FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-      WHERE n.nspname='public' AND p.proname=ANY($1::text[])`,[[
-        'jobix_export_admission_retry_seconds','jobix_export_cost_estimate',
-        'jobix_export_cost_reserve','jobix_export_cost_attempt_start',
-        'jobix_export_cost_attempt_finish','jobix_export_cost_settle',
-        'jobix_export_cost_resolve','jobix_export_cost_reconcile',
-        'jobix_export_cost_observe',
-      ]])).rows;
-    if(conflictingRelations.length||conflictingFunctions.length)throw Error('MIGRATION_OBJECT_CONFLICT');
+    if(!outputUnitFix) {
+      const conflictingRelations=(await client.query(`SELECT name
+        FROM unnest($1::text[]) AS expected(name)
+        WHERE to_regclass('public.'||expected.name) IS NOT NULL`,[[
+          'export_admission_events','export_admission_events_owner_time',
+          'export_cost_budget_policy','export_cost_reservations',
+          'export_cost_reservations_window','export_cost_attempts',
+          'export_cost_provider_observations','export_admission_legacy_holds',
+          'export_cost_reservations_orphans',
+        ]])).rows;
+      const conflictingFunctions=(await client.query(`SELECT DISTINCT p.proname
+        FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+        WHERE n.nspname='public' AND p.proname=ANY($1::text[])`,[[
+          'jobix_export_admission_retry_seconds','jobix_export_cost_estimate',
+          'jobix_export_cost_reserve','jobix_export_cost_attempt_start',
+          'jobix_export_cost_attempt_finish','jobix_export_cost_settle',
+          'jobix_export_cost_resolve','jobix_export_cost_reconcile',
+          'jobix_export_cost_observe',
+        ]])).rows;
+      if(conflictingRelations.length||conflictingFunctions.length)throw Error('MIGRATION_OBJECT_CONFLICT');
+    }
 
     const activeJobs=(await client.query(`SELECT state,count(*) AS count
       FROM public.export_jobs
@@ -212,7 +224,30 @@ export async function migrateResumeExportCost({caFile,approved=false}) {
       FROM public.export_upload_flights WHERE state<>'SETTLED'`)).rows[0].count;
     if(activeJobs.length||BigInt(unsettledUploads)>0n)throw Error('ACTIVE_EXPORT_JOBS_PRESENT');
 
-    for(const version of resumeExportCostVersions) {
+    if(outputUnitFix) {
+      const policy=(await client.query(`SELECT accounting_ready,
+        budget_microusd=10000000 AS budget_unchanged,
+        rolling_window=interval '7 days' AS window_unchanged,model_version,
+        shared_cost_reserve_microusd,runtime_cost_microusd_per_second,
+        output_cost_microusd_per_gib_7d,storage_operation_cost_microusd,
+        per_export_overhead_microusd
+        FROM public.export_cost_budget_policy WHERE singleton FOR UPDATE`)).rows;
+      const heldReservations=BigInt((await client.query(`SELECT count(*) AS count
+        FROM public.export_cost_reservations WHERE state='HELD'`)).rows[0].count);
+      if(policy.length!==1||policy[0].accounting_ready!==false||
+        policy[0].budget_unchanged!==true||policy[0].window_unchanged!==true||
+        policy[0].model_version!==1||
+        policy[0].shared_cost_reserve_microusd!==null||
+        policy[0].runtime_cost_microusd_per_second!==null||
+        policy[0].output_cost_microusd_per_gib_7d!==null||
+        policy[0].storage_operation_cost_microusd!==null||
+        policy[0].per_export_overhead_microusd!==null) {
+        throw Error('ACCOUNTING_CONFIGURATION_NOT_READY');
+      }
+      if(heldReservations>0n)throw Error('ACTIVE_EXPORT_JOBS_PRESENT');
+    }
+
+    for(const version of migrationPlan) {
       const source=await readFile(resolve(import.meta.dirname,'../supabase/migrations',version+'.sql'),'utf8');
       const hash=createHash('sha256').update(source).digest('hex');
       // Keep each migration and its ledger row inside the shared transaction.
@@ -246,7 +281,9 @@ export async function migrateResumeExportCost({caFile,approved=false}) {
 
     await client.query('COMMIT');
     transactionOpen=false;
-    console.log('DEVELOPMENT_MIGRATIONS_018_020_APPLIED_GATES_UNCHANGED_ACCOUNTING_NOT_READY');
+    console.log(outputUnitFix
+      ?'DEVELOPMENT_MIGRATION_021_APPLIED_GATES_UNCHANGED_ACCOUNTING_NOT_READY'
+      :'DEVELOPMENT_MIGRATIONS_018_020_APPLIED_GATES_UNCHANGED_ACCOUNTING_NOT_READY');
   } catch(error) {
     if(client&&transactionOpen)await client.query('ROLLBACK').catch(()=>{});
     throw error;
@@ -255,6 +292,7 @@ export async function migrateResumeExportCost({caFile,approved=false}) {
 if(process.argv[1]===import.meta.filename) {
   const ca=process.argv.indexOf('--ca-file');
   const costMode=process.argv.includes('--apply-development-resume-export-018-020');
+  const costOutputUnitMode=process.argv.includes('--apply-development-resume-export-cost-output-unit-021');
   const legacyMode=process.argv.includes('--apply-development');
   const safeCostFailures=new Set([
     'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED','DEV_TARGET_REJECTED',
@@ -262,8 +300,9 @@ if(process.argv[1]===import.meta.filename) {
     'MIGRATION_CHECKSUM_CONFLICT','EXPORT_GATES_NOT_EXPECTED',
     'MIGRATION_OBJECT_CONFLICT','ACTIVE_EXPORT_JOBS_PRESENT',
     'EXPORT_GATES_CHANGED','ACCOUNTING_CONFIGURATION_NOT_READY',
+    'COST_OUTPUT_UNIT_PRECONDITION_FAILED',
   ]);
-  if(costMode&&legacyMode) {
+  if((costMode&&legacyMode)||(costOutputUnitMode&&(costMode||legacyMode))) {
     console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
   } else if(costMode) {
     migrateResumeExportCost({caFile:ca>=0?process.argv[ca+1]:undefined,
@@ -271,6 +310,13 @@ if(process.argv[1]===import.meta.filename) {
         const reason=safeCostFailures.has(error?.message)
           ?error.message:'NO_TLS_OR_ADMIN_FALLBACK';
         console.error(`DEVELOPMENT_RESUME_EXPORT_MIGRATIONS_BLOCKED_${reason}`);process.exitCode=1;
+      });
+  } else if(costOutputUnitMode) {
+    migrateResumeExportCost({caFile:ca>=0?process.argv[ca+1]:undefined,
+      approved:true,outputUnitFix:true}).catch(error=>{
+        const reason=safeCostFailures.has(error?.message)
+          ?error.message:'NO_TLS_OR_ADMIN_FALLBACK';
+        console.error(`DEVELOPMENT_COST_OUTPUT_UNIT_MIGRATION_BLOCKED_${reason}`);process.exitCode=1;
       });
   } else {
     migrate({caFile:ca>=0?process.argv[ca+1]:undefined,

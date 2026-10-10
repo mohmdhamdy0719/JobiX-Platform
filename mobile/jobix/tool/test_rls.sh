@@ -2,12 +2,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mode="${1:-full}"
-if [[ $# -gt 1 || ( "$mode" != "full" && "$mode" != "--resume-export-only" ) ]]; then
-  echo "Usage: $0 [--resume-export-only]" >&2
+if [[ $# -gt 1 || ( "$mode" != "full" && "$mode" != "--resume-export-only" &&
+  "$mode" != "--resume-export-cost-unit-only" ) ]]; then
+  echo "Usage: $0 [--resume-export-only|--resume-export-cost-unit-only]" >&2
   exit 2
 fi
 work="$(mktemp -d /tmp/jobix-rls.XXXXXX)"
-if [[ "$mode" == "--resume-export-only" ]]; then
+if [[ "$mode" != "full" ]]; then
   cleanup_focused() {
     local exit_status=$?
     trap - EXIT
@@ -41,7 +42,7 @@ initdb -D "$work/data" --username=runner --auth=trust --no-locale --encoding=UTF
 mkdir "$work/socket"
 pg_ctl -D "$work/data" -l "$work/server.log" \
   -o "-k $work/socket -p 55439 -c listen_addresses=''" start >/dev/null
-if [[ "$mode" == "--resume-export-only" ]]; then
+if [[ "$mode" != "full" ]]; then
   local_psql=(psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres)
   socket_file="$work/socket/.s.PGSQL.55439"
   if [[ ! -S "$socket_file" ]] || ! pg_ctl -D "$work/data" status >/dev/null 2>&1; then
@@ -81,6 +82,24 @@ if [[ "$mode" == "--resume-export-only" ]]; then
     -f supabase/migrations/202610080016_resume_export_cleanup_hooks.sql
   echo "PASS: local Auth fixture and prerequisite migrations 001–016"
 
+  if [[ "$mode" == "--resume-export-cost-unit-only" ]]; then
+    "${local_psql[@]}" \
+      -f supabase/migrations/202610080017_resume_export_deletion.sql \
+      -f supabase/migrations/202610080018_resume_export_admission.sql \
+      -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
+      -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
+      -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql \
+      -f supabase/tests/resume_export_cost_output_unit.sql
+    echo "PASS: migrations 017–021 and resume_export_cost_output_unit.sql"
+    ready_state="$("${local_psql[@]}" -Atc "SELECT coalesce(bool_and(NOT accounting_ready),false) FROM public.export_cost_budget_policy")"
+    if [[ "$ready_state" != "t" ]]; then
+      echo "FAIL: disposable cost-unit fixture did not roll back accounting_ready" >&2
+      exit 1
+    fi
+    echo "PASS: accounting_ready=false remains after cost-unit test"
+    exit 0
+  fi
+
   "${local_psql[@]}" \
     -f supabase/migrations/202610080017_resume_export_deletion.sql \
     -f supabase/migrations/202610080018_resume_export_admission.sql
@@ -88,12 +107,15 @@ if [[ "$mode" == "--resume-export-only" ]]; then
   "${local_psql[@]}" -f supabase/tests/resume_export.sql
   echo "PASS: resume_export.sql"
 
-  "${local_psql[@]}" -f supabase/migrations/202610100019_resume_export_cost_protection.sql
-  echo "PASS: migration 019"
+  "${local_psql[@]}" \
+    -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
+    -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
+    -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql
+  echo "PASS: migrations 019–021"
+  "${local_psql[@]}" -f supabase/tests/resume_export_cost_output_unit.sql
+  echo "PASS: resume_export_cost_output_unit.sql"
   "${local_psql[@]}" -f supabase/tests/resume_export_cost_protection.sql
   echo "PASS: resume_export_cost_protection.sql (synthetic disposable rates only)"
-  "${local_psql[@]}" -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql
-  echo "PASS: migration 020"
   "${local_psql[@]}" -f supabase/tests/resume_export_cost_purge.sql
   echo "PASS: resume_export_cost_purge.sql"
   "${local_psql[@]}" -f supabase/tests/resume_export_admission.sql
@@ -168,8 +190,10 @@ psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/tests/resume_export.sql
 psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
-  -f supabase/tests/resume_export_cost_protection.sql \
   -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
+  -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql \
+  -f supabase/tests/resume_export_cost_output_unit.sql \
+  -f supabase/tests/resume_export_cost_protection.sql \
   -f supabase/tests/resume_export_cost_purge.sql \
   -f supabase/tests/resume_export_admission.sql \
   -f supabase/tests/resume_export_recovery.sql \

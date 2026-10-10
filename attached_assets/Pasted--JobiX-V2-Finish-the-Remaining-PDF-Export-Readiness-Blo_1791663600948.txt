@@ -1,0 +1,57 @@
+# JobiX V2 — Finish the Remaining PDF Export Readiness Blockers
+
+We have completed the Preview UI changes and the recent read-only readiness investigation. Do not repeat the UI work, broad audits, historical 503 investigation, or already-passing test suites.
+
+The remaining blockers are:
+1. `accounting_ready=false` and five cost inputs are unset.
+2. The `output_cost_microusd_per_gib_7d` field name appears inconsistent with the estimator's multiplication by 7.
+3. Deployed Gateway/Worker source provenance does not match the current allowlisted source archives, and deployed cost-hook compatibility is unverified.
+4. Some inherited IAM/public-access policy reads returned 403.
+
+## Execute this focused task
+
+### A. Resolve the cost-estimator unit contract
+
+- Inspect the migration, SQL functions, application code, and tests that consume all five cost fields.
+- Document each field's exact unit and formula using the actual source.
+- Resolve whether `output_cost_microusd_per_gib_7d` is intended to represent a daily rate or a seven-day rate. If the current implementation is genuinely inconsistent, make the smallest source/test correction necessary and add a regression test.
+- Do not change any configured values, enable accounting, or rewrite migration history.
+- Do not invent rates. Separate measured/provider-published rates from estimates and unpriced costs such as download egress, Supabase charges, and shared recovery/cleanup.
+
+### B. Verify and prepare a compatible deployment
+
+- Compare the exact current Gateway/Worker source archives, dependency locks, migration assumptions, and deployed source/build provenance.
+- Identify whether the deployed Worker supports all cost-admission, attempt, settlement, and reconciliation functions required by migrations 019–020.
+- If a mismatch is proven, prepare the smallest compatible Development build and rollout instructions. Do not deploy automatically.
+- Preserve Worker private access, verified service-to-service identity, request authentication, and bucket privacy.
+- Do not expose the Worker or broaden IAM permissions merely to make a check pass.
+
+### C. Resolve the narrow permission uncertainty
+
+- Identify the exact inherited IAM/public-access settings that remain unverified.
+- Use available read-only checks or provide the precise Console location and minimum role/permission needed for an authorized administrator to verify them.
+- Do not request project-admin access or change IAM, bucket, or public-access-prevention settings.
+
+### D. Establish the minimum safe test budget
+
+- Derive a conservative per-export estimate from documented provider prices and the real estimator formula.
+- Explicitly list unpriced/uncertain costs and explain what they mean for a small controlled test.
+- Do not configure rates, change the existing $10/7-day budget, or set `accounting_ready=true`.
+- If no defensible conservative estimate is possible, say exactly which human-approved assumption is required.
+
+### E. Run focused validation
+
+- Run tests only for changed formulas/contracts and any proven Gateway/Worker compatibility issue.
+- Do not rebuild the Android APK unless app source changes require it.
+- Do not run a live export, deploy services, alter secrets, apply migrations, enable gates, configure rates, or create paid resources.
+
+## Final response
+
+Provide one concise report:
+1. Whether a real unit bug was found and fixed.
+2. The verified cost formula and remaining cost assumptions.
+3. Whether deployed Gateway/Worker compatibility is proven or requires a specific rollout.
+4. The exact minimum permission verification still needed.
+5. Whether a controlled live export can now be authorized, and if not, the single remaining blocker.
+
+Do not create optional suggested tasks or restart a general audit. Stop after this focused result for review.
