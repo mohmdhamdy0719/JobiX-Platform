@@ -26,8 +26,11 @@ export class Database {
     } catch (error) {
       const known = new Set(['AUTH_REQUIRED','ACCOUNT_DELETING','FORBIDDEN','NOT_FOUND',
         'EXPORT_NOT_READY','VALIDATION_FAILED','VERSION_CONFLICT','IDEMPOTENCY_KEY_REUSE',
-        'CREDIT_INSUFFICIENT','RATE_LIMITED','STALE_LEASE','INVALID_STATE','CLEANUP_UNVERIFIED']);
-      throw new ExportError(known.has(error.message) ? error.message : 'SERVICE_UNAVAILABLE');
+        'CREDIT_INSUFFICIENT','EXPORT_IN_PROGRESS','RATE_LIMITED','STALE_LEASE','INVALID_STATE','CLEANUP_UNVERIFIED']);
+      const retryAfter = error.message === 'RATE_LIMITED' &&
+        typeof error.detail === 'string' && /^\d{1,8}$/.test(error.detail)
+        ? Number(error.detail) : null;
+      throw new ExportError(known.has(error.message) ? error.message : 'SERVICE_UNAVAILABLE',retryAfter);
     }
   }
 }

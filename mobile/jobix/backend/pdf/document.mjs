@@ -10,7 +10,11 @@ export function fontChecksums(html) {
     .map(match=>sha256(Buffer.from(match[1],'base64')));
 }
 export class ExportError extends Error {
-  constructor(code) { super(code); this.code = code; }
+  constructor(code, retryAfterSeconds = null) {
+    super(code); this.code = code;
+    this.retryAfterSeconds = Number.isSafeInteger(retryAfterSeconds) && retryAfterSeconds > 0
+      ? retryAfterSeconds : null;
+  }
 }
 export const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function requireUuid(value) {

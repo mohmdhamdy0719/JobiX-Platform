@@ -5,7 +5,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const headers={'Content-Type':'application/json','Cache-Control':'no-store'};
 const known=new Set(['AUTH_REQUIRED','FORBIDDEN','ACCOUNT_DELETING','EXPORT_NOT_READY',
   'VALIDATION_FAILED','VERSION_CONFLICT','IDEMPOTENCY_KEY_REUSE','CREDIT_INSUFFICIENT',
-  'RATE_LIMITED','NOT_FOUND','EXPORT_EXPIRED','EXPORT_OBJECT_MISSING',
+  'EXPORT_IN_PROGRESS','RATE_LIMITED','NOT_FOUND','EXPORT_EXPIRED','EXPORT_OBJECT_MISSING',
   'STALE_LEASE','INVALID_STATE','CLEANUP_UNVERIFIED','SERVICE_UNAVAILABLE']);
 export function response(code,status=503) {
   return new Response(JSON.stringify({data:null,error:{code}}),{status,headers});
@@ -59,7 +59,10 @@ export async function callWorker({target,identity,actor,action,command,fetchImpl
     (body.error&&!known.has(body.error.code))||(!upstream.ok&&!body.error)) {
     throw new TransportError('SERVICE_UNAVAILABLE');
   }
-  return new Response(JSON.stringify(body),{status:upstream.status,headers});
+  const responseHeaders=new Headers(headers);
+  const retryAfter=upstream.headers.get('Retry-After');
+  if(retryAfter&&/^\d{1,8}$/.test(retryAfter))responseHeaders.set('Retry-After',retryAfter);
+  return new Response(JSON.stringify(body),{status:upstream.status,headers:responseHeaders});
 }
 export function createBridge({clientKey,target,identity,fetchImpl=fetch,exportsEnabled=false,
   deletionPolicyApproved=true}) {
@@ -79,7 +82,8 @@ export function createBridge({clientKey,target,identity,fetchImpl=fetch,exportsE
     }catch(error) {
       const code=error instanceof TransportError&&known.has(error.code)?error.code:'SERVICE_UNAVAILABLE';
       return response(code,code==='AUTH_REQUIRED'?401:code==='FORBIDDEN'||code==='ACCOUNT_DELETING'?403:
-        code==='VALIDATION_FAILED'?400:503);
+        code==='VALIDATION_FAILED'?400:code==='RATE_LIMITED'?429:
+        code==='EXPORT_IN_PROGRESS'?409:503);
     }
   };
 }

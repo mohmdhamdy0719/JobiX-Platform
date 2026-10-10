@@ -241,6 +241,7 @@ void main() {
   bool loseResponse = false;
   String workerState = 'QUEUED';
   String? rejected;
+  int? rejectedRetryAfter;
   int accepted = 0;
   Map<String, dynamic>? observedDocument;
 
@@ -292,6 +293,7 @@ void main() {
     loseResponse = false;
     workerState = 'QUEUED';
     rejected = null;
+    rejectedRetryAfter = null;
     paginate = false;
     expiredDownload = true;
     prepared = {
@@ -350,9 +352,17 @@ void main() {
             return http.Response(
               jsonEncode({
                 'data': null,
-                'error': {'code': rejected},
+                'error': {
+                  'code': rejected,
+                  if (rejectedRetryAfter != null)
+                    'retry_after_seconds': rejectedRetryAfter,
+                },
               }),
-              503,
+              rejected == 'RATE_LIMITED'
+                  ? 429
+                  : rejected == 'EXPORT_IN_PROGRESS'
+                  ? 409
+                  : 503,
               headers: {'content-type': 'application/json'},
             );
           }
@@ -700,6 +710,62 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  for (final language in ['en', 'ar']) {
+    testWidgets(
+      '$language quota response shows retry delay and preserves the exact request',
+      (tester) async {
+        rejected = 'RATE_LIMITED';
+        rejectedRetryAfter = 37;
+        await mount(tester, language: language, initial: true);
+        await tap(
+          tester,
+          language == 'en' ? 'Create PDF — 2 Credits' : 'إنشاء PDF — رصيدان',
+        );
+        await tap(
+          tester,
+          language == 'en' ? 'Create — 2 Credits' : 'إنشاء — رصيدان',
+        );
+        final strings = AppLocalizations.of(
+          tester.element(find.byType(ResumeExportPanel)),
+        )!;
+        expect(find.text(strings.exportRateLimitedRetry(37)), findsOneWidget);
+        final saved =
+            jsonDecode((await db.setting('resume:$actor:export:$profileId'))!)
+                as Map;
+        final attempt = commands.last['command'] as Map;
+        expect(
+          attempt['idempotency_key'],
+          (saved['command'] as Map)['idempotency_key'],
+        );
+        expect(attempt['payload'], (saved['command'] as Map)['payload']);
+        expect(accepted, 0);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+  for (final language in ['en', 'ar']) {
+    testWidgets(
+      '$language active profile intent explains status without inventing a wait time',
+      (tester) async {
+        rejected = 'EXPORT_IN_PROGRESS';
+        await mount(tester, language: language, initial: true);
+        await tap(
+          tester,
+          language == 'en' ? 'Create PDF — 2 Credits' : 'إنشاء PDF — رصيدان',
+        );
+        await tap(
+          tester,
+          language == 'en' ? 'Create — 2 Credits' : 'إنشاء — رصيدان',
+        );
+        final strings = AppLocalizations.of(
+          tester.element(find.byType(ResumeExportPanel)),
+        )!;
+        expect(find.text(strings.exportInProgress), findsOneWidget);
+        expect(accepted, 0);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
   test(
     'invalid included personal URLs are reported rather than silently omitted',
     () {

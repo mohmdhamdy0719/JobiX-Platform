@@ -6,6 +6,7 @@ import {Gateway} from '../gateway.mjs';
 import {Worker} from '../worker.mjs';
 import {bundle,logicalHash,sha256,ExportError,Canonicalizer} from '../document.mjs';
 import {containsText} from '../renderer.mjs';
+import {Database} from '../database.mjs';
 import {GoogleStorage,authenticateInternal} from '../google.mjs';
 import {disabledGateActions} from '../../../supabase/functions/resume-export/transport.mjs';
 
@@ -19,6 +20,16 @@ test('same logical hash across transport attempts/key ordering',()=>{
   assert.equal(logicalHash(a),logicalHash(b));
   b.payload.expected_configuration_version=2;
   assert.notEqual(logicalHash(a),logicalHash(b));
+});
+test('database converts only a numeric RATE_LIMITED detail to safe retry metadata',async()=>{
+  const db=new Database({query:async()=>{throw Object.assign(new Error('RATE_LIMITED'),{detail:'17'});}});
+  await assert.rejects(db.call('create',{}),error=>{
+    assert.equal(error.code,'RATE_LIMITED');assert.equal(error.retryAfterSeconds,17);return true;
+  });
+  const unsafe=new Database({query:async()=>{throw Object.assign(new Error('RATE_LIMITED'),{detail:'secret db detail'});}});
+  await assert.rejects(unsafe.call('create',{}),error=>{
+    assert.equal(error.code,'RATE_LIMITED');assert.equal(error.retryAfterSeconds,null);return true;
+  });
 });
 test('gateway disabled by default without database/credential access',async()=>{
   await assert.rejects(new Gateway({}).handle(randomUUID(),'document',{}),

@@ -57,8 +57,11 @@ export function server({gateway,worker,cleanup,authenticate,exportsEnabled=true}
       res.end(JSON.stringify({data:result??null,error:null}));
     } catch(error) {
       const code=error instanceof ExportError?error.code:'SERVICE_UNAVAILABLE';
-      res.statusCode=code==='FORBIDDEN'?403:code==='VALIDATION_FAILED'?400:503;
-      res.end(JSON.stringify({data:null,error:{code}}));
+      const retryAfter=error instanceof ExportError?error.retryAfterSeconds:null;
+      res.statusCode=code==='FORBIDDEN'?403:code==='VALIDATION_FAILED'?400:
+        code==='RATE_LIMITED'?429:code==='EXPORT_IN_PROGRESS'?409:503;
+      if(retryAfter!==null)res.setHeader('Retry-After',String(retryAfter));
+      res.end(JSON.stringify({data:null,error:{code,...(retryAfter===null?{}:{retry_after_seconds:retryAfter})}}));
     }
   });
 }

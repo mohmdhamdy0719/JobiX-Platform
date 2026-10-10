@@ -1856,6 +1856,24 @@ abstract class AppLocalizations {
   /// **'Keep my changes'**
   String get reapplyMyChanges;
 
+  /// No description provided for @exportRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'You have reached the export limit. Please wait before retrying the saved request.'**
+  String get exportRateLimited;
+
+  /// No description provided for @exportRateLimitedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'You have reached the export limit. Wait {seconds} seconds, then retry the saved request.'**
+  String exportRateLimitedRetry(int seconds);
+
+  /// No description provided for @exportInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'An export for this profile is already in progress. Check its status before starting another.'**
+  String get exportInProgress;
+
   /// No description provided for @backToReview.
   ///
   /// In en, this message translates to:

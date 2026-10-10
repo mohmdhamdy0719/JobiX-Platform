@@ -961,5 +961,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reapplyMyChanges => 'الاحتفاظ بتعديلاتي';
 
   @override
+  String get exportRateLimited =>
+      'وصلت إلى الحد المسموح للتصدير. يرجى الانتظار قبل إعادة محاولة الطلب المحفوظ.';
+
+  @override
+  String exportRateLimitedRetry(int seconds) {
+    return 'وصلت إلى الحد المسموح للتصدير. انتظر $seconds ثانية ثم أعد محاولة الطلب المحفوظ.';
+  }
+
+  @override
+  String get exportInProgress =>
+      'يوجد تصدير قيد التنفيذ لهذا الملف الشخصي. تحقق من حالته قبل بدء تصدير آخر.';
+
+  @override
   String get backToReview => 'العودة إلى المراجعة';
 }

@@ -24,7 +24,10 @@ Deno.serve(async request=>{
     const result=await forwardCommand({
       target:Deno.env.get('JOBIX_DEV_EXPORT_GATEWAY_URL')??'',token,raw,
     });
-    return new Response(await result.text(),{status:result.status,headers});
+    const retryAfter=result.headers.get('Retry-After');
+    const responseHeaders={...headers,
+      ...(retryAfter&&/^\d{1,8}$/.test(retryAfter)?{'Retry-After':retryAfter}:{})};
+    return new Response(await result.text(),{status:result.status,headers:responseHeaders});
   }catch(error) {
     const allowed=['EXPORT_NOT_READY','FORBIDDEN','AUTH_REQUIRED','VALIDATION_FAILED','SERVICE_UNAVAILABLE'];
     const code=error instanceof TransportError&&allowed.includes(error.code)?error.code:'SERVICE_UNAVAILABLE';

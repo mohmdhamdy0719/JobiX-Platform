@@ -80,6 +80,10 @@ BEGIN
  PERFORM public.jobix_export_missing(actor,job,'1');
  ASSERT public.jobix_export_status(actor,job)->>'state'='MISSING_OBJECT';
  ASSERT (public.credit_balance()->>'available')::integer=3;
+ -- The lifecycle fixture tests a second independent export; move its synthetic
+ -- accepted event outside every rolling window rather than bypassing admission.
+ UPDATE public.export_admission_events SET accepted_at=now()-interval '8 days'
+ WHERE user_id=actor;
  input:=public.jobix_export_source(actor,profile);
  v:=(input#>>'{source,profile,profile_version}')::bigint;
  again:=public.jobix_export_create(actor,gen_random_uuid(),gen_random_uuid(),profile,v,0,

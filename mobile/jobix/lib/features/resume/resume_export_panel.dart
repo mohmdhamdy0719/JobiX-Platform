@@ -7,12 +7,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../career_profile/career_profile.dart';
 import 'resume_document.dart';
 
 class ExportFailure implements Exception {
-  const ExportFailure(this.code);
+  const ExportFailure(this.code, {this.retryAfterSeconds});
   final String code;
+  final int? retryAfterSeconds;
 }
 
 /// Rollout is closed by default; this widget never grants/debits Credits.
@@ -76,10 +78,16 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
           .timeout(const Duration(seconds: 50));
     } on FunctionException catch (error) {
       final details = error.details;
-      final code = details is Map && details['error'] is Map
-          ? (details['error'] as Map)['code']
-          : null;
-      throw ExportFailure(code is String ? code : 'SERVICE_UNAVAILABLE');
+      final failure = details is Map && details['error'] is Map
+          ? details['error'] as Map
+          : const {};
+      final retry = failure['retry_after_seconds'];
+      throw ExportFailure(
+        failure['code'] is String
+            ? failure['code'] as String
+            : 'SERVICE_UNAVAILABLE',
+        retryAfterSeconds: retry is int && retry > 0 ? retry : null,
+      );
     }
     if (client.auth.currentUser?.id != user) {
       final db = await ref.read(databaseProvider.future);
@@ -88,8 +96,14 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     }
     final envelope = Map<String, dynamic>.from(response.data as Map);
     if (envelope['error'] != null) {
-      final code = (envelope['error'] as Map)['code'];
-      throw ExportFailure(code is String ? code : 'SERVICE_UNAVAILABLE');
+      final failure = envelope['error'] as Map;
+      final retry = failure['retry_after_seconds'];
+      throw ExportFailure(
+        failure['code'] is String
+            ? failure['code'] as String
+            : 'SERVICE_UNAVAILABLE',
+        retryAfterSeconds: retry is int && retry > 0 ? retry : null,
+      );
     }
     return Map<String, dynamic>.from(envelope['data'] as Map);
   }
@@ -110,6 +124,10 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
           final code = error is ExportFailure
               ? error.code
               : 'SERVICE_UNAVAILABLE';
+          final retryAfter = error is ExportFailure
+              ? error.retryAfterSeconds
+              : null;
+          final l10n = AppLocalizations.of(context)!;
           reviewRequired = [
             'VERSION_CONFLICT',
             'VALIDATION_FAILED',
@@ -139,6 +157,11 @@ class _ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               'The file is unavailable. No automatic regeneration or charge.',
               'الملف غير متاح. لا توجد إعادة إنشاء أو رسوم تلقائية.',
             ),
+            'RATE_LIMITED' =>
+              retryAfter == null
+                  ? l10n.exportRateLimited
+                  : l10n.exportRateLimitedRetry(retryAfter),
+            'EXPORT_IN_PROGRESS' => l10n.exportInProgress,
             _ => t(
               'The request could not be confirmed. Retry uses the same saved request; do not submit another export.',
               'تعذّر تأكيد الطلب. إعادة المحاولة تستخدم الطلب المحفوظ نفسه؛ لا ترسل طلب تصدير آخر.',

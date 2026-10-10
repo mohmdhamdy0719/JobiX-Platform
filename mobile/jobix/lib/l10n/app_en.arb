@@ -362,5 +362,15 @@
   "itemRemovedElsewhere": "This item was removed on another device after you started editing. Choose whether to keep it removed or add it back with your changes.",
   "keepServerVersion": "Use the latest version",
   "reapplyMyChanges": "Keep my changes",
+  "exportRateLimited": "You have reached the export limit. Please wait before retrying the saved request.",
+  "exportRateLimitedRetry": "You have reached the export limit. Wait {seconds} seconds, then retry the saved request.",
+  "@exportRateLimitedRetry": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "exportInProgress": "An export for this profile is already in progress. Check its status before starting another.",
   "backToReview": "Back to Review"
 }

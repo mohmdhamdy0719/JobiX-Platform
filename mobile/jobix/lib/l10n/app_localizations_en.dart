@@ -971,5 +971,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reapplyMyChanges => 'Keep my changes';
 
   @override
+  String get exportRateLimited =>
+      'You have reached the export limit. Please wait before retrying the saved request.';
+
+  @override
+  String exportRateLimitedRetry(int seconds) {
+    return 'You have reached the export limit. Wait $seconds seconds, then retry the saved request.';
+  }
+
+  @override
+  String get exportInProgress =>
+      'An export for this profile is already in progress. Check its status before starting another.';
+
+  @override
   String get backToReview => 'Back to Review';
 }

@@ -56,6 +56,18 @@ test('bridge independently verifies identity and derives the only actor',async()
   assert.deepEqual(f.workerCalls,[{actor,action:'history',command:{}}]);
   assert.equal(result.headers.get('Cache-Control'),'no-store');
 });
+test('quota retry metadata is preserved through the authenticated bridge',async()=>{
+  const retry=23;
+  const f=setup({worker:()=>new Response(JSON.stringify({
+    data:null,error:{code:'RATE_LIMITED',retry_after_seconds:retry},
+  }),{status:429,headers:{'Retry-After':String(retry)}})});
+  const result=await f.handle(request({action:'create',command:{}}));
+  assert.equal(result.status,429);
+  assert.equal(result.headers.get('Retry-After'),String(retry));
+  assert.deepEqual(await result.json(),{
+    data:null,error:{code:'RATE_LIMITED',retry_after_seconds:retry},
+  });
+});
 for(const [name,token] of [
   ['expired',bearer({exp:1})],['wrong-project',bearer({iss:'https://other.supabase.co/auth/v1'})],
   ['wrong-audience',bearer({aud:'service_role'})],['invalid','Bearer malformed'],
@@ -349,4 +361,5 @@ test('Edge source has no Google private-key path and keeps both rollout gates',a
   assert.ok(source.includes('JOBIX_EXPORT_DELETION_POLICY_APPROVED'));
   assert.ok(source.includes('JOBIX_DEV_EXPORT_GATEWAY_URL'));
   assert.ok(source.includes('disabledGateActions.includes(envelope.action)'));
+  assert.ok(source.includes('Retry-After'));
 });

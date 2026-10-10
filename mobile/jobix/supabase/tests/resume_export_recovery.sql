@@ -15,6 +15,10 @@ LANGUAGE plpgsql AS $$
 DECLARE input jsonb; profile uuid; html text:='<body>synthetic</body>';
 BEGIN
  SELECT id INTO profile FROM public.career_profiles WHERE user_id=actor;
+ -- Recovery fixtures isolate job/credit state-machine behavior; expire only
+ -- their synthetic admission history instead of bypassing the real create path.
+ UPDATE public.export_admission_events SET accepted_at=now()-interval '8 days'
+ WHERE user_id=actor;
  input:=public.jobix_export_source(actor,profile);
  RETURN public.jobix_export_create(actor,command,gen_random_uuid(),profile,
  (input#>>'{source,profile,profile_version}')::bigint,(input#>>'{source,configuration,version}')::bigint,

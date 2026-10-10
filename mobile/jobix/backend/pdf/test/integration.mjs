@@ -97,12 +97,16 @@ function concurrent(statement) {
  return new Promise((resolve,reject)=>{
   const child=spawn('psql',['-X','-q','-A','-t','-U','runner','-h',socket,
    '-p','55439','-d','postgres','-v','ON_ERROR_STOP=1'],{env:environment});
-  const chunks=[];child.stdout.on('data',chunk=>chunks.push(chunk));child.stderr.resume();
-  child.on('error',reject);child.on('close',code=>code===0?resolve(Buffer.concat(chunks).toString().trim()):
-   reject(new Error('DISPOSABLE_CONCURRENT_SQL_FAILURE')));
+   const chunks=[],errors=[];child.stdout.on('data',chunk=>chunks.push(chunk));
+   child.stderr.on('data',chunk=>errors.push(chunk));
+   child.on('error',reject);child.on('close',code=>code===0?resolve(Buffer.concat(chunks).toString().trim()):
+    reject(new Error(`DISPOSABLE_CONCURRENT_SQL_FAILURE: ${Buffer.concat(errors).toString().trim()}`)));
   child.stdin.end(statement);
  });
 }
+// Isolate the concurrency/replay fixture from the earlier completed test job;
+// admission behavior itself is exercised with dedicated SQL window fixtures.
+sql(`update export_admission_events set accepted_at=now()-interval '8 days' where user_id=${quote(actor)}`);
 const retryKey=randomUUID(),requestHash='d'.repeat(64);
 const source=await db.call('source',{actor,profile});
 const createSQL=`select public.jobix_export_create(${[
@@ -119,7 +123,40 @@ await db.call('finish',{operation:second.operation_id,fence:claimed[0].lease_tok
 await db.call('finish',{operation:second.operation_id,fence:claimed[0].lease_token,proof:null,terminal:true});
 assert.equal(sql(`select finalized_balance||','||reserved_balance from credit_accounts where user_id=${quote(actor)}`),'3,0');
 
+// Distinct simultaneous intents for one profile must accept only one request.
+// Move earlier fixture events out of the windows so this checks active exclusion.
+sql(`update export_admission_events set accepted_at=now()-interval '8 days' where user_id=${quote(actor)}`);
+sql(`create function public.test_export_admission_create(k uuid,r uuid) returns text
+ language plpgsql as $$
+ declare ack jsonb; message text; detail text;
+ begin
+  begin
+   ack:=public.jobix_export_create(${quote(actor)},k,r,${quote(profile)},
+    ${document.profile_version},${document.configuration_version},
+    ${quote(source.source_sha256)},${quote(document.document_sha256)},${quote('e'.repeat(64))},
+    ${quote(document.html)},${quote(document.bundle)},null,
+    ${quote(JSON.stringify(document.asset_manifest??{}))}::jsonb);
+   return 'ACCEPTED:'||(ack->>'operation_id');
+  exception when others then
+   get stacked diagnostics message=MESSAGE_TEXT,detail=PG_EXCEPTION_DETAIL;
+   return 'REJECTED:'||message||':'||coalesce(detail,'');
+  end;
+ end $$`);
+ const createAttempt=()=>`select public.test_export_admission_create(${quote(randomUUID())},${quote(randomUUID())})`;
+ const activeIntentRace=await Promise.all([concurrent(createAttempt()),concurrent(createAttempt())]);
+ assert.equal(activeIntentRace.filter(x=>x.startsWith('ACCEPTED:')).length,1);
+ assert.equal(activeIntentRace.filter(x=>x.startsWith('REJECTED:EXPORT_IN_PROGRESS:')).length,1);
+ assert.equal(sql(`select count(*) from export_admission_events where user_id=${quote(actor)}
+  and accepted_at>now()-interval '7 days'`),'1');
+ assert.equal(sql(`select finalized_balance||','||reserved_balance from credit_accounts where user_id=${quote(actor)}`),'3,2');
+ sql('drop function public.test_export_admission_create(uuid,uuid)');
+claimed=await db.call('claim',{capacity:1});
+await db.call('finish',{operation:claimed[0].id,fence:claimed[0].lease_token,proof:null,terminal:true});
+
 // Inject failure halfway through finalization to prove job/ledger atomic rollback.
+// This is a separate Export Again lifecycle assertion, so age the accepted test
+// event past all windows instead of weakening admission for actual requests.
+sql(`update export_admission_events set accepted_at=now()-interval '8 days' where user_id=${quote(actor)}`);
 const again=await gateway.handle(actor,'again',{...packet,request_id:randomUUID(),idempotency_key:randomUUID(),
  payload:{...packet.payload,historical_export_id:ack.operation_id}});
 claimed=await db.call('claim',{capacity:1});
@@ -148,7 +185,7 @@ storage.remove=async(path,generation)=>{
 };
 await new ExportCleanup({db,storage,enabled:true}).retention();
 assert.equal((await gateway.handle(actor,'status',{export_id:ack.operation_id})).state,'EXPIRED');
-assert.equal(sql(`select count(*) from export_snapshots where user_id=${quote(actor)}`),'3');
+assert.equal(sql(`select count(*) from export_snapshots where user_id=${quote(actor)}`),'4');
 assert.deepEqual(await gateway.handle(actor,'create',packet),ack);
 assert.equal(sql(`select count(*) from credit_transactions where user_id=${quote(actor)} and delta=-2`),'2');
 // A real canonical long CV exceeds twenty pages: fail before upload or debit.
@@ -287,6 +324,9 @@ async function acceptanceFixture() {
  on conflict(profile_id) do update set text=excluded.text;
  update career_profiles set profile_version=profile_version+1 where id=${quote(f.p)}`);
  const current=await gateway.handle(f.a,'document',{profile_id:f.p});
+  // This is a separate history/new-source lifecycle fixture, not a quota
+  // bypass; expire the synthetic accepted intent before exercising Export Again.
+  sql(`update export_admission_events set accepted_at=now()-interval '8 days' where user_id=${quote(f.a)}`);
  const again=await gateway.handle(f.a,'again',{request_id:randomUUID(),idempotency_key:randomUUID(),
   expected_profile_version:current.profile_version,payload:{...f.command.payload,
    expected_document_sha256:current.document_sha256,expected_configuration_version:current.configuration_version,
