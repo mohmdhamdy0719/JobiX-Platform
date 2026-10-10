@@ -52,6 +52,9 @@ live activation evidence; an estimated admission budget is not an invoice cap.
 
 **Why:** The owner explicitly prohibits automatic activation, paid tests, or
 cloud changes while building the native experience.
+The owner also confirmed installation and launch on physical Android but
+rejected Preview usability while export was disabled; build/install success
+does not establish document readability or live export success.
 
 **How to apply:** Report outstanding eligibility, runtime, signing, and physical
 device verification limitations without enabling gates or inventing approval.

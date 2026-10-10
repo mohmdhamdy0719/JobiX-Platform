@@ -1,0 +1,69 @@
+# JobiX V2 — Fix Resume Preview UX and Prepare Controlled Live Export Testing
+
+We have installed the new Development APK on a physical Android phone. The app launches, but the Preview experience is poor and live export is disabled.
+
+Implement the Preview fix directly, then complete the practical readiness checks for a controlled live-export test. Do not create another planning document or repeat broad audits.
+
+## 1. Resume Preview layout
+
+The Preview screen must have:
+
+- The resume itself occupying the large upper portion of the screen, with enough visible area to inspect the document comfortably.
+- Smooth vertical scrolling through the resume content.
+- Clear page navigation for multipage resumes, without controls covering the document.
+- A separate, persistent bottom action area containing:
+  - The current resume/template information and applicable Credit cost.
+  - A primary `Export PDF` button.
+  - An `Edit Profile` button that returns to Career Profile editing.
+- Keep the real user resume content and existing server-backed preview data. Do not replace it with a static screenshot or mock resume.
+- Preserve the existing export confirmation, Credit reservation, idempotency, and operation lifecycle behavior.
+- Do not charge Credits just for viewing the preview.
+- Do not add formatting controls that the actual PDF renderer cannot honor.
+
+Prioritize usable document viewing over decorative UI. Test narrow Android screen sizes and ensure the bottom action area does not hide the resume or page controls.
+
+## 2. Diagnose why export is disabled
+
+Inspect the current Development configuration and deployed service readiness.
+
+Verify:
+
+- Supabase export settings and the `JOBIX_EXPORT_ENABLED` / `JOBIX_EXPORT_DELETION_POLICY_APPROVED` gates.
+- Gateway and Worker gate configuration, authentication, service URLs, and compatibility with the current database schema.
+- The current `accounting_ready` value, cost-rate configuration, budget admission behavior, and reservation enforcement.
+- Whether the Gateway can safely reach the Worker and whether the Worker can produce and privately store a PDF.
+- Whether a controlled test can be performed without creating uncontrolled cost or allowing public access to the Worker.
+
+Do not investigate historical 503 errors unless a new controlled test produces one after the system is confirmed ready.
+
+## 3. Prepare the live-export test safely
+
+The current known state is that export is disabled and `accounting_ready=false`, with cost-rate fields unset. Do not assume that changing the UI or a single feature flag makes live export safe.
+
+Complete all local checks and any safe read-only remote checks available. Fix code-level defects found in scope and run the relevant tests.
+
+If the budget admission system genuinely requires approved cost assumptions or rate configuration before it can safely admit exports, identify the minimum required decision/configuration. Do not invent rates or enable accounting with arbitrary values.
+
+## 4. Gate activation rules
+
+Do not enable any live export gate until all of the following are true:
+
+- Gateway and Worker compatibility and access controls are verified.
+- The cost admission mechanism can make a valid server-side decision and reserve cost before starting work.
+- The applicable cost assumptions are explicitly approved.
+- There is a clear way to disable new exports immediately if the test fails.
+
+If all prerequisites are already satisfied and can be proven, report the exact gates and settings that would need to change and wait for my confirmation before changing them.
+
+If any prerequisite is not satisfied, keep the gates closed and state the single concrete blocker. Do not bypass the budget guard, set arbitrary cost rates, expose the Worker publicly, or weaken authentication.
+
+## 5. Test and deliver
+
+- Run focused Flutter tests and relevant export/backend regression tests.
+- Build a new ARM64 Development APK and report its exact path and SHA-256.
+- Do not reset credentials, reapply migrations, create paid infrastructure, or implement AI/Cover Letter features.
+- Do not claim live export succeeded unless a real PDF was generated, securely stored, downloaded by the authorized user, and correctly recorded in history.
+
+Return a concise report containing the Preview fix, test results, APK details, live-readiness findings, and either the exact safe activation step awaiting approval or the single remaining blocker.
+
+Focus on finishing this practical step so we can continue testing JobiX on the phone.

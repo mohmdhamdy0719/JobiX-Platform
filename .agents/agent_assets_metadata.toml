@@ -350,3 +350,17 @@ mtime_ms = 1791654323683
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/0b2e4fed-e854-41f2-a686-5f49abefe5e4/1b0f91e0-fc95-4f35-be08-4be50e9853da"
 storage_version_token = "1791654460243607"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "B-GFQxDG0Aqdj64LuPmtU"
+uri = "file://.local/jobix-native-verification/JobiX-V2-preview-fix-arm64-development.zip"
+type = "unspecified"
+title = "JobiX V2 — Preview fix, ARM64 Development APK"
+description = "Extract the APK from this ZIP. Its signing certificate matches the previous delivered Development APK. Export creation remains disabled; no live PDF export was performed."
+logical_id = "484a4da1-d993-4a68-98c1-aee9803024ed"
+content_hash = "sha256:1a8557265eb9d2d60ec44b3f19b264fdf65bc69c16fa470599e238e5cfd4e91a"
+size = 57042312
+mtime_ms = 1791662301325
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/484a4da1-d993-4a68-98c1-aee9803024ed/07f446a6-8aa9-4a24-9b48-5f8ee181cc6c"
+storage_version_token = "1791662400044728"
+content_type = "application/octet-stream"

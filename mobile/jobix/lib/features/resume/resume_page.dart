@@ -329,6 +329,10 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                           builder: (_) => ResumePreviewPage(
                             document: document,
                             ownerId: ownerId!,
+                            onEditProfile: () {
+                              Navigator.of(context).pop();
+                              if (mounted) context.go('/career');
+                            },
                             exportEnabled:
                                 exportKey.currentState?.creationEnabled == true,
                             onExport: () async =>

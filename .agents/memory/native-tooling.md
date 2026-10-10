@@ -217,3 +217,16 @@ in-process compilation, an explicit JDK root, and limited worker concurrency.
 **How to apply:** First identify whether failure is compiler startup, application
 compilation, or Android packaging. Apply host-tool workarounds only to the build
 process; do not weaken tests or treat success at one stage as a complete build.
+
+Restoring Dart packages after a pub-cache relocation does not refresh Flutter's
+Android plugin-location metadata. Use Flutter's pub-get command with the existing
+lockfile enforced before native packaging, rather than manually patching the
+generated plugin paths or upgrading dependencies.
+
+**Why:** Dart analysis and widget tests worked after cache restoration, but
+Gradle still resolved Android plugins from the missing old home-directory cache.
+Flutter's locked dependency restore refreshed the generated metadata.
+
+**How to apply:** Treat the cache and generated plugin metadata as separate
+prerequisites when a workspace session loses its home-directory cache. Keep
+dependency versions unchanged and prefer an ignored workspace cache.
