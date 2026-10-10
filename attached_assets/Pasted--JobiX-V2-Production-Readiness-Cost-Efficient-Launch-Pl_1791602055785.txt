@@ -1,0 +1,339 @@
+# JobiX V2 — Production Readiness & Cost-Efficient Launch Plan
+
+## Role
+
+Act as a senior software architect, SRE engineer, application security reviewer, and cost-conscious technical lead responsible for preparing JobiX V2 for a controlled production launch.
+
+Your task is to inspect the existing repository, current architecture, previous assessment reports, and P0 technical decision report, then produce a practical, phased implementation plan.
+
+**Planning and inspection only. Do not implement anything yet.**
+
+The goal is to launch a reliable, secure, maintainable career-support application while minimizing infrastructure costs and reducing the probability and impact of production failures.
+
+Do not rebuild the project from scratch. Preserve the existing Architecture V2 unless repository evidence demonstrates a specific, measurable reason to change it.
+
+## 1. Product and current architecture
+
+JobiX is a career-support application intended to help people improve their career prospects. It is not limited to job search; it should support users throughout their career and job-seeking journey.
+
+The existing stack includes:
+
+- Flutter application with Riverpod and Drift.
+- Supabase authentication, PostgreSQL, and Edge Functions.
+- Google Cloud Run PDF Export Gateway and private PDF Worker.
+- Private Google Cloud Storage for generated PDFs.
+- Credit reservations and an immutable Credit ledger.
+- Persistent export jobs, idempotency, worker leases/fencing, upload reconciliation, and deletion safeguards.
+- Arabic and English support, including Arabic RTL PDF output.
+
+Inspect the actual repository and existing reports to verify these components. Do not assume every component is fully implemented or correctly deployed just because it exists in source code.
+
+The existing architecture separates the Gateway from the PDF Worker. Preserve this separation unless measured evidence supports a change.
+
+## 2. Review existing decisions and reports first
+
+Read and reconcile the existing project documentation and recent assessment reports, particularly:
+
+- `jobix-beta-policy-cost-assessment-2026-10-09.md`
+- The latest P0 technical decision report.
+- `architecture.md`
+- `implementation-plan.md`
+- `PROJECT_STATUS.md`
+- `docs/AI_HANDOFF.md`
+- `docs/NEXT_STEPS.md`
+- Existing SQL migrations and PDF export tests.
+
+Some filenames may differ or may not exist. Locate the actual files before drawing conclusions.
+
+Identify:
+- What is implemented and tested locally.
+- What is deployed and independently verified.
+- What is planned but not implemented.
+- What is unknown or supported only by dated evidence.
+- Any contradictions between source, documentation, migrations, and deployment reports.
+
+Do not repeat an exhaustive audit unnecessarily. Reuse existing evidence and investigate only unresolved questions that affect the production plan.
+
+## 3. Export quota and failure policy
+
+The intended user-level export policy is:
+
+- 1 new logical export per rolling 5 minutes.
+- 3 per rolling hour.
+- 5 per rolling 24 hours.
+- 10 per rolling 7 days.
+- At most 1 active export intent per user/profile.
+
+These are approved product-policy targets, not proof that enforcement is already implemented.
+
+Replace the existing 5-jobs-per-10-minute check with the approved windows rather than stacking additional overlapping user limits.
+
+Required semantics:
+
+- Replaying the same accepted idempotency key must not create a second job or debit.
+- An accepted export that fails must release its pending Credit reservation.
+- Failed accepted exports count toward user quotas by default.
+- Valid existing PDF downloads remain free, even with insufficient Credits.
+- Export Again creates a new logical export and counts against quotas.
+- Insufficient Credits must block new paid export admission before expensive work where safely supported.
+- Preview remains free under the existing product policy unless an owner-approved decision explicitly changes it.
+- Never rewrite historical Credit ledger entries.
+
+### Automated quota exception
+
+The owner selected an automatic exception only when objective, trusted, testable evidence proves an internal JobiX failure.
+
+Existing error codes alone are not sufficient evidence.
+
+Plan a narrowly scoped, auditable mechanism that:
+
+- Binds evidence to the exact logical export, worker attempt/fence, and stage.
+- Rejects client-supplied failure assertions and ambiguous outcomes.
+- Grants at most one exception per eligible logical export.
+- Does not modify historical job states or rewrite Credit transactions.
+- Does not bypass active-intent, deletion, idempotency, or Credit-accounting safeguards.
+- Does not reopen terminal `FAILED` jobs.
+
+The current architecture supports retrying eligible nonterminal failures with the same job and reservation. Terminal `FAILED` jobs are not currently reopened.
+
+Evaluate the proposed behavior: after a verified exception, the user explicitly requests a new export intent with a new idempotency key. The old failed job remains auditable; the new export is charged under existing successful-export rules.
+
+One exception per failed operation must not become an unlimited retry loophole. Assess repeated replacement failures and global infrastructure-attempt budgets without inventing stricter user limits.
+
+Do not finalize an exception allowlist until the actual failure evidence and state transitions have been inspected.
+
+## 4. Reliability and high-concurrency PDF generation
+
+Develop a realistic strategy to handle increasing numbers of users and simultaneous PDF requests without unnecessary infrastructure spending.
+
+Inspect the current Gateway, Worker, database-backed queue, worker leases, fencing, retry logic, upload-flight records, and cleanup/recovery behavior.
+
+Evaluate these areas:
+
+1. **Durable queue and admission control**
+   - Ensure accepted jobs survive process restarts.
+   - Bound active rendering and queued work.
+   - Avoid accepting work beyond safe operational capacity.
+   - Measure queue depth and oldest-job age.
+   - Ensure user-level quotas and global operational budgets are separate.
+
+2. **Cloud Run scaling**
+   - Verify actual deployed min/max instances, CPU, memory, concurrency, timeouts, and billing mode.
+   - Determine safe worker concurrency from measured CPU, memory, rendering time, and failure behavior.
+   - Evaluate scale-up and scale-down behavior.
+   - Avoid increasing maximum instances or keeping instances warm without evidence that the benefit justifies the cost.
+   - Check whether higher worker concurrency could overwhelm Supabase or another dependency.
+
+3. **Database protection**
+   - Measure connection usage, query latency, lock contention, job-polling load, and queue throughput.
+   - Verify atomic admission, per-account locking, reservation recovery, and idempotency under concurrent requests.
+   - Avoid excessive polling and unnecessary database writes.
+
+4. **Retry and recovery**
+   - Use bounded retries and backoff only where appropriate.
+   - Distinguish permanent validation failures from transient internal failures.
+   - Handle uncertain outcomes without duplicate jobs, uploads, or debits.
+   - Preserve fencing, deletion, and cleanup safeguards.
+   - Never retry paid work automatically without an explicitly authorized and tested policy.
+
+5. **Circuit breaker and temporary service protection**
+   - Evaluate a service-level circuit breaker for repeated, verified internal failures.
+   - Define objective opening, cooldown, recovery, and half-open probe conditions.
+   - Distinguish service-wide failures from individual invalid requests.
+   - Return a clear temporary-unavailability message and retry-after guidance.
+   - Do not let three unrelated user input errors disable the entire service.
+   - Assess the owner's proposed temporary cooldown after three consecutive failures, but do not implement it or select arbitrary thresholds without examining the failure classification and blast radius.
+
+6. **PDF rendering efficiency**
+   - Measure Chromium startup, font loading, Arabic RTL rendering, HTML size, image processing, CPU, memory, and render duration.
+   - Identify safe opportunities to reuse resources, optimize templates, or reduce repeated preparation.
+   - Preserve visual consistency, selectable PDF text, A4 formatting, private user data, and preview/export parity.
+   - Do not introduce cross-user caching of private resume content.
+
+7. **Preview resource usage**
+   - Keep Preview free under the current product policy.
+   - Measure preview requests, compute time, response bytes, and database impact separately from paid exports.
+   - Investigate whether the preview path can be made lighter without compromising output consistency or usability.
+
+## 5. Cost control and budget safety
+
+The prior cost assessment used Iowa reference prices and an assumed $25.14 monthly baseline. These are sensitivity examples, not verified Doha/Frankfurt bills.
+
+Do not present them as actual costs.
+
+Separate:
+- Fixed platform and database costs.
+- Cloud Run CPU, memory, requests, and billed instance time.
+- Storage, soft-delete recovery, and database growth.
+- Network egress and user downloads.
+- Failed attempts and retries.
+- Preview compute.
+- Future AI inference costs.
+
+Identify the exact billing exports, regional SKUs, quotas, usage data, and provider settings required to calculate realistic costs.
+
+Design a configurable, server-enforced global budget strategy that is independent of user Credits.
+
+For any budget that is explicitly approved:
+- 50% utilization: operator notification and forecast.
+- 80%: investigate usage and projected exhaustion.
+- 90%: urgent alert and admission-capacity review.
+- Hard ceiling: reject new work in the exhausted cost category safely, with a clear response and preserved accounting/recovery.
+
+These percentages are monitoring-policy targets, not permission to invent arbitrary global quota numbers.
+
+Do not activate previously proposed global limits such as 100 exports/day, 1,500 exports/30 days, 150 render attempts/day, or proposed preparation limits without measured justification and explicit owner approval.
+
+Do not create paid test workloads or increase resource allocations during planning.
+
+Produce a method for measuring actual cost per 1,000 successful exports and preview requests.
+
+## 6. Storage and retention
+
+The current user-facing target is seven-day PDF download availability.
+
+Preserve the distinction between:
+- Logical PDF expiry.
+- Signed URL expiration.
+- Asynchronous GCS lifecycle deletion.
+- Soft-delete/version recovery.
+- Database snapshot retention.
+- Backups and logs.
+
+Do not claim permanent deletion on day seven without evidence.
+
+The previous report's approximately 0.99 MB mean stored HTML was derived from only three snapshots and is not a reliable growth forecast.
+
+Propose a minimal read-only measurement of database growth per export, including relevant tables, indexes, TOAST, and provider-level disk/backup usage, without reading personal resume content.
+
+Do not delete snapshots, shorten soft-delete retention, change versioning/locks, or activate cleanup policies without explicit approval.
+
+## 7. Authentication, Credits, and signup bonus
+
+Preserve server-authoritative Credit accounting and immutable ledger semantics.
+
+The intended signup bonus is +5 Credits after account confirmation and eligibility validation. The current implementation must be inspected before claiming this behavior exists.
+
+Plan a separate reviewed implementation for:
+- Confirmed-account eligibility.
+- Transactional grant claims.
+- Idempotent ledger insertion.
+- Safe backfill of existing signup grants without balance changes or ledger rewrites.
+- Identity linking and account recovery.
+- Privacy-conscious anti-abuse measures.
+
+Distinguish one grant per Auth account from one grant per human. Do not promise guaranteed human uniqueness or recommend invasive device fingerprinting.
+
+Do not implement signup-grant changes as part of this planning task.
+
+## 8. AI features
+
+The previous assessment recorded `gemini-3.5-flash` with a global endpoint as a future model decision, but did not find operational inference implementation in the inspected source.
+
+Verify the current repository and deployment evidence.
+
+Keep AI inference and new reward/grant features disabled until a separate reviewed contract is approved.
+
+Future AI readiness should include:
+- Server-only provider credentials.
+- Explicit operation contracts and output quality criteria.
+- Input/output token limits.
+- Maximum-cost reservation and reconciliation.
+- Idempotency and bounded retries.
+- Request, concurrency, and cost budgets.
+- Logging that avoids sensitive resume content.
+- Privacy and security review.
+
+Do not make paid AI calls or enable inference during this task.
+
+## 9. Security and operational readiness
+
+Assess:
+- Authentication and authorization.
+- Supabase RLS and privileged RPC access.
+- Secret management and service-account permissions.
+- Private GCS access and signed URL boundaries.
+- Source/image/revision coherence.
+- Dependency and supply-chain risks.
+- Logging and sensitive data exposure.
+- Database backup and restore evidence.
+- Monitoring, alerting, incident response, and rollback procedures.
+- App configuration, release signing, Android build/release, and store-readiness gaps.
+- Account deletion, data retention, and recovery.
+- Production environment separation and deployment gates.
+
+Do not expose secrets, read personal resume content unnecessarily, disable safety gates, or deploy changes.
+
+## 10. Required phased roadmap
+
+Return a prioritized, practical roadmap with the following proposed phases. Adjust the order only when repository evidence justifies it.
+
+### Phase 0 — Evidence and launch blockers
+Resolve source/deployment inconsistencies, establish current status, identify security or correctness blockers, and define production acceptance criteria.
+
+### Phase 1 — P0 export quotas and exception safety
+Finalize the additive SQL migration, atomic rolling-window quotas, active-intent exclusion, trusted failure evidence, one-time quota exception, retry-after propagation, and local tests.
+
+Identify exact SQL objects, files, and test suites. Keep the existing architecture and Credit semantics.
+
+### Phase 2 — Reliability and overload protection
+Measure queue and worker capacity, retry behavior, circuit-breaker requirements, database protection, and safe autoscaling.
+
+### Phase 3 — Observability and cost controls
+Define dashboards, alerts, budget enforcement, cost attribution, and storage-growth measurement.
+
+### Phase 4 — Security, backups, recovery, and production operations
+Verify security boundaries, backup/restore readiness, deletion semantics, incident response, and rollback.
+
+### Phase 5 — Controlled load testing and release
+Design bounded, budget-capped staging tests. Determine safe concurrency and throughput before enabling production traffic. Prepare Android release checks and a gradual rollout plan.
+
+### Phase 6 — Post-launch verification
+Define the metrics, alert thresholds, rollback triggers, and review cadence required after launch.
+
+For each phase include:
+- Objective and user/business value.
+- Exact source files, SQL objects, services, and dependencies.
+- Implementation tasks in dependency order.
+- Tests and measurable acceptance criteria.
+- Risks and rollback.
+- Cost implications, including unknowns.
+- Required owner approval.
+- Definition of done.
+- Whether it can be completed locally without paid cloud workloads.
+
+Mark each item as implemented, partially implemented, proposed, or unknown. Cite actual file paths and existing test names wherever possible.
+
+## 11. Cost-conscious execution rules
+
+- Reuse the existing stack and working implementation.
+- Do not migrate regions or introduce new infrastructure without quantified justification.
+- Prefer local tests and read-only provider inspection.
+- Avoid repeating completed audits.
+- Do not build APKs or repeat personal export tests during planning.
+- Do not run paid cloud or AI workloads.
+- Do not change code, SQL migrations, schema, Credits, gates, retention, cloud settings, deployments, or Git history.
+- Do not commit, push, or create branches.
+- Do not invent provider settings, prices, capacity, benchmark results, or implementation status.
+- If information is unavailable, label it UNKNOWN and specify the smallest safe way to verify it.
+
+## 12. Required output
+
+Return only a decision-ready launch plan, not an implementation.
+
+Structure the response as:
+
+1. Executive assessment: is JobiX ready for production, and what evidence supports that conclusion?
+2. Current verified architecture and important unknowns.
+3. P0 launch blockers, ranked by severity.
+4. Phased roadmap with dependencies and exact implementation anchors.
+5. Cost model and measurement plan, clearly separating verified values from estimates.
+6. Reliability/load-testing strategy and measurable capacity criteria.
+7. Security, backup, recovery, and release checklist.
+8. Decisions requiring explicit owner approval.
+9. Recommended smallest next implementation task.
+10. Rollback and release gates.
+
+End with a concise proposed execution sequence and wait for owner approval.
+
+**Stop after presenting the plan. Do not implement, modify files, deploy, run paid tests, or change any configuration.**
