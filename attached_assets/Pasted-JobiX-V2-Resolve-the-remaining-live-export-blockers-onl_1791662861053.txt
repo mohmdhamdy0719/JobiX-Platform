@@ -1,0 +1,37 @@
+JobiX V2 — Resolve the remaining live-export blockers only.
+
+The Preview implementation and APK build have passed their reported local checks. Do not repeat those tests or change the Preview UI further unless a real defect is reported from physical-device testing.
+
+The confirmed live-export blockers are:
+- `accounting_ready=false`
+- Five cost inputs are unset.
+- Deployed cost-hook compatibility is not fully verified.
+- Complete storage/signing permissions are unproven; the custom IAM-role read returned 403.
+
+## Required work
+
+1. Inspect the existing cost-protection migration, deployed cost-admission call path, and current runtime configuration. Identify the exact five required cost inputs, their units, and how each affects admission. Do not invent or populate rates.
+2. Determine the minimum defensible cost assumptions needed for a limited Development test. Use existing documented provider pricing or repository evidence where available. Clearly separate verified rates from estimates and identify any required human approval.
+3. Verify the deployed Gateway and Worker use compatible request/response contracts and the current database schema. Use existing read-only diagnostics and local contract tests where possible.
+4. Resolve the IAM/storage/signing uncertainty using the narrowest available read-only permission inspection. Do not request broad project-admin access, make the Worker public, or weaken bucket access controls. If a required permission cannot be inspected due to 403, identify the exact role/permission and the minimum authorized check needed; do not guess.
+5. Confirm a safe, limited live-test configuration and rollback procedure. The test must have bounded concurrency, server-side admission, idempotency, Credit reservation, private storage, and authorized download.
+6. Run only focused tests needed for newly discovered compatibility defects. Do not rebuild the APK unless a source change affecting the app is necessary.
+
+## Strict boundaries
+
+- Do not enable any export gate.
+- Do not set `accounting_ready=true`.
+- Do not configure cost rates or change the $10/seven-day budget.
+- Do not deploy, create paid resources, reset credentials, or change unrelated secrets.
+- Do not rerun migrations or repeat the completed UI test suite.
+- Do not investigate historical 503 errors.
+
+## Final response
+
+Return:
+- The exact remaining blocker or blockers.
+- Any verified pricing evidence and the exact approval required, if applicable.
+- The minimum permission/configuration action needed.
+- Whether a controlled live export is safe to authorize yet.
+
+Stop when the blockers are precisely identified and the minimal activation steps are ready for review. Do not activate export in this run.
