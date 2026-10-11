@@ -1,0 +1,49 @@
+# JobiX V2 — PDF Export: Preflight Before Migration 021
+
+We are preparing for one controlled Development PDF export test from the physical Android app. Do only the specific preflight below. Do not repeat broad audits or unrelated tests.
+
+## Known state
+
+- Migrations 018–020 were previously applied to Development.
+- Migration 021 (`202610100021_resume_export_cost_output_unit.sql`) is locally tested but has NOT been applied to Development.
+- Export remains disabled.
+- `accounting_ready=false`; all five cost inputs remain unset.
+- The current $10 rolling 7-day admission budget is not a hard provider-invoice cap.
+- Deployed Gateway/Worker image source tags do not match the current locally tested source archives.
+- The Worker must remain private; preserve existing request authentication, service identities, bucket privacy, and rollback capability.
+- No live PDF export has been authorized.
+
+## Task: perform a read-only preflight only
+
+1. Inspect the existing fixed-Development Migration 021 runner and its preflight requirements. Confirm the exact command and all prerequisites without executing the migration.
+2. Using read-only checks where possible, determine whether any export jobs are active, any reservations remain held/unsettled, or any uploads are pending. Do not modify or clear records. If a reliable read-only check is unavailable, state that explicitly.
+3. Verify the current Development values for:
+   - `export_settings.enabled`
+   - `export_settings.deletion_policy_approved`
+   - `export_cost_budget_policy.accounting_ready`
+   - All five cost inputs
+   - The existing $10/7-day admission budget
+4. Check whether the source checksum and migration ledger prerequisites for 021 are satisfied, without applying it.
+5. Confirm whether the current deployed Gateway/Worker revisions are compatible with the locally tested source and cost-metering hooks. Do not build or deploy anything.
+6. Report the outstanding read-only IAM/public-access checks needed before a controlled test. Do not change permissions.
+
+## Strict boundaries
+
+- Do NOT apply Migration 021 or any other migration.
+- Do NOT configure rates or the shared reserve.
+- Do NOT set `accounting_ready=true` or enable any export gate.
+- Do NOT build/upload images, start Cloud Build, deploy, change traffic, change IAM, or create paid resources.
+- Do NOT perform a live export, call paid AI APIs, or create/delete/settle/reserve test records in Development.
+- Do NOT change application code, pricing, Credits, or retention behavior.
+- Do not expose secrets, connection strings, signed URLs, or full IAM policy output in the report.
+
+## Required response
+
+Return a concise report with:
+- PASS / BLOCKED / NOT VERIFIED for each preflight item.
+- Evidence and exact blockers only.
+- The exact Migration 021 command to run later, but do not run it.
+- Whether Development is ready for the separately approved migration step.
+- The next single action required.
+
+Stop after the report. Do not proceed automatically to migration, deployment, gate changes, or live testing.
