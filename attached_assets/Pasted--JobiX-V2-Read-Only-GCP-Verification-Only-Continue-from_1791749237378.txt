@@ -1,0 +1,38 @@
+# JobiX V2 — Read-Only GCP Verification Only
+
+Continue from the Migration 021 preflight report. Perform only the remaining read-only GCP checks. Do not repeat the database preflight or modify application code.
+
+Verify in project `mhflow-jobix`, region `me-central1`:
+
+1. Cloud Run:
+   - Inspect `jobix-dev-export-gateway` and `jobix-dev-pdf-export`.
+   - Report latest ready revision, traffic allocation, deployed image digest, and configured runtime service account.
+   - Determine whether the deployed Worker contains the expected cost-metering hooks and whether deployed Gateway/Worker images match the locally tested source.
+   - If direct evidence is unavailable, mark NOT VERIFIED. Do not infer compatibility from service health alone.
+
+2. Invocation security:
+   - Confirm the Worker has no public invoker binding.
+   - Confirm only the approved Gateway runtime identity can invoke the Worker.
+   - Confirm the Gateway's public entry point retains application-level request authentication.
+   - Do not change IAM or Cloud Run settings.
+
+3. GCS bucket `mhflow-jobix-dev-pdfs`:
+   - Verify location, uniform bucket-level access, effective public-access prevention, lifecycle retention of seven days, public IAM principals, and runtime service-account permissions.
+   - Do not print full IAM policies or sensitive identifiers beyond what is necessary for the report.
+
+4. Permissions:
+   - Use only an already-authorized read-only identity.
+   - Do not use deployer credentials or request broader permissions automatically.
+   - If a check fails due to insufficient permission, state the exact read permission needed and its resource scope.
+
+Strict boundaries:
+- No deployments, builds, traffic changes, IAM changes, migrations, database writes, gate changes, exports, or paid operations.
+- Do not change Express, dependencies, lockfiles, pricing, Credits, or retention.
+- Do not expose secrets, signed URLs, connection strings, or full IAM policy output.
+- Stop after reporting evidence and blockers.
+
+Required output:
+- PASS / BLOCKED / NOT VERIFIED for each check.
+- Evidence supporting each result.
+- Exact remaining blocker(s).
+- One recommended next action only.
