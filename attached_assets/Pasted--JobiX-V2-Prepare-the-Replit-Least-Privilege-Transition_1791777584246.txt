@@ -1,0 +1,69 @@
+# JobiX V2 — Prepare the Replit Least-Privilege Transition Plan
+
+Use the completed access audit as the source of truth. Do not repeat the full audit.
+
+Focus only on preparing a safe plan to reduce the credentials and permissions exposed to routine Replit workspace tooling.
+
+Known high-priority findings:
+- `JOBIX_DEV_DATABASE_URL` connects as `postgres` and has `BYPASSRLS`, `CREATEDB`, `CREATEROLE`, `REPLICATION`, and broad JobiX table access.
+- `JOBIX_DEV_GCP_DEPLOYER_JSON` is a long-lived service-account JSON in Replit Secrets; effective live IAM is not verified.
+- `JOBIX_DEV_SUPABASE_ACCESS_TOKEN` is a Supabase Management API PAT; token scopes are unknown.
+- Export remains disabled, `accounting_ready=false`, and no live export is authorized.
+- Current GCP IAM and deployed revisions still require owner-operated read-only verification.
+
+## Required work — analysis and planning only
+
+1. Inspect every repository script that consumes these three credentials. List exact script paths and the operations each performs, distinguishing:
+   - read-only inspection;
+   - database DDL/migrations;
+   - database writes or provisioning;
+   - Supabase Management API writes;
+   - GCP build/deployment/IAM/secret operations.
+
+2. Propose a database read-only inspection role:
+   - Exact minimum catalog/schema/table privileges needed by the read-only scripts.
+   - No `BYPASSRLS`, `CREATEDB`, `CREATEROLE`, `REPLICATION`, or role-admin membership.
+   - No writes to JobiX tables.
+   - Explain which existing inspection scripts would work and which would need changes.
+   - Do not create the role or change any grants.
+
+3. Propose a separate migration-only access path:
+   - Identify the actual DDL and migration operations required by the fixed-Development migration runner.
+   - Recommend a time-limited, explicitly approved mechanism.
+   - Preserve its Development target guard, TLS verification, checksums, transaction/advisory locking, and rollback behavior.
+   - Do not assume a non-superuser can execute every migration; identify exact ownership/privilege constraints and any required owner-operated step.
+
+4. For `JOBIX_DEV_GCP_DEPLOYER_JSON`:
+   - Map the exact APIs and operations each script needs.
+   - Separate build permissions from deploy permissions.
+   - Identify the smallest practical resource scopes and required `actAs`/impersonation grants.
+   - Recommend a keyless, short-lived alternative if supported by the actual environment.
+   - Do not access or use the key and do not change IAM.
+
+5. For `JOBIX_DEV_SUPABASE_ACCESS_TOKEN`:
+   - Identify every script that uses it and the Management API operations attempted.
+   - Explain which operations can be owner-operated or moved to a separately approved release step.
+   - Determine what can be verified about token scopes without reading or revealing the token value.
+   - Do not call the API with this token, rotate it, or change Edge Function settings.
+
+6. Review the remaining `SESSION_SECRET` consumer question and provide a safe way to determine whether it is needed. Do not delete it.
+
+7. Provide a phased transition checklist with:
+   - prerequisite;
+   - proposed change;
+   - verification;
+   - rollback;
+   - whether explicit owner approval is required.
+
+## Strict boundaries
+
+- No database or cloud writes.
+- No new roles, grants, keys, tokens, or service accounts.
+- No secret rotation or deletion.
+- No migrations, builds, deployments, image pushes, traffic changes, or IAM changes.
+- Do not print any secret values, tokens, private keys, connection strings, or signed URLs.
+- Do not enable PDF export or set `accounting_ready=true`.
+- Do not modify source code, lockfiles, workspace configuration, or application behavior.
+- Stop after the plan.
+
+Return a concise, evidence-backed transition plan and the single safest next action.
