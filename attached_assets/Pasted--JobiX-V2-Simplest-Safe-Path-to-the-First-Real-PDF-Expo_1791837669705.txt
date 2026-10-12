@@ -1,0 +1,62 @@
+# JobiX V2 — Simplest Safe Path to the First Real PDF Export
+
+We have completed several rounds of investigation. Do not repeat broad audits or ask the owner to manually inspect technical cloud details unless absolutely necessary.
+
+## Goal
+
+Get JobiX to the first successful, verified PDF export from the physical Android app in Development, using the shortest safe sequence of steps.
+
+## Known project state
+
+- Gateway: `jobix-dev-export-gateway`
+- Worker: `jobix-dev-pdf-export`
+- GCP project: `mhflow-jobix`
+- Region: `me-central1`
+- Supabase project: `lmouxhbjhtqdtiqijcee`
+- Worker is configured to require IAM authentication.
+- Gateway runtime identity has Cloud Run Invoker permission on the Worker.
+- GCS bucket `mhflow-jobix-dev-pdfs` has uniform bucket-level access and Public Access Prevention enabled.
+- Lifecycle deletes matching `exports/*.pdf` objects after 7+ days.
+- Local Worker source contains cost attempt, settlement, reconciliation, and cleanup hooks.
+- Migration 021 is locally tested but has NOT been applied to Development.
+- Previously observed state: `export_settings.enabled=false`, `accounting_ready=false`, and all five cost inputs unset.
+- Deployed Gateway/Worker image compatibility with the exact locally tested source remains unverified.
+- Replit credentials and IAM permissions must not be changed in this task.
+
+## Your task
+
+Analyze the existing repository, test evidence, and prior findings. Produce the shortest practical sequence to reach one successful PDF export test, in plain language.
+
+For each remaining blocker:
+1. State exactly what is missing.
+2. Explain why it prevents the test.
+3. Determine whether you can verify or resolve it using existing authorized tooling without expanding permissions.
+4. If owner action is unavoidable, ask for only one concrete action at a time and give exact UI steps.
+
+Prioritize:
+1. Establishing a trustworthy source-to-image path for Gateway and Worker.
+2. Completing evidence-backed cost configuration and the Migration 021 prerequisite.
+3. Verifying the minimum remaining security and runtime requirements.
+4. Performing a controlled Development export only after all prerequisites pass and after explicit approval.
+
+## Strict boundaries
+
+- Do not enable export gates or set `accounting_ready=true`.
+- Do not apply Migration 021 or any other migration.
+- Do not build, push, deploy, or change traffic in this task.
+- Do not modify IAM, credentials, Supabase settings, application code, dependencies, pricing, Credits, or retention.
+- Do not create test records, perform a live export, or call paid services.
+- Do not repeat the full access audit.
+- Do not claim that an unverified cloud state is confirmed.
+- Keep all secrets and signed URLs private.
+
+## Required response
+
+Return:
+- Current status in one short paragraph.
+- A checklist with PASS / BLOCKED / NOT VERIFIED.
+- The exact minimum steps remaining, in order.
+- The single next action for the owner, if needed.
+- A clear distinction between actions you can safely perform later and actions requiring explicit owner approval.
+
+Stop after this plan. Do not execute any changes.
