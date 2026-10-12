@@ -1,0 +1,44 @@
+# JobiX V2 — PDF Export Readiness: Deployed Image Compatibility
+
+Continue from the existing JobiX V2 project state. Focus only on verifying deployed Gateway/Worker compatibility with the locally tested PDF export source. Do not repeat the credential audit or change permissions.
+
+## Known state
+- Gateway service: `jobix-dev-export-gateway`
+- Worker service: `jobix-dev-pdf-export`
+- GCP project: `mhflow-jobix`
+- Region: `me-central1`
+- Historical revisions observed in Cloud Console:
+  - Gateway: `jobix-dev-export-gateway-00016-stx`
+  - Worker: `jobix-dev-pdf-export-00015-5pl`
+- Both services previously showed 100% traffic on their latest ready revisions.
+- Worker must remain private; Gateway must retain application-level user authentication.
+- PDF bucket public-access prevention is enabled; uniform bucket-level access is enabled; lifecycle deletes matching `exports/*.pdf` objects after 7+ days.
+- Migration 021 has NOT been applied to Development.
+- Export remains disabled; `accounting_ready=false`; cost inputs remain unset.
+- Do not reduce or change Replit/GCP/Supabase permissions in this task.
+
+## Tasks — evidence only
+1. Inspect the current local Gateway and Worker source, their build/deploy scripts, and existing verification tooling.
+2. Identify the exact expected cost-metering and export lifecycle hooks in the Worker: attempt start/finish, cost reservation, settlement/reconciliation, failure handling, and cleanup.
+3. From existing repository records and available read-only evidence, determine each deployed service's current ready revision, traffic allocation, image digest, and runtime service account.
+4. Compare deployed image digests/build provenance against the exact locally tested source archives/commit or source checksums. Do not treat matching tags or service health as proof of source compatibility.
+5. If live digest/provenance evidence is unavailable, state exactly what owner-operated read-only Cloud Console evidence is needed. Do not use the deployer credential.
+6. Check whether any code or configuration changes are required before a controlled Development PDF export test. Distinguish required blockers from optional improvements.
+
+## Strict boundaries
+- Do not build or push images.
+- Do not deploy, change traffic, IAM, service accounts, bucket settings, or secrets.
+- Do not apply migrations or change database records.
+- Do not enable export or set `accounting_ready=true`.
+- Do not run a live export or paid operation.
+- Do not change application code, dependencies, lockfiles, pricing, Credits, or retention.
+- Keep all credentials and signed URLs private.
+
+## Required response
+- PASS / BLOCKED / NOT VERIFIED for each service.
+- Exact deployed revision, image digest, runtime identity, and source-compatibility evidence where available.
+- Exact cost-metering hooks found in local source and whether deployed compatibility is proven.
+- Minimal list of blockers before the next approved step.
+- One next action only.
+
+Stop after reporting. Do not proceed automatically to build, deploy, migration, gate changes, or live testing.
