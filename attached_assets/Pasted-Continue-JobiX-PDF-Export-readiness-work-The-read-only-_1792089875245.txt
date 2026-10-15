@@ -1,0 +1,23 @@
+Continue JobiX PDF Export readiness work. The read-only audit has identified that the implementation exists, but normal export enablement is blocked by unverified live configuration, accounting readiness, and migration 021.
+
+Perform the next step ONLY: a fresh read-only preflight of the current Development environment.
+
+Inspect and report:
+
+1. Current Supabase Edge Function export flags and deletion-approval flag.
+2. Current Cloud Run Gateway and Worker revisions, effective export gates, relevant non-secret environment-variable names and values, service identity, and Worker invocation permissions.
+3. Current Development database migration ledger through 021, including the recorded checksum and whether migration 021's expected schema is present.
+4. Current export policy values, all five cost inputs, accounting_ready, rate limits, and the shared cost budget.
+5. Any active or ambiguous export jobs, held Credit reservations, held cost reservations, and unresolved upload flights that could affect safe activation.
+6. Whether the configured export database connection uses the approved Development host/pooler, expected restricted role, and verified TLS configuration. Report identity and configuration status only; never print connection strings or secret values.
+
+Use existing authorized read-only access only. If a required connection or permission is unavailable, report it as unverified and explain the specific access needed. Do not create new credentials or expose secrets.
+
+STRICTLY PROHIBITED:
+- Do not change code, apply migrations, alter database records, release reservations, or modify secrets.
+- Do not change feature flags, IAM, Cloud Run configuration, or deploy services.
+- Do not trigger an export or enable any gate.
+- Do not assume missing cost inputs are zero.
+- Preserve all existing work, including Local Preview integration.
+
+Return a concise report separating freshly verified facts, historical evidence, and unresolved items. Stop for approval before making any changes.
