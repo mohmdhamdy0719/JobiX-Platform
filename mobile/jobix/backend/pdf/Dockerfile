@@ -21,6 +21,7 @@ COPY --from=canonical /canonical /opt/jobix/canonical
 COPY assets/fonts/ /opt/jobix/assets/fonts/
 COPY assets/certs/supabase-root-2021.crt /opt/jobix/assets/certs/
 COPY backend/pdf/*.mjs ./
+COPY supabase/functions/resume-export/transport.mjs /opt/jobix/supabase/functions/resume-export/transport.mjs
 RUN useradd --create-home --uid 10001 exportworker && \
     chown -R exportworker:exportworker /opt/jobix && chmod -R a+rX /ms-playwright
 USER exportworker

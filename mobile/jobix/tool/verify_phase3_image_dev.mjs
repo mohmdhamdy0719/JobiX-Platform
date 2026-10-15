@@ -36,12 +36,42 @@ try{await renderer.validate(Buffer.from('not-pdf'),'<body></body>');}
 catch(error){invalid=error.code==='VALIDATION_FAILED';}
 assert(invalid);console.log('PASS: PINNED_IMAGE_INVALID_PDF_REJECTION');
 `;
+const entrypointSmoke=`
+set -eu
+node server.mjs >/tmp/jobix-worker-entrypoint.log 2>&1 &
+server_pid=$!
+trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+for attempt in $(seq 1 25); do
+  if ! kill -0 "$server_pid" 2>/dev/null; then
+    echo 'FAIL: WORKER_ENTRYPOINT_EXITED_BEFORE_LISTEN'
+    cat /tmp/jobix-worker-entrypoint.log
+    exit 1
+  fi
+  if node --input-type=module -e "fetch('http://127.0.0.1:8080/').then(r=>process.exit(r.status===403?0:1)).catch(()=>process.exit(1))"; then
+    echo 'PASS: WORKER_ENTRYPOINT_LISTENING_ON_8080'
+    exit 0
+  fi
+  sleep 1
+done
+echo 'FAIL: WORKER_ENTRYPOINT_PORT_8080_TIMEOUT'
+cat /tmp/jobix-worker-entrypoint.log
+exit 1
+`;
 const g=await google();
 try {
  const r=await g.request(`https://cloudbuild.googleapis.com/v1/projects/${project}/locations/${region}/builds`,
-  {method:'POST',write:true,body:{steps:[{name:'gcr.io/cloud-builders/docker',
-   args:['run','--rm','--entrypoint','node',image,'--input-type=module','-e',code]}],
-   timeout:'600s',tags:['jobix','development','pdf-image-verification']}});
+   {method:'POST',write:true,body:{steps:[
+    {id:'synthetic-pdf-en-ar',name:'gcr.io/cloud-builders/docker',
+     args:['run','--rm','--entrypoint','node',image,'--input-type=module','-e',code]},
+    {id:'worker-entrypoint-smoke',name:'gcr.io/cloud-builders/docker',args:[
+     'run','--rm','--network','none',
+     '-e','GCP_PROJECT_ID=mhflow-jobix',
+     '-e','JOBIX_EXPORT_ENABLED=false',
+     '-e','JOBIX_EXPORT_DELETION_POLICY_APPROVED=true',
+     '-e','JOBIX_DEV_EXPORT_DATABASE_URL=postgresql://jobix_export_smoke.lmouxhbjhtqdtiqijcee@synthetic.pooler.supabase.com:5432/postgres',
+     '-e','JOBIX_DEV_EXPORT_WORKER_URL=https://jobix-dev-pdf-export-smoke.a.run.app',
+     '-e','PORT=8080','--entrypoint','sh',image,'-ceu',entrypointSmoke]},
+   ],timeout:'900s',tags:['jobix','development','pdf-image-verification','worker-entrypoint-smoke']}});
  console.log(JSON.stringify({operation:r.name,image}));
 }catch(error){
  console.error(JSON.stringify({check:'MANAGED_IMAGE_VERIFICATION_SUBMISSION_BLOCKED',

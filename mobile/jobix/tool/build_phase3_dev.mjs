@@ -10,6 +10,7 @@ if(!process.argv.includes('--build-development')) {
 const root=resolve(import.meta.dirname,'..');
 const gatewayOnly=process.argv.includes('--gateway-only');
 const files=gatewayOnly?['.dockerignore']:['.dockerignore','backend/pdf/Dockerfile','backend/pdf/package.json','backend/pdf/pnpm-lock.yaml',
+ 'supabase/functions/resume-export/transport.mjs',
  'tool/prepare_resume_document.dart','lib/features/career_profile/career_profile.dart',
  'lib/features/career_profile/profile_sections.dart','lib/features/resume/resume_render.dart',
  'lib/features/resume/resume_document.dart','assets/fonts/Inter.ttf','assets/fonts/IBMPlexSansArabic-Regular.ttf',
@@ -48,7 +49,7 @@ try {
            args:['build','-f','backend/export-gateway/Dockerfile','-t',gatewayImage,'.']}]:[])],
        images:[...(gatewayOnly?[]:[image]),...(includeGateway?[gatewayImage]:[])],timeout:'1800s',tags:['jobix','development','pdf-export'],
     }});
-   console.log(JSON.stringify({operation:build.name,buildId:build.metadata?.build?.id,
+   console.log(JSON.stringify({operation:build.name,buildId:build.metadata?.build?.id,sourceArchiveSha256:hash,
      buildName:build.metadata?.build?.name,...(gatewayOnly?{}:{image}),...(includeGateway?{gatewayImage}:{})}));
 }catch(error) {
   // Archive is retained, not deleted under a test-object cleanup authorization.
