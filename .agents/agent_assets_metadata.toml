@@ -364,3 +364,17 @@ mtime_ms = 1791662301325
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/484a4da1-d993-4a68-98c1-aee9803024ed/07f446a6-8aa9-4a24-9b48-5f8ee181cc6c"
 storage_version_token = "1791662400044728"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "9uOH-KgU32wX6ea73JqCw"
+uri = "file://mobile/jobix/build/app/outputs/flutter-apk/jobix-local-preview-arm64-debug.zip"
+type = "unspecified"
+title = "JobiX Local Preview debug APK (ARM64)"
+description = "Extract the ZIP to get the signed app-localpreview-debug.apk. The APK has a separate package ID and launcher label, so it installs alongside JobiX."
+logical_id = "c0563aa0-dc0f-4a68-9e5a-f689a2779402"
+content_hash = "sha256:6ad125a369612e46cee214ae1d637a8f5ba1075242df572158255f12590afecc"
+size = 63000693
+mtime_ms = 1792074577184
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/c0563aa0-dc0f-4a68-9e5a-f689a2779402/854f9f5a-8111-4994-b1c2-6a5a0edcb0ca"
+storage_version_token = "1792074691730933"
+content_type = "application/octet-stream"

@@ -22,10 +22,20 @@ android {
     defaultConfig {
         // Approved through the workspace configuration flow.
         applicationId = "com.mhflow.jobix"
+        manifestPlaceholders["appLabel"] = "Jobix"
         minSdk = 24
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    flavorDimensions += "previewMode"
+    productFlavors {
+        create("localPreview") {
+            dimension = "previewMode"
+            applicationIdSuffix = ".localpreview"
+            manifestPlaceholders["appLabel"] = "Jobix Local Preview (Dev)"
+        }
     }
 
     buildTypes {

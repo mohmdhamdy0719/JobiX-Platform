@@ -230,3 +230,14 @@ Flutter's locked dependency restore refreshed the generated metadata.
 **How to apply:** Treat the cache and generated plugin metadata as separate
 prerequisites when a workspace session loses its home-directory cache. Keep
 dependency versions unchanged and prefer an ignored workspace cache.
+
+Cold Gradle 8.12 initialization can spend several minutes generating its API
+cache with little console output.
+
+**Why:** A native APK build showed only `Running Gradle task` while generating
+`gradle-api-8.12.jar`; foreground shell limits interrupted it, but the managed
+background build continued with an active Gradle worker.
+
+**How to apply:** Run cold APK builds through the managed background shell and
+monitor that same task. Check worker CPU and cache timestamps before treating
+quiet output as a stall; do not launch duplicate builds.
