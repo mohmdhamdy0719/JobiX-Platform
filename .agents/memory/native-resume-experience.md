@@ -61,16 +61,18 @@ device verification limitations without enabling gates or inventing approval.
 
 ## Local Preview integration boundary
 
-The owner reports that the isolated Local Preview POC is fast and looks good on
-physical Android, and approves preparing an integration plan only. Do not treat
-this as implementation approval or quantitative memory/storage/print-parity evidence.
+The owner approved integrating the isolated Local Preview into the production
+Resume journey after the narrow source inspection. Use fresh saved profile,
+custom-link, and presentation data; show an explicit saved-version confirmation
+when local drafts exist; never save or discard edits merely by opening Preview.
 
-**Why:** The owner explicitly requested inspection and approval before production
-integration.
+**Why:** The owner approved this behavior to preserve complete local review without
+changing the existing server-authoritative export contract.
 
 **How to apply:** Reuse the shared renderer and bundled assets. Keep generated
 Preview HTML in memory, clean up route/WebView resources, prevent unbounded
 memory/storage growth, and do not persist Preview output in resumes or history.
-Do not add a persistent cache without first explaining its need, invalidation,
-limits and cleanup. Keep saved-versus-draft semantics explicit and preserve
-server-authoritative PDF validation, Credits, version checks and backend settings.
+Block unresolved save requests and unsupported saved settings rather than
+silently omitting data. Before PDF submission, re-fetch the authoritative
+document and require the existing review flow if it differs. Do not build or
+deploy a production APK until the owner reviews the implementation report.

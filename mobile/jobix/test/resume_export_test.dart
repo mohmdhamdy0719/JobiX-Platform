@@ -254,10 +254,12 @@ void main() {
     String language = 'en',
     bool initial = false,
     bool includeCompleted = false,
+    GlobalKey<ResumeExportPanelState>? panelKey,
   }) async {
     await tester.pumpWidget(
       app(
         ResumeExportPanel(
+          key: panelKey,
           profileId: profileId,
           canPrepare: true,
           initialDocument: initial ? document : null,
@@ -458,6 +460,33 @@ void main() {
     expect(client.auth.currentUser?.id, actor);
     await db.setting('resume:$actor:export:$profileId');
   });
+  testWidgets(
+    'local Preview installs its document without preparing online and rejects stale export review',
+    (tester) async {
+      final panelKey = GlobalKey<ResumeExportPanelState>();
+      await mount(tester, panelKey: panelKey);
+      commands.clear();
+      final local = {
+        ...document,
+        'document_sha256': null,
+        'profile_version': 4,
+      };
+
+      await panelKey.currentState!.showLocalDocument(local);
+
+      expect(observedDocument, same(local));
+      expect(commands, isEmpty);
+      expect(accepted, 0);
+
+      await panelKey.currentState!.createPdf({...local, 'profile_version': 5});
+      await tester.pumpAndSettle();
+
+      expect(commands.map((item) => item['action']), ['document']);
+      expect(panelKey.currentState!.reviewRequired, isTrue);
+      expect(accepted, 0);
+      expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+    },
+  );
   tearDown(() async {
     await client.dispose();
     await db.close();

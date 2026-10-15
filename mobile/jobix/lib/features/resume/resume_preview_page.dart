@@ -5,8 +5,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/providers.dart';
 import 'resume_preview_layout.dart';
 
-/// Canonical server content, fragmented into A4 columns for inspection only.
-/// It does not rewrite the document hash or expose unsupported PDF controls.
+/// The locally reviewed saved Resume, fragmented into A4 columns for inspection.
+/// Export obtains a fresh server-authoritative document before any submission.
 class ResumePreviewPage extends ConsumerStatefulWidget {
   const ResumePreviewPage({
     required this.document,
@@ -112,6 +112,16 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
     });
   });
   ''';
+
+  @override
+  void dispose() {
+    ownerInvalidated = true;
+    controller
+        .loadHtmlString('<html><body></body></html>')
+        .catchError((Object _) {});
+    super.dispose();
+  }
+
   Future<void> turn(int next) async {
     if (ownerInvalidated || next < 0 || next >= pages) return;
     final rtl =

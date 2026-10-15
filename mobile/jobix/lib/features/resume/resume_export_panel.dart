@@ -10,6 +10,7 @@ import '../career_profile/career_profile.dart';
 import 'resume_document.dart';
 import 'resume_experience_widgets.dart';
 import 'resume_export_service.dart';
+import 'resume_preview_snapshot.dart';
 export 'resume_export_service.dart' show ExportFailure;
 
 /// Rollout is closed by default; this widget never grants/debits Credits.
@@ -19,6 +20,7 @@ class ResumeExportPanel extends ConsumerStatefulWidget {
     required this.profileId,
     required this.showDocument,
     required this.canPrepare,
+    this.rebuildLocalDocument,
     this.initialDocument,
     this.experience = false,
     this.historyOnly = false,
@@ -27,6 +29,7 @@ class ResumeExportPanel extends ConsumerStatefulWidget {
   });
   final String profileId;
   final bool canPrepare;
+  final Future<Map<String, dynamic>> Function()? rebuildLocalDocument;
   final Map<String, dynamic>? initialDocument;
   final bool experience, historyOnly;
   final String? historicalExportId;
@@ -48,8 +51,31 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   bool get ar => Localizations.localeOf(context).languageCode == 'ar';
   String t(String en, String arabic) => ar ? arabic : en;
   bool get creationEnabled => enabled;
-  Future<void> preparePreview() => _run(_prepare);
-  Future<void> createPdf() => _run(() => _submit(widget.historicalExportId));
+  Future<void> showLocalDocument(Map<String, dynamic> localDocument) async {
+    if (!mounted) return;
+    setState(() => document = localDocument);
+    await widget.showDocument(localDocument);
+  }
+
+  void clearLocalDocument() {
+    if (mounted) setState(() => document = null);
+  }
+
+  Future<void> createPdf(
+    Map<String, dynamic> reviewedDocument, [
+    String? historicalId,
+  ]) => _run(() async {
+    if (mounted) setState(() => reviewRequired = false);
+    final authoritative = await _call('document', {
+      'profile_id': widget.profileId,
+    });
+    if (!sameReviewedResume(reviewedDocument, authoritative)) {
+      throw const ExportFailure('VERSION_CONFLICT');
+    }
+    if (!mounted) return;
+    setState(() => document = authoritative);
+    await _submit(historicalId ?? widget.historicalExportId);
+  });
   @override
   void initState() {
     super.initState();
@@ -127,42 +153,52 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
             'VERSION_CONFLICT',
             'VALIDATION_FAILED',
           ].contains(code);
-          message = switch (code) {
-            'VERSION_CONFLICT' => t(
-              'The saved document changed. Review the current Preview before creating a new export.',
-              'تغيّر المستند المحفوظ. راجع المعاينة الحالية قبل إنشاء تصدير جديد.',
-            ),
-            'VALIDATION_FAILED' => t(
-              'Fix or explicitly hide invalid saved content, then review Preview.',
-              'أصلح المحتوى المحفوظ غير الصالح أو أخفه صراحةً ثم راجع المعاينة.',
-            ),
-            'CREDIT_INSUFFICIENT' => t(
-              'Not enough Credits. No export was accepted. Retry the same request after Credits are available.',
-              'الرصيد غير كافٍ. لم يُقبل التصدير. أعد محاولة الطلب نفسه عند توفر الرصيد.',
-            ),
-            'EXPORT_NOT_READY' => t(
-              'Export is disabled. No new export can be accepted.',
-              'التصدير معطّل. لا يمكن قبول تصدير جديد.',
-            ),
-            'EXPORT_EXPIRED' => t(
-              'The file expired. No automatic regeneration or charge.',
-              'انتهت صلاحية الملف. لا توجد إعادة إنشاء أو رسوم تلقائية.',
-            ),
-            'EXPORT_OBJECT_MISSING' => t(
-              'The file is unavailable. No automatic regeneration or charge.',
-              'الملف غير متاح. لا توجد إعادة إنشاء أو رسوم تلقائية.',
-            ),
-            'SERVICE_UNAVAILABLE' => l10n.exportTemporarilyUnavailable,
-            'RATE_LIMITED' =>
-              retryAfter == null
-                  ? l10n.exportRateLimited
-                  : l10n.exportRateLimitedRetry(retryAfter),
-            'EXPORT_IN_PROGRESS' => l10n.exportInProgress,
-            _ => t(
-              'The request could not be confirmed. Retry uses the same saved request; do not submit another export.',
-              'تعذّر تأكيد الطلب. إعادة المحاولة تستخدم الطلب المحفوظ نفسه؛ لا ترسل طلب تصدير آخر.',
-            ),
-          };
+          message = error is ResumePreviewNeedsConfirmation
+              ? t(
+                  'Presentation was saved, but other edits are still unsaved. Use Preview saved version to review only saved content.',
+                  'تم حفظ إعدادات العرض، لكن توجد تعديلات أخرى غير محفوظة. استخدم معاينة النسخة المحفوظة لمراجعة المحتوى المحفوظ فقط.',
+                )
+              : error is ResumePreviewBlocked
+              ? t(
+                  'Presentation was saved, but the current Resume snapshot could not be rebuilt safely. Return to Preview and retry.',
+                  'تم حفظ إعدادات العرض، لكن تعذّر تجهيز نسخة السيرة بأمان. ارجع إلى المعاينة وأعد المحاولة.',
+                )
+              : switch (code) {
+                  'VERSION_CONFLICT' => t(
+                    'The saved document changed. Review the current Preview before creating a new export.',
+                    'تغيّر المستند المحفوظ. راجع المعاينة الحالية قبل إنشاء تصدير جديد.',
+                  ),
+                  'VALIDATION_FAILED' => t(
+                    'Fix or explicitly hide invalid saved content, then review Preview.',
+                    'أصلح المحتوى المحفوظ غير الصالح أو أخفه صراحةً ثم راجع المعاينة.',
+                  ),
+                  'CREDIT_INSUFFICIENT' => t(
+                    'Not enough Credits. No export was accepted. Retry the same request after Credits are available.',
+                    'الرصيد غير كافٍ. لم يُقبل التصدير. أعد محاولة الطلب نفسه عند توفر الرصيد.',
+                  ),
+                  'EXPORT_NOT_READY' => t(
+                    'Export is disabled. No new export can be accepted.',
+                    'التصدير معطّل. لا يمكن قبول تصدير جديد.',
+                  ),
+                  'EXPORT_EXPIRED' => t(
+                    'The file expired. No automatic regeneration or charge.',
+                    'انتهت صلاحية الملف. لا توجد إعادة إنشاء أو رسوم تلقائية.',
+                  ),
+                  'EXPORT_OBJECT_MISSING' => t(
+                    'The file is unavailable. No automatic regeneration or charge.',
+                    'الملف غير متاح. لا توجد إعادة إنشاء أو رسوم تلقائية.',
+                  ),
+                  'SERVICE_UNAVAILABLE' => l10n.exportTemporarilyUnavailable,
+                  'RATE_LIMITED' =>
+                    retryAfter == null
+                        ? l10n.exportRateLimited
+                        : l10n.exportRateLimitedRetry(retryAfter),
+                  'EXPORT_IN_PROGRESS' => l10n.exportInProgress,
+                  _ => t(
+                    'The request could not be confirmed. Retry uses the same saved request; do not submit another export.',
+                    'تعذّر تأكيد الطلب. إعادة المحاولة تستخدم الطلب المحفوظ نفسه؛ لا ترسل طلب تصدير آخر.',
+                  ),
+                };
         });
       }
     } finally {
@@ -296,7 +332,13 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       final db = await ref.read(databaseProvider.future);
       await db.removeSetting(storageKey(user));
       pending = null;
-      await _prepare();
+      if (widget.experience && widget.rebuildLocalDocument != null) {
+        if (mounted) setState(() => document = null);
+        final local = await widget.rebuildLocalDocument!();
+        if (mounted) setState(() => document = local);
+      } else {
+        await _prepare();
+      }
       return;
     }
     final command = Map<String, dynamic>.from(packet['command'] as Map);
