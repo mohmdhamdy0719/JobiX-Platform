@@ -195,3 +195,14 @@ second-precision UTC `Z` timestamps worked for the development project.
 examples. Process sensitive records inside a protected runtime; expose only
 error codes, counts and non-personal structural flags. Never persist raw Auth
 log records in memory or deliverables.
+
+Cloud Build terminal status and build-log access are separate permissions. A
+successful Build API read does not guarantee access to its GCS log object or
+Cloud Logging entries.
+
+**Why:** The managed Worker image verifier completed successfully while both
+scoped log retrieval paths returned 403; no permission was changed.
+
+**How to apply:** Report the terminal Build/step status separately from
+unavailable per-test log markers. Do not widen IAM solely to retrieve logs;
+request owner approval first if the individual markers are essential.
