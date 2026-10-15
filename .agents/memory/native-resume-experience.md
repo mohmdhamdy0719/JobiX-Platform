@@ -58,3 +58,19 @@ does not establish document readability or live export success.
 
 **How to apply:** Report outstanding eligibility, runtime, signing, and physical
 device verification limitations without enabling gates or inventing approval.
+
+## Local Preview integration boundary
+
+The owner reports that the isolated Local Preview POC is fast and looks good on
+physical Android, and approves preparing an integration plan only. Do not treat
+this as implementation approval or quantitative memory/storage/print-parity evidence.
+
+**Why:** The owner explicitly requested inspection and approval before production
+integration.
+
+**How to apply:** Reuse the shared renderer and bundled assets. Keep generated
+Preview HTML in memory, clean up route/WebView resources, prevent unbounded
+memory/storage growth, and do not persist Preview output in resumes or history.
+Do not add a persistent cache without first explaining its need, invalidation,
+limits and cleanup. Keep saved-versus-draft semantics explicit and preserve
+server-authoritative PDF validation, Credits, version checks and backend settings.

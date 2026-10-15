@@ -1,0 +1,52 @@
+We have tested the isolated Local Preview POC on a physical Android device. The experience is fast and the visual result looks good. I approve moving to the next step: prepare a minimal, safe integration plan for the production JobiX app.
+
+**Do not implement the integration yet. First inspect the current code and present the plan for approval.**
+
+### Primary objective
+
+Replace the production Resume Preview's server-side document-preparation request with local document preparation, reusing the proven POC and existing shared Resume rendering code wherever possible.
+
+The user experience should remain fast, polished, predictable, and visually close to the final exported PDF.
+
+### Mandatory storage and memory requirements
+
+This is a critical product requirement:
+
+1. Repeatedly opening, closing, or refreshing Preview must NOT create a new permanent file, PDF, image, or HTML document each time.
+2. Keep generated HTML and temporary rendering data in memory wherever practical.
+3. Dispose of WebView controllers, pagination resources, listeners, and other temporary objects appropriately when Preview is closed.
+4. Reuse existing bundled fonts and assets; do not duplicate them or add unnecessary dependencies.
+5. Do not introduce a persistent Preview cache unless there is a clearly justified need. If a cache is proposed, explain its invalidation policy, size limits, and cleanup behavior first.
+6. Repeated Preview sessions must not cause unbounded memory growth, storage growth, or progressively slower rendering.
+7. Do not save the Preview output into the user's Resume records or export history.
+
+### Functional requirements
+
+- Use the local document preparation and rendering path proven by the POC.
+- Preserve the existing Preview UI, navigation, pagination, and presentation settings as closely as possible.
+- Preserve Arabic RTL, English LTR, mixed-language text, long Resumes, and multiple-page layouts.
+- Inspect how saved data, pending edits, profile extras/links, and presentation configuration are assembled. Do not silently omit fields or present stale data as current.
+- Clearly distinguish saved data from unsaved drafts if draft Preview is supported. Do not treat a local draft as an authoritative export snapshot.
+- Keep PDF Export, export validation, Credits, server-side version checks, backend functions, Gateway, Worker, and deployment settings unchanged.
+- Avoid unrelated refactoring or UI changes.
+
+### Required investigation and plan
+
+Please identify:
+
+1. The exact production files and functions to change, reuse, or add.
+2. How production Preview currently requests the server-prepared document, and how that call will be replaced.
+3. How the local path will assemble all required Resume data and presentation settings correctly.
+4. How memory, WebView lifecycle, temporary data, and storage growth will be controlled.
+5. How the final exported PDF will remain authoritative and how version validation will continue to work.
+6. The tests you will add or update, including repeated-open/close checks, no Preview backend request, no export job or Credit changes, all content sections and links, RTL/LTR, and multiple-page rendering.
+7. Any known visual differences between local Preview pagination and PDF print pagination.
+8. The expected APK-size impact and how it will be measured.
+
+### Scope and approval
+
+Reuse the working POC and keep changes minimal. Do not repeat completed POC tests unnecessarily.
+
+Do not change production code, database schemas, Credit rules, export behavior, backend configuration, secrets, or deployment settings yet.
+
+Return a concise implementation plan, the proposed file-level changes, test strategy, and any unresolved risks. Wait for my approval before making production integration changes.

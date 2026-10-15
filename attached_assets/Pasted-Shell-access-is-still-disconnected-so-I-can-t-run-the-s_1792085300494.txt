@@ -1,0 +1,57 @@
+Shell access is still disconnected, so I can’t run the searches here. These targeted searches should locate the definitions without assuming their paths. Run them from the workspace root and share only the matching lines plus the indicated function bodies—no full files are needed.
+
+### 1. Extras repository, custom-link loading and persistence
+
+```sh
+rg --files mobile/jobix | rg '(^|/)profile_extras_repository\.dart$'
+rg -n -S --glob '*.dart' 'ProfileExtrasRepository|profile_extras_repository|custom.?links|profile.?extras|extras:' mobile/jobix/lib mobile/jobix/test
+```
+
+Share:
+- The repository class/provider declarations and complete custom-link/extras load and save methods.
+- Each production caller that invokes those methods, with enough surrounding code to show when it loads and how it handles missing/error results.
+- The relevant database table/schema or local-setting key definition, if persistence uses one.
+
+### 2. `firstProfileProvider` and `DraftRepository`
+
+```sh
+rg -n -S --glob '*.dart' 'firstProfileProvider|DraftRepository\(|DraftRepository|firstProfile\(' mobile/jobix/lib mobile/jobix/test
+```
+
+Share:
+- The provider declaration and the wiring that constructs `DraftRepository`.
+- The full `load` path, including whether it requests fresh data or can return cached data, and any profile-version/account checks.
+- Only the caller code showing where the provider result is used for Resume Preview.
+
+### 3. `read_resume_configuration` definition and returned fields
+
+```sh
+rg -n -S --glob '*.sql' 'read_resume_configuration' mobile/jobix
+```
+
+Share the **complete function definition only**, from its `CREATE FUNCTION` line through its closing delimiter, including `RETURNS`, the query/projection, and relevant grants. This will show which settings are returned and whether visibility/version data is part of the read.
+
+### 4. Custom-link and section-draft operations
+
+```sh
+rg -n -S --glob '*.{dart,sql}' 'custom_links|custom.?link|sectionDraft|hasSectionDrafts|hasAnySectionDrafts|retainSection|discardSection|local_section_drafts' mobile/jobix
+```
+
+Share:
+- The complete load/save methods and their production callers.
+- The relevant local database methods/table definition or server RPC definition they use.
+- The small caller ranges that establish whether any outstanding section draft blocks or changes Preview.
+
+### 5. Saved section visibility and presentation persistence
+
+```sh
+rg -n -S --glob '*.{dart,sql}' 'section_visibility|hidden_sections|save_resume_presentation|read_resume_configuration|configuration_version' mobile/jobix
+```
+
+Share:
+- The complete `save_resume_presentation` and `read_resume_configuration` functions.
+- The Flutter code that reads configuration, displays visibility controls, and persists a visibility change—including the post-save behavior.
+
+**Already verified from the inspected Flutter code:** `resume_page.dart` consumes only `language` and `version` from `read_resume_configuration`; the current online Preview gets the rest of the prepared document through the `document` action. Its current Preview button also saves pending resume-configuration changes before opening Preview. These are the paths the remaining source needs to confirm or refine.
+
+Once those specific definitions and callers are available, I can finish the read-only consistency assessment and revise the implementation plan. I won’t edit production code before presenting that plan for approval.
