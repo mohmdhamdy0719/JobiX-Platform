@@ -1,0 +1,23 @@
+Approved: proceed with the isolated, development-only Local Preview proof of concept, subject to the following constraints.
+
+1. Do not replace or modify the production Preview flow.
+2. Do not modify PDF Export, Credit rules, Supabase functions, Gateway, Worker, database migrations, secrets, or deployment configuration.
+3. Use synthetic test data only. Do not use my real profile data or trigger the live export endpoint.
+4. Reuse the existing `ResumeDocument.prepare()`, `ResumeRender.html()`, bundled fonts, and existing WebView preview components wherever possible.
+5. Keep the implementation isolated behind a development-only entry point. Do not expose it to normal production users.
+6. Do not generate persistent Preview files or allow temporary files, memory usage, or app storage to grow with repeated openings.
+7. First implement the smallest working prototype and verify that its content and layout are reasonable. Then compare it with the existing server-prepared HTML and a reference PDF generated in an isolated test environment.
+8. Test English LTR, Arabic RTL, mixed-language content, long sections, and multiple pages. Document any meaningful pagination or layout differences.
+9. Measure local rendering time and the existing Preview request time on the same Android device. Report the measurement methodology and results without claiming a performance improvement that has not been demonstrated.
+10. Measure APK size and memory impact only if doing so can be done reliably without changing the production build or deployment.
+
+Keep the scope minimal. Do not perform 30-run benchmarks until the basic prototype works and its visual output is acceptable.
+
+When finished, report:
+- Exact files added or changed.
+- Tests actually executed and their results.
+- Screenshots or other evidence of the local Preview and its comparison with the reference PDF.
+- Any remaining limitations, especially pagination differences and saved versus unsaved data.
+- Measured performance results, if available.
+
+Do not merge the prototype into the production Preview flow or make further changes without my approval. If any requirement cannot be met within this isolated scope, stop and explain why rather than expanding the scope.
