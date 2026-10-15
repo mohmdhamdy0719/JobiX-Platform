@@ -1,0 +1,31 @@
+SKU,SKU ID,Service,Actual cost,Live cost,Subtotal
+Services CPU Tier 2  (Request-based billing),085C-A237-027A,Cloud Run,$0.72,$0.04,$0.77
+Services Memory Tier 2 (Request-based billing),600C-3782-6708,Cloud Run,$0.07,$0.00,$0.08
+Gemini 3.5 Flash Global Text Output - Predictions,4E73-15BD-0D78,Vertex AI,$0.02,$0.00,$0.02
+Gemini 3.5 Flash Global Text Input - Predictions,9733-FF95-45E3,Vertex AI,$0.02,$0.00,$0.02
+Gemini 3.5 Flash Lite Global Text Output - Predictions,EF3E-6ED9-3CD1,Vertex AI,$0.01,$0.00,$0.01
+"Cloud Run Network Internet Data Transfer Out Intercontinental (Excl Oceania, Africa and China)",DBAA-7594-B9FA,Cloud Run,$0.01,$0.00,$0.01
+Gemini 3.5 Flash Lite Global Text Input - Predictions,255D-4FF7-8DB3,Vertex AI,$0.00,$0.00,$0.00
+GCP Storage Data Transfer between Northern America and Middle East,F0D8-3F95-E23E,Cloud Storage,$0.00,$0.00,$0.00
+Standard Storage Doha,52CB-434A-1FE0,Cloud Storage,$0.00,$0.00,$0.00
+Artifact Registry Network Inter Region Egress Intercontinental (Excl Oceania),F867-73D9-ACCD,Artifact Registry,$0.00,$0.00,$0.00
+"Artifact Registry Network Internet Egress Intercontinental (Excl Oceania, Africa and China)",72BD-5309-1C4C,Artifact Registry,$0.00,$0.00,$0.00
+Artifact Registry Network Intra Region Egress,546B-E8F2-6FF5,Artifact Registry,$0.00,$0.00,$0.00
+Artifact Registry Storage,8502-299A-ABAF,Artifact Registry,$0.00,$0.00,$0.00
+Build time e2-standard-2,A464-9020-6404,Cloud Build,$0.00,$0.00,$0.00
+Cloud Firestore Storage,5C80-18C6-21C5,App Engine,$0.00,$0.00,$0.00
+Cloud Run GOOGLE-API Data Transfer Out,0CCB-7057-48DE,Cloud Run,$0.00,$0.00,$0.00
+Cloud Run Network Inter Region Data Transfer Out Intercontinental (Excl Oceania),9B46-8DDB-2AC8,Cloud Run,$0.00,$0.00,$0.00
+Download Worldwide Destinations (excluding Asia & Australia),22EB-AAE8-FBCD,Cloud Storage,$0.00,$0.00,$0.00
+Free Fetch Requests,598C-0184-404A,Firebase Remote Config,$0.00,$0.00,$0.00
+GCP Storage Data Transfer between Europe and Middle East,4B41-DB68-ACE6,Cloud Storage,$0.00,$0.00,$0.00
+Log Storage cost,143F-A1B0-E0BE,Cloud Logging,$0.00,$0.00,$0.00
+Regional Standard Class A Operations,4DBF-185F-A415,Cloud Storage,$0.00,$0.00,$0.00
+Regional Standard Class B Operations,7870-010B-2763,Cloud Storage,$0.00,$0.00,$0.00
+Requests,2DA5-55D3-E679,Cloud Run,$0.00,$0.00,$0.00
+Secret access operations,EBA7-264F-2D2C,Secret Manager,$0.00,$0.00,$0.00
+Secret version replica storage,7756-ADEF-84F4,Secret Manager,$0.00,$0.00,$0.00
+Standard Storage Frankfurt,F272-7933-F065,Cloud Storage,$0.00,$0.00,$0.00
+Standard Storage US Regional,E5F0-6A5D-7BAD,Cloud Storage,$0.00,$0.00,$0.00
+Time series billed count,6E35-67F5-C3C6,Cloud Monitoring,$0.00,$0.00,$0.00
+,,,,Subtotal,$0.91
