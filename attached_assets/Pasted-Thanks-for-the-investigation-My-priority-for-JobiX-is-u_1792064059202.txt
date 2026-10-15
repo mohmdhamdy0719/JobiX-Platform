@@ -1,0 +1,40 @@
+Thanks for the investigation. My priority for JobiX is user experience: fast Preview loading, minimal server dependency and cost, and a visual result that closely matches the final exported PDF.
+
+Before implementing a full change, I want you to investigate and validate a local Preview approach.
+
+### Goals
+
+1. Render the Resume Preview entirely on the user's device, without calling the backend specifically to prepare the Preview.
+2. Reuse the existing `ResumeDocument.prepare()` and `ResumeRender.html()` implementation, shared template, fonts, assets, and styling wherever possible.
+3. Preserve the current Preview experience, including its professional layout, page navigation, typography, spacing, and Arabic RTL / English LTR support.
+4. Avoid generating PDFs, uploading files, creating export jobs, or accumulating temporary files when Preview is opened or updated.
+5. Keep the existing PDF Export pipeline and Credit rules unchanged.
+
+### First, investigate feasibility
+
+Determine exactly what is required to run the existing document preparation and HTML rendering code locally in Flutter. Identify any dependencies on the Worker, saved server-side data, canonicalization, or other server-only functionality.
+
+Explain how the app would obtain the current Resume data and presentation configuration locally, including how unsaved changes would be handled.
+
+### Then, propose a limited proof of concept
+
+Before changing the production Preview flow, propose a minimal, isolated prototype that can be compared against the current implementation.
+
+The evaluation must include:
+
+- Time from tapping Preview until the content is visible.
+- Local rendering time versus server request and response time in the current implementation, with separate timings for each stage where possible.
+- Visual comparison against the actual exported PDF using identical Resume data.
+- Multiple-page documents, page breaks, long sections, Arabic RTL, English LTR, and mixed-language content.
+- Memory usage, APK size impact, and whether temporary files or persistent storage are introduced.
+- Behavior when data is unsaved, stale, or unavailable offline.
+
+Do not claim that the local Preview is faster or visually equivalent without measurements.
+
+### Decision criteria
+
+Recommend local rendering if it materially improves responsiveness and reduces Preview-related server usage while preserving a sufficiently accurate representation of the final PDF.
+
+If the prototype reveals significant visual differences, explain their causes and propose solutions before recommending implementation.
+
+**For now, do not modify the existing Preview flow, change Credit rules, alter PDF Export, modify backend configuration, or deploy anything.** First provide the feasibility analysis, a concrete testing plan, the files likely to require changes, and the expected trade-offs. Wait for my approval before proceeding.
