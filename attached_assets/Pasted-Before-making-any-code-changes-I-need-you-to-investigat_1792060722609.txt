@@ -1,0 +1,50 @@
+Before making any code changes, I need you to investigate the current Resume Preview implementation in JobiX and answer the following questions based on the actual codebase.
+
+**Do not implement anything yet. Do not modify any files.**
+
+### 1. How does the current Preview actually work?
+- Is the Resume Preview rendered entirely locally on the device, or does it call a backend, Cloud Run service, Supabase Edge Function, or any other server?
+- Does opening or updating the Preview generate a PDF, upload files to Google Cloud Storage, create export jobs, or make any other server requests?
+- Does the current implementation consume Credits or enforce any profile-completeness requirements?
+- Identify the exact files, functions, and code paths responsible for the current behavior. Do not guess.
+
+### 2. What are the actual costs and server implications?
+Explain what happens when a user:
+- Opens the Preview for the first time.
+- Edits their Resume while Preview is open.
+- Closes and reopens the Preview.
+- Opens the Preview repeatedly.
+
+For each case, clarify whether it generates server requests, consumes compute resources, creates or uploads files, uses storage, or consumes Credits. Distinguish actual behavior confirmed by the code from potential costs that depend on infrastructure or usage.
+
+### 3. Can a fully local Preview accurately match the exported PDF?
+If the Preview were rendered locally on the device without calling the backend or generating a PDF, explain:
+
+- Could it use the same HTML/CSS template, fonts, assets, layout rules, and Resume data as the PDF export?
+- How closely could it match the final exported PDF in practice?
+- Could it be visually identical, or are there technical limitations that could cause differences in pagination, page breaks, font rendering, spacing, margins, RTL/LTR layout, or other details?
+- Would local rendering require downloading or bundling additional assets, and what would the impact be on APK size, memory usage, and performance?
+- Could the implementation support an accurate, responsive Preview inside the app without accumulating temporary files or increasing app storage with every edit?
+
+Please distinguish between what is technically possible, what is realistic, and what the current code already supports.
+
+### 4. Compare the available approaches
+Compare the current implementation with these alternatives:
+
+**A. Local HTML/WebView Preview:** Render the Resume on-device using a shared HTML/CSS template, without generating or uploading a PDF.
+
+**B. Server-generated PDF Preview:** Generate a PDF on the backend and display it in the app.
+
+**C. Any other approach already supported by the project architecture.**
+
+Compare their accuracy against the exported PDF, server costs, responsiveness while editing, APK size, implementation complexity, and maintenance.
+
+### Required response format
+Provide:
+1. A clear summary of how Preview currently works.
+2. Evidence from the actual code, including relevant file paths and function names.
+3. A comparison table for the available approaches.
+4. Your recommendation for JobiX, with the reasons and trade-offs.
+5. Any uncertainties that cannot be resolved from the code alone.
+
+**Important:** This is an investigation only. Do not implement the local Preview, change the existing Preview, modify Credit rules, change PDF Export behavior, or alter any backend configuration. Wait for my approval after presenting your findings.
