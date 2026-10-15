@@ -1,0 +1,25 @@
+Thanks. The preflight findings are understood. Do not repeat the same Cloud Run inspection or attempt activation yet.
+
+Our next priority is to unblock the missing read-only verification safely, then complete PDF Export readiness. We will handle the broader Analytics and cost-observability improvements later, after Export is working and before or alongside AI integration.
+
+Please proceed with this next step only:
+
+1. Inspect the existing project documentation, migration tooling, and approved Development access configuration to determine the safest available way for the project owner to authorize a TLS-verified, strictly read-only database inspection.
+2. Check whether an existing approved read-only connection or database role can be used. Do not use the separate migration URL as a substitute, and do not create or expose credentials.
+3. Identify the exact minimum access or owner action needed to verify:
+   - Migration ledger and source checksums through migration 021.
+   - The resulting schema required by migration 021.
+   - Current export settings, accounting readiness, and the five cost inputs.
+   - Globally active or ambiguous export jobs, held Credit reservations, held cost reservations, and unresolved upload flights.
+   - Current Worker database identity and TLS verification status, without exposing secret contents.
+4. If the necessary authorized access is unavailable, stop and tell me exactly what I need to do in the relevant console or project settings. Prefer the smallest safe action; do not ask me to share secret values in chat.
+5. After verification access is resolved, propose the next implementation steps in order, including a practical provisional cost model and the existing rate limits. Do not assume we must achieve perfect cost accuracy before launch, but do not bypass fail-closed accounting or invent zero costs.
+
+Strictly do not:
+- Enable any export gate or change the Edge/Cloud Run configuration.
+- Apply migrations, change database records, release reservations, deploy services, or run a real export.
+- Modify the Local Preview integration or other existing work.
+- Add Analytics packages or implement broader observability in this step.
+- Repeat completed tests unnecessarily.
+
+Return the specific blocker and the smallest safe next action. Stop and wait for approval before any state-changing operation.
