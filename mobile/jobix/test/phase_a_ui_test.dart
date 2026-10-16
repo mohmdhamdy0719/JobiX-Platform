@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jobix/core/design/tokens.dart';
+import 'package:jobix/core/design/slice_widgets.dart';
 import 'package:jobix/features/builder/builder_scaffold.dart';
+import 'package:jobix/features/builder/profile_overview.dart';
 import 'package:jobix/features/builder/ai_allowance.dart';
 import 'package:jobix/features/builder/jobix_improvement.dart';
 import 'package:jobix/features/builder/month_input_formatter.dart';
 import 'package:jobix/features/builder/section_writing_guidance.dart';
 import 'package:jobix/features/career_profile/summary_writing_hints.dart';
 import 'package:jobix/features/career_profile/profile_sections.dart';
+import 'package:jobix/features/core_mvp/core_api.dart';
 import 'package:jobix/features/personal_information/country_autocomplete.dart';
 import 'package:jobix/features/personal_information/personal_information_fields.dart';
 import 'package:jobix/l10n/app_localizations.dart';
@@ -31,6 +34,55 @@ Widget app(Widget child, {String locale = 'en'}) => ProviderScope(
 
 void main() {
   setUpAll(loadProductionFonts);
+  for (final locale in ['en', 'ar']) {
+    testWidgets('$locale builder header stays one line at narrow width', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const title = 'Personal Information and Professional Background';
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            coreSummaryProvider.overrideWith(
+              (_) async => const CoreSummary(
+                balance: CreditBalance(
+                  finalized: 5,
+                  reserved: 0,
+                  available: 5,
+                  version: 1,
+                ),
+                profiles: [],
+                slots: [],
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            locale: Locale(locale),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: foundationTheme(languageCode: locale),
+            home: const SliceScaffold(
+              title: title,
+              singleLineTitle: true,
+              leading: BackButton(),
+              actions: [CreditsPill(compact: true)],
+              child: SizedBox(height: 40),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget);
+      expect(tester.widget<Text>(find.text(title)).maxLines, 1);
+      expect(find.text('5 CR'), findsOneWidget);
+      expect(find.text('5 Credits'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   test(
     'numeric month mask supports typing, pasted dates, Arabic digits and deletion',
     () {
@@ -293,6 +345,8 @@ void main() {
                   errors: const {},
                   regionEgypt: false,
                   cityHistory: const [],
+                  targetRoleController: TextEditingController(),
+                  onTargetRoleChanged: (_) {},
                   onChanged: (_, _) {},
                   onBlur: blurred.add,
                 ),

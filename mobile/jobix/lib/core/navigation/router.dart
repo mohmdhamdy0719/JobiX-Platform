@@ -247,13 +247,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
               ),
               GoRoute(
-                path: '/career/target-role',
-                builder: (_, state) => TextSectionPage(
-                  section: 'target_role',
-                  origin: state.uri.queryParameters['origin'],
-                ),
-              ),
-              GoRoute(
                 path: '/career/edit/:section/:id',
                 builder: (_, state) {
                   final section = EntitySection.values

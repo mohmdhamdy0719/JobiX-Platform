@@ -20,4 +20,32 @@ void main() {
     expect(monthLabel('2024-01', 'ar'), 'يناير 2024');
     expect(monthLabel('2024-12', 'ar'), 'ديسمبر 2024');
   });
+
+  test('degree options have stable distinct choices and legacy rendering', () {
+    expect(degreeCodes, [
+      'degree:secondary_school_certificate',
+      'degree:high_school',
+      'degree:vocational_certificate',
+      'degree:vocational_diploma',
+      'degree:professional_certificate',
+      'degree:certificate',
+      'degree:diploma',
+      'degree:associate',
+      'degree:foundation',
+      'degree:bachelor',
+      'degree:graduate_certificate',
+      'degree:postgraduate_diploma',
+      'degree:master',
+      'degree:professional_doctorate',
+      'degree:doctorate_phd',
+      'degree:other',
+    ]);
+    expect(degreeOption('degree:doctorate'), 'degree:doctorate_phd');
+    expect(degreeLabel('degree:doctorate', 'en'), 'Doctorate / PhD');
+    expect(
+      degreeChoiceLabel('degree:secondary_school_certificate', 'ar'),
+      'شهادة المرحلة الثانوية',
+    );
+    expect(degreeOption('Other:Certified Specialist'), 'degree:other');
+  });
 }

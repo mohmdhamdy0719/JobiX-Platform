@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/form_loading_state.dart';
+import '../../core/design/jobix_feedback.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
@@ -44,9 +45,11 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                 if (context.mounted) context.go('/resume');
               } catch (_) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(
+                  showJobixFeedback(
                     context,
-                  ).showSnackBar(SnackBar(content: Text(copy.saveFailed)));
+                    copy.saveFailed,
+                    kind: JobixFeedbackKind.error,
+                  );
                 }
               } finally {
                 if (mounted) setState(() => busy = false);
@@ -147,6 +150,11 @@ class _ReviewBody extends StatelessWidget {
                 textDirection: TextDirection.ltr,
                 style: theme.textTheme.bodyMedium,
               ),
+            if (profile.targetRole.trim().isNotEmpty)
+              Text(
+                '${copy.targetRoleOptional}: ${profile.targetRole.trim()}',
+                style: theme.textTheme.bodyMedium,
+              ),
             if (!profile.hasContact ||
                 ['full_name', 'email', 'phone'].any((f) => value(f).isEmpty))
               Padding(
@@ -169,18 +177,6 @@ class _ReviewBody extends StatelessWidget {
               profile.summary.trim().isEmpty
                   ? copy.notProvided
                   : profile.summary.trim(),
-            ),
-          ],
-        ),
-        _Section(
-          title: copy.targetRoleOptional,
-          editKey: 'target_role',
-          onEdit: () => edit('/career/target-role?origin=review'),
-          children: [
-            Text(
-              profile.targetRole.trim().isEmpty
-                  ? copy.notProvided
-                  : profile.targetRole.trim(),
             ),
           ],
         ),
@@ -213,7 +209,15 @@ class _ReviewBody extends StatelessWidget {
                   runSpacing: TokensV0.space8,
                   children: [
                     for (final s in profile.of(section))
-                      Chip(label: Text(s.text('name'))),
+                      Chip(
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        label: Text(
+                          s.text('name'),
+                          style: theme.textTheme.labelSmall,
+                        ),
+                      ),
                   ],
                 )
               else
@@ -291,6 +295,7 @@ class _Section extends StatelessWidget {
     return Padding(
       padding: const EdgeInsetsDirectional.only(bottom: TokensV0.space12),
       child: SliceCard(
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -325,7 +330,7 @@ class _Section extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: TokensV0.space4),
+            const SizedBox(height: TokensV0.space8),
             ...children,
           ],
         ),

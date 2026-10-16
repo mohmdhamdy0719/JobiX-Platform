@@ -63,6 +63,7 @@ enum EntitySection {
     SectionField('title', FieldKind.text, required: true),
     SectionField('issuer', FieldKind.text, required: true),
     SectionField('achieved_month', FieldKind.month, required: true),
+    SectionField('url', FieldKind.url, max: 2048),
     SectionField(
       'description',
       FieldKind.multiline,
@@ -70,12 +71,13 @@ enum EntitySection {
       required: false,
       minimum: 20,
     ),
-    SectionField('url', FieldKind.url, max: 2048),
   ]),
   project('project', 'projects', [
     SectionField('name', FieldKind.text, required: true),
     SectionField('role', FieldKind.text, required: true),
     SectionField('project_month', FieldKind.month, required: true),
+    SectionField('url', FieldKind.url, max: 2048),
+    SectionField('technologies', FieldKind.list, max: 100),
     SectionField(
       'description',
       FieldKind.multiline,
@@ -83,8 +85,6 @@ enum EntitySection {
       required: false,
       minimum: 20,
     ),
-    SectionField('url', FieldKind.url, max: 2048),
-    SectionField('technologies', FieldKind.list, max: 100),
   ]),
   skill('skill', 'skills', [
     SectionField('name', FieldKind.text, max: 100, required: true),
@@ -252,6 +252,12 @@ class ProfileItem {
         continue;
       }
       final s = (value as String? ?? '').trim();
+      if (section == EntitySection.education &&
+          field.name == 'degree' &&
+          s.startsWith('other:') &&
+          s.substring(6).trim().isEmpty) {
+        result[field.name] = FieldProblem.required;
+      }
       if (s.runes.length > field.max) result[field.name] = FieldProblem.tooLong;
       if (s.isEmpty) {
         if (field.required ||

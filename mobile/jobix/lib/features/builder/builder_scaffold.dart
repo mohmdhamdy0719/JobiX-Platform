@@ -73,7 +73,8 @@ class BuilderScaffold extends StatelessWidget {
     if (reviewEditor) {
       return SliceScaffold(
         title: title,
-        actions: const [CreditsPill()],
+        singleLineTitle: true,
+        actions: const [CreditsPill(compact: true)],
         leading: IconButton(
           key: const Key('builder-back'),
           tooltip: copy.backToReview,
@@ -104,7 +105,8 @@ class BuilderScaffold extends StatelessWidget {
     }
     return SliceScaffold(
       title: title,
-      actions: const [CreditsPill()],
+      singleLineTitle: true,
+      actions: const [CreditsPill(compact: true)],
       leading: onBack == null || step == 1 || step == 6
           ? null
           : IconButton(

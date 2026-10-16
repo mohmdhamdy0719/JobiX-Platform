@@ -16,7 +16,8 @@ class PersonalInformationFields extends StatelessWidget {
     required this.errors,
     required this.regionEgypt,
     required this.cityHistory,
-    this.targetRoleSection,
+    required this.targetRoleController,
+    required this.onTargetRoleChanged,
     this.onBlur,
     this.enabled = true,
     super.key,
@@ -30,7 +31,8 @@ class PersonalInformationFields extends StatelessWidget {
   final Set<String> errors;
   final bool regionEgypt, enabled;
   final List<String> cityHistory;
-  final Widget? targetRoleSection;
+  final TextEditingController targetRoleController;
+  final ValueChanged<String> onTargetRoleChanged;
 
   String? error(String field) {
     if (!errors.contains(field)) return null;
@@ -291,9 +293,37 @@ class PersonalInformationFields extends StatelessWidget {
                 ],
               ),
             ),
-            if (targetRoleSection != null) ...[
+            ...[
               const SizedBox(height: TokensV0.space24),
-              targetRoleSection!,
+              SliceCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SectionHeading(
+                      title: copy.targetRoleOptional,
+                      subtitle: language == 'ar'
+                          ? 'يظهر هذا الدور أعلى سيرتك الذاتية.'
+                          : 'This role appears near the top of your resume.',
+                    ),
+                    const SizedBox(height: TokensV0.space12),
+                    TextField(
+                      key: const Key('personal-target-role'),
+                      controller: targetRoleController,
+                      enabled: enabled,
+                      maxLength: 120,
+                      textDirection: direction,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        labelText: copy.targetRoleOptional,
+                        hintText: language == 'ar'
+                            ? 'مثال: مدير منتجات'
+                            : 'Example: Product Manager',
+                      ),
+                      onChanged: onTargetRoleChanged,
+                    ),
+                  ],
+                ),
+              ),
             ],
             const SizedBox(height: TokensV0.space24),
             SliceCard(

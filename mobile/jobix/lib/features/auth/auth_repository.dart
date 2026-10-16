@@ -15,10 +15,23 @@ abstract interface class AuthApi {
   Future<bool> google();
   Future<void> reset(String email);
   Future<void> resendConfirmation(String email);
-  Future<void> updateEmail(String email);
+  Future<AuthAccountState> updateEmail(String email);
+  Future<void> resendEmailChange(String email);
+  Future<AuthAccountState> accountState({bool refresh = false});
   Future<void> updatePassword(String password);
   Future<void> callback(Uri uri);
   Future<void> signOut();
+}
+
+class AuthAccountState {
+  const AuthAccountState({
+    required this.userId,
+    required this.email,
+    this.pendingEmail,
+    this.emailChangeSentAt,
+  });
+  final String userId, email;
+  final String? pendingEmail, emailChangeSentAt;
 }
 
 class SupabaseAuthApi implements AuthApi {
@@ -76,8 +89,41 @@ class SupabaseAuthApi implements AuthApi {
     redirectTo: authRedirectUri,
   );
   @override
-  Future<void> updateEmail(String email) async {
-    await client.auth.updateUser(UserAttributes(email: email.trim()));
+  Future<AuthAccountState> updateEmail(String email) async {
+    final response = await client.auth.updateUser(
+      UserAttributes(email: email.trim()),
+    );
+    final user = response.user;
+    if (user == null) throw StateError('EMAIL_CHANGE_UNCONFIRMED');
+    return AuthAccountState(
+      userId: user.id,
+      email: user.email ?? '',
+      pendingEmail: user.newEmail,
+      emailChangeSentAt: user.emailChangeSentAt,
+    );
+  }
+
+  @override
+  Future<void> resendEmailChange(String email) async {
+    await client.auth.resend(
+      type: OtpType.emailChange,
+      email: email.trim(),
+      emailRedirectTo: authRedirectUri,
+    );
+  }
+
+  @override
+  Future<AuthAccountState> accountState({bool refresh = false}) async {
+    final user = refresh
+        ? (await client.auth.getUser()).user
+        : client.auth.currentUser;
+    if (user == null) throw StateError('AUTH_REQUIRED');
+    return AuthAccountState(
+      userId: user.id,
+      email: user.email ?? '',
+      pendingEmail: user.newEmail,
+      emailChangeSentAt: user.emailChangeSentAt,
+    );
   }
 
   @override

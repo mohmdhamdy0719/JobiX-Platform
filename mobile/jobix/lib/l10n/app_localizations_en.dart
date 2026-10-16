@@ -384,17 +384,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveLater => 'Save & Continue Later';
 
   @override
-  String get discardAction => 'Discard';
+  String get discardAction => 'Discard changes';
 
   @override
   String get stayAction => 'Keep editing';
 
   @override
-  String get leaveTitle => 'Keep your unfinished work?';
+  String get leaveTitle => 'Discard unsaved changes?';
 
   @override
   String get discardWarning =>
-      'Save your draft to continue later, or discard only the unsynced local draft. Discarded work cannot be recovered. Saved server data will not be deleted.';
+      'Your changes haven\'t been saved. If you leave now, you\'ll lose them.';
 
   @override
   String get savedServer => 'Saved to your account.';
@@ -737,10 +737,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldLocation => 'Location (optional)';
 
   @override
-  String get fieldStartMonth => 'Start month';
+  String get fieldStartMonth => 'Start date';
 
   @override
-  String get fieldEndMonth => 'End month';
+  String get fieldEndMonth => 'End date';
 
   @override
   String get fieldDescription => 'Description';
@@ -764,10 +764,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldIssuer => 'Issuer';
 
   @override
-  String get fieldIssueMonth => 'Issue month';
+  String get fieldIssueMonth => 'Issue date';
 
   @override
-  String get fieldExpiryMonth => 'Expiry month (optional)';
+  String get fieldExpiryMonth => 'Expiry date (optional)';
 
   @override
   String get fieldCredential => 'Credential ID (optional)';
@@ -779,7 +779,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldTitle => 'Title';
 
   @override
-  String get fieldMonth => 'Month';
+  String get fieldMonth => 'Date';
+
+  @override
+  String get fieldDegreeTitle => 'Degree title';
+
+  @override
+  String get fieldDegreeTitleHint => 'Enter your qualification';
+
+  @override
+  String creditsCompactCount(int count) {
+    return '$count CR';
+  }
 
   @override
   String get fieldRole => 'Your role';

@@ -45,7 +45,8 @@ int sectionsRemaining(CareerProfile profile) {
 
 /// Authoritative balance chip; hidden while unavailable (never a guess).
 class CreditsPill extends ConsumerWidget {
-  const CreditsPill({super.key});
+  const CreditsPill({this.compact = false, super.key});
+  final bool compact;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final copy = AppLocalizations.of(context)!;
@@ -71,9 +72,12 @@ class CreditsPill extends ConsumerWidget {
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  copy.creditsCount(summary.balance.available),
+                  compact
+                      ? copy.creditsCompactCount(summary.balance.available)
+                      : copy.creditsCount(summary.balance.available),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  textDirection: compact ? TextDirection.ltr : null,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: TokensV0.deepBlue,
                     fontWeight: FontWeight.w700,

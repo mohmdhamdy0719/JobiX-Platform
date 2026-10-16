@@ -383,11 +383,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get stayAction => 'متابعة التعديل';
 
   @override
-  String get leaveTitle => 'هل تريد الاحتفاظ بعملك غير المكتمل؟';
+  String get leaveTitle => 'هل تريد تجاهل التغييرات غير المحفوظة؟';
 
   @override
-  String get discardWarning =>
-      'احفظ مسودتك للمتابعة لاحقًا، أو تجاهل المسودة المحلية غير المحفوظة في الحساب فقط. لا يمكن استعادة العمل المتجاهَل. لن تُحذف البيانات المحفوظة على الخادم.';
+  String get discardWarning => 'لم تُحفظ تغييراتك. إذا غادرت الآن، فستفقدها.';
 
   @override
   String get savedServer => 'تم الحفظ في حسابك.';
@@ -726,10 +725,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldLocation => 'الموقع (اختياري)';
 
   @override
-  String get fieldStartMonth => 'شهر البدء';
+  String get fieldStartMonth => 'تاريخ البدء';
 
   @override
-  String get fieldEndMonth => 'شهر الانتهاء';
+  String get fieldEndMonth => 'تاريخ الانتهاء';
 
   @override
   String get fieldDescription => 'الوصف';
@@ -753,10 +752,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldIssuer => 'الجهة المانحة';
 
   @override
-  String get fieldIssueMonth => 'شهر الإصدار';
+  String get fieldIssueMonth => 'تاريخ الإصدار';
 
   @override
-  String get fieldExpiryMonth => 'شهر انتهاء الصلاحية (اختياري)';
+  String get fieldExpiryMonth => 'تاريخ الانتهاء (اختياري)';
 
   @override
   String get fieldCredential => 'رقم الاعتماد (اختياري)';
@@ -768,7 +767,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldTitle => 'العنوان';
 
   @override
-  String get fieldMonth => 'الشهر';
+  String get fieldMonth => 'التاريخ';
+
+  @override
+  String get fieldDegreeTitle => 'عنوان المؤهل';
+
+  @override
+  String get fieldDegreeTitleHint => 'أدخل مؤهلك';
+
+  @override
+  String creditsCompactCount(int count) {
+    return '$count CR';
+  }
 
   @override
   String get fieldRole => 'دورك';

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/design/jobix_feedback.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
 import '../personal_information/profile_extras_repository.dart';
@@ -188,8 +189,12 @@ class _ResumePageState extends ConsumerState<ResumePage> {
           pending = false;
           configurationConflict = false;
           confirmedDraftFingerprint = null;
-          message = t('Resume language saved.', 'تم حفظ لغة السيرة الذاتية.');
+          message = null;
         });
+        showJobixFeedback(
+          context,
+          t('Resume language updated.', 'تم تحديث لغة السيرة الذاتية.'),
+        );
       }
     } on PostgrestException catch (error) {
       if (mounted) {

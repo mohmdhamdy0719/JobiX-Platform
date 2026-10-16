@@ -635,7 +635,7 @@ void main() {
       for (var frame = 0; frame < 8; frame++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
-      expect(find.text('Resume language saved.'), findsOneWidget);
+      expect(find.text('Resume language updated.'), findsOneWidget);
       expect(await db.setting(outboxKey), isNull);
       expect(configurationSaveCommands, hasLength(2));
       expect(
@@ -655,11 +655,18 @@ void main() {
     },
   );
   testWidgets(
-    'local Preview installs its document without preparing online and rejects stale export review',
+    'stale Preview review preserves the authoritative document and exports only after a fresh review',
     (tester) async {
       final panelKey = GlobalKey<ResumeExportPanelState>();
       await mount(tester, panelKey: panelKey);
       commands.clear();
+      prepared = {
+        ...document,
+        'html': '<html><body>Updated saved document</body></html>',
+        'profile_version': 5,
+        'document_sha256': 'b' * 64,
+        'configuration': {'section_visibility': <String, dynamic>{}},
+      };
       final local = {
         ...document,
         'document_sha256': null,
@@ -672,10 +679,7 @@ void main() {
       expect(commands, isEmpty);
       expect(accepted, 0);
 
-      final createFuture = panelKey.currentState!.createPdf({
-        ...local,
-        'profile_version': 5,
-      });
+      final createFuture = panelKey.currentState!.createPdf(local);
       for (var frame = 0; frame < 8; frame++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
@@ -692,6 +696,10 @@ void main() {
 
       final currentDocument = panelKey.currentState!.document!;
       expect(find.byKey(const Key('review-updated-preview')), findsOneWidget);
+      // ResumePage calls this during Preview-route cleanup. The conflict
+      // recovery document must survive that exact cleanup path.
+      panelKey.currentState!.clearLocalDocument();
+      expect(panelKey.currentState!.document, same(currentDocument));
       await tester.ensureVisible(
         find.byKey(const Key('review-updated-preview')),
       );
@@ -699,16 +707,26 @@ void main() {
       await tester.pumpAndSettle();
       expect(observedDocument, same(currentDocument));
 
-      final reviewedAgain = panelKey.currentState!.createPdf(currentDocument);
+      final reviewedAgain = panelKey.currentState!.createPdf(observedDocument!);
       for (var frame = 0; frame < 8; frame++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
-      expect(commands.map((item) => item['action']), ['document', 'document']);
-      expect(accepted, 0);
-      expect(await db.setting('resume:$actor:export:$profileId'), isNull);
-      await tester.tap(find.text('Cancel'));
+      await tester.ensureVisible(find.text('Create — 2 Credits'));
+      await tester.tap(find.text('Create — 2 Credits'));
       await tester.pumpAndSettle();
       await reviewedAgain;
+      expect(commands.map((item) => item['action']), [
+        'document',
+        'document',
+        'create',
+      ]);
+      final create = commands.singleWhere((item) => item['action'] == 'create');
+      expect(create['command']['expected_profile_version'], 5);
+      expect(
+        create['command']['payload']['expected_document_sha256'],
+        'b' * 64,
+      );
+      expect(accepted, 1);
     },
   );
   tearDown(() async {

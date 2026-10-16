@@ -12,10 +12,12 @@ import 'package:supabase_flutter/supabase_flutter.dart'
 import 'package:jobix/app.dart';
 import 'package:jobix/core/database/database.dart';
 import 'package:jobix/core/database/encryption.dart';
+import 'package:jobix/core/design/slice_widgets.dart';
 import 'package:jobix/core/navigation/router.dart';
 import 'package:jobix/core/navigation/back_policy.dart';
 import 'package:jobix/core/providers.dart';
 import 'package:jobix/features/auth/auth_controller.dart';
+import 'package:jobix/features/auth/auth_repository.dart';
 import 'package:jobix/features/auth/provider_settings.dart';
 import 'package:jobix/features/boot/startup.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
@@ -27,6 +29,7 @@ import 'package:jobix/features/onboarding/research_context.dart';
 import 'package:jobix/features/career_profile/entity_repository.dart';
 import 'package:jobix/features/career_profile/profile_sections.dart';
 import 'package:jobix/features/builder/ai_allowance.dart';
+import 'package:jobix/features/builder/jobix_improvement.dart';
 import 'support/entity_fakes.dart';
 import 'support/slice_fakes.dart';
 import 'support/production_fonts.dart';
@@ -253,7 +256,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(
           find
-              .text(locale == 'ar' ? 'درجة البكالوريوس' : "Bachelor's degree")
+              .text(locale == 'ar' ? 'درجة البكالوريوس' : "Bachelor's Degree")
               .last,
         );
         await tester.pumpAndSettle();
@@ -357,12 +360,8 @@ void main() {
         locale: locale,
         size: const Size(402, 1100),
       );
-      for (final section in ['summary', 'target_role']) {
-        container!
-            .read(routerProvider)
-            .go(
-              section == 'summary' ? '/career/summary' : '/career/target-role',
-            );
+      for (final section in ['summary']) {
+        container!.read(routerProvider).go('/career/summary');
         await tester.pumpAndSettle();
         expect(find.byKey(Key('editor-$section')), findsOneWidget);
         expect(
@@ -480,6 +479,62 @@ void main() {
       }
     });
   }
+
+  for (final section in [
+    EntitySection.education,
+    EntitySection.volunteer,
+    EntitySection.achievement,
+    EntitySection.project,
+  ]) {
+    for (final locale in ['en', 'ar']) {
+      testWidgets('${section.key} description prompt and improvement order $locale', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          state: StartupState.signedIn,
+          locale: locale,
+          size: const Size(360, 1200),
+        );
+        await route(tester, '/career/edit/${section.key}/new?origin=career');
+        final field = tester.widget<InputDecorator>(
+          find.descendant(
+            of: find.byKey(const Key('field-description')),
+            matching: find.byType(InputDecorator),
+          ),
+        );
+        final expected = switch ((section, locale)) {
+          (EntitySection.education, 'en') =>
+            'Add relevant coursework, projects, honors, or academic achievements.',
+          (EntitySection.volunteer, 'en') =>
+            'Describe the cause you supported, your role, and how you contributed.',
+          (EntitySection.achievement, 'en') =>
+            'Describe what you achieved, why it mattered, and any measurable result.',
+          (EntitySection.project, 'en') =>
+            "Describe the project's purpose, your contribution, and its outcome.",
+          (EntitySection.education, 'ar') =>
+            'أضف المقررات أو المشاريع أو التكريمات أو الإنجازات الأكاديمية ذات الصلة.',
+          (EntitySection.volunteer, 'ar') =>
+            'صِف القضية التي دعمتها ودورك وكيف أسهمت.',
+          (EntitySection.achievement, 'ar') =>
+            'صِف ما حققته، ولماذا كان مهمًا، وأي نتيجة قابلة للقياس.',
+          (EntitySection.project, 'ar') =>
+            'صِف هدف المشروع ومساهمتك والنتيجة التي حققها.',
+          _ => throw StateError('Uncovered section prompt'),
+        };
+        expect(field.decoration.hintText, expected);
+        final improvement = find.byType(JobixImprovement);
+        expect(improvement, findsWidgets);
+        expect(
+          tester.getTopLeft(improvement.last).dy,
+          greaterThan(
+            tester.getTopLeft(find.byKey(const Key('field-description'))).dy,
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
   testWidgets('main tabs are guarded and return to the current profile', (
     tester,
   ) async {
@@ -555,7 +610,7 @@ void main() {
     );
   });
   testWidgets(
-    'Account Information updates email and uses the verified reset flow',
+    'Account Information keeps current email read-only and confirms a pending change',
     (tester) async {
       resumeClient.dispose();
       resumeClient = await createAuthenticatedResumeClient();
@@ -568,17 +623,118 @@ void main() {
         container!.read(routerProvider).routeInformationProvider.value.uri.path,
         '/settings/account',
       );
-      await tester.enterText(
-        find.byKey(const Key('account-new-email')),
-        'new@example.invalid',
+      final currentEmail = tester.widget<TextField>(
+        find.byKey(const Key('account-current-email')),
       );
-      await tester.tap(find.byKey(const Key('account-update-email')));
+      expect(currentEmail.readOnly, isTrue);
+      await tester.tap(find.byKey(const Key('account-change-email')));
       await tester.pumpAndSettle();
-      expect(auth.calls, contains('update-email'));
+      await tester.enterText(
+        find.byKey(const Key('account-change-email-input')),
+        'current@example.invalid',
+      );
+      await tester.tap(
+        find.byKey(const Key('account-send-email-confirmation')),
+      );
+      await tester.pumpAndSettle();
       expect(
-        find.textContaining('Check your email to confirm'),
+        find.textContaining('different from your current email'),
         findsOneWidget,
       );
+      expect(auth.calls, isNot(contains('update-email')));
+
+      await tester.enterText(
+        find.byKey(const Key('account-change-email-input')),
+        'new@example.invalid',
+      );
+      await tester.tap(
+        find.byKey(const Key('account-send-email-confirmation')),
+      );
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('update-email'));
+      expect(find.byKey(const Key('account-pending-email')), findsOneWidget);
+      expect(find.text('new@example.invalid'), findsOneWidget);
+      expect(find.byKey(const Key('account-resend-email')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('account-edit-pending-email')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const Key('account-change-email-input')),
+            )
+            .controller!
+            .text,
+        'new@example.invalid',
+      );
+      final submittedEmailChanges = auth.calls
+          .where((call) => call == 'update-email')
+          .length;
+      await tester.tap(
+        find.byKey(const Key('account-send-email-confirmation')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('already awaiting confirmation'),
+        findsOneWidget,
+      );
+      expect(
+        auth.calls.where((call) => call == 'update-email').length,
+        submittedEmailChanges,
+      );
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      container!.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('settings-account-information')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextButton>(find.byKey(const Key('account-resend-email')))
+            .onPressed,
+        isNull,
+      );
+      auth.updateEmailError = StateError('synthetic email update failure');
+      await tester.tap(find.byKey(const Key('account-edit-pending-email')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('account-change-email-input')),
+        'another@example.invalid',
+      );
+      await tester.tap(
+        find.byKey(const Key('account-send-email-confirmation')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('could not be verified'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('jobix-feedback-success')),
+        findsNothing,
+      );
+      expect(find.text('new@example.invalid'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      auth.updateEmailError = null;
+      await database.removeSetting('auth-email-change:user-one:resend-until');
+      auth.account = AuthAccountState(
+        userId: 'user-one',
+        email: 'current@example.invalid',
+        pendingEmail: 'new@example.invalid',
+        emailChangeSentAt: DateTime.now()
+            .subtract(const Duration(seconds: 61))
+            .toIso8601String(),
+      );
+      container!.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('settings-account-information')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextButton>(find.byKey(const Key('account-resend-email')))
+            .onPressed,
+        isNotNull,
+      );
+      await tester.tap(find.byKey(const Key('account-resend-email')));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('resend-email-change'));
       await tester.tap(find.byKey(const Key('account-reset-password')));
       await tester.pumpAndSettle();
       expect(auth.calls, contains('reset'));
@@ -939,7 +1095,7 @@ void main() {
     },
   );
   testWidgets(
-    'Target Role is placed inside Personal Information without saving pending edits',
+    'Target Role is inline, locally retained, and saved only by explicit Save',
     (tester) async {
       await pump(tester, state: StartupState.signedIn);
       final savedTargetRole = api.server.targetRole;
@@ -948,29 +1104,29 @@ void main() {
         await tester.tap(find.byKey(const Key('resume-en')));
         await tester.pumpAndSettle();
       }
-      final name = find.byKey(const Key('personal-full_name'));
-      expect(name, findsOneWidget);
-      await tester.enterText(name, 'Local-only name');
-      final editTargetRole = find.byKey(const Key('personal-edit-target-role'));
-      await tester.ensureVisible(editTargetRole);
-      await tester.tap(editTargetRole);
+      final targetRole = find.byKey(const Key('personal-target-role'));
+      expect(targetRole, findsOneWidget);
+      expect(
+        tester.widget<TextField>(targetRole).controller!.text,
+        savedTargetRole,
+      );
+      await tester.enterText(targetRole, 'Senior Product Manager');
       await tester.pumpAndSettle();
-      expect(
-        container!.read(routerProvider).routeInformationProvider.value.uri.path,
-        '/career/target-role',
-      );
-      expect(find.byKey(const Key('editor-target_role')), findsOneWidget);
+      expect(find.textContaining('not saved to your account'), findsOneWidget);
       expect(api.requests, isEmpty);
-      expect(api.server.personal['full_name'], isNot('Local-only name'));
-      expect(
-        (await repository.draft(api.server))!.personal['full_name'],
-        'Local-only name',
-      );
-
-      await route(tester, '/career');
-      expect(find.byKey(const Key('career-edit-target_role')), findsNothing);
       expect(api.server.targetRole, savedTargetRole);
-      expect(api.requests, isEmpty);
+      final roleRepository = await container!.read(
+        textSectionRepositoryProvider.future,
+      );
+      expect(
+        (await roleRepository.load(api.server, 'target_role'))!.text,
+        'Senior Product Manager',
+      );
+      await tester.ensureVisible(find.byKey(const Key('save-personal')));
+      await tester.tap(find.byKey(const Key('save-personal')));
+      await tester.pumpAndSettle();
+      expect(api.server.targetRole, 'Senior Product Manager');
+      expect(api.requests, isNotEmpty);
     },
   );
   testWidgets(
@@ -1998,6 +2154,26 @@ void main() {
         );
         expect(find.byKey(const Key('builder-progress')), findsOneWidget);
         noUnsupportedContent(tester);
+        if (step == 6) {
+          final skillCardFinder = find
+              .ancestor(
+                of: find.byKey(const Key('review-edit-skill')),
+                matching: find.byType(SliceCard),
+              )
+              .first;
+          final skillCard = tester.widget<SliceCard>(skillCardFinder);
+          final cardPadding = skillCard.padding.resolve(
+            locale == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+          );
+          expect(cardPadding.top, cardPadding.bottom);
+          final chips = find.descendant(
+            of: skillCardFinder,
+            matching: find.byType(Chip),
+          );
+          expect(chips, findsWidgets);
+          final chipHeight = tester.getSize(chips.first).height;
+          expect(chipHeight, inInclusiveRange(24, 36));
+        }
         await expectLater(
           find.byType(Scaffold),
           matchesGoldenFile('goldens/builder_step${step}_$locale.png'),

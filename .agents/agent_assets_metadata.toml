@@ -378,3 +378,17 @@ mtime_ms = 1792074577184
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/c0563aa0-dc0f-4a68-9e5a-f689a2779402/854f9f5a-8111-4994-b1c2-6a5a0edcb0ca"
 storage_version_token = "1792074691730933"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "3zoTdSv6jh1vLVBzvHZab"
+uri = "file://mobile/jobix/build/app/outputs/flutter-apk/app-arm64-v8a-development-debug.apk.zip"
+type = "unspecified"
+title = "JobiX Development ARM64 Debug APK"
+description = "Download and extract app-arm64-v8a-development-debug.apk. Verified package com.mhflow.jobix; standard Development flavor. Not installed or device-tested."
+logical_id = "5e2dcd70-46b0-4754-aa63-5c6f266bb1a2"
+content_hash = "sha256:56e770c5410514dcb5c14dc9a7f2a9951505cbdde7cb9042002c6770e19ef6a3"
+size = 57002582
+mtime_ms = 1792193391484
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/5e2dcd70-46b0-4754-aa63-5c6f266bb1a2/87c06c4a-8256-4e34-89ff-382b9468a50b"
+storage_version_token = "1792193399031260"
+content_type = "application/octet-stream"

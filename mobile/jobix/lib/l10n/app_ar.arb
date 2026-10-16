@@ -123,8 +123,8 @@
   "saveLater": "حفظ والمتابعة لاحقًا",
   "discardAction": "تجاهل التغييرات",
   "stayAction": "متابعة التعديل",
-  "leaveTitle": "هل تريد الاحتفاظ بعملك غير المكتمل؟",
-  "discardWarning": "احفظ مسودتك للمتابعة لاحقًا، أو تجاهل المسودة المحلية غير المحفوظة في الحساب فقط. لا يمكن استعادة العمل المتجاهَل. لن تُحذف البيانات المحفوظة على الخادم.",
+  "leaveTitle": "هل تريد تجاهل التغييرات غير المحفوظة؟",
+  "discardWarning": "لم تُحفظ تغييراتك. إذا غادرت الآن، فستفقدها.",
   "savedServer": "تم الحفظ في حسابك.",
   "savedDevice": "تم الحفظ على هذا الجهاز. لم يتم الحفظ في حسابك بعد.",
   "saveFailed": "لم يكتمل الحفظ على الخادم. مسودتك محفوظة على هذا الجهاز. أعد المحاولة للتحقق من النتيجة.",
@@ -229,8 +229,8 @@
   "fieldJobTitle": "المسمى الوظيفي",
   "fieldCompany": "الشركة",
   "fieldLocation": "الموقع (اختياري)",
-  "fieldStartMonth": "شهر البدء",
-  "fieldEndMonth": "شهر الانتهاء",
+  "fieldStartMonth": "تاريخ البدء",
+  "fieldEndMonth": "تاريخ الانتهاء",
   "fieldDescription": "الوصف",
   "fieldDescriptionOptional": "الوصف (اختياري)",
   "fieldDegree": "الدرجة العلمية",
@@ -238,12 +238,22 @@
   "fieldStudy": "التخصص",
   "fieldName": "الاسم",
   "fieldIssuer": "الجهة المانحة",
-  "fieldIssueMonth": "شهر الإصدار",
-  "fieldExpiryMonth": "شهر انتهاء الصلاحية (اختياري)",
+  "fieldIssueMonth": "تاريخ الإصدار",
+  "fieldExpiryMonth": "تاريخ الانتهاء (اختياري)",
   "fieldCredential": "رقم الاعتماد (اختياري)",
   "fieldUrl": "الرابط (اختياري)",
   "fieldTitle": "العنوان",
-  "fieldMonth": "الشهر",
+  "fieldMonth": "التاريخ",
+  "fieldDegreeTitle": "عنوان المؤهل",
+  "fieldDegreeTitleHint": "أدخل مؤهلك",
+  "creditsCompactCount": "{count} CR",
+  "@creditsCompactCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "fieldRole": "دورك",
   "fieldTechnologies": "التقنيات (مفصولة بفواصل)",
   "fieldLanguage": "اللغة",

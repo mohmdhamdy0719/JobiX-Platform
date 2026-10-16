@@ -13,6 +13,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/design/form_loading_state.dart';
 import '../../core/design/jobix_dialog.dart';
+import '../../core/design/jobix_feedback.dart';
+import '../builder/profile_overview.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -183,30 +185,34 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
         saved == null ||
         jsonEncode(draft!.value.payload()) != jsonEncode(saved!.payload());
     if (!changed) {
-      if (mounted) context.go(destination);
+      if (mounted) {
+        showJobixFeedback(
+          context,
+          say('Photo and links saved.', 'تم حفظ الصورة والروابط.'),
+        );
+        context.go(destination);
+      }
       return;
     }
     final discard = await showDialog<bool>(
       context: context,
-      builder: (dialog) => JobixAlertDialog(
-        title: Text(say('Leave without saving?', 'المغادرة دون حفظ؟')),
-        content: Text(
-          say(
-            "Your changes haven't been saved. You can keep editing or discard them.",
-            'لم تُحفظ تغييراتك. يمكنك متابعة التعديل أو تجاهلها.',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialog, false),
-            child: Text(say('Keep editing', 'متابعة التعديل')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialog, true),
-            child: Text(say('Discard changes', 'تجاهل التغييرات')),
-          ),
-        ],
-      ),
+      builder: (dialog) {
+        final copy = AppLocalizations.of(dialog)!;
+        return JobixAlertDialog(
+          title: Text(copy.leaveTitle),
+          content: Text(copy.discardWarning),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: Text(copy.stayAction),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: Text(copy.discardAction),
+            ),
+          ],
+        );
+      },
     );
     if (discard != true || !mounted) return;
     try {
@@ -526,6 +532,10 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
       onBack: leave,
       child: SliceScaffold(
         title: say('Photo & custom links', 'الصورة والروابط المخصصة'),
+        singleLineTitle: true,
+        actions: widget.origin == 'career'
+            ? null
+            : const [CreditsPill(compact: true)],
         leading: IconButton(
           onPressed: busy ? null : () => requestJobixBack(context),
           tooltip: say(

@@ -10,6 +10,8 @@ import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/form_loading_state.dart';
 import '../../core/design/jobix_dialog.dart';
+import '../../core/design/jobix_feedback.dart';
+import 'profile_overview.dart';
 import '../../core/navigation/back_policy.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
@@ -198,11 +200,12 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     }
     if (widget.section == EntitySection.education) {
       final value = source.text('degree');
-      degreeOtherController.text = value.startsWith('other:')
-          ? value.substring(6)
-          : degreeCodes.contains(value)
-          ? ''
-          : value;
+      final selected = degreeOption(value);
+      degreeOtherController.text = selected == 'degree:other'
+          ? value.startsWith('other:')
+                ? value.substring(6)
+                : value
+          : '';
     }
   }
 
@@ -262,6 +265,18 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       await repository.retainDraft(profile!.id, copy);
       await repository.upsert(profile!, copy);
       ref.invalidate(firstProfileProvider);
+      if (mounted) {
+        showJobixFeedback(
+          context,
+          copy.section == EntitySection.education
+              ? (AppLocalizations.of(context)!.localeName.startsWith('ar')
+                    ? 'تم حفظ المؤهل.'
+                    : 'Education saved.')
+              : (AppLocalizations.of(context)!.localeName.startsWith('ar')
+                    ? 'تم حفظ التغييرات.'
+                    : 'Changes saved.'),
+        );
+      }
       if (mounted) close();
     } catch (error) {
       if (mounted) setState(() => issue = saveIssue(error));
@@ -330,6 +345,10 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       onBack: leave,
       child: SliceScaffold(
         title: title,
+        singleLineTitle: true,
+        actions: widget.origin == EditorOrigin.career
+            ? null
+            : const [CreditsPill(compact: true)],
         leading: back,
         bottom: Row(
           children: [
@@ -434,26 +453,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     if (widget.section == EntitySection.education && field.name == 'degree') {
       final selected = degreeOption(item!.text('degree'));
       final ar = copy.localeName.startsWith('ar');
-      const labelsEn = {
-        'degree:high_school': 'High school',
-        'degree:associate': 'Associate degree',
-        'degree:bachelor': "Bachelor's degree",
-        'degree:master': "Master's degree",
-        'degree:doctorate': 'Doctorate',
-        'degree:diploma': 'Diploma',
-        'degree:certificate': 'Certificate',
-        'degree:other': 'Other',
-      };
-      const labelsAr = {
-        'degree:high_school': 'الثانوية العامة',
-        'degree:associate': 'درجة جامعية متوسطة',
-        'degree:bachelor': 'درجة البكالوريوس',
-        'degree:master': 'درجة الماجستير',
-        'degree:doctorate': 'درجة الدكتوراه',
-        'degree:diploma': 'دبلوم',
-        'degree:certificate': 'شهادة',
-        'degree:other': 'أخرى',
-      };
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -468,7 +467,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               for (final option in degreeCodes)
                 DropdownMenuItem(
                   value: option,
-                  child: Text((ar ? labelsAr : labelsEn)[option]!),
+                  child: Text(degreeChoiceLabel(option, ar ? 'ar' : 'en')),
                 ),
             ],
             onChanged: busy
@@ -483,7 +482,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
                             : 'other:${degreeOtherController.text}',
                       );
                     } else {
-                      degreeOtherController.clear();
                       edit('degree', value);
                     }
                   },
@@ -496,7 +494,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               controller: degreeOtherController,
               inputFormatters: [LengthLimitingTextInputFormatter(194)],
               decoration: InputDecoration(
-                labelText: ar ? 'اكتب المؤهل' : 'Enter qualification',
+                labelText: copy.fieldDegreeTitle,
+                hintText: copy.fieldDegreeTitleHint,
                 errorText:
                     saveAttempted && degreeOtherController.text.trim().isEmpty
                     ? copy.problemRequired
@@ -601,8 +600,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           : 'Describe the cause you supported, your role, and how you contributed.',
     EntitySection.project =>
       arabic
-          ? 'صِف ما أنشأته، والأدوات التي استخدمتها، والنتيجة.'
-          : 'Describe what you built, the tools you used, and the result.',
+          ? 'صِف هدف المشروع ومساهمتك والنتيجة التي حققها.'
+          : "Describe the project's purpose, your contribution, and its outcome.",
     _ => null,
   };
 

@@ -1,0 +1,424 @@
+# JobiX — Remaining UI/UX Fixes, PDF Export Root-Cause Resolution, and Fresh Development APK
+
+## Objective
+
+Continue from the current JobiX workspace and the latest Development APK. Fix every item below, preserve all previously approved and successfully implemented requirements, run the relevant regression tests, and build one fresh standard Development ARM64 debug APK for device testing.
+
+**Do not ask me to upload screenshots.** The screen names, UI elements, current behavior, and expected behavior are specified below.
+
+Inspect the existing implementation before editing. Make focused changes, not a rewrite. Do not hide errors, weaken validation, invent functionality, or modify unrelated features.
+
+## 1. Account Information — Email Change Flow and Back Navigation
+
+**Screen:** Settings → Account Information.
+
+### Current email
+
+- Make the existing Sign-in email field strictly read-only.
+- Display the authenticated user's current Supabase Auth email.
+- Remove direct editing from this field.
+- Replace the current `Send confirmation` button with `Change email`.
+
+### Change email dialog
+
+When the user taps `Change email`, open a branded JobiX dialog containing:
+
+- Title: `Change sign-in email`
+- A field for the new email address.
+- `Cancel` and `Send confirmation` actions.
+
+Validate the email and prevent submission if it matches the current email or is invalid. Disable duplicate submissions while a request is in progress.
+
+On successful submission, close the dialog and show a temporary `Pending confirmation` section on the Account Information page. It must display the new pending email and provide:
+
+- `Edit email` — opens the dialog again with the pending email prefilled.
+- `Resend confirmation` — resends the confirmation to the pending address.
+
+The pending section must remain accurate after navigating away and reopening Account Information. Use authoritative Supabase Auth state or a safely persisted pending-change record; do not rely only on an in-memory widget variable.
+
+When the new email is confirmed, refresh the authenticated user's actual email and remove the pending section. Handle confirmation cancellation, expired links, failed requests, and attempts to request a new email safely.
+
+### Anti-spam and security
+
+- Add a reasonable resend cooldown and a visible countdown or remaining-wait message.
+- Prevent rapid repeated requests, duplicate submissions, and bypassing the cooldown by repeatedly reopening the dialog.
+- Respect Supabase Auth rate limits and provider behavior.
+- Never claim that an email was sent if the request failed.
+- Do not expose another user's email or allow unauthenticated email changes.
+- Preserve email confirmation and authentication security. Do not modify Production configuration.
+
+### Back navigation
+
+The Account Information screen is nested under Settings.
+
+- Its toolbar Back button and Android system Back must return to Settings.
+- They must not show the app-exit confirmation or close the application while Settings remains a valid previous destination.
+- Preserve the existing root-level exit behavior only when the user is genuinely at the app root.
+
+Add focused tests for navigation, dialog validation, cooldown, pending state, and successful/failed requests where the existing test architecture supports them.
+
+## 2. Personal Information — Edit Target Role Inline
+
+**Screen:** Personal Information → Target Role.
+
+Currently the Target Role section shows an `Edit` button that navigates to another page. Replace this behavior with an inline editable field in the same section.
+
+- Keep the existing Target Role section in its current position, between Contact Essentials and Professional Links.
+- Replace the Edit button with the actual Target Role input, using the existing field styling and saved value.
+- Preserve current validation, selection options, and the existing Save operation for Personal Information.
+- Keep unsaved changes local until the user explicitly saves.
+- Do not create a duplicate Target Role section or a separate navigation destination.
+- Verify the layout on narrow screens and with the keyboard open.
+
+## 3. Unsaved-Changes Dialog — Concise, Professional Copy Everywhere
+
+**Scope:** Personal Information and all other relevant editors that warn users about unsaved changes when leaving.
+
+The current dialog contains lengthy implementation details about local drafts, server data, recovery, and discarded work. Replace that copy with this concise wording:
+
+**Title:** `Discard unsaved changes?`
+
+**Message:** `Your changes haven't been saved. If you leave now, you'll lose them.`
+
+**Actions:**
+- `Keep editing`
+- `Discard changes`
+
+Requirements:
+
+- `Keep editing` closes the dialog and preserves the current editing state.
+- `Discard changes` discards only the unsaved edits and leaves previously saved Supabase data untouched.
+- Do not silently save when the user chooses to discard.
+- Do not restore deliberately discarded edits on a later visit.
+- Preserve the existing save/recovery safeguards without exposing internal implementation details in user-facing text.
+- Use the shared branded JobiX dialog design.
+- Apply consistent concise copy throughout the app wherever the same unsaved-changes situation occurs. Do not alter unrelated confirmation dialogs.
+
+## 4. Review Profile — Consistent Top and Bottom Spacing
+
+**Screen:** Career Builder → Review Profile.
+
+The section cards currently have excessive top padding compared with their bottom padding. The problem affects Projects, Skills, Languages, and the other profile sections.
+
+- Inspect the shared section-card and header-row components before making individual adjustments.
+- Normalize vertical padding and spacing so the title/Edit row sits at a visually balanced distance from the top and bottom edges.
+- Keep consistent spacing between the section title, Edit action, and section content.
+- Preserve readable touch targets and accessibility.
+- Avoid one-off offsets that fix a single card but break other sections.
+- Check the complete Review Profile page on narrow and larger Android screens.
+
+### Skills chips
+
+The current skill chips, such as `Problem Solving` and `Communication`, appear oversized.
+
+- Reduce chip height, internal padding, and text size slightly.
+- Keep them comfortably readable and tappable.
+- Preserve wrapping and consistent spacing between chips.
+- Do not change the underlying skills or saved data.
+
+Add/update widget tests and goldens for section-card spacing and Skills chip dimensions.
+
+## 5. All Builder Headers — Keep Page Titles on One Line
+
+**Scope:** All Career Builder steps and relevant builder subpages, including Professional Summary, Work Experience, Education, Achievements, Projects, Volunteer Experience, Personal Information, and Review Profile.
+
+Some headers wrap long page titles onto two lines, particularly when the Credits indicator is present.
+
+Implement a shared responsive header layout:
+
+- Keep the back button, page title, and Credits indicator properly aligned.
+- Keep the page title on a single line on supported phone widths.
+- Reduce the title font size responsively when necessary, within sensible typography limits.
+- Use flexible layout constraints and ellipsis only as a last resort; do not allow overlapping controls or clipped back buttons.
+- Keep the progress indicator and step labels below the header as appropriate.
+- Preserve safe areas and consistent spacing.
+
+### Credits label
+
+In **Career Builder step headers only**, use the compact balance format `5 CR` instead of `5 Credits`, using the actual available balance from the existing shared Credits component.
+
+- Do not hard-code a balance or create another source of truth.
+- Preserve the existing Credits tap/navigation behavior.
+- Keep the full word `Credits` on Home and general non-builder screens, including Settings and other informational pages.
+- Use the same compact format consistently across all builder steps and their subpages.
+
+Test long titles at narrow widths, Arabic RTL, and English LTR. A title must not wrap onto two lines.
+
+## 6. Description Placeholders and Field Order
+
+**Scope:** Education, Volunteer Experience, Achievements, and Projects add/edit forms.
+
+Replace the generic `Description` placeholder with meaningful section-specific hints. Keep the field optional unless the existing business rules explicitly require it.
+
+Use these exact English placeholders:
+
+- **Education:** `Add relevant coursework, projects, honors, or academic achievements.`
+- **Volunteer Experience:** `Describe the cause you supported, your role, and how you contributed.`
+- **Achievements:** `Describe what you achieved, why it mattered, and any measurable result.`
+- **Projects:** `Describe the project's purpose, your contribution, and its outcome.`
+
+Requirements:
+
+- The field must remain a real editable Description field; the hint must not be saved as content.
+- Preserve existing values when editing older records.
+- Keep the appropriate writing guidance and `Improve with JobiX` control below the Description field wherever the existing supported editor includes that control.
+- On the **Achievements** and **Projects** forms, Description must be the final input field after all other form fields. The writing-improvement area, where supported, comes immediately after Description.
+- Review the field order in Education and Volunteer Experience too, keeping a logical form sequence.
+- Apply the correct Arabic localization rather than displaying English-only placeholders in Arabic mode.
+- Do not add redundant explanatory text or create new mandatory fields.
+
+Add tests that verify the correct placeholder and field order for each editor.
+
+## 7. Education — Professional Degree Options and Custom Other Value
+
+**Screen:** Education → Degree selector.
+
+Review the current degree list and make it professionally organized, with qualifications only—not academic majors or specializations, which belong in Field of study.
+
+Use a sensible order covering these common qualifications:
+
+1. Secondary School Certificate
+2. High School Diploma
+3. Vocational Certificate
+4. Vocational Diploma
+5. Professional Certificate
+6. Certificate
+7. Diploma
+8. Associate Degree
+9. Foundation Degree
+10. Bachelor's Degree
+11. Graduate Certificate
+12. Postgraduate Diploma
+13. Master's Degree
+14. Professional Doctorate
+15. Doctorate / PhD
+16. Other
+
+Avoid duplicate or confusing options where two labels represent the same qualification in the app's intended education system. If two options must remain distinct for different qualification systems, document the distinction in code/localization.
+
+### Other behavior
+
+When the user selects `Other`, display a new input immediately after Degree:
+
+- Label: `Degree title`
+- Hint: `Enter your qualification`
+
+The custom title is required only when `Other` is selected. Hide the custom field when another degree is selected, without accidentally erasing previously entered values before the user explicitly saves.
+
+Preserve legacy free-text degree values and do not silently overwrite existing records. Keep stable stored values, localized English/Arabic labels, and correct resume-language rendering. Do not save translated display labels as the canonical qualification value.
+
+Add tests for the Other field, validation, selection, persistence, legacy values, and language switching.
+
+## 8. Date Fields — Use Start Date and End Date Consistently
+
+**Scope:** All relevant date inputs throughout Work Experience, Education, Volunteer Experience, Projects, Achievements, and other applicable resume sections.
+
+The inputs currently say `Start month` and `End month`, although the user selects both month and year.
+
+- Rename these labels to `Start date` and `End date` wherever the underlying control represents a month/year date.
+- Apply the corresponding localized labels in Arabic.
+- Preserve the current month/year selection behavior and stored date values.
+- Do not introduce a day selector or change the data format unless the existing implementation already supports a full date.
+- Preserve current-date/present behavior for ongoing roles, including the existing validation and ordering rules.
+- Ensure field labels, accessibility semantics, and validation messages remain consistent.
+
+Search the entire relevant form code and shared date-field components so the change is not applied to only one section.
+
+## 9. Resume Export — Fix Template Identity and User-Facing Language
+
+**Screen:** Resume Export.
+
+The template card must consistently show:
+
+**Template name:** `ATS Professional`
+
+**Description:** `A clean, single-column resume designed for readability and ATS compatibility.`
+
+**Specifications:** `A4 page · Single column · Consistent spacing and typography.`
+
+Requirements:
+
+- Keep the template name in the title position, the description in its description area, and the specifications in their own area.
+- Preserve the realistic fictional sample preview without inserting fictional data into the user's real resume.
+- Use the friendly template name consistently in selection, preview metadata, export history, and details screens where applicable.
+- Never show internal template identifiers to users.
+- Preserve the existing resume language selector and correct Arabic RTL / English LTR behavior.
+- Remove the inline green status text `Resume language saved.` from the export screen. Use the shared global feedback system specified below instead.
+
+## 10. Shared Global Feedback Alerts
+
+Establish one consistent, professional feedback system across JobiX for successful saves, language changes, and other user actions.
+
+### Visual behavior
+
+Use a single shared branded transient alert/snackbar component with clear semantic states:
+
+- **Success:** green.
+- **Warning:** amber/yellow.
+- **Error:** red.
+
+Keep the design compact, polished, accessible, and consistent with JobiX's visual identity. Avoid disruptive modal dialogs for routine success messages.
+
+### Behavior
+
+- A successful resume-language change must show a success alert such as `Resume language updated.`
+- Successful saves must show a concise message such as `Personal information saved.` or the appropriate section-specific message.
+- Show success only after the authoritative save or update operation succeeds.
+- Validation problems and actions that need user attention use a warning state.
+- Actual failures use the error state.
+- Do not show success alerts for failed or unconfirmed operations.
+- A new alert must replace the previous active alert; do not stack duplicate alerts or show twenty alerts if an action is repeated twenty times.
+- Repeated alerts should use a short, sensible display duration and clean dismissal.
+- Preserve the user's current screen unless the operation's intended behavior explicitly navigates away.
+- Use the same shared mechanism across the app instead of implementing unrelated custom alerts in each page.
+- Ensure alerts respect safe areas, keyboard visibility, RTL/LTR, and screen-reader semantics.
+- Do not remove critical persistent error details where users need to take action.
+
+Add tests for success, warning, error, replacement of an active alert, and no success feedback on a failed save.
+
+## 11. PDF Export — Critical Root-Cause Fix
+
+**This is the highest-priority functional issue.**
+
+The current app still displays:
+
+**Title:** `PDF request issue`
+
+**Message:** `The saved document changed. Review the current Preview before creating a new export.`
+
+The same error also appears below `Preview & Export` on the Resume Export screen.
+
+This error must not be treated as a cosmetic issue. Determine why the document is considered changed, fix the actual defect, and prove the corrected behavior with a regression test.
+
+### Investigation requirements
+
+Trace the full flow through the existing implementation:
+
+1. How the profile is loaded and saved.
+2. How the authoritative Supabase-saved document is identified.
+3. When the save operation is confirmed to the client.
+4. How the preview snapshot, revision, version, canonical representation, or hash is produced.
+5. What the export request sends to the backend.
+6. How the backend compares the current saved document with the preview/export request.
+7. Whether a refresh, asynchronous update, normalization, serialization, or stale client state causes a false mismatch.
+8. Whether local recovery data is incorrectly being treated as saved data.
+9. How export reservation/idempotency and document versioning interact.
+
+Identify the specific root cause in code and/or a reproducible test. Do not guess, simply retry, or weaken the server's integrity checks.
+
+### Required behavior
+
+After a user saves a profile:
+
+- Wait for the authoritative save to complete.
+- Ensure the preview is built from the confirmed saved document/revision.
+- Ensure the export request refers to the same saved version the user reviewed.
+- A normal save → preview → export flow must succeed without a false mismatch.
+- If the saved document genuinely changes after preview, reject the stale request safely and provide a clear way to refresh/review the current document.
+- Once the user reviews the current version, do not repeatedly show the same stale-state error unless the document actually changed again.
+- Do not silently overwrite newer server data with an old local copy.
+- Do not lose unsaved user edits.
+- Do not create duplicate export jobs or reservations during retries.
+
+### Credit safety
+
+- A new successful PDF export costs 2 Credits.
+- A valid existing PDF download is free while the PDF remains available.
+- A failed export must not incur a final charge.
+- Preserve server-authoritative Credit accounting, reservations, finalization, release, and idempotency.
+- Do not perform live exports or debit Credits during automated tests.
+
+### Regression tests
+
+Add a focused test reproducing the original false mismatch, then prove the corrected save → preview → export flow. Also test a genuinely stale preview and verify that integrity protection still works.
+
+The final report must state the actual root cause, affected code path, fix, regression test, and any remaining backend/configuration limitation.
+
+Do not claim the export issue is fixed merely because the UI error disappeared or the APK builds.
+
+## 12. Preserve the Approved Seven-Day PDF Expiration Policy
+
+Keep the existing intended policy:
+
+`Creating a new resume PDF costs 2 Credits. You can download it for free within 7 days of creation. After 7 days, the PDF expires and is deleted.`
+
+Before promising this in the UI, verify the actual backend expiration, download authorization, storage deletion, and scheduled cleanup behavior.
+
+- If deletion is not implemented, implement it using the existing safe backend architecture.
+- Expired files must not remain downloadable through previously issued links where the storage architecture allows that to be prevented.
+- Preserve allowed export-history metadata.
+- Do not modify Production infrastructure or claim deletion is verified without evidence.
+- Keep the global alert system separate from persistent export status and integrity errors.
+
+## 13. Navigation and Existing Approved Behavior
+
+Preserve all earlier approved JobiX requirements and fixes, including:
+
+- Settings navigation and nested Android Back behavior.
+- Cloud-first Supabase persistence, authentication, ownership checks, and RLS.
+- Explicit-save behavior and safe handling of unsaved edits.
+- Career Profile completion and Continue Profile behavior.
+- Existing Credits component and server-authoritative balances.
+- Credit & Export History navigation and nested details navigation.
+- Arabic RTL / English LTR layout.
+- Existing template, preview, and export functionality.
+- Existing shared dialog and refresh fixes.
+- Existing onboarding flow and authentication behavior.
+- Previously approved standard Development build configuration.
+
+Do not reintroduce internal user-facing copy such as `local draft`, `cloud version`, `review latest saved version`, or `back — retain local draft`.
+
+Do not undo successful fixes or change unrelated functionality.
+
+## 14. Tests and Final Verification
+
+Inspect existing code and tests before modifying anything. Use focused changes and add/update tests for:
+
+- Account Information Back navigation.
+- Email-change dialog, validation, pending confirmation, resend cooldown, and errors.
+- Inline Target Role editing and save behavior.
+- Concise discard dialog and preserved server data.
+- Review Profile section spacing and smaller Skills chips.
+- Single-line responsive builder titles with compact Credits.
+- Correct Description hints and field order.
+- Degree options, Other/custom title, and legacy values.
+- Start date / End date labels throughout relevant sections.
+- Shared alert states and replacement behavior.
+- Template name and metadata.
+- The PDF export root cause and regression flow.
+- Credit safety, stale-preview integrity, and seven-day expiration where testable.
+- English LTR and Arabic RTL layouts.
+
+Run the relevant focused tests, widget tests/goldens, `flutter analyze --no-pub`, and `git diff --check`. Report only tests that actually ran and passed. Review the final diff for unintended changes.
+
+## 15. Build and Deliver One Fresh Standard Development APK
+
+After the fixes and verification, build one fresh standard Development ARM64 debug APK with the established configuration:
+
+- Flavor: `development`
+- Configuration: `config/dev.local.json`
+- `JOBIX_ENABLE_PDF_EXPORT=true`
+- Application ID: `com.mhflow.jobix`
+- Artifact: `mobile/jobix/build/app/outputs/flutter-apk/app-arm64-v8a-development-debug.apk`
+
+Verify the actual artifact's package ID, build timestamp, size, SHA-256, Development configuration target, and successful build exit code.
+
+Do not substitute a stale APK or the `localPreview` flavor.
+
+Do not install the APK, perform a live PDF export, debit Credits, or modify Production, Google Play, signing configuration, secrets, or infrastructure. Do not uninstall or clear data from any existing installed app.
+
+Provide the exact artifact path and a usable download link if the environment supports one.
+
+### Final report
+
+Separate the report into:
+
+1. Implemented changes by screen/component.
+2. PDF export root cause and verified fix.
+3. Email-change flow and any Supabase configuration limitations.
+4. Seven-day expiration implementation and verification.
+5. Tests actually passed, failed, or skipped.
+6. Fresh APK path, package ID, build timestamp, size, SHA-256, and download link.
+7. Anything still incomplete or not verified.
+
+**Stop after delivering the Development APK and honest report. Production remains out of scope until explicitly approved.**

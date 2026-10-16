@@ -63,7 +63,13 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   }
 
   void clearLocalDocument() {
-    if (mounted) setState(() => document = null);
+    // A VERSION_CONFLICT replaces the local Preview with the server's current
+    // document and offers a deliberate second review. Keep that one
+    // authoritative document when the original Preview route closes; clearing
+    // it here made every retry return to the same stale document.
+    if (mounted && !(reviewRequired && document != null)) {
+      setState(() => document = null);
+    }
   }
 
   Future<void> createPdf(

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/design/jobix_dialog.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/design/jobix_feedback.dart';
 import '../../core/providers.dart';
 import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
@@ -14,8 +15,10 @@ import '../../l10n/app_localizations_ar.dart';
 import '../../l10n/app_localizations_en.dart';
 import '../auth/auth_controller.dart';
 import '../builder/builder_scaffold.dart';
+import '../builder/profile_overview.dart';
 import '../career_profile/career_profile.dart';
 import '../career_profile/career_profile_repository.dart';
+import '../career_profile/text_section_repository.dart';
 import '../home/home_page.dart';
 import 'personal_information_fields.dart';
 import 'personal_information_validator.dart';
@@ -36,11 +39,15 @@ class _PersonalInformationPageState
   final controllers = {
     for (final field in personalFields) field: TextEditingController(),
   };
+  final targetRoleController = TextEditingController();
   final errors = <String>{};
   DraftRepository? repository;
   CareerProfile? profile;
   PersonalDraft? draft;
+  TextSectionRepository? textRepository;
+  TextSectionDraft? targetRoleDraft;
   Future<void> writes = Future.value();
+  Future<void> targetRoleWrites = Future.value();
   bool busy = false,
       failed = false,
       dirty = false,
@@ -48,6 +55,13 @@ class _PersonalInformationPageState
       allowPop = false;
   String? notice;
   List<String> cityHistory = [];
+
+  bool get hasUnsavedChanges =>
+      dirty ||
+      (profile != null &&
+          targetRoleDraft != null &&
+          (targetRoleDraft!.text != profile!.targetRole ||
+              targetRoleDraft!.request != null));
   @override
   void initState() {
     super.initState();
@@ -59,10 +73,22 @@ class _PersonalInformationPageState
       final repo = await ref.read(draftRepositoryProvider.future);
       final value = await ref.read(firstProfileProvider.future);
       final local = await repo.draft(value);
+      final textRepo = await ref.read(textSectionRepositoryProvider.future);
+      final localRole = await textRepo.load(value, 'target_role');
       final rawCities = await repo.database.setting('cities_${repo.user}');
       if (!mounted) return;
       repository = repo;
       profile = value;
+      textRepository = textRepo;
+      targetRoleDraft =
+          localRole ??
+          TextSectionDraft(
+            profileId: value.id,
+            section: 'target_role',
+            version: value.version,
+            text: value.targetRole,
+          );
+      targetRoleController.text = targetRoleDraft!.text;
       // Initial account suggestion only: do not reinsert an intentionally
       // cleared email from a local draft or overwrite saved profile contact.
       final authEmail = ref
@@ -109,6 +135,7 @@ class _PersonalInformationPageState
     for (final controller in controllers.values) {
       controller.dispose();
     }
+    targetRoleController.dispose();
     super.dispose();
   }
 
@@ -128,10 +155,26 @@ class _PersonalInformationPageState
         });
   }
 
+  void retainTargetRole(String value) {
+    final current = targetRoleDraft!;
+    final next = current.edit(value);
+    setState(() {
+      targetRoleDraft = next;
+      notice = null;
+    });
+    targetRoleWrites = targetRoleWrites
+        .then((_) => textRepository!.retain(next))
+        .catchError((Object _) {
+          if (mounted) setState(() => storageFailed = true);
+        });
+  }
+
   Future<bool> persistNow() async {
     try {
       await writes;
+      await targetRoleWrites;
       await repository!.retain(draft!);
+      if (hasUnsavedChanges) await textRepository!.retain(targetRoleDraft!);
       if (mounted) setState(() => storageFailed = false);
       return true;
     } catch (_) {
@@ -168,10 +211,41 @@ class _PersonalInformationPageState
           busy = false;
           notice = copy.savedDevice;
         });
+        showJobixFeedback(
+          context,
+          copy.localeName.startsWith('ar')
+              ? 'راجع الحقول المحددة. احتفظنا بتغييراتك على هذا الجهاز.'
+              : 'Check the highlighted fields. Your changes are retained on this device.',
+          kind: JobixFeedbackKind.warning,
+        );
       }
       return;
     }
     try {
+      await targetRoleWrites;
+      // Resolve a durable, ambiguous role-save request before sending another
+      // mutation against its old profile version.
+      if (targetRoleDraft!.request != null) {
+        profile = await textRepository!.save(targetRoleDraft!);
+        targetRoleDraft =
+            await textRepository!.load(profile!, 'target_role') ??
+            TextSectionDraft(
+              profileId: profile!.id,
+              section: 'target_role',
+              version: profile!.version,
+              text: profile!.targetRole,
+            );
+        targetRoleController.text = targetRoleDraft!.text;
+        if (draft!.frozen == null) {
+          draft = PersonalDraft(
+            profileId: draft!.profileId,
+            baseVersion: profile!.version,
+            personal: draft!.personal,
+            resumeLanguage: draft!.resumeLanguage,
+          );
+          await repository!.retain(draft!);
+        }
+      }
       final saved = await repository!.save(draft!);
       if (!mounted) return;
       profile = saved;
@@ -196,12 +270,49 @@ class _PersonalInformationPageState
           cityHistory.join('\n'),
         );
       }
+      // The profile mutation above advances the version. Rebase only a local
+      // role draft with no frozen request; an ambiguous request keeps its
+      // original identity and version for safe reconciliation.
+      if (targetRoleDraft!.request == null) {
+        if (targetRoleController.text.trim() == saved.targetRole.trim()) {
+          await textRepository!.discard(saved, 'target_role');
+        }
+        targetRoleDraft = TextSectionDraft(
+          profileId: saved.id,
+          section: 'target_role',
+          version: saved.version,
+          text: targetRoleController.text,
+        );
+        if (targetRoleController.text.trim() != saved.targetRole.trim()) {
+          await textRepository!.retain(targetRoleDraft!);
+          profile = await textRepository!.save(targetRoleDraft!);
+          targetRoleDraft =
+              await textRepository!.load(profile!, 'target_role') ??
+              TextSectionDraft(
+                profileId: profile!.id,
+                section: 'target_role',
+                version: profile!.version,
+                text: profile!.targetRole,
+              );
+          targetRoleController.text = targetRoleDraft!.text;
+        }
+      }
       ref.invalidate(firstProfileProvider);
       ref.invalidate(unfinishedDraftProvider(saved.id));
       if (mounted) {
-        setState(
-          () => notice = retained == null ? copy.savedServer : copy.savedDevice,
-        );
+        setState(() {
+          notice = retained == null && !hasUnsavedChanges
+              ? copy.savedServer
+              : copy.savedDevice;
+        });
+        if (retained == null && !hasUnsavedChanges) {
+          showJobixFeedback(
+            context,
+            copy.localeName.startsWith('ar')
+                ? 'تم حفظ معلوماتك.'
+                : 'Personal information saved.',
+          );
+        }
       }
     } catch (error) {
       if (!mounted) return;
@@ -209,12 +320,74 @@ class _PersonalInformationPageState
       if (!mounted) return;
       if (error is PostgrestException &&
           error.message.contains('VERSION_CONFLICT')) {
-        await conflict();
+        if (targetRoleDraft?.request != null) {
+          await targetRoleConflict();
+        } else {
+          await conflict();
+        }
       } else {
         setState(() => notice = copy.saveFailed);
+        showJobixFeedback(
+          context,
+          copy.saveFailed,
+          kind: JobixFeedbackKind.error,
+        );
       }
     } finally {
       if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> targetRoleConflict() async {
+    final copy = AppLocalizations.of(context)!;
+    try {
+      final latest = await repository!.load(freshOnly: true);
+      if (!mounted) return;
+      final choice = await showDialog<bool>(
+        context: context,
+        builder: (context) => JobixAlertDialog(
+          title: Text(copy.conflictTitle),
+          content: Text(copy.conflictBody),
+          actions: [
+            JobixDialogAction.secondary(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(copy.keepServer),
+            ),
+            JobixDialogAction.primary(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(copy.reapplyLocal),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || choice == null) return;
+      profile = latest;
+      if (choice) {
+        targetRoleDraft = TextSectionDraft(
+          profileId: latest.id,
+          section: 'target_role',
+          version: latest.version,
+          text: targetRoleController.text,
+        );
+        await textRepository!.retain(targetRoleDraft!);
+        setState(() => notice = copy.savedDevice);
+      } else {
+        await repository!.database.discardSection(
+          repository!.user,
+          latest.id,
+          'target_role',
+        );
+        targetRoleDraft = TextSectionDraft(
+          profileId: latest.id,
+          section: 'target_role',
+          version: latest.version,
+          text: latest.targetRole,
+        );
+        targetRoleController.text = latest.targetRole;
+        setState(() => notice = copy.savedServer);
+      }
+    } catch (_) {
+      if (mounted) setState(() => notice = copy.saveFailed);
     }
   }
 
@@ -274,7 +447,7 @@ class _PersonalInformationPageState
 
   Future<void> leave() async {
     if (busy) return;
-    if (!dirty || draft == null) {
+    if (!hasUnsavedChanges || draft == null) {
       exit();
       return;
     }
@@ -301,6 +474,12 @@ class _PersonalInformationPageState
     setState(() => busy = true);
     try {
       await writes;
+      await targetRoleWrites;
+      if (draft!.frozen != null || targetRoleDraft?.request != null) {
+        if (mounted) setState(() => notice = copy.outcomeUnknown);
+        return;
+      }
+      await textRepository!.discard(profile!, 'target_role');
       await repository!.discard(profile!.id);
       if (mounted) exit();
     } catch (_) {
@@ -328,8 +507,8 @@ class _PersonalInformationPageState
   /// move on only after the server acknowledged the save.
   Future<void> advance() async {
     if (busy || draft == null) return;
-    if (dirty) await save();
-    if (!mounted || dirty) return;
+    if (hasUnsavedChanges) await save();
+    if (!mounted || hasUnsavedChanges) return;
     allowPop = true;
     context.go(
       fromReview
@@ -349,6 +528,10 @@ class _PersonalInformationPageState
         onBack: leave,
         child: SliceScaffold(
           title: copy.personalInformation,
+          singleLineTitle: true,
+          actions: widget.builder || fromReview
+              ? const [CreditsPill(compact: true)]
+              : null,
           leading: widget.builder && !fromReview
               ? null
               : IconButton(
@@ -388,6 +571,8 @@ class _PersonalInformationPageState
             )
           : SliceScaffold(
               title: copy.personalInformation,
+              singleLineTitle: true,
+              actions: fromReview ? const [CreditsPill(compact: true)] : null,
               leading: IconButton(
                 key: const Key('leave-personal'),
                 tooltip: copy.backAction,
@@ -433,6 +618,7 @@ class _PersonalInformationPageState
         if (profile != null &&
             draft != null &&
             (draft!.resumeLanguage != profile!.resumeLanguage ||
+                targetRoleController.text != profile!.targetRole ||
                 personalFields.any(
                   (field) => draft!.personal[field] != profile!.personal[field],
                 ))) ...[
@@ -535,35 +721,8 @@ class _PersonalInformationPageState
                 WidgetsBinding.instance.platformDispatcher.locale.countryCode ==
                 'EG',
             cityHistory: cityHistory,
-            targetRoleSection: SliceCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionHeading(
-                    title: copy.targetRoleOptional,
-                    subtitle: copy.localeName.startsWith('ar')
-                        ? 'يظهر هذا الدور أعلى سيرتك الذاتية.'
-                        : 'This role appears near the top of your resume.',
-                  ),
-                  if (profile!.targetRole.trim().isNotEmpty) ...[
-                    const SizedBox(height: TokensV0.space8),
-                    Text(profile!.targetRole),
-                  ],
-                  const SizedBox(height: TokensV0.space8),
-                  OutlinedButton.icon(
-                    key: const Key('personal-edit-target-role'),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: Text(copy.editAction),
-                    onPressed: busy
-                        ? null
-                        : () async {
-                            if (!await persistNow() || !mounted) return;
-                            context.go('/career/target-role?origin=personal');
-                          },
-                  ),
-                ],
-              ),
-            ),
+            targetRoleController: targetRoleController,
+            onTargetRoleChanged: retainTargetRole,
             onChanged: (field, value) {
               errors.remove(field);
               retain(draft!.edit(field, value));

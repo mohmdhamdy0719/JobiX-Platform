@@ -23,6 +23,31 @@ void main() {
   });
 
   group('item validation', () {
+    test('education Other requires a custom qualification title', () {
+      expect(
+        item(EntitySection.education, {
+          'degree': 'other:',
+        }).problems()['degree'],
+        FieldProblem.required,
+      );
+      expect(
+        item(EntitySection.education, {
+          'degree': 'other:Foundation award',
+          'institution': 'Example University',
+          'field_of_study': 'Systems',
+          'start_month': '2020-01',
+          'end_month': '2024-01',
+        }).problems(),
+        isEmpty,
+      );
+      for (final section in [
+        EntitySection.achievement,
+        EntitySection.project,
+      ]) {
+        expect(section.fields.last.name, 'description');
+      }
+    });
+
     test('empty optional prose stays quiet without changing completeness', () {
       for (final section in [
         EntitySection.experience,

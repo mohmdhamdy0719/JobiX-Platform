@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jobix/core/database/database.dart';
 import 'package:jobix/core/database/encryption.dart';
 import 'package:jobix/core/navigation/router.dart';
+import 'package:jobix/core/navigation/back_policy.dart';
 import 'package:jobix/core/providers.dart';
 import 'package:jobix/features/auth/auth_repository.dart';
 import 'package:jobix/features/boot/startup.dart';
@@ -17,6 +18,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'support/slice_fakes.dart';
 
 void main() {
+  test('Account Information Back returns to Settings', () {
+    expect(backDestination(Uri.parse('/settings/account')), '/settings');
+  });
   configureSqlCipher(
     testLibrary: Platform.environment['JOBIX_SQLCIPHER_LIBRARY']!,
   );

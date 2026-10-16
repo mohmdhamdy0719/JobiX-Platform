@@ -19,12 +19,10 @@ String? backDestination(Uri uri) {
     return step > 1 ? '/builder/${step - 1}' : '/home';
   }
   if (path.startsWith('/career/')) {
-    if (origin == 'personal' && path == '/career/target-role') {
-      return '/career/personal';
-    }
     return origin == 'review' ? '/builder/6' : '/career';
   }
   if (path == '/resume') return '/career';
+  if (path == '/settings/account') return '/settings';
   if (path == '/export-history') return '/resume';
   if (path == '/credits') return '/home';
   if (path == '/confirm' || path == '/forgot') return '/auth?mode=login';

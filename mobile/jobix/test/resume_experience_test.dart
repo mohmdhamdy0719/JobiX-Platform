@@ -123,9 +123,18 @@ void main() {
     expect(const ResumeCopy(true).pageCount(2), 'صفحتان');
   });
   test('template display names never leak an internal identifier', () {
+    const copy = ResumeCopy(false);
     expect(
-      resumeTemplateDisplayName(const ResumeCopy(false), 'resume_ats_en_v1'),
+      resumeTemplateDisplayName(copy, 'resume_ats_en_v1'),
       'ATS Professional',
+    );
+    expect(
+      copy.atsSingleTemplate,
+      'A clean, single-column resume designed for readability and ATS compatibility.',
+    );
+    expect(
+      copy.templateSpecifications,
+      'A4 page · Single column · Consistent spacing and typography.',
     );
     expect(
       resumeTemplateDisplayName(

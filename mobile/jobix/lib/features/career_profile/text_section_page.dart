@@ -7,11 +7,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/jobix_dialog.dart';
 import '../../core/design/tokens.dart';
+import '../../core/design/jobix_feedback.dart';
 import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../builder/builder_scaffold.dart';
 import '../builder/jobix_improvement.dart';
+import '../builder/profile_overview.dart';
 import '../home/home_page.dart';
 import 'career_profile.dart';
 import 'text_section_repository.dart';
@@ -183,9 +185,12 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       ref.invalidate(unfinishedDraftProvider(result.id));
       setState(
         () => notice = retained == null
-            ? AppLocalizations.of(context)!.savedServer
+            ? null
             : AppLocalizations.of(context)!.savedDevice,
       );
+      if (retained == null) {
+        showJobixFeedback(context, say('Changes saved.', 'تم حفظ التغييرات.'));
+      }
     } on PostgrestException catch (e) {
       if (!mounted) return;
       if (e.message == 'VERSION_CONFLICT') {
@@ -402,6 +407,10 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
     }
     return SliceScaffold(
       title: textSectionTitle(context, widget.section),
+      singleLineTitle: true,
+      actions: widget.builderStep != null || fromReview
+          ? const [CreditsPill(compact: true)]
+          : null,
       leading: IconButton(
         onPressed: busy ? null : () => requestJobixBack(context),
         icon: const Icon(Icons.arrow_back),

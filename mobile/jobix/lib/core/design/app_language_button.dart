@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
+import 'jobix_feedback.dart';
 import 'tokens.dart';
 import '../providers.dart';
 
@@ -24,12 +25,20 @@ class AppLanguageButton extends ConsumerWidget {
           final language = isArabic ? 'en' : 'ar';
           try {
             await ref.read(localeProvider.notifier).setOverride(language);
+            if (context.mounted) {
+              showJobixFeedback(
+                context,
+                language == 'ar'
+                    ? 'تم تغيير لغة التطبيق إلى العربية.'
+                    : 'App language changed to English.',
+              );
+            }
           } catch (_) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(AppLocalizations.of(context)!.localWriteError),
-                ),
+              showJobixFeedback(
+                context,
+                AppLocalizations.of(context)!.localWriteError,
+                kind: JobixFeedbackKind.error,
               );
             }
           }

@@ -791,7 +791,7 @@ abstract class AppLocalizations {
   /// No description provided for @discardAction.
   ///
   /// In en, this message translates to:
-  /// **'Discard'**
+  /// **'Discard changes'**
   String get discardAction;
 
   /// No description provided for @stayAction.
@@ -803,13 +803,13 @@ abstract class AppLocalizations {
   /// No description provided for @leaveTitle.
   ///
   /// In en, this message translates to:
-  /// **'Keep your unfinished work?'**
+  /// **'Discard unsaved changes?'**
   String get leaveTitle;
 
   /// No description provided for @discardWarning.
   ///
   /// In en, this message translates to:
-  /// **'Save your draft to continue later, or discard only the unsynced local draft. Discarded work cannot be recovered. Saved server data will not be deleted.'**
+  /// **'Your changes haven\'t been saved. If you leave now, you\'ll lose them.'**
   String get discardWarning;
 
   /// No description provided for @savedServer.
@@ -1433,13 +1433,13 @@ abstract class AppLocalizations {
   /// No description provided for @fieldStartMonth.
   ///
   /// In en, this message translates to:
-  /// **'Start month'**
+  /// **'Start date'**
   String get fieldStartMonth;
 
   /// No description provided for @fieldEndMonth.
   ///
   /// In en, this message translates to:
-  /// **'End month'**
+  /// **'End date'**
   String get fieldEndMonth;
 
   /// No description provided for @fieldDescription.
@@ -1487,13 +1487,13 @@ abstract class AppLocalizations {
   /// No description provided for @fieldIssueMonth.
   ///
   /// In en, this message translates to:
-  /// **'Issue month'**
+  /// **'Issue date'**
   String get fieldIssueMonth;
 
   /// No description provided for @fieldExpiryMonth.
   ///
   /// In en, this message translates to:
-  /// **'Expiry month (optional)'**
+  /// **'Expiry date (optional)'**
   String get fieldExpiryMonth;
 
   /// No description provided for @fieldCredential.
@@ -1517,8 +1517,26 @@ abstract class AppLocalizations {
   /// No description provided for @fieldMonth.
   ///
   /// In en, this message translates to:
-  /// **'Month'**
+  /// **'Date'**
   String get fieldMonth;
+
+  /// No description provided for @fieldDegreeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Degree title'**
+  String get fieldDegreeTitle;
+
+  /// No description provided for @fieldDegreeTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your qualification'**
+  String get fieldDegreeTitleHint;
+
+  /// No description provided for @creditsCompactCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} CR'**
+  String creditsCompactCount(int count);
 
   /// No description provided for @fieldRole.
   ///

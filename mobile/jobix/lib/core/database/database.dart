@@ -250,12 +250,14 @@ class AppDatabase extends _$AppDatabase {
     }
     await removeSetting('cities_$user');
     await customStatement(
-      'DELETE FROM local_settings WHERE substr(key,1,?)=? OR substr(key,1,?)=?',
+      'DELETE FROM local_settings WHERE substr(key,1,?)=? OR substr(key,1,?)=? OR substr(key,1,?)=?',
       [
         'extras:$user:'.length,
         'extras:$user:',
         'resume:$user:'.length,
         'resume:$user:',
+        'auth-email-change:$user:'.length,
+        'auth-email-change:$user:',
       ],
     );
     if (await setting('registration_user') == user) {

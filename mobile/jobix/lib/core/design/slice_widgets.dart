@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'tokens.dart';
@@ -11,6 +13,7 @@ class SliceScaffold extends StatelessWidget {
     this.bottom,
     this.header,
     this.subheader,
+    this.singleLineTitle = false,
     this.canvasColor = TokensV0.canvas,
     this.fillViewport = false,
     super.key,
@@ -23,6 +26,9 @@ class SliceScaffold extends StatelessWidget {
   final Widget? header;
   // Rendered under the standard title row (e.g. builder progress).
   final Widget? subheader;
+
+  /// Builder headers keep their title on one line, scaling down only as needed.
+  final bool singleLineTitle;
   final Color canvasColor;
   final bool fillViewport;
 
@@ -38,7 +44,12 @@ class SliceScaffold extends StatelessWidget {
             if (header != null)
               header!
             else if (hasHeader)
-              _SliceHeader(title: title, leading: leading, actions: actions),
+              _SliceHeader(
+                title: title,
+                leading: leading,
+                actions: actions,
+                singleLineTitle: singleLineTitle,
+              ),
             if (subheader != null) subheader!,
             Expanded(
               child: LayoutBuilder(
@@ -106,10 +117,12 @@ class _SliceHeader extends StatelessWidget {
     required this.title,
     required this.leading,
     required this.actions,
+    required this.singleLineTitle,
   });
   final String? title;
   final Widget? leading;
   final List<Widget>? actions;
+  final bool singleLineTitle;
   @override
   Widget build(BuildContext context) => Container(
     constraints: const BoxConstraints(minHeight: 64),
@@ -129,6 +142,35 @@ class _SliceHeader extends StatelessWidget {
         Expanded(
           child: title == null
               ? const SizedBox.shrink()
+              : singleLineTitle
+              ? LayoutBuilder(
+                  builder: (context, constraints) {
+                    final theme = Theme.of(context);
+                    final base = theme.textTheme.headlineSmall!;
+                    final scaler = MediaQuery.textScalerOf(context);
+                    final painter = TextPainter(
+                      text: TextSpan(text: title!, style: base),
+                      maxLines: 1,
+                      textDirection: Directionality.of(context),
+                      textScaler: scaler,
+                    )..layout();
+                    final baseSize = base.fontSize ?? 24;
+                    final minimumSize = scaler.scale(14);
+                    final ratio =
+                        painter.width <= constraints.maxWidth ||
+                            painter.width == 0
+                        ? 1.0
+                        : constraints.maxWidth / painter.width;
+                    final fontSize = math.max(minimumSize, baseSize * ratio);
+                    return Text(
+                      title!,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: base.copyWith(fontSize: fontSize),
+                    );
+                  },
+                )
               : Text(
                   title!,
                   maxLines: 2,

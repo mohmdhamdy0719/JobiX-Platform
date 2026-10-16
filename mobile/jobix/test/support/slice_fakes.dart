@@ -65,6 +65,11 @@ class FakeProfileApi implements ProfileApi {
 class FakeAuthApi implements AuthApi {
   final List<String> calls = [];
   bool confirmed = false, googleOpened = true;
+  AuthAccountState account = const AuthAccountState(
+    userId: 'user-one',
+    email: 'current@example.invalid',
+  );
+  Object? updateEmailError, resendEmailError;
   void Function()? onSignedIn;
   Object? signInError;
   @override
@@ -98,8 +103,34 @@ class FakeAuthApi implements AuthApi {
   }
 
   @override
-  Future<void> updateEmail(String email) async {
+  Future<AuthAccountState> updateEmail(String email) async {
     calls.add('update-email');
+    if (updateEmailError case final Object error) throw error;
+    account = AuthAccountState(
+      userId: account.userId,
+      email: account.email,
+      pendingEmail: email,
+      emailChangeSentAt: DateTime.now().toIso8601String(),
+    );
+    return account;
+  }
+
+  @override
+  Future<void> resendEmailChange(String email) async {
+    calls.add('resend-email-change');
+    if (resendEmailError case final Object error) throw error;
+    account = AuthAccountState(
+      userId: account.userId,
+      email: account.email,
+      pendingEmail: account.pendingEmail,
+      emailChangeSentAt: DateTime.now().toIso8601String(),
+    );
+  }
+
+  @override
+  Future<AuthAccountState> accountState({bool refresh = false}) async {
+    calls.add(refresh ? 'account-state-refresh' : 'account-state');
+    return account;
   }
 
   @override

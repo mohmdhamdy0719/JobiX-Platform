@@ -6,7 +6,7 @@ void main() {
     expect(degreeOption(''), isEmpty);
     expect(degreeOption('degree:bachelor'), 'degree:bachelor');
     expect(degreeOption("Bachelor's degree"), 'degree:bachelor');
-    expect(degreeLabel('degree:bachelor', 'en'), "Bachelor's degree");
+    expect(degreeLabel('degree:bachelor', 'en'), "Bachelor's Degree");
     expect(degreeLabel('degree:bachelor', 'ar'), 'درجة البكالوريوس');
   });
 
