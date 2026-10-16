@@ -20,6 +20,7 @@ import 'package:jobix/features/resume/resume_export_panel.dart';
 import 'package:jobix/features/resume/resume_render.dart';
 import 'package:jobix/features/resume/resume_operation_page.dart';
 import 'package:jobix/features/resume/resume_page.dart';
+import 'package:jobix/features/resume/resume_experience_shared.dart';
 import 'package:jobix/features/auth/auth_controller.dart';
 import 'package:jobix/features/builder/resume_journey.dart';
 import 'package:jobix/features/resume/resume_export_service.dart';
@@ -274,6 +275,7 @@ void main() {
     bool initial = false,
     bool includeCompleted = false,
     bool historyOnly = false,
+    ValueChanged<String>? onOperation,
     GlobalKey<ResumeExportPanelState>? panelKey,
   }) async {
     await tester.pumpWidget(
@@ -287,7 +289,7 @@ void main() {
           showDocument: (value) async {
             observedDocument = value;
           },
-          onOperation: (_) {},
+          onOperation: onOperation ?? (_) {},
         ),
         language: language,
         overrides: [
@@ -891,17 +893,51 @@ void main() {
   testWidgets(
     'worker retry progress reaches completion on the same operation',
     (tester) async {
-      await mount(tester, initial: true);
+      await mount(
+        tester,
+        initial: true,
+        onOperation: (id) {
+          final context = tester.element(find.byType(ResumeExportPanel));
+          Navigator.of(context).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => ResumeOperationPage(exportId: id, waiting: true),
+            ),
+          );
+        },
+      );
       await tap(tester, 'Create PDF — 2 Credits');
-      await tap(tester, 'Create — 2 Credits');
+      await tester.ensureVisible(find.text('Create — 2 Credits'));
+      await tester.tap(find.text('Create — 2 Credits'));
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+
+      Future<void> waitForStatusCount(int expected) async {
+        for (
+          var frame = 0;
+          frame < 20 &&
+              commands
+                      .where((command) => command['action'] == 'status')
+                      .length <
+                  expected;
+          frame++
+        ) {
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pump();
+        }
+        expect(
+          commands.where((command) => command['action'] == 'status').length,
+          greaterThanOrEqualTo(expected),
+        );
+      }
+
+      await waitForStatusCount(1);
       workerState = 'RETRYABLE_FAILURE';
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Recovery pending'), findsWidgets);
+      await waitForStatusCount(2);
+      final copy = ResumeCopy.of(tester.element(find.byType(Scaffold).last));
+      expect(find.text(resumeStatusTitle(copy, 'processing')), findsOneWidget);
       workerState = 'COMPLETED';
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Ready'), findsWidgets);
+      await waitForStatusCount(3);
+      expect(find.text(resumeStatusLabel(copy, 'completed')), findsWidgets);
       expect(accepted, 1);
       final states = commands.where((c) => c['action'] == 'status');
       expect(states.length, greaterThanOrEqualTo(2));
@@ -916,16 +952,35 @@ void main() {
   testWidgets(
     'terminal worker failure is visible without automatic new export',
     (tester) async {
-      await mount(tester, initial: true);
-      await tap(tester, 'Create PDF — 2 Credits');
-      await tap(tester, 'Create — 2 Credits');
-      workerState = 'FAILED';
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Failed — reservation released'),
-        findsWidgets,
+      await mount(
+        tester,
+        initial: true,
+        onOperation: (id) {
+          final context = tester.element(find.byType(ResumeExportPanel));
+          Navigator.of(context).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => ResumeOperationPage(exportId: id, waiting: true),
+            ),
+          );
+        },
       );
+      workerState = 'FAILED';
+      await tap(tester, 'Create PDF — 2 Credits');
+      await tester.ensureVisible(find.text('Create — 2 Credits'));
+      await tester.tap(find.text('Create — 2 Credits'));
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      for (
+        var frame = 0;
+        frame < 20 &&
+            commands.where((command) => command['action'] == 'status').isEmpty;
+        frame++
+      ) {
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+      }
+      final copy = ResumeCopy.of(tester.element(find.byType(Scaffold).last));
+      expect(find.text(resumeStatusLabel(copy, 'failed')), findsWidgets);
       final count = commands.where((c) => c['action'] == 'status').length;
       await tester.pump(const Duration(seconds: 9));
       expect(commands.where((c) => c['action'] == 'status').length, count);

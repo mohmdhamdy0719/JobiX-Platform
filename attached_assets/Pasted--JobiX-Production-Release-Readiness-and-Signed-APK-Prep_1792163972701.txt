@@ -1,0 +1,79 @@
+# JobiX — Production Release Readiness and Signed APK Preparation
+
+Continue from the latest implementation report. The Resume/PDF UI changes and focused tests have already been implemented. Do not restart the implementation or repeat unrelated UI work.
+
+Our goal is to produce a properly configured, signed Production Android APK for testing JobiX on multiple devices, without accidentally deploying or modifying Production backend resources.
+
+## Phase 1 — Read-only release audit
+
+Inspect the existing repository and report the exact current state of:
+
+1. The standard Android application ID, flavors, build variants, and release build configuration.
+2. The existing Android signing configuration and whether an approved Production keystore is available.
+3. The documented Production environment configuration and required variables, without exposing any secret values.
+4. The Production Supabase project reference, authentication redirect configuration, and PDF export readiness, using read-only verification where authorized.
+5. The current Production feature-flag behavior, including `JOBIX_ENABLE_PDF_EXPORT`, and the safe mechanism for enabling the feature in a release build.
+6. The existing build scripts and why they currently produce debug builds.
+7. Any existing release artifacts and their signing certificates, if available.
+
+Do not create missing Production configuration by copying Development values. Do not assume that the Development project or its gates are suitable for Production.
+
+Do not print, expose, commit, or place private keys, signing passwords, service-role keys, or other privileged credentials into the APK or logs.
+
+## Phase 2 — Resolve release blockers without changing Production
+
+For every blocker, explain:
+
+- What is missing.
+- Why it is required.
+- Whether it can be resolved safely within the repository.
+- Whether it requires an owner-provided credential or separate authorization.
+
+Inspect the existing Git state and preserve all previous changes.
+
+Do not modify Production backend resources, database records, migrations, Supabase functions, secrets, IAM, Cloud Run, buckets, billing, or feature gates.
+
+Do not deploy anything to Production.
+
+If the Production signing key or necessary credentials are unavailable, stop before producing a falsely labeled Production release. Report the precise requirement instead of generating another debug APK.
+
+## Phase 3 — Release build preparation
+
+If and only if all required configuration and signing prerequisites already exist and are approved:
+
+1. Use the standard production application ID and official Production configuration.
+2. Build the actual release variant with the approved release signing configuration.
+3. Ensure no Development endpoints, localPreview flavor, mock services, debug signing, or unintended debug-only behavior is included.
+4. Verify that the Production export feature configuration is explicit and consistent with the currently authorized server-side state. Do not enable the Production export gate yourself.
+5. Verify the authentication callback scheme and application ID.
+6. Inspect the resulting APK metadata and signature.
+7. Report the exact APK path, variant, application ID, signing status, file size, modification time, and SHA-256.
+
+Do not install or distribute the APK unless separately requested.
+
+## Phase 4 — Focused verification
+
+Complete the outstanding checks that can safely run without Production mutations:
+
+- Investigate why the unfiltered `resume_export_test.dart` run exceeded its timeout. Run the smallest relevant subsets first and report actual exit codes.
+- Investigate the hanging `CreditsPage` widget test. Fix it only if the root cause is understood and the correction is within scope.
+- Re-run the focused tests affected by any changes.
+- Run `flutter analyze --no-pub`, Dart formatting checks, and `git diff --check`.
+- Review the final diff for accidental Development/Production configuration mixing.
+
+Do not claim that an uncompleted test passed.
+
+## Phase 5 — Report and stop
+
+Provide a concise release-readiness report listing:
+
+- Confirmed prerequisites.
+- Remaining blockers and the exact owner action required for each.
+- Tests executed and their real results.
+- Whether a properly signed Production APK was built.
+- APK metadata and checksum, if available.
+- Any remaining runtime verification that still requires physical devices.
+
+Do not perform a live PDF export, create an export job, debit Credits, access private Production documents, or modify/deploy Production backend resources.
+
+The objective is a real, correctly configured release artifact—not another Development APK and not a claim of Production readiness based only on successful compilation.
