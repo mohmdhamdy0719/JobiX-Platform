@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/design/jobix_dialog.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -38,43 +37,7 @@ class HomePage extends ConsumerWidget {
     return SliceScaffold(
       title: copy.appTitle,
       leading: const BrandMark(size: 40),
-      actions: [
-        const CreditsPill(),
-        IconButton(
-          tooltip: copy.signOut,
-          key: const Key('sign-out'),
-          icon: const Icon(Icons.logout),
-          onPressed: () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (dialog) => JobixAlertDialog(
-                title: Text(copy.signOut),
-                content: Text(copy.signOutLocalWarning),
-                actions: [
-                  JobixDialogAction.secondary(
-                    onPressed: () => Navigator.pop(dialog, false),
-                    child: Text(copy.stayAction),
-                  ),
-                  JobixDialogAction.destructive(
-                    onPressed: () => Navigator.pop(dialog, true),
-                    child: Text(copy.signOut),
-                  ),
-                ],
-              ),
-            );
-            if (confirmed != true || !context.mounted) return;
-            try {
-              await signOutAndWipe(ref);
-            } catch (_) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(copy.signOutFailed)));
-              }
-            }
-          },
-        ),
-      ],
+      actions: const [CreditsPill()],
       bottom: const AuthenticatedNavigation(selected: 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../core_mvp/core_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../career_profile/career_profile.dart';
+import '../auth/auth_controller.dart';
 import 'resume_document.dart';
 import 'resume_experience_widgets.dart';
 import 'resume_export_service.dart';
@@ -535,7 +536,13 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     }
     try {
       final client = await ref.read(supabaseClientProvider.future);
-      final saved = await ResumeExportService(client).download(id);
+      final fullName = ref
+          .read(firstProfileProvider)
+          .valueOrNull
+          ?.personal['full_name'];
+      final saved = await ResumeExportService(
+        client,
+      ).download(id, suggestedName: fullName);
       if (mounted) {
         setState(
           () => message = saved == true

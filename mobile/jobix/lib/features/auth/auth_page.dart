@@ -143,6 +143,8 @@ class _AuthPageState extends ConsumerState<AuthPage> {
         ? copy.signupSubtitle
         : login
         ? copy.loginSubtitle
+        : gateway
+        ? copy.welcomeSubtitle
         : copy.authSubtitle;
     final flow = ref.watch(authFlowProvider);
     final pending = ref.watch(pendingConfirmationEmailProvider);
@@ -154,220 +156,236 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     return SliceScaffold(
       title: !gateway ? title : null,
       leading: gateway
-          ? const BrandMark(size: 38)
+          ? null
           : IconButton(
               tooltip: copy.backAction,
               icon: const Icon(Icons.arrow_back),
               onPressed: busy || recovery ? null : () => context.go('/auth'),
             ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (gateway || signup || login)
-            const Center(child: BrandMark(size: 60)),
-          if (gateway || signup || login)
-            const SizedBox(height: TokensV0.space24),
-          SectionHeading(title: title, subtitle: subtitle),
-          const SizedBox(height: TokensV0.space24),
-          if (notice != null || flow.error)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(
-                bottom: TokensV0.space16,
-              ),
-              child: NoticePanel(
-                error: notice?.isError ?? true,
-                message: (notice ?? AuthNoticeKind.failure).localized(copy),
-              ),
-            ),
-          if (gateway) ...[
-            PrimaryAction(
-              label: copy.createAccount,
-              onPressed: () async {
-                final progress = await ref.read(researchProvider.future);
-                if (context.mounted) {
-                  context.go(
-                    progress.complete ? '/auth?mode=signup' : '/onboarding',
-                  );
-                }
-              },
-            ),
-            const SizedBox(height: TokensV0.space12),
-            OutlinedButton(
-              onPressed: () => context.go('/auth?mode=login'),
-              child: Text(copy.loginAction),
-            ),
-            const SizedBox(height: TokensV0.space24),
-            NoticePanel(message: copy.contextOnly),
-          ] else if (confirm) ...[
-            PrimaryAction(
-              label: copy.loginAction,
-              onPressed: () => context.go('/auth?mode=login'),
-            ),
-            if (pending != null && pending.isNotEmpty) ...[
-              const SizedBox(height: TokensV0.space12),
-              OutlinedButton(
-                key: const Key('resend-confirmation'),
-                onPressed: busy ? null : () => resend(pending),
-                child: Text(copy.resendConfirmation),
-              ),
-            ],
-          ] else
-            Form(
-              key: form,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (!recovery) ...[
-                    _FieldLabel(label: copy.emailLabel),
-                    TextFormField(
-                      key: const Key('auth-email'),
-                      controller: email,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: reset
-                          ? TextInputAction.done
-                          : TextInputAction.next,
-                      onFieldSubmitted: (_) {
-                        if (reset && !busy) submit();
-                      },
-                      textDirection: TextDirection.ltr,
-                      autofillHints: const [AutofillHints.email],
-                      decoration: InputDecoration(hintText: copy.emailExample),
-                      validator: (value) =>
-                          value == null ||
-                              value.trim().isEmpty ||
-                              validatePersonalField('email', value) != null
-                          ? copy.invalidEmail
-                          : null,
-                    ),
-                  ],
-                  if (!reset) ...[
-                    const SizedBox(height: TokensV0.space16),
-                    _FieldLabel(
-                      label: recovery ? copy.newPassword : copy.passwordLabel,
-                    ),
-                    TextFormField(
-                      key: const Key('auth-password'),
-                      controller: password,
-                      obscureText: obscure,
-                      textDirection: TextDirection.ltr,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) {
-                        if (!busy) submit();
-                      },
-                      enableSuggestions: false,
-                      autocorrect: false,
-                      autofillHints: [
-                        signup || recovery
-                            ? AutofillHints.newPassword
-                            : AutofillHints.password,
-                      ],
-                      decoration: InputDecoration(
-                        hintText: recovery
-                            ? copy.newPassword
-                            : copy.passwordLabel,
-                        suffixIcon: IconButton(
-                          tooltip: obscure
-                              ? copy.showPassword
-                              : copy.hidePassword,
-                          onPressed: () => setState(() => obscure = !obscure),
-                          icon: Icon(
-                            obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                          ),
-                        ),
-                      ),
-                      validator: (value) => value == null || value.isEmpty
-                          ? copy.passwordRequired
-                          : null,
-                    ),
-                  ],
-                  if ((login || signup) && settings.hasError) ...[
-                    const SizedBox(height: TokensV0.space16),
-                    NoticePanel(message: copy.providerSettingsUnavailable),
-                    TextButton(
-                      key: const Key('auth-provider-retry'),
-                      onPressed: () =>
-                          ref.invalidate(authProviderSettingsProvider),
-                      child: Text(copy.retry),
-                    ),
-                  ],
-                  if (signup) ...[
-                    const SizedBox(height: TokensV0.space20),
-                    Container(
-                      padding: const EdgeInsetsDirectional.all(
-                        TokensV0.space16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: TokensV0.secondarySurface,
-                        border: Border.all(color: TokensV0.border),
-                        borderRadius: BorderRadius.circular(
-                          TokensV0.controlRadius,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.info_outline,
-                            size: 19,
-                            color: TokensV0.textSecondary,
-                          ),
-                          const SizedBox(width: TokensV0.space12),
-                          Expanded(
-                            child: Text(
-                              copy.legalLinksUnavailable,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: TokensV0.textPrimary),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: TokensV0.space24),
-                  PrimaryAction(
-                    key: const Key('auth-submit'),
-                    busy: busy,
-                    onPressed: submit,
-                    label: recovery
-                        ? copy.updatePassword
-                        : reset
-                        ? copy.sendReset
-                        : signup
-                        ? copy.createAccount
-                        : copy.loginAction,
+      fillViewport: true,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (gateway || signup || login)
+                const Center(child: BrandMark(size: 64)),
+              if (gateway || signup || login)
+                const SizedBox(height: TokensV0.space24),
+              SectionHeading(title: title, subtitle: subtitle),
+              const SizedBox(height: TokensV0.space24),
+              if (notice != null || flow.error)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    bottom: TokensV0.space16,
                   ),
-                  if ((login || signup) && googleEnabled) ...[
-                    const SizedBox(height: TokensV0.space12),
-                    OutlinedButton(
-                      key: const Key('auth-google'),
-                      onPressed: busy ? null : google,
-                      child: Text(copy.googleSignIn),
-                    ),
-                  ],
-                  if (login) ...[
-                    const SizedBox(height: TokensV0.space8),
-                    TextButton(
-                      onPressed: busy ? null : () => context.go('/forgot'),
-                      child: Text(copy.forgotPassword),
-                    ),
-                  ],
-                  if (signup || login) ...[
-                    const SizedBox(height: TokensV0.space16),
-                    TextButton(
-                      onPressed: busy
-                          ? null
-                          : () => context.go(
-                              signup ? '/auth?mode=login' : '/auth?mode=signup',
-                            ),
-                      child: Text(signup ? copy.haveAccount : copy.needAccount),
-                    ),
-                  ],
+                  child: NoticePanel(
+                    error: notice?.isError ?? true,
+                    message: (notice ?? AuthNoticeKind.failure).localized(copy),
+                  ),
+                ),
+              if (gateway) ...[
+                PrimaryAction(
+                  label: copy.createAccount,
+                  onPressed: () async {
+                    final progress = await ref.read(researchProvider.future);
+                    if (context.mounted) {
+                      context.go(
+                        progress.complete ? '/auth?mode=signup' : '/onboarding',
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: TokensV0.space12),
+                OutlinedButton(
+                  onPressed: () => context.go('/auth?mode=login'),
+                  child: Text(copy.loginAction),
+                ),
+                const SizedBox(height: TokensV0.space24),
+                NoticePanel(message: copy.contextOnly),
+              ] else if (confirm) ...[
+                PrimaryAction(
+                  label: copy.loginAction,
+                  onPressed: () => context.go('/auth?mode=login'),
+                ),
+                if (pending != null && pending.isNotEmpty) ...[
+                  const SizedBox(height: TokensV0.space12),
+                  OutlinedButton(
+                    key: const Key('resend-confirmation'),
+                    onPressed: busy ? null : () => resend(pending),
+                    child: Text(copy.resendConfirmation),
+                  ),
                 ],
-              ),
-            ),
-        ],
+              ] else
+                Form(
+                  key: form,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (!recovery) ...[
+                        _FieldLabel(label: copy.emailLabel),
+                        TextFormField(
+                          key: const Key('auth-email'),
+                          controller: email,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: reset
+                              ? TextInputAction.done
+                              : TextInputAction.next,
+                          onFieldSubmitted: (_) {
+                            if (reset && !busy) submit();
+                          },
+                          textDirection: TextDirection.ltr,
+                          autofillHints: const [AutofillHints.email],
+                          decoration: InputDecoration(
+                            hintText: copy.emailExample,
+                          ),
+                          validator: (value) =>
+                              value == null ||
+                                  value.trim().isEmpty ||
+                                  validatePersonalField('email', value) != null
+                              ? copy.invalidEmail
+                              : null,
+                        ),
+                      ],
+                      if (!reset) ...[
+                        const SizedBox(height: TokensV0.space16),
+                        _FieldLabel(
+                          label: recovery
+                              ? copy.newPassword
+                              : copy.passwordLabel,
+                        ),
+                        TextFormField(
+                          key: const Key('auth-password'),
+                          controller: password,
+                          obscureText: obscure,
+                          textDirection: TextDirection.ltr,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) {
+                            if (!busy) submit();
+                          },
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          autofillHints: [
+                            signup || recovery
+                                ? AutofillHints.newPassword
+                                : AutofillHints.password,
+                          ],
+                          decoration: InputDecoration(
+                            hintText: recovery
+                                ? copy.newPassword
+                                : copy.passwordLabel,
+                            suffixIcon: IconButton(
+                              tooltip: obscure
+                                  ? copy.showPassword
+                                  : copy.hidePassword,
+                              onPressed: () =>
+                                  setState(() => obscure = !obscure),
+                              icon: Icon(
+                                obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                            ),
+                          ),
+                          validator: (value) => value == null || value.isEmpty
+                              ? copy.passwordRequired
+                              : null,
+                        ),
+                      ],
+                      if ((login || signup) && settings.hasError) ...[
+                        const SizedBox(height: TokensV0.space16),
+                        NoticePanel(message: copy.providerSettingsUnavailable),
+                        TextButton(
+                          key: const Key('auth-provider-retry'),
+                          onPressed: () =>
+                              ref.invalidate(authProviderSettingsProvider),
+                          child: Text(copy.retry),
+                        ),
+                      ],
+                      if (signup) ...[
+                        const SizedBox(height: TokensV0.space20),
+                        Container(
+                          padding: const EdgeInsetsDirectional.all(
+                            TokensV0.space16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: TokensV0.secondarySurface,
+                            border: Border.all(color: TokensV0.border),
+                            borderRadius: BorderRadius.circular(
+                              TokensV0.controlRadius,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                size: 19,
+                                color: TokensV0.textSecondary,
+                              ),
+                              const SizedBox(width: TokensV0.space12),
+                              Expanded(
+                                child: Text(
+                                  copy.legalLinksUnavailable,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: TokensV0.textPrimary),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: TokensV0.space24),
+                      PrimaryAction(
+                        key: const Key('auth-submit'),
+                        busy: busy,
+                        onPressed: submit,
+                        label: recovery
+                            ? copy.updatePassword
+                            : reset
+                            ? copy.sendReset
+                            : signup
+                            ? copy.createAccount
+                            : copy.loginAction,
+                      ),
+                      if ((login || signup) && googleEnabled) ...[
+                        const SizedBox(height: TokensV0.space12),
+                        OutlinedButton(
+                          key: const Key('auth-google'),
+                          onPressed: busy ? null : google,
+                          child: Text(copy.googleSignIn),
+                        ),
+                      ],
+                      if (login) ...[
+                        const SizedBox(height: TokensV0.space8),
+                        TextButton(
+                          onPressed: busy ? null : () => context.go('/forgot'),
+                          child: Text(copy.forgotPassword),
+                        ),
+                      ],
+                      if (signup || login) ...[
+                        const SizedBox(height: TokensV0.space16),
+                        TextButton(
+                          onPressed: busy
+                              ? null
+                              : () => context.go(
+                                  signup
+                                      ? '/auth?mode=login'
+                                      : '/auth?mode=signup',
+                                ),
+                          child: Text(
+                            signup ? copy.haveAccount : copy.needAccount,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

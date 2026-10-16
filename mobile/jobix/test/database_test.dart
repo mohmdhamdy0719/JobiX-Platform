@@ -90,6 +90,18 @@ void main() {
     expect(await reopened.setting('locale'), isNull);
     await reopened.close();
   });
+  test(
+    'completed profile journey survives account-local edit cleanup',
+    () async {
+      final db = AppDatabase(encryptedDatabase(file, key));
+      await db.setSetting('resume_complete:u1', 'true');
+      await db.setSetting('resume:u1:journey:p1', '{"step":6,"complete":true}');
+      await db.clearAccount('u1');
+      expect(await db.setting('resume_complete:u1'), 'true');
+      expect(await db.setting('resume:u1:journey:p1'), isNull);
+      await db.close();
+    },
+  );
   test('wrong key cannot read encrypted pages', () async {
     final db = AppDatabase(encryptedDatabase(file, key));
     await db.setSetting('locale', 'en');

@@ -298,6 +298,7 @@ void main() {
       expect(guard(path: '/builder/6'), isNull);
       expect(guard(path: '/builder/7'), '/home');
       expect(guard(path: '/career/personal'), isNull);
+      expect(guard(path: '/settings/account'), isNull);
       expect(guard(path: '/career/edit/experience/new'), isNull);
       expect(guard(path: '/home'), isNull);
       expect(guard(path: '/home', recovery: true), '/recovery');

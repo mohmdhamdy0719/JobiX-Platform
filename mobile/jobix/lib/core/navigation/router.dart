@@ -11,6 +11,7 @@ import '../../features/resume/resume_page.dart';
 import '../../features/resume/resume_operation_page.dart';
 import '../../features/core_mvp/credits_page.dart';
 import '../../features/core_mvp/settings_page.dart';
+import '../../features/core_mvp/account_information_page.dart';
 import '../../features/home/home_page.dart';
 import '../../features/onboarding/onboarding_controller.dart';
 import '../../features/onboarding/onboarding_page.dart';
@@ -56,6 +57,7 @@ String? sliceRedirect({
     if (path == '/home' ||
         path == '/career' ||
         path == '/settings' ||
+        path == '/settings/account' ||
         path == '/credits' ||
         path == '/resume' ||
         path == '/export-history' ||
@@ -193,6 +195,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/settings',
                 builder: (_, __) => const SettingsPage(),
+              ),
+              GoRoute(
+                path: '/settings/account',
+                builder: (_, __) => const AccountInformationPage(),
               ),
               GoRoute(
                 path: '/credits',

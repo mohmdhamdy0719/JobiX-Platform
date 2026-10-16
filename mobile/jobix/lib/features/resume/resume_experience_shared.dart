@@ -10,13 +10,15 @@ class ResumeCopy {
       ResumeCopy(Localizations.localeOf(context).languageCode == 'ar');
 
   String get inspectTemplate => isArabic ? 'معاينة القالب' : 'Inspect template';
-  String get atsProfessional =>
-      isArabic ? 'احترافي ومتوافق مع ATS' : 'ATS Professional';
+  String get atsProfessional => 'ATS Professional';
   String get sampleFictional =>
       isArabic ? 'نموذج توضيحي خيالي' : 'Illustrative fictional sample';
   String get atsSingleTemplate => isArabic
-      ? 'قالب احترافي واحد متوافق مع ATS'
-      : 'One ATS-ready professional template';
+      ? 'سيرة ذاتية واضحة من عمود واحد، مصممة لسهولة القراءة والتوافق مع أنظمة ATS.'
+      : 'A clean, single-column resume designed for readability and ATS compatibility.';
+  String get templateSpecifications => isArabic
+      ? 'صفحة A4 · عمود واحد · تباعد وخطوط متناسقة'
+      : 'A4 page · Single column · Consistent spacing and typography.';
   String get resumeExport =>
       isArabic ? 'تصدير السيرة الذاتية' : 'Resume export';
   String get exportHistory => isArabic ? 'سجل التصدير' : 'Go to export history';
@@ -50,6 +52,9 @@ class ResumeCopy {
   String get downloadUnavailable => isArabic
       ? 'التنزيل غير متاح لهذه المهمة.'
       : 'Download is not available for this job.';
+  String get downloadWindowEnded => isArabic
+      ? 'انتهت فترة التنزيل التي يعرضها الخادم.'
+      : 'The server-reported download window has ended.';
   String get expires => isArabic ? 'ينتهي في' : 'Expires';
   String get resumeReceipt =>
       isArabic ? 'إيصال تصدير السيرة الذاتية' : 'Resume export receipt';
@@ -229,7 +234,7 @@ String? resumeTemplateDisplayName(ResumeCopy copy, String? value) {
       RegExp(r'^resume_ats_(en|ar)_v\d+$').hasMatch(template)) {
     return copy.atsProfessional;
   }
-  return template;
+  return null;
 }
 
 int? resumePositiveInt(Object? value) {

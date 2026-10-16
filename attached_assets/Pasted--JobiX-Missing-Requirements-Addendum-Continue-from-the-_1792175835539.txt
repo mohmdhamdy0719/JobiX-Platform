@@ -1,0 +1,126 @@
+# JobiX — Missing Requirements Addendum
+
+Continue from the previously approved UI/UX refinement prompt. Treat both prompts as one combined specification. The following requirements were missing or insufficiently detailed and must also be addressed.
+
+Do not repeat completed work unnecessarily. Inspect the current implementation first, preserve the successful Refresh and Dialog fixes, and fix the actual behavior rather than only hiding UI elements.
+
+### 1. Cloud-first persistence and recovery
+
+- Supabase remains the authoritative source for saved profile data.
+- Local recovery is temporary protection for interrupted edits, not a second profile or an offline mode.
+- Recover interrupted edits without silently treating them as saved.
+- Allow the user to explicitly save recovered changes.
+- Deliberately discarded changes must never be saved or restored later.
+- Leaving an editor with unsaved changes must offer clear, safe choices.
+- Remove internal UI wording such as “local draft,” “cloud version,” “review latest saved version,” and “back — retain local draft,” without removing the underlying recovery safeguards.
+- Preserve authentication, RLS, validation, ownership checks, and existing data.
+
+### 2. Onboarding and AI assistance
+
+- Update the career-preferences explanation to:
+  “Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings.”
+- Keep these preferences separate from resume content and preserve the existing answer options.
+- Keep “Improve with JobiX” only where it has a clear purpose. Like remove it from unuseful places like Work Experience "Step 3 OF 6" Page&#x20;
+- Remove misleading AI-generation indicators and irrelevant profile-completeness explanations from profile forms.
+
+### 3. Guided questions across profile sections
+
+In addition to the Professional Summary questions already specified, add compact, readable guidance for these sections:
+
+**Work Experience**
+
+- What was your role and what were you responsible for? Example: “Managed customer accounts and coordinated daily client requests.”
+- What were your main contributions? Example: “Improved the team's reporting process and reduced repetitive manual work.”
+- What measurable results did you achieve? Example: “Reduced report preparation time by 30%.”
+
+**Education**
+
+- What qualification did you earn, and in which field? Example: “Bachelor's degree in Business Administration.”
+- Was there a relevant project, specialization, or academic achievement? Example: “Completed a research project on customer behavior and market segmentation.”
+
+**Achievements**
+
+- What did you accomplish? Example: “Received an award for outstanding project delivery.”
+- Why was it important, or what was the result? Example: “Recognized for completing a cross-functional project ahead of schedule.”
+- Is there a public link or evidence worth including? Example: a certificate, publication, award page, or portfolio URL.
+
+**Volunteer Experience**
+
+- What organization or cause did you support, and what was your role? Example: “Volunteered with a local community initiative to coordinate donation drives.”
+- What did you contribute or accomplish? Example: “Helped organize events and coordinate volunteers.”
+
+These are optional guidance prompts, not mandatory new fields. Examples are fictional and must never be inserted into actual user content automatically.
+
+### 4. Description fields and links
+
+- Use the agreed concise placeholders for Work Experience, Education, Achievements, and Volunteer Experience.
+- Remove redundant “Optional” labels, character-count advice, and generic required-field explanations where they add no value.
+- Preserve actual validation and required fields.
+- Remove arbitrary URL length restrictions only where they are unnecessary. Keep safe URL validation and HTTPS requirements wherever applicable.
+- Display readable link labels in the resume when supported, instead of unnecessarily long raw URLs.
+
+### 5. Account Information
+
+- Make Account Information useful for managing authentication details where supported, including email changes and password change/reset.
+- Keep account credentials separate from resume contact information.
+- Preserve Supabase Auth, verification, and reauthentication requirements.
+- Do not invent functional buttons for unsupported account-management features. Report anything that cannot be implemented safely.
+
+### 6. Photo and Custom Links
+
+- Use the agreed concise copy:
+  “Add a profile photo and professional links to personalize your resume.”
+  “Add a publication, portfolio, or other relevant professional link.”
+- Preserve JPEG/PNG support, the 1 MiB limit, and 1024 × 1024 maximum image dimensions.
+- Preserve existing URL validation and security rules.
+- Remove obsolete draft/version controls while retaining safe recovery.
+- Use the agreed leave confirmation:
+  Title: “Leave without saving?”
+  Message: “Your changes haven't been saved. You can keep editing or discard them.”
+  Actions: “Keep editing” and “Discard”.
+- Only offer Save where the current screen can actually save to Supabase.
+
+### 7. Template selection
+
+- Replace the abstract preview with a realistic, fictional resume containing contact details, summary, work experience, education, volunteer experience, achievement, and approximately four skills.
+- Use the name “ATS Professional”.
+- Use this description: “A clean, single-column resume designed for readability and ATS compatibility.”
+- Use these specifications: “A4 page · Single column · Consistent spacing and typography.”
+- Ensure the preview resembles the actual template. Never use real user data in sample previews.
+- Do not claim compatibility or rendering capabilities that have not been verified.
+
+### 8. Preparing Resume and PDF export
+
+- Show truthful backend export states. Do not fabricate progress percentages or completion states.
+- Keep internal UUIDs for backend correlation, but do not expose them as user-facing references or filenames.
+- Use a sanitized filename based on the user's name, such as `Hamdy_Hassan_Resume.pdf`, with a safe fallback.
+- Ensure Back navigation does not cancel or corrupt an in-progress export.
+- “Return to dashboard” must lead to Home.
+- Investigate performance bottlenecks using evidence; never weaken security or output validation to improve perceived speed.
+- Preserve the existing server-authoritative two-Credit charge for a new successful PDF export.
+- Failed exports must not receive a final charge, and valid existing PDF downloads remain free.
+
+### 9. Credit & Export History
+
+- Keep this as a dedicated history/details area, not a Career tab.
+- Remove the bottom navigation bar from history and relevant detail screens.
+- Show actual export date/time, profile and template names, status, and Credit impact only when supported by real data.
+- Use a short reference only if a safe, persisted mapping exists. Never invent one or treat a truncated UUID as a unique reference.
+- Show reservation information only when relevant to a request still processing.
+- Android system Back from Resume Details must return to Credit & Export History. Do not show the app-exit dialog while a valid nested back destination exists.
+- Explain the seven-day download window using the server-provided expiration time where available, not an assumed device-clock calculation.
+- Remove unnecessary manual refresh controls and repeated polling. Refresh at appropriate lifecycle points and after known state changes.
+
+### 10. Verification and delivery
+
+- Add focused tests for recovery versus deliberate discard, profile journey persistence across logout/login, account navigation, nested Android Back behavior, export charging, free existing-PDF downloads, and failure handling where applicable.
+- Verify English LTR and Arabic RTL layouts.
+- Run relevant tests, `flutter analyze --no-pub`, and `git diff --check`. Report failures honestly.
+- Preserve the previous fixes and avoid unrelated refactoring.
+- Build one fresh standard Development ARM64 debug APK using the existing `development` flavor, `config/dev.local.json`, and `JOBIX_ENABLE_PDF_EXPORT=true`.
+- Verify the APK package ID is `com.mhflow.jobix`, and report its exact path, size, timestamp, SHA-256, and a usable download link if available.
+- Do not substitute Local Preview or a stale APK.
+- Do not install the APK or perform a live export or Credit debit during automated testing.
+- Do not modify Production, Google Play, signing configuration, secrets, or infrastructure.
+
+Stop after delivering the verified Development build, test results, and a clear list of anything still incomplete. Production remains out of scope until explicitly approved.

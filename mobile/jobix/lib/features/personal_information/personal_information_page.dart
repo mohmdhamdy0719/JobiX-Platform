@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../core/design/app_language_button.dart';
 import '../../core/design/jobix_dialog.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
@@ -395,7 +394,6 @@ class _PersonalInformationPageState
                 icon: const Icon(Icons.arrow_back),
                 onPressed: busy ? null : () => requestJobixBack(context),
               ),
-              actions: const [AppLanguageButton()],
               bottom: Row(
                 children: [
                   Expanded(
@@ -432,6 +430,21 @@ class _PersonalInformationPageState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(copy.personalIntro),
+        if (profile != null &&
+            draft != null &&
+            (draft!.resumeLanguage != profile!.resumeLanguage ||
+                personalFields.any(
+                  (field) => draft!.personal[field] != profile!.personal[field],
+                ))) ...[
+          const SizedBox(height: TokensV0.space12),
+          SliceCard(
+            child: Text(
+              copy.localeName.startsWith('ar')
+                  ? 'هذه التغييرات غير محفوظة في حسابك. اختر حفظ لتحديث ملفك.'
+                  : 'These changes are not saved to your account. Choose Save to update your profile.',
+            ),
+          ),
+        ],
         const SizedBox(height: TokensV0.space24),
         SliceCard(
           child: Column(
@@ -517,8 +530,8 @@ class _PersonalInformationPageState
                     ? 'الصورة والروابط المخصصة'
                     : 'Photo & custom links',
                 subtitle: copy.localeName.startsWith('ar')
-                    ? 'تفاصيل اختيارية. صورتك خاصة؛ تبقى معلوماتك الشخصية الحالية في المسودة.'
-                    : 'Optional details. Your photo stays private; your current personal inputs stay in the draft.',
+                    ? 'أضف صورة للملف الشخصي وروابط مهنية لتخصيص سيرتك الذاتية.'
+                    : 'Add a profile photo and professional links to personalize your resume.',
               ),
               const SizedBox(height: TokensV0.space12),
               OutlinedButton.icon(

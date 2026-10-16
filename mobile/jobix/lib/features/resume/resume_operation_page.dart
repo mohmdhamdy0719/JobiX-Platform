@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import 'resume_export_service.dart';
 import '../core_mvp/core_api.dart';
 import 'resume_experience_widgets.dart';
+import 'resume_experience_shared.dart';
 
 class ResumeOperationPage extends ConsumerStatefulWidget {
   const ResumeOperationPage({
@@ -33,6 +34,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
   bool refreshInFlight = false;
   bool saving = false;
   bool failureDialogOpen = false;
+  bool manualStatusCheck = false;
   int generation = 0;
   int pollStep = 0;
   Stopwatch? pollClock;
@@ -40,7 +42,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
   bool get ar => Localizations.localeOf(context).languageCode == 'ar';
   String t(String en, String arabic) => ar ? arabic : en;
   static const terminal = {'COMPLETED', 'FAILED', 'EXPIRED', 'MISSING_OBJECT'};
-  static const pollDelays = [3, 5, 10, 20, 30];
+  static const pollDelays = [3, 10, 30, 60];
   static const pollWindow = Duration(minutes: 30);
   @override
   void initState() {
@@ -100,6 +102,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       setState(() {
         busy = true;
         message = null;
+        manualStatusCheck = false;
       });
       pollStep = 0;
       pollClock = Stopwatch()..start();
@@ -116,6 +119,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       setState(() {
         job = data;
         message = null;
+        manualStatusCheck = false;
       });
       timer?.cancel();
       if (terminal.contains(data['state'])) {
@@ -129,12 +133,13 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
     } catch (_) {
       timer?.cancel();
       if (mounted && generation == token) {
-        setState(
-          () => message = t(
-            'Status is unavailable. The existing operation is preserved; refresh to reconnect.',
-            'الحالة غير متاحة. تم الاحتفاظ بالعملية الحالية؛ حدّث لإعادة الاتصال.',
-          ),
-        );
+        setState(() {
+          manualStatusCheck = true;
+          message = t(
+            'Status is unavailable. The existing operation is preserved.',
+            'الحالة غير متاحة. تم الاحتفاظ بالعملية الحالية.',
+          );
+        });
       }
     } finally {
       refreshInFlight = false;
@@ -151,12 +156,13 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
     pollClock ??= Stopwatch()..start();
     if (pollClock!.elapsed >= pollWindow) {
       if (mounted) {
-        setState(
-          () => message = t(
+        setState(() {
+          manualStatusCheck = true;
+          message = t(
             'This request is still processing. Refresh to check its latest status.',
             'لا يزال الطلب قيد المعالجة. حدّث الصفحة للتحقق من أحدث حالة.',
-          ),
-        );
+          );
+        });
       }
       return;
     }
@@ -171,11 +177,13 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
   }
 
   void _backToPreviousScreen() {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/export-history');
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
     }
+    final router = GoRouter.maybeOf(context);
+    if (router != null) router.go('/export-history');
   }
 
   Future<void> download() async {
@@ -186,7 +194,14 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
     });
     try {
       final service = await ref.read(resumeExportServiceProvider.future);
-      final saved = await service.download(widget.exportId);
+      final fullName = ref
+          .read(firstProfileProvider)
+          .valueOrNull
+          ?.personal['full_name'];
+      final saved = await service.download(
+        widget.exportId,
+        suggestedName: fullName,
+      );
       if (mounted && saved) {
         setState(
           () => message = t(
@@ -234,83 +249,79 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
   @override
   Widget build(BuildContext context) {
     final downloadable =
-        job?['state'] == 'COMPLETED' &&
-        job?['download_eligible'] != false &&
-        (DateTime.tryParse(
-              job?['expires_at']?.toString() ?? '',
-            )?.isAfter(DateTime.now()) ??
-            false);
+        job != null && resumeIsDownloadAvailable(job!, resumeJobState(job!));
     final active = job != null && !terminal.contains(job!['state']);
     final profile = ref.watch(firstProfileProvider).valueOrNull;
     final canAgain =
         job != null && !active && job!['profile_id'] == profile?.id;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          t(
-            widget.waiting && active ? 'Preparing Resume' : 'Resume Details',
-            widget.waiting && active
-                ? 'تجهيز السيرة الذاتية'
-                : 'تفاصيل السيرة الذاتية',
+    return PopScope<Object?>(
+      canPop: Navigator.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _backToPreviousScreen();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            t(
+              widget.waiting && active ? 'Preparing Resume' : 'Resume Details',
+              widget.waiting && active
+                  ? 'تجهيز السيرة الذاتية'
+                  : 'تفاصيل السيرة الذاتية',
+            ),
+          ),
+          leading: IconButton(
+            icon: const BackButtonIcon(),
+            onPressed: _backToPreviousScreen,
           ),
         ),
-        leading: IconButton(
-          icon: const BackButtonIcon(),
-          onPressed: _backToPreviousScreen,
-        ),
-        actions: [
-          if (job != null)
-            IconButton(
-              tooltip: t('Refresh status', 'تحديث الحالة'),
-              onPressed: busy || refreshInFlight ? null : () => refresh(),
-              icon: busy || refreshInFlight
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.refresh),
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (busy) const LinearProgressIndicator(),
-            if (message != null && !failureDialogOpen)
-              Padding(padding: const EdgeInsets.all(16), child: Text(message!)),
-            Expanded(
-              child: job == null
-                  ? Center(
-                      child: busy
-                          ? const CircularProgressIndicator()
-                          : TextButton(
-                              onPressed: refresh,
-                              child: Text(t('Retry', 'إعادة المحاولة')),
-                            ),
-                    )
-                  : widget.waiting && active
-                  ? ResumeProcessingView(
-                      job: job!,
-                      onHistory: () => context.go('/export-history'),
-                      onDashboard: () => context.go('/home'),
-                      onDownload: downloadable ? download : null,
-                      downloading: saving,
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: ResumeDetailsBody(
+        body: SafeArea(
+          child: Column(
+            children: [
+              if (busy) const LinearProgressIndicator(),
+              if (message != null && !failureDialogOpen)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(message!),
+                ),
+              if (manualStatusCheck && job != null)
+                TextButton(
+                  onPressed: refreshInFlight || busy ? null : () => refresh(),
+                  child: Text(t('Check status', 'التحقق من الحالة')),
+                ),
+              Expanded(
+                child: job == null
+                    ? Center(
+                        child: busy
+                            ? const CircularProgressIndicator()
+                            : TextButton(
+                                onPressed: refresh,
+                                child: Text(t('Retry', 'إعادة المحاولة')),
+                              ),
+                      )
+                    : widget.waiting && active
+                    ? ResumeProcessingView(
                         job: job!,
+                        onHistory: () => context.go('/export-history'),
+                        onDashboard: () => context.go('/home'),
                         onDownload: downloadable ? download : null,
                         downloading: saving,
-                        onAgain: canAgain && !busy
-                            ? () =>
-                                  context.go('/resume?again=${widget.exportId}')
-                            : null,
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: ResumeDetailsBody(
+                          job: job!,
+                          onDownload: downloadable ? download : null,
+                          downloading: saving,
+                          onAgain: canAgain && !busy
+                              ? () => context.go(
+                                  '/resume?again=${widget.exportId}',
+                                )
+                              : null,
+                        ),
                       ),
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

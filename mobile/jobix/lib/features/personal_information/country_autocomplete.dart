@@ -103,6 +103,11 @@ class _CountryAutocompleteState extends State<CountryAutocomplete> {
         hintText: widget.hint,
         helperText: failure,
         helperMaxLines: 2,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 13,
+        ),
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(

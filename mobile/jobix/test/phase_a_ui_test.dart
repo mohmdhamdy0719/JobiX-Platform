@@ -6,7 +6,9 @@ import 'package:jobix/features/builder/builder_scaffold.dart';
 import 'package:jobix/features/builder/ai_allowance.dart';
 import 'package:jobix/features/builder/jobix_improvement.dart';
 import 'package:jobix/features/builder/month_input_formatter.dart';
+import 'package:jobix/features/builder/section_writing_guidance.dart';
 import 'package:jobix/features/career_profile/summary_writing_hints.dart';
+import 'package:jobix/features/career_profile/profile_sections.dart';
 import 'package:jobix/features/personal_information/country_autocomplete.dart';
 import 'package:jobix/features/personal_information/personal_information_fields.dart';
 import 'package:jobix/l10n/app_localizations.dart';
@@ -133,6 +135,35 @@ void main() {
           locale == 'ar' ? 'مثال إرشادي فقط' : 'Illustrative example only',
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('$locale section prompts are display-only', (tester) async {
+      await tester.pumpWidget(
+        app(
+          const Scaffold(
+            body: SingleChildScrollView(
+              child: SectionWritingGuidance(section: EntitySection.experience),
+            ),
+          ),
+          locale: locale,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('section-writing-guidance')));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsNothing);
+      expect(
+        find.textContaining(
+          locale == 'ar' ? 'ما دورك وما مسؤولياتك؟' : 'What was your role',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          locale == 'ar' ? 'لا يُضاف إلى ملفك' : 'not added to your profile',
+        ),
+        findsWidgets,
       );
     });
 

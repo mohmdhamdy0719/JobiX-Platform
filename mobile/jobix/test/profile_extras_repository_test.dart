@@ -181,6 +181,25 @@ void main() {
     expect(api.requests, isEmpty);
   });
 
+  test('explicit discard removes recovered input without saving it', () async {
+    await repository.retain(input);
+    await repository.discard(input);
+    expect(await repository.local(profile.id), isNull);
+    expect(api.requests, isEmpty);
+  });
+
+  test('ambiguous extras save cannot be deliberately discarded', () async {
+    final pending = ExtrasDraft(
+      profileId: input.profileId,
+      version: input.version,
+      value: input.value,
+      pending: const {'command_key': 'request-one'},
+    );
+    await repository.retain(pending);
+    await expectLater(repository.discard(pending), throwsStateError);
+    expect((await repository.local(profile.id))!.pending, pending.pending);
+  });
+
   test(
     'known rejection releases frozen request, retains input, and requires explicit guarded reapply',
     () async {

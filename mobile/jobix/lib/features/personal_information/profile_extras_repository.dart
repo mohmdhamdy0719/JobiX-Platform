@@ -233,6 +233,18 @@ class ProfileExtrasRepository {
     });
   }
 
+  Future<void> discard(ExtrasDraft draft) async {
+    check();
+    await parent.database.transaction(() async {
+      final current = await local(draft.profileId);
+      if (current?.pending != null) {
+        throw StateError('SAVE_OUTCOME_UNKNOWN');
+      }
+      await parent.database.removeSetting(key(draft.profileId));
+      check();
+    });
+  }
+
   void _personalGuard(String? raw, int version) {
     if (raw == null) return;
     final personal = PersonalDraft.decode(raw);

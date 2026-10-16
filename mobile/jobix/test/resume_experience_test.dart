@@ -48,6 +48,17 @@ void main() {
         isTrue,
       );
       expect(
+        ResumeJourney.fromStorage(null, accountCompleted: true).complete,
+        isTrue,
+      );
+      expect(
+        ResumeJourney.fromStorage(
+          const ResumeJourney(step: 3).encode(),
+          accountCompleted: true,
+        ).step,
+        3,
+      );
+      expect(
         journeyKey('one', profile.id),
         isNot(journeyKey('two', profile.id)),
       );
@@ -110,6 +121,19 @@ void main() {
     expect(const ResumeCopy(false).pageCount(2), '2 pages');
     expect(const ResumeCopy(true).pageCount(1), 'صفحة واحدة');
     expect(const ResumeCopy(true).pageCount(2), 'صفحتان');
+  });
+  test('template display names never leak an internal identifier', () {
+    expect(
+      resumeTemplateDisplayName(const ResumeCopy(false), 'resume_ats_en_v1'),
+      'ATS Professional',
+    );
+    expect(
+      resumeTemplateDisplayName(
+        const ResumeCopy(false),
+        '70000000-0000-4000-8000-000000000003',
+      ),
+      isNull,
+    );
   });
   test(
     'expiry/eligibility never causes automatic regeneration or a second charge',

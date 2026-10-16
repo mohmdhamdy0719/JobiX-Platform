@@ -113,7 +113,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get contextOnly =>
-      'هذه الإجابات للسياق فقط. لا تصبح محتوى في سيرتك الذاتية ولا تغيّر إمكانية استخدامك لـ Jobix.';
+      'تساعدنا تفضيلاتك على تخصيص تجربة JobiX مستقبلًا. يمكنك تغييرها في أي وقت من الإعدادات. هذه الإجابات للسياق فقط؛ ولا تصبح محتوى في سيرتك الذاتية أو تغيّر إمكانية استخدامك لـ Jobix.';
 
   @override
   String get questionStage => 'أي وصف يناسب مرحلتك المهنية الحالية؟';
@@ -205,6 +205,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get welcome => 'مرحبًا بك في Jobix';
+
+  @override
+  String get welcomeSubtitle => 'أنشئ ملفك المهني واستعد لفرصتك القادمة.';
 
   @override
   String get authSubtitle =>
@@ -484,7 +487,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get signOutLocalWarning =>
-      'سيحذف تسجيل الخروج العمل المحلي غير المحفوظ من هذا الجهاز. تظل البيانات المحفوظة في حسابك كما هي.';
+      'سيؤدي تسجيل الخروج إلى حذف التغييرات غير المحفوظة إلا على هذا الجهاز. ستبقى المعلومات المحفوظة في حسابك كما هي.';
 
   @override
   String get homeNav => 'الرئيسية';

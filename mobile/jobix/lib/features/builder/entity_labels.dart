@@ -39,12 +39,7 @@ String fieldLabel(AppLocalizations copy, EntitySection section, String field) =>
             : section == EntitySection.volunteer
             ? copy.currentVolunteer
             : copy.currentRole,
-      'description' =>
-        section == EntitySection.education ||
-                section == EntitySection.certification ||
-                section == EntitySection.volunteer
-            ? copy.fieldDescriptionOptional
-            : copy.fieldDescription,
+      'description' => copy.fieldDescription,
       'degree' => copy.fieldDegree,
       'institution' => copy.fieldInstitution,
       'field_of_study' => copy.fieldStudy,

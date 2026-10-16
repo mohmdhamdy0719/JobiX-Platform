@@ -15,6 +15,7 @@ abstract interface class AuthApi {
   Future<bool> google();
   Future<void> reset(String email);
   Future<void> resendConfirmation(String email);
+  Future<void> updateEmail(String email);
   Future<void> updatePassword(String password);
   Future<void> callback(Uri uri);
   Future<void> signOut();
@@ -74,6 +75,11 @@ class SupabaseAuthApi implements AuthApi {
     email.trim(),
     redirectTo: authRedirectUri,
   );
+  @override
+  Future<void> updateEmail(String email) async {
+    await client.auth.updateUser(UserAttributes(email: email.trim()));
+  }
+
   @override
   Future<void> updatePassword(String password) async {
     await client.auth.updateUser(UserAttributes(password: password));

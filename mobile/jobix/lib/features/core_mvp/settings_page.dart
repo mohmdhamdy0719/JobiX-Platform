@@ -107,12 +107,13 @@ class SettingsPage extends ConsumerWidget {
                       enabled: false,
                     ),
                     data: (client) => _SettingsRow(
+                      key: const Key('settings-account-information'),
                       icon: Icons.person_outline,
                       title: copy.accountInformation,
                       subtitle:
                           client.auth.currentUser?.email ??
                           copy.accountInfoUnavailable,
-                      enabled: false,
+                      onTap: () => context.go('/settings/account'),
                     ),
                   ),
               _SettingsRow(

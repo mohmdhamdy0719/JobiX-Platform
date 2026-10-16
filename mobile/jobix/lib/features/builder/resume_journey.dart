@@ -17,6 +17,15 @@ class ResumeJourney {
       complete: value['complete'] == true,
     );
   }
+  factory ResumeJourney.fromStorage(
+    String? profileValue, {
+    required bool accountCompleted,
+  }) {
+    if (profileValue != null) return ResumeJourney.decode(profileValue);
+    return accountCompleted
+        ? const ResumeJourney(step: 6, complete: true)
+        : const ResumeJourney();
+  }
   String encode() => jsonEncode({'step': step, 'complete': complete});
 }
 
@@ -28,9 +37,15 @@ final resumeJourneyProvider = FutureProvider.family<ResumeJourney, String>((
   profile,
 ) async {
   final repository = await ref.watch(draftRepositoryProvider.future);
-  return ResumeJourney.decode(
-    await repository.database.setting(journeyKey(repository.user, profile)),
+  final saved = await repository.database.setting(
+    journeyKey(repository.user, profile),
   );
+  // Completion is durable account progress, not an edit draft. Account
+  // cleanup removes profile-scoped work but intentionally retains this marker.
+  final completed =
+      await repository.database.setting('resume_complete:${repository.user}') ==
+      'true';
+  return ResumeJourney.fromStorage(saved, accountCompleted: completed);
 });
 
 /// Uses the existing structural content policy, not completeness or prose length.
@@ -46,10 +61,16 @@ bool minimumResumeContent(CareerProfile profile) {
 
 Future<void> completeResumeJourney(WidgetRef ref, String profile) async {
   final repository = await ref.read(draftRepositoryProvider.future);
-  await repository.database.setSetting(
-    journeyKey(repository.user, profile),
-    const ResumeJourney(step: 6, complete: true).encode(),
-  );
+  await repository.database.transaction(() async {
+    await repository.database.setSetting(
+      journeyKey(repository.user, profile),
+      const ResumeJourney(step: 6, complete: true).encode(),
+    );
+    await repository.database.setSetting(
+      'resume_complete:${repository.user}',
+      'true',
+    );
+  });
   ref.invalidate(resumeJourneyProvider(profile));
 }
 

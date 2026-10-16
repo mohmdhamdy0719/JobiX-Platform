@@ -15,6 +15,15 @@ class ExportFailure implements Exception {
 String exportDisplayKey(String actor, String job) =>
     'resume:$actor:job:$job:display';
 
+String resumePdfFilename(String? fullName) {
+  final normalized = (fullName ?? '')
+      .trim()
+      .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+  final bounded = String.fromCharCodes(normalized.runes.take(64));
+  return '${bounded.isEmpty ? 'Resume' : bounded}.pdf';
+}
+
 final resumeExportServiceProvider = FutureProvider<ResumeExportService>(
   (ref) async =>
       ResumeExportService(await ref.watch(supabaseClientProvider.future)),
@@ -91,7 +100,7 @@ class ResumeExportService {
     );
   }
 
-  Future<bool> download(String id) async {
+  Future<bool> download(String id, {String? suggestedName}) async {
     final actor = client.auth.currentUser?.id;
     final result = await call('download', {'export_id': id});
     final uri = Uri.parse(result['url'] as String);
@@ -117,7 +126,10 @@ class ResumeExportService {
       }
       return await const MethodChannel('jobix/pdf_save').invokeMethod<bool>(
             'save',
-            {'bytes': builder.takeBytes(), 'name': '$id.pdf'},
+            {
+              'bytes': builder.takeBytes(),
+              'name': resumePdfFilename(suggestedName),
+            },
           ) ==
           true;
     } finally {

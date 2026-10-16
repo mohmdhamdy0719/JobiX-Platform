@@ -114,7 +114,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contextOnly =>
-      'These answers are context only. They do not become CV content or change your access to Jobix.';
+      'Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings. These answers are context only; they do not become CV content or change your access to Jobix.';
 
   @override
   String get questionStage => 'Which best describes your current career stage?';
@@ -210,6 +210,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcome => 'Welcome to Jobix';
+
+  @override
+  String get welcomeSubtitle =>
+      'Build your career profile and prepare for your next opportunity.';
 
   @override
   String get authSubtitle =>
@@ -492,7 +496,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signOutLocalWarning =>
-      'Signing out removes unsaved local work from this device. Data already saved to your account is kept.';
+      'Signing out removes unsaved changes kept only on this device. Information already saved to your account will remain.';
 
   @override
   String get homeNav => 'Home';

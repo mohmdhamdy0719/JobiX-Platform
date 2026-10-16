@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,8 +18,8 @@ import '../career_profile/profile_sections.dart';
 import 'builder_scaffold.dart';
 import 'entity_labels.dart';
 import 'save_feedback.dart';
-import 'jobix_improvement.dart';
 import 'month_input_formatter.dart';
+import 'section_writing_guidance.dart';
 
 String editorReturn(EntitySection section, EditorOrigin origin) =>
     switch (origin) {
@@ -375,21 +374,12 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               ),
               const SizedBox(height: TokensV0.space16),
             ],
+            SectionWritingGuidance(section: widget.section),
+            const SizedBox(height: TokensV0.space16),
             for (final field in widget.section.fields) ...[
               _field(copy, field),
               const SizedBox(height: TokensV0.space16),
             ],
-            if (widget.section == EntitySection.volunteer
-                ? item!.problems().isNotEmpty
-                : !item!.locallyComplete)
-              Text(
-                copy.localeName.startsWith('ar')
-                    ? 'الحقول المميزة بـ * مطلوبة لإضافة العنصر. مراجعة الوصف الاختياري لا تمنع الحفظ.'
-                    : 'Fields marked * are required to add this item. Optional description guidance does not block Save.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: TokensV0.textSecondary),
-              ),
           ],
         ),
       ),
@@ -437,10 +427,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       enabled: !busy && !disabledEnd,
       minLines: multiline ? 4 : 1,
       maxLines: multiline ? 8 : 1,
-      maxLength: field.kind == FieldKind.list || field.kind == FieldKind.month
-          ? null
-          : field.max,
-      maxLengthEnforcement: MaxLengthEnforcement.none,
       keyboardType: switch (field.kind) {
         FieldKind.month => TextInputType.number,
         FieldKind.url => TextInputType.url,
@@ -458,23 +444,12 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         labelText: field.required || (field.name == 'end_month' && !disabledEnd)
             ? '$label *'
             : label,
-        hintText: field.kind == FieldKind.month ? copy.monthHint : null,
-        helperText: multiline && field.minimum > 1
-            ? (copy.localeName.startsWith('ar')
-                  ? 'اختياري. يُنصح بـ ${field.minimum} حرفًا على الأقل؛ النص القصير لا يمنع الحفظ.'
-                  : 'Optional. Aim for at least ${field.minimum} characters; short text does not block Save.')
-            : field.kind == FieldKind.list
-            ? (copy.localeName.startsWith('ar')
-                  ? 'افصل بين العناصر بفاصلة؛ الحد الأقصى ${field.max} حرفًا لكل عنصر.'
-                  : 'Separate items with commas; ${field.max} characters per item.')
+        hintText: field.kind == FieldKind.month
+            ? copy.monthHint
+            : field.name == 'description'
+            ? _descriptionHint(widget.section, copy.localeName.startsWith('ar'))
             : null,
-        helperMaxLines: 2,
         errorText: _error(copy, field),
-        counterText: field.kind == FieldKind.month
-            ? ''
-            : field.kind == FieldKind.list
-            ? '${item!.list(field.name).where((v) => v.trim().isNotEmpty).length} ${copy.localeName.startsWith('ar') ? 'عناصر' : 'items'}'
-            : '${controller.text.runes.length} / ${field.max}',
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
@@ -505,26 +480,33 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         input,
-        if (field.minimum > 1 &&
-            (saveAttempted || !dirty && serverItem != null) &&
-            controller.text.trim().isNotEmpty &&
-            controller.text.trim().runes.length < field.minimum)
-          Padding(
-            padding: const EdgeInsetsDirectional.only(top: TokensV0.space8),
-            child: Text(
-              copy.localeName.startsWith('ar')
-                  ? 'يحتاج إلى مراجعة — أضف تفاصيل إن توفرت. لا يمنع الحفظ.'
-                  : 'Needs attention — add detail if available. This does not block Save.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: TokensV0.warning),
-            ),
-          ),
         const SizedBox(height: TokensV0.space12),
-        JobixImprovement(original: controller.text),
       ],
     );
   }
+
+  String? _descriptionHint(
+    EntitySection section,
+    bool arabic,
+  ) => switch (section) {
+    EntitySection.experience =>
+      arabic
+          ? 'صِف مسؤولياتك وإسهاماتك الرئيسية والنتائج القابلة للقياس.'
+          : 'Describe your responsibilities, key contributions, and measurable results.',
+    EntitySection.education =>
+      arabic
+          ? 'أضف المقررات أو المشاريع أو التكريمات أو الإنجازات الأكاديمية ذات الصلة.'
+          : 'Add relevant coursework, projects, honors, or academic achievements.',
+    EntitySection.achievement =>
+      arabic
+          ? 'صِف ما حققته، ولماذا كان مهمًا، وأي نتيجة قابلة للقياس.'
+          : 'Describe what you achieved, why it mattered, and any measurable result.',
+    EntitySection.volunteer =>
+      arabic
+          ? 'صِف القضية التي دعمتها ودورك وكيف أسهمت.'
+          : 'Describe the cause you supported, your role, and how you contributed.',
+    _ => null,
+  };
 
   String? _error(AppLocalizations copy, SectionField field) {
     final problem = problems[field.name];

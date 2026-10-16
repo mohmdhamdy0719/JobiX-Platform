@@ -175,6 +175,29 @@ void main() {
       expect(prepared['issues'], isEmpty);
     },
   );
+  test('resume contact links use readable labels rather than raw URLs', () {
+    final linkedProfile = CareerProfile.fromJson({
+      ...savedProfile,
+      'personal': {
+        ...(savedProfile['personal'] as Map),
+        'linkedin_url': 'https://www.linkedin.com/in/example',
+        'github_url': 'https://github.com/example',
+      },
+    });
+    final html = ResumeRender.html(
+      profile: linkedProfile,
+      language: 'en',
+      latinFontBase64: 'font',
+      arabicFontBase64: 'font',
+      additionalLinks: const [
+        {'label': 'Research publication', 'url': 'https://example.test/paper'},
+      ],
+    );
+    expect(html, contains('>LinkedIn</bdi></a>'));
+    expect(html, contains('>GitHub</bdi></a>'));
+    expect(html, contains('>Research publication</bdi></a>'));
+    expect(html, isNot(contains('Research publication: https://')));
+  });
   test(
     'hiding invalid Volunteer is explicit and cannot silently leave empty evidence',
     () {
@@ -866,7 +889,7 @@ void main() {
         );
         await tap(tester, 'Download — free');
         expect(saved!['bytes'], fixture.bytes);
-        expect(saved!['name'], '$jobId.pdf');
+        expect(saved!['name'], 'Resume.pdf');
         expect(saved!.containsKey('url'), false);
         expect(await db.setting('resume:$actor:export:$profileId'), isNull);
         expect(accepted, 0);

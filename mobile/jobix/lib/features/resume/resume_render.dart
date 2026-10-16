@@ -146,6 +146,11 @@ class ResumeRender {
           if (index >= 0) metadata.add(e((ar ? arabic : english)[index]));
         }
         final url = normalizeUrl(item.text('url'));
+        final linkLabel = title.trim().isNotEmpty
+            ? title.trim()
+            : item.text('name').trim().isNotEmpty
+            ? item.text('name').trim()
+            : 'View details';
         final descriptionBlocks = blocks(item.text('description'));
         final leadIncludesParagraph =
             descriptionBlocks.isNotEmpty &&
@@ -168,7 +173,7 @@ class ResumeRender {
           '${descriptionBlocks.skip(leadIncludesParagraph ? 1 : 0).join()}'
           '${item.text('credential_id').isEmpty ? '' : '<p>${bi(item.text('credential_id'))}</p>'}'
           '${item.list('technologies').isEmpty ? '' : '<p>${item.list('technologies').map(bi).join(' · ')}</p>'}'
-          '${url == null || url.isEmpty ? '' : '<p><a href="${e(url)}">${bi(url)}</a></p>'}</article>',
+          '${url == null || url.isEmpty ? '' : '<p><a href="${e(url)}">${bi(linkLabel)}</a></p>'}</article>',
         );
       }
       section(
@@ -182,23 +187,37 @@ class ResumeRender {
       if (finalSections.isNotEmpty)
         '<div class="resume-final-sections">${finalSections.join('\n')}</div>',
     ].join('\n');
-    final contacts = [
-      for (final key in [
-        'email',
-        'phone',
-        'city',
-        'country',
-        'linkedin_url',
-        'github_url',
-        'portfolio_url',
-      ])
-        if ((profile.personal[key] ?? '').trim().isNotEmpty)
-          bi(profile.personal[key]),
-      for (final link in additionalLinks)
-        if (normalizeUrl(link['url'] as String? ?? '') case final String url)
-          if (url.isNotEmpty)
-            '<a href="${e(url)}">${bi(link['label'] as String?)}: ${bi(url)}</a>',
-    ];
+    final contacts = <String>[];
+    for (final key in [
+      'email',
+      'phone',
+      'city',
+      'country',
+      'linkedin_url',
+      'github_url',
+      'portfolio_url',
+    ]) {
+      final value = (profile.personal[key] ?? '').trim();
+      if (value.isEmpty) continue;
+      if (key.endsWith('_url')) {
+        final url = normalizeUrl(value);
+        if (url == null || url.isEmpty) continue;
+        final label = switch (key) {
+          'linkedin_url' => 'LinkedIn',
+          'github_url' => 'GitHub',
+          _ => 'Portfolio',
+        };
+        contacts.add('<a href="${e(url)}">${bi(label)}</a>');
+      } else {
+        contacts.add(bi(value));
+      }
+    }
+    for (final link in additionalLinks) {
+      final url = normalizeUrl(link['url'] as String? ?? '');
+      final label = (link['label'] as String? ?? '').trim();
+      if (url == null || url.isEmpty || label.isEmpty) continue;
+      contacts.add('<a href="${e(url)}">${bi(label)}</a>');
+    }
     return '''<!doctype html><html lang="$language" dir="${ar ? 'rtl' : 'ltr'}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:">

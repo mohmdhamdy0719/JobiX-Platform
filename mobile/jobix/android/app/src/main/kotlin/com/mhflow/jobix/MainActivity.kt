@@ -25,7 +25,7 @@ class MainActivity : FlutterActivity() {
                 val name = call.argument<String>("name")
                 if (saveResult != null || bytes == null || bytes.size < 5 ||
                     String(bytes.copyOfRange(0, 5), Charsets.US_ASCII) != "%PDF-" ||
-                    name == null || !name.matches(Regex("[a-fA-F0-9-]+\\.pdf"))) {
+                    name == null || !name.matches(Regex("[\\p{L}\\p{N}_-]{1,64}\\.pdf"))) {
                     result.error("INVALID_STATE", "PDF cannot be saved.", null)
                     return@setMethodCallHandler
                 }

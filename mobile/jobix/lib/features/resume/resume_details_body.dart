@@ -110,6 +110,8 @@ class ResumeDetailsBody extends StatelessWidget {
               Text(
                 eligible
                     ? copy.privateDownloadUntil(expiresAt!)
+                    : expiresAt != null
+                    ? copy.downloadWindowEnded
                     : copy.downloadUnavailable,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),

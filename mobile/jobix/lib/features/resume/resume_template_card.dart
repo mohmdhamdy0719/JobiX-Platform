@@ -77,7 +77,7 @@ class ResumeTemplateCard extends StatelessWidget {
                 ),
                 const SizedBox(height: TokensV0.space12),
                 SizedBox(
-                  height: enlarged ? 280 : 184,
+                  height: enlarged ? 300 : 204,
                   width: double.infinity,
                   child: FittedBox(
                     fit: BoxFit.contain,
@@ -103,6 +103,13 @@ class ResumeTemplateCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: TokensV0.space4),
+                Text(
+                  copy.templateSpecifications,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: TokensV0.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -119,7 +126,7 @@ class _FictionalResumePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 184,
+    height: 204,
     width: double.infinity,
     padding: const EdgeInsets.all(10),
     decoration: BoxDecoration(
@@ -143,9 +150,7 @@ class _FictionalResumePreview extends StatelessWidget {
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: Text(
-                isArabic
-                    ? 'ليلى منصور • مثال خيالي'
-                    : 'Alex Morgan • Fictional',
+                isArabic ? 'سارة خالد · مثال خيالي' : 'Maya Rahman · Fictional',
                 style: const TextStyle(
                   color: TokensV0.onPrimary,
                   fontSize: 9,
@@ -154,90 +159,93 @@ class _FictionalResumePreview extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 9),
-          const _PreviewLine(width: 0.73, color: TokensV0.navy, height: 5),
+          const SizedBox(height: 4),
+          Text(
+            isArabic ? 'مسؤولة تسويق رقمي' : 'Digital Marketing Specialist',
+            style: const TextStyle(
+              color: TokensV0.primary,
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            isArabic
+                ? 'sara@example.test · +1 555 010 0140 · LinkedIn'
+                : 'maya@example.test · +1 555 010 0140 · LinkedIn',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 6, color: TokensV0.textSecondary),
+          ),
           const SizedBox(height: 5),
-          const _PreviewLine(width: 0.58, color: TokensV0.primary, height: 4),
-          const SizedBox(height: 8),
-          const _PreviewLine(width: 0.94, color: TokensV0.surfaceVariant),
-          const SizedBox(height: 4),
-          const _PreviewLine(width: 0.83, color: TokensV0.surfaceVariant),
-          const SizedBox(height: 9),
-          _PreviewSectionLine(isArabic: isArabic),
-          const SizedBox(height: 7),
-          const _PreviewLine(width: 0.88, color: TokensV0.surfaceVariant),
-          const SizedBox(height: 4),
-          const _PreviewLine(width: 0.76, color: TokensV0.surfaceVariant),
-          const Spacer(),
-          Row(
-            children: [
-              for (var i = 0; i < 3; i++) ...[
-                Container(
-                  width: 34,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: TokensV0.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                if (i < 2) const SizedBox(width: 5),
-              ],
-            ],
+          _miniSection(
+            isArabic ? 'الملخص المهني' : 'PROFESSIONAL SUMMARY',
+            isArabic
+                ? 'متخصصة في الحملات الرقمية وتحليل الأداء.'
+                : 'Digital campaigns and performance analytics.',
+          ),
+          _miniSection(
+            isArabic ? 'الخبرة' : 'EXPERIENCE',
+            isArabic
+                ? 'شركة النور · مسؤولة تسويق · 2022–الآن'
+                : 'Bright Co. · Marketing Associate · 2022–Present',
+          ),
+          _miniSection(
+            isArabic ? 'التعليم' : 'EDUCATION',
+            isArabic
+                ? 'بكالوريوس إدارة الأعمال'
+                : 'B.A. Business Administration',
+          ),
+          _miniSection(
+            isArabic
+                ? 'العمل التطوعي والإنجازات'
+                : 'VOLUNTEERING & ACHIEVEMENTS',
+            isArabic
+                ? 'تنسيق فعاليات مجتمعية · نمو الزيارات 25٪'
+                : 'Community events · Increased traffic 25%',
+          ),
+          Text(
+            isArabic
+                ? 'المهارات: SEO · التحليل · التخطيط · التواصل'
+                : 'Skills: SEO · Analytics · Planning · Communication',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 6, color: TokensV0.textSecondary),
           ),
         ],
       ),
     ),
   );
-}
 
-class _PreviewLine extends StatelessWidget {
-  const _PreviewLine({
-    required this.width,
-    required this.color,
-    this.height = 3,
-  });
-
-  final double width;
-  final Color color;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) => FractionallySizedBox(
-    widthFactor: width,
-    alignment: AlignmentDirectional.centerStart,
-    child: Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(2),
-      ),
+  Widget _miniSection(String title, String content) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 6,
+                  color: TokensV0.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Expanded(child: Divider(height: 1, color: TokensV0.border)),
+          ],
+        ),
+        Text(
+          content,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 6, color: TokensV0.textPrimary),
+        ),
+      ],
     ),
-  );
-}
-
-class _PreviewSectionLine extends StatelessWidget {
-  const _PreviewSectionLine({required this.isArabic});
-
-  final bool isArabic;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Container(
-        width: 7,
-        height: 7,
-        decoration: const BoxDecoration(
-          color: TokensV0.primary,
-          shape: BoxShape.circle,
-        ),
-      ),
-      const SizedBox(width: 5),
-      Expanded(
-        child: Container(
-          height: 4,
-          color: isArabic ? TokensV0.deepBlue : TokensV0.navy,
-        ),
-      ),
-    ],
   );
 }

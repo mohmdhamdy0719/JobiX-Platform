@@ -6,10 +6,10 @@ import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/providers.dart';
-import 'authenticated_navigation.dart';
 import 'core_api.dart';
 import '../auth/auth_controller.dart';
 import '../resume/resume_export_panel.dart';
+import 'authenticated_navigation.dart';
 
 class CreditsPage extends ConsumerStatefulWidget {
   const CreditsPage({this.initialTab = 0, super.key});
@@ -137,7 +137,9 @@ class _CreditsPageState extends ConsumerState<CreditsPage> {
     return SliceScaffold(
       title: ar ? 'سجل الأرصدة والتصدير' : 'Credit & Export History',
       leading: const BrandMark(size: 32),
-      bottom: const AuthenticatedNavigation(selected: 1),
+      bottom: widget.initialTab == 1
+          ? null
+          : const AuthenticatedNavigation(selected: 1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

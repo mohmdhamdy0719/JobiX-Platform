@@ -261,7 +261,6 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                     const SizedBox(height: TokensV0.space16),
                   ],
                 ],
-                if (widget.step == 3) InactiveSlot(label: copy.aiSoon),
               ],
             ),
     );

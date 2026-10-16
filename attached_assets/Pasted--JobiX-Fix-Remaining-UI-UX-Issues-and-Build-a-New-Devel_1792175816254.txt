@@ -1,0 +1,90 @@
+# JobiX — Fix Remaining UI/UX Issues and Build a New Development APK
+
+The latest Development APK fixed the refresh behavior and dialogs successfully, but many previously requested UI/UX issues remain unresolved.
+
+**Your task is to inspect the current implementation, fix the remaining issues below, preserve the successful fixes, and produce one fresh standard Development ARM64 debug APK.**
+
+### Required fixes
+
+1. **Welcome and Login**
+
+   - Center the logo, content, and buttons.
+   - Remove the redundant header logo.
+   - Use this supporting text: `Build your career profile and prepare for your next opportunity.`
+
+2. **Home and Profile Journey**
+
+   - Remove the redundant sign-out icon from Home.
+   - Continue Profile must resume the incomplete profile-building journey.
+   - After profile completion, Continue Profile must lead to Career.
+   - Persist completion correctly across logout and login.
+
+3. **Professional Summary**
+
+   - Redesign the description field to look professional and provide clear guidance.
+   - Display these questions and examples separately from the actual resume content:
+     - What is your professional background? Example: Marketing specialist with 3 years of experience in digital campaigns and content creation.
+     - What are your strongest skills or areas of expertise? Example: SEO, campaign analytics, content planning, and stakeholder communication.
+     - What kind of work or problems do you solve best? Example: Turning performance data into actionable campaign improvements.
+     - What achievements or results are you most proud of? Example: Increased organic traffic by 25% over 6 months.
+     - What role are you targeting next? Example: A digital marketing role focused on growth and experimentation.
+     - What value would you bring to an employer or team? Example: Combining analytical thinking with clear communication to improve team outcomes.
+   - Examples are illustrative only. Never insert them into the user's resume automatically or treat them as real user facts.
+
+4. **Other Resume Sections**
+
+   - Work Experience: guide users to describe responsibilities, key contributions, and measurable results.
+   - Education: `Add relevant coursework, projects, honors, or academic achievements.`
+   - Achievements: `Describe what you achieved, why it mattered, and any measurable result.`
+   - Volunteer Experience: `Describe the cause you supported, your role, and how you contributed.`
+   - Work Experience description: `Describe your responsibilities, key contributions, and measurable results.`
+   - Remove redundant `Optional` labels where fields are not required, and remove unnecessary character-count guidance. Preserve actual validation.
+
+5. **Language and Personal Information**
+
+   - App language selector should appear only in onboarding and Settings.
+   - Resume language selector belongs in Personal Information.
+   - Make Arabic and English options equal in size and ensure correct RTL/LTR behavior.
+   - Align Country and City input dimensions.
+
+6. **Settings and Supporting Screens**
+
+   - Remove redundant app-language controls from other screens.
+   - Improve Photo and Custom Links copy and layout while preserving existing validation.
+   - Remove obsolete local-draft/review-saved-version UI, but preserve safe data recovery.
+   - Improve Settings copy and sign-out confirmation.
+   - Do not invent account, support, privacy, or purchase functionality that does not exist.
+   - Improve the ATS Professional template preview using clearly fictional, realistic sample data.
+
+7. **Credits, Export History, and PDF Preview**
+
+   - Preserve the successful refresh and dialog fixes from the previous build.
+   - Keep Credit and export status server-authoritative.
+   - Remove redundant manual refresh controls and repeated unnecessary polling.
+   - Keep Download separate from loading states and preserve free downloads for eligible existing PDFs.
+   - Display friendly template names instead of internal IDs.
+   - Improve PDF spacing, page breaks, section cohesion, and Arabic/English RTL/LTR rendering.
+   - Keep new Resume PDF export cost at 2 Credits and preserve existing accounting and idempotency safeguards.
+   - Never run a live export or debit Credits during automated testing.
+
+### Implementation rules
+
+- Inspect the current code and existing tests before editing.
+- Fix the actual causes; do not merely hide symptoms or replace working functionality.
+- Preserve cloud-first persistence and existing safe recovery behavior.
+- Do not rewrite the app or refactor unrelated modules.
+- Do not undo the already successful refresh and dialog fixes.
+- Add or update focused tests and relevant UI goldens for the changed screens.
+- Run relevant tests, `flutter analyze --no-pub`, and `git diff --check`.
+- Report any test that cannot run and why; do not claim it passed.
+- Review the final diff to ensure no unrelated work was changed.
+
+### Build and delivery
+
+After implementing the fixes and completing the checks, build one fresh standard Development ARM64 debug APK using the existing `development` flavor, `config/dev.local.json`, and `JOBIX_ENABLE_PDF_EXPORT=true`.
+
+Verify the actual artifact, package ID `com.mhflow.jobix`, timestamp, file size, SHA-256, and Development configuration. Provide the exact APK path and a usable download link if available.
+
+If the build fails, stop and report the cause. Do not substitute Local Preview or a stale APK.
+
+**Do not modify Production, Google Play, signing configuration, secrets, or infrastructure. Do not install the APK. Stop after delivering the verified Development build and test report.**

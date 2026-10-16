@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import '../../core/navigation/back_policy.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -30,10 +31,15 @@ class ProfileExtrasPage extends ConsumerStatefulWidget {
 class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
   ProfileExtrasRepository? repository;
   ExtrasDraft? draft;
+  ProfileExtras? saved;
   CareerProfile? profile;
   final controllers = <String, TextEditingController>{};
   Future<void> writes = Future.value();
-  bool busy = false, failed = false, validate = false, localFailed = false;
+  bool busy = false,
+      failed = false,
+      validate = false,
+      localFailed = false,
+      conflictRecoveryRequired = false;
   String? notice;
   bool get ar => AppLocalizations.of(context)!.localeName.startsWith('ar');
   String say(String en, String arabic) => ar ? arabic : en;
@@ -61,12 +67,24 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
     try {
       final repo = await ref.read(profileExtrasRepositoryProvider.future);
       final current = await repo.parent.load();
-      final input = await repo.open(current);
+      final local = await repo.local(current.id);
+      final input = local ?? await repo.open(current);
+      ProfileExtras? savedValue;
+      if (local == null) {
+        savedValue = input.value;
+      } else {
+        try {
+          savedValue = await repo.api.read(current.id);
+        } catch (_) {
+          // Local recovery remains accessible, but is never presented as saved.
+        }
+      }
       if (!mounted) return;
       setState(() {
         repository = repo;
         profile = current;
         draft = input;
+        saved = savedValue;
         failed = false;
       });
       // Android can destroy the activity while the native picker is open.
@@ -131,8 +149,74 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
 
   Future<void> leave() async {
     if (busy) return;
-    if (draft != null && !await flush()) return;
-    if (mounted) context.go(destination);
+    if (draft == null) {
+      if (mounted) context.go(destination);
+      return;
+    }
+    if (draft!.pending != null) {
+      final retry = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => JobixAlertDialog(
+          title: Text(say('Save not confirmed', 'لم يتأكد الحفظ')),
+          content: Text(
+            say(
+              'This save must be confirmed before leaving. Retry the exact request, or keep editing.',
+              'يجب تأكيد هذا الحفظ قبل المغادرة. أعد الطلب نفسه أو تابع التعديل.',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: Text(say('Keep editing', 'متابعة التعديل')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: Text(say('Retry save', 'إعادة الحفظ')),
+            ),
+          ],
+        ),
+      );
+      if (retry == true && mounted) await save();
+      return;
+    }
+    final changed =
+        saved == null ||
+        jsonEncode(draft!.value.payload()) != jsonEncode(saved!.payload());
+    if (!changed) {
+      if (mounted) context.go(destination);
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => JobixAlertDialog(
+        title: Text(say('Leave without saving?', 'المغادرة دون حفظ؟')),
+        content: Text(
+          say(
+            "Your changes haven't been saved. You can keep editing or discard them.",
+            'لم تُحفظ تغييراتك. يمكنك متابعة التعديل أو تجاهلها.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(say('Keep editing', 'متابعة التعديل')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(say('Discard changes', 'تجاهل التغييرات')),
+          ),
+        ],
+      ),
+    );
+    if (discard != true || !mounted) return;
+    try {
+      await writes;
+      if (localFailed) return;
+      await repository!.discard(draft!);
+      if (mounted) context.go(destination);
+    } catch (_) {
+      if (mounted) setState(() => localFailed = true);
+    }
   }
 
   Future<void> pickPhoto() async {
@@ -286,11 +370,14 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
     });
     try {
       if (!await flush()) return;
+      final submitted = draft!.value;
       final result = await repository!.save(draft!);
       if (!mounted) return;
       setState(() {
         profile = result.profile;
         draft = result.draft;
+        saved = submitted;
+        conflictRecoveryRequired = false;
       });
       ref.invalidate(firstProfileProvider);
       if (result.hasUnsentEdits) {
@@ -324,6 +411,14 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
         setState(() {
           draft = retained ?? draft;
           notice = sanitized(error);
+          final reason = error is PostgrestException
+              ? error.message
+              : error is StateError
+              ? error.message.toString()
+              : '';
+          conflictRecoveryRequired =
+              reason.contains('VERSION_CONFLICT') ||
+              reason.contains('BASELINE_CONFLICT');
         });
       }
     } finally {
@@ -343,7 +438,7 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
         context: context,
         builder: (context) => JobixAlertDialog(
           title: Text(
-            say('Review latest saved version', 'مراجعة أحدث نسخة محفوظة'),
+            say('Resolve saved changes', 'معالجة التغييرات المحفوظة'),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -351,8 +446,8 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
               children: [
                 Text(
                   say(
-                    'Your draft will replace the saved photo and custom links only. Personal Information must already be reconciled.',
-                    'ستستبدل مسودتك الصورة والروابط المخصصة المحفوظة فقط. يجب معالجة تعارض المعلومات الشخصية مسبقًا.',
+                    'Review the saved details below. If you continue, your photo and custom links will replace them. Personal Information must already be reconciled.',
+                    'راجع التفاصيل المحفوظة أدناه. عند المتابعة، ستستبدل صورتك وروابطك المخصصة هذه التفاصيل. يجب معالجة المعلومات الشخصية مسبقًا.',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -411,7 +506,9 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
           setState(() {
             draft = next;
             profile = latest;
+            saved = extras;
             notice = null;
+            conflictRecoveryRequired = false;
           });
         }
       }
@@ -469,8 +566,8 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
                 children: [
                   Text(
                     say(
-                      'Optional details. Your photo is private to your account; no public image URL is created.',
-                      'تفاصيل اختيارية. صورتك خاصة بحسابك؛ لا ننشئ رابطًا عامًا للصورة.',
+                      'Add a profile photo and professional links to personalize your resume.',
+                      'أضف صورة للملف الشخصي وروابط مهنية لتخصيص سيرتك الذاتية.',
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -486,6 +583,24 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
                                 )
                               : notice!,
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (saved == null ||
+                      jsonEncode(draft!.value.payload()) !=
+                          jsonEncode(saved!.payload())) ...[
+                    SliceCard(
+                      child: Text(
+                        saved == null
+                            ? say(
+                                'The saved version could not be checked. These changes are only retained for recovery until Save is confirmed.',
+                                'تعذر التحقق من النسخة المحفوظة. هذه التغييرات محفوظة للاستعادة فقط حتى تأكيد الحفظ.',
+                              )
+                            : say(
+                                'These recovered changes are not saved to your account. Choose Save & return to update them.',
+                                'هذه التغييرات المستعادة غير محفوظة في حسابك. اختر حفظ والعودة لتحديثها.',
+                              ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -506,8 +621,8 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
                         SectionHeading(
                           title: say('Profile photo', 'صورة الملف'),
                           subtitle: say(
-                            'JPEG or PNG · up to 1 MiB · max 1024 × 1024',
-                            'JPEG أو PNG · حتى 1 ميبيبايت · أقصى أبعاد 1024 × 1024',
+                            'JPEG or PNG · up to 1 MiB · max 1024 × 1024 pixels',
+                            'JPEG أو PNG · حتى 1 ميبيبايت · أقصى أبعاد 1024 × 1024 بكسل',
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -574,8 +689,8 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
                         if (draft!.value.links.isEmpty)
                           Text(
                             say(
-                              'Add a publication, personal website or another relevant link.',
-                              'أضف منشورًا أو موقعك الشخصي أو رابطًا آخر ذا صلة.',
+                              'Add a publication, portfolio, or other relevant professional link.',
+                              'أضف منشورًا أو معرض أعمال أو رابطًا مهنيًا ذا صلة.',
                             ),
                           ),
                         for (final link in draft!.value.links)
@@ -599,25 +714,16 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (!pending)
+                  if (conflictRecoveryRequired && !pending)
                     TextButton(
                       onPressed: busy ? null : reviewLatest,
                       child: Text(
                         say(
-                          'Review latest saved version',
-                          'مراجعة أحدث نسخة محفوظة',
+                          'Resolve saved changes',
+                          'معالجة التغييرات المحفوظة',
                         ),
                       ),
                     ),
-                  TextButton(
-                    onPressed: busy ? null : leave,
-                    child: Text(
-                      say(
-                        'Back · retain local draft',
-                        'العودة · الاحتفاظ بالمسودة على الجهاز',
-                      ),
-                    ),
-                  ),
                 ],
               ),
       ),

@@ -519,6 +519,36 @@ void main() {
     );
   });
   testWidgets(
+    'Account Information updates email and uses the verified reset flow',
+    (tester) async {
+      resumeClient.dispose();
+      resumeClient = await createAuthenticatedResumeClient();
+      await pump(tester, state: StartupState.signedIn);
+      container!.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('settings-account-information')));
+      await tester.pumpAndSettle();
+      expect(
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/settings/account',
+      );
+      await tester.enterText(
+        find.byKey(const Key('account-new-email')),
+        'new@example.invalid',
+      );
+      await tester.tap(find.byKey(const Key('account-update-email')));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('update-email'));
+      expect(
+        find.textContaining('Check your email to confirm'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('account-reset-password')));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('reset'));
+    },
+  );
+  testWidgets(
     'skip persists introduction completion but never skips ordered research',
     (tester) async {
       await pump(tester);
@@ -874,12 +904,26 @@ void main() {
         ),
       );
       await pump(tester, state: StartupState.signedIn);
-      await tester.tap(find.byKey(const Key('sign-out')));
+      container!.read(routerProvider).go('/settings');
       await tester.pumpAndSettle();
-      expect(find.textContaining('removes unsaved local work'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('settings-sign-out')),
+        250,
+      );
+      await tester.tap(find.byKey(const Key('settings-sign-out')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          'Signing out removes unsaved changes kept only on this device',
+        ),
+        findsWidgets,
+      );
       await tester.tap(find.text('Keep editing'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('continue-career')), findsOneWidget);
+      expect(
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/settings',
+      );
       expect(
         (await repository.draft(api.server))!.personal['full_name'],
         'Local work',
@@ -1800,7 +1844,7 @@ void main() {
   });
 
   testWidgets(
-    'description quality is gated by explicit Save; empty remains quiet',
+    'optional descriptions and short Summary remain free of quality warnings',
     (tester) async {
       await pump(
         tester,
@@ -1821,7 +1865,7 @@ void main() {
         expect(find.textContaining('Needs attention —'), findsNothing);
         await tester.tap(find.byKey(const Key('editor-save')));
         await tester.pumpAndSettle();
-        expect(find.textContaining('Needs attention —'), findsOneWidget);
+        expect(find.textContaining('Needs attention —'), findsNothing);
         await tester.enterText(description, '   ');
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('editor-save')));
@@ -1836,14 +1880,15 @@ void main() {
       await tester.ensureVisible(find.byKey(const Key('save-summary')));
       await tester.tap(find.byKey(const Key('save-summary')));
       await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Needs Attention — minimum 50'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Needs Attention —'), findsNothing);
       await route(tester, '/career/summary');
+      expect(find.textContaining('Needs Attention —'), findsNothing);
       expect(
-        find.textContaining('Needs Attention — minimum 50'),
-        findsOneWidget,
+        tester
+            .widget<TextField>(find.byKey(const Key('editor-summary')))
+            .controller!
+            .text,
+        'Short',
       );
       await tester.enterText(find.byKey(const Key('editor-summary')), '   ');
       await tester.ensureVisible(find.byKey(const Key('save-summary')));

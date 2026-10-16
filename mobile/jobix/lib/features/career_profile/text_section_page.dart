@@ -15,7 +15,6 @@ import '../home/home_page.dart';
 import 'career_profile.dart';
 import 'text_section_repository.dart';
 import 'summary_writing_hints.dart';
-import '../builder/jobix_improvement.dart';
 
 String textSectionTitle(BuildContext context, String section) {
   final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
@@ -47,7 +46,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   TextSectionDraft? draft;
   Future<void> writes = Future.value();
   bool busy = false, failed = false, dirty = false, allowPop = false;
-  String? qualitySnapshot;
   String? notice;
   bool get ar => AppLocalizations.of(context)!.localeName.startsWith('ar');
   String say(String en, String arabic) => ar ? arabic : en;
@@ -114,7 +112,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   }
 
   void edit(String value) {
-    qualitySnapshot = null;
     final next = draft!.edit(value);
     setState(() {
       draft = next;
@@ -144,7 +141,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   }
 
   Future<void> save() async {
-    qualitySnapshot = controller.text;
     if (busy) return;
     setState(() {
       busy = true;
@@ -300,15 +296,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   Widget build(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
     final count = controller.text.trim().runes.length;
-    final minimum = widget.section == 'summary' ? 50 : 2;
-    final state = widget.section == 'summary'
-        ? profile?.summaryState
-        : profile?.targetRoleState;
-    final savedText = widget.section == 'summary'
-        ? profile?.summary
-        : profile?.targetRole;
-    final qualityEligible =
-        controller.text == qualitySnapshot || controller.text == savedText;
     return JobixBackHandler(
       onBack: leave,
       child: frame(
@@ -323,13 +310,22 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 const FormLoadingState(),
               if (failed) TextButton(onPressed: load, child: Text(copy.retry)),
             ] else ...[
-              SectionHeading(
-                title: textSectionTitle(context, widget.section),
-                subtitle: say(
-                  'Optional. Write in your own words; incomplete content can be saved.',
-                  'اختياري. اكتب بأسلوبك؛ يمكنك حفظ المحتوى غير المكتمل.',
+              SectionHeading(title: textSectionTitle(context, widget.section)),
+              if (profile != null &&
+                  draft!.text !=
+                      (widget.section == 'summary'
+                          ? profile!.summary
+                          : profile!.targetRole)) ...[
+                const SizedBox(height: TokensV0.space12),
+                SliceCard(
+                  child: Text(
+                    say(
+                      'These changes are not saved to your account until you choose Save.',
+                      'لم تُحفظ هذه التغييرات في حسابك حتى تختار حفظ.',
+                    ),
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: TokensV0.space20),
               SliceCard(
                 child: Column(
@@ -352,8 +348,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                                 'e.g. Senior Frontend Developer',
                                 'مثال: مطوّر واجهات أمامية أول',
                               ),
-                        counterText:
-                            '${controller.text.runes.length} / $maximum',
                         suffixIcon: controller.text.isEmpty
                             ? null
                             : IconButton(
@@ -371,27 +365,10 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                             : null,
                       ),
                     ),
-                    const SizedBox(height: TokensV0.space12),
-                    Text(
-                      count == 0
-                          ? say('Not used', 'غير مستخدم')
-                          : qualityEligible &&
-                                (count < minimum ||
-                                    (!dirty && state == 'NEEDS_ATTENTION'))
-                          ? say(
-                              'Needs Attention — minimum $minimum characters',
-                              'يحتاج إلى مراجعة — الحد الأدنى $minimum حرفًا',
-                            )
-                          : say(
-                              'Completion is validated by the server when saved.',
-                              'يتحقق الخادم من اكتمال المحتوى عند الحفظ.',
-                            ),
-                    ),
                   ],
                 ),
               ),
               const SizedBox(height: TokensV0.space12),
-              JobixImprovement(original: controller.text),
               if (widget.section == 'summary') ...[
                 const SizedBox(height: TokensV0.space12),
                 const SummaryWritingHints(),

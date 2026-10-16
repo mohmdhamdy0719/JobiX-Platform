@@ -293,7 +293,7 @@ abstract class AppLocalizations {
   /// No description provided for @contextOnly.
   ///
   /// In en, this message translates to:
-  /// **'These answers are context only. They do not become CV content or change your access to Jobix.'**
+  /// **'Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings. These answers are context only; they do not become CV content or change your access to Jobix.'**
   String get contextOnly;
 
   /// No description provided for @questionStage.
@@ -475,6 +475,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome to Jobix'**
   String get welcome;
+
+  /// No description provided for @welcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Build your career profile and prepare for your next opportunity.'**
+  String get welcomeSubtitle;
 
   /// No description provided for @authSubtitle.
   ///
@@ -971,7 +977,7 @@ abstract class AppLocalizations {
   /// No description provided for @signOutLocalWarning.
   ///
   /// In en, this message translates to:
-  /// **'Signing out removes unsaved local work from this device. Data already saved to your account is kept.'**
+  /// **'Signing out removes unsaved changes kept only on this device. Information already saved to your account will remain.'**
   String get signOutLocalWarning;
 
   /// No description provided for @homeNav.

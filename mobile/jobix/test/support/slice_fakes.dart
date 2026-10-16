@@ -98,6 +98,11 @@ class FakeAuthApi implements AuthApi {
   }
 
   @override
+  Future<void> updateEmail(String email) async {
+    calls.add('update-email');
+  }
+
+  @override
   Future<void> updatePassword(String password) async {
     calls.add('password');
   }
