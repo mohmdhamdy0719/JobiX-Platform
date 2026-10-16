@@ -1,0 +1,50 @@
+## Approved: Enable PDF Export in Development Only
+
+I explicitly approve the narrow, Development-only gate changes required to enable PDF export.
+
+The previous guarded command was not run because it creates gate-only Cloud Run revisions and updates the Supabase Edge Function's `JOBIX_EXPORT_ENABLED` setting. Those specific changes are now approved, subject to the safeguards below.
+
+### 1. Preserve the approved estimates
+
+Use these exact values:
+
+- `shared_cost_reserve_microusd = 3000000`
+- `runtime_cost_microusd_per_second = 100`
+- `output_cost_microusd_per_gib_7d = 12000`
+- `storage_operation_cost_microusd = 7`
+- `per_export_overhead_microusd = 25000`
+
+Set `accounting_ready = true` only after the five values are successfully written and verified in the intended Development database.
+
+### 2. Scope of approval
+
+I approve only:
+
+- Writing and verifying the five cost inputs and accounting configuration in Supabase Development project `lmouxhbjhtqdtiqijcee`.
+- Enabling the Development database export gate.
+- Creating the necessary gate-only revisions for the existing Development Cloud Run Worker and Gateway, with `JOBIX_EXPORT_ENABLED=true`.
+- Updating the Development Supabase Edge Function configuration to enable the corresponding export gate.
+
+Do not change production, IAM permissions, service accounts, secrets unrelated to this gate, bucket access policies, infrastructure sizing, or other unrelated settings. Do not deploy application-code changes as part of this step.
+
+Before applying changes, verify that both Cloud Run services and the Edge Function belong to the expected Development environment. If the command would change anything beyond the approved scope, stop and report it before proceeding.
+
+### 3. Validate and verify
+
+Execute the existing guarded configuration command using the project's established secure procedure. Then perform read-only verification of:
+
+- All five persisted cost values.
+- `accounting_ready = true`.
+- The actual gate state in Supabase, Cloud Run Worker, Cloud Run Gateway, and the Edge Function.
+- Cloud Run revisions and traffic allocation, confirming the changes are limited to the approved gate setting.
+- Existing Credit pricing, rate limits, idempotency, authorization, runtime/output limits, and private bucket controls.
+
+Run the focused regression tests that passed previously, or clearly report why rerunning them is not possible.
+
+Do not expose credentials or signed URLs in logs.
+
+### 4. Report the real result
+
+Distinguish clearly between configuration success and an actual successful export. Report any remaining blocker to testing the complete Android Preview → Export → Download flow.
+
+Do not enable production. Do not claim that a PDF export succeeded until a real export and download have been verified.
