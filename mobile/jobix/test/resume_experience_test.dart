@@ -105,6 +105,12 @@ void main() {
       );
     },
   );
+  test('resume details use singular and plural page labels', () {
+    expect(const ResumeCopy(false).pageCount(1), '1 page');
+    expect(const ResumeCopy(false).pageCount(2), '2 pages');
+    expect(const ResumeCopy(true).pageCount(1), 'صفحة واحدة');
+    expect(const ResumeCopy(true).pageCount(2), 'صفحتان');
+  });
   test(
     'expiry/eligibility never causes automatic regeneration or a second charge',
     () {
@@ -231,10 +237,8 @@ void main() {
                 padding: const EdgeInsets.all(16),
                 child: ResumeDetailsBody(
                   job: job,
-                  onRefresh: () {},
                   onDownload: () => downloaded = true,
                   onAgain: () {},
-                  busy: true,
                   downloading: true,
                 ),
               ),
@@ -247,6 +251,7 @@ void main() {
             ? 'Downloading'
             : 'جارٍ التنزيل';
         expect(find.text(downloadingLabel), findsOneWidget);
+        expect(find.text('Refresh details'), findsNothing);
         expect(
           find.byWidgetPredicate(
             (widget) => widget is ElevatedButton && widget.onPressed == null,
@@ -273,10 +278,8 @@ void main() {
               padding: const EdgeInsets.all(16),
               child: ResumeDetailsBody(
                 job: job,
-                onRefresh: () {},
                 onDownload: () => downloaded = true,
                 onAgain: () {},
-                busy: true,
               ),
             ),
             language: language,

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/providers.dart';
 import '../core_mvp/core_api.dart';
@@ -110,7 +109,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
     document.head.appendChild(style);
     const stride = 210 * 96 / 25.4;
     const gap = 36 * 96 / 25.4;
-    const count = Math.max(1, Math.round((container.scrollWidth + gap) / stride));
+    const count = Math.max(1, Math.ceil((container.scrollWidth + gap - 1) / stride));
     function fit() {
       document.body.style.zoom = Math.min(1,
         document.documentElement.clientWidth / stride);
@@ -165,14 +164,6 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
       exportEnabled: widget.exportEnabled,
       valid: valid,
       availableCredits: availableCredits,
-      creditBalanceLoading: balanceState.isLoading,
-      creditBalanceUnavailable: balanceState.hasError,
-      onRetryCredits: () => ref.invalidate(coreSummaryProvider),
-      onReviewCredits: () {
-        context.push('/credits').whenComplete(() {
-          if (mounted) ref.invalidate(coreSummaryProvider);
-        });
-      },
       paper: failed
           ? Center(
               child: Text(
@@ -189,14 +180,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
           : null,
       onEditProfile: busy || ownerInvalidated ? null : widget.onEditProfile,
       onExport:
-          busy ||
-              !valid ||
-              !widget.exportEnabled ||
-              failed ||
-              balanceState.isLoading ||
-              balanceState.hasError ||
-              availableCredits == null ||
-              availableCredits < 2
+          busy || !valid || !widget.exportEnabled || failed || ownerInvalidated
           ? null
           : () async {
               setState(() => busy = true);

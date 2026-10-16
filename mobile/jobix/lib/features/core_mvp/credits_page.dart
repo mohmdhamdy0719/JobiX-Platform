@@ -26,6 +26,8 @@ class _CreditsPageState extends ConsumerState<CreditsPage> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasLoaded = false;
+  bool _initialLoadStarted = false;
+  String? _observedUserId;
   int _generation = 0;
   late int tab;
 
@@ -33,17 +35,45 @@ class _CreditsPageState extends ConsumerState<CreditsPage> {
   void initState() {
     super.initState();
     tab = widget.initialTab;
+    _observedUserId = ref.read(authSessionProvider).valueOrNull?.user.id;
     ref.listenManual(
       authSessionProvider.select((state) => state.valueOrNull?.user.id),
       (previous, next) {
-        if (previous != next) _loadFirstPage();
+        if (next == _observedUserId) return;
+        _observedUserId = next;
+        if (next == null) {
+          _generation++;
+          if (mounted) {
+            setState(() {
+              _items.clear();
+              _nextCursor = null;
+              _error = null;
+              _loading = false;
+              _loadingMore = false;
+              _hasLoaded = true;
+            });
+          }
+        } else {
+          _loadFirstPage();
+        }
       },
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadFirstPage());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_initialLoadStarted) return;
+      if (_observedUserId != null) {
+        _loadFirstPage();
+      } else if (mounted) {
+        setState(() {
+          _loading = false;
+          _hasLoaded = true;
+        });
+      }
+    });
   }
 
   Future<void> _loadFirstPage() async {
     if (!mounted) return;
+    _initialLoadStarted = true;
     final generation = ++_generation;
     setState(() {
       _loading = true;

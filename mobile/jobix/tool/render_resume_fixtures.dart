@@ -20,6 +20,7 @@ void main(List<String> arguments) {
     final ar = language == 'ar';
     final cases = [
       (name: 'short', long: false, count: 1, lines: 2, boundary: false),
+      (name: 'medium', long: false, count: 2, lines: 2, boundary: false),
       (name: 'long', long: true, count: 8, lines: 12, boundary: false),
       if (regression) ...[
         (name: 'credentials', long: false, count: 1, lines: 2, boundary: true),
@@ -108,7 +109,34 @@ void main(List<String> arguments) {
               'name': ar ? 'مهارة اختبار $i / SQL' : 'Sample Skill $i / SQL',
             },
         ],
+        'languages': [
+          {
+            'id': 'language-arabic',
+            'name': ar ? 'العربية / Arabic' : 'Arabic',
+            'proficiency': 'NATIVE',
+          },
+          {
+            'id': 'language-english',
+            'name': ar ? 'الإنجليزية / English' : 'English',
+            'proficiency': 'FLUENT',
+          },
+        ],
       };
+      if (fixture.name == 'medium') {
+        source['education'] = [
+          {
+            'id': 'education-medium',
+            'degree': ar ? 'دبلوم تجريبي' : 'Sample Diploma',
+            'institution': ar ? 'معهد تجريبي' : 'Sample Institute',
+            'field_of_study': ar ? 'تنسيق المشروعات' : 'Project Coordination',
+            'start_month': '2018-01',
+            'end_month': '2022-06',
+            'description': ar
+                ? 'فقرة تعليمية محفوظة.\n- مشروع تعليمي موثق'
+                : 'Preserved education paragraph.\n- Documented learning project',
+          },
+        ];
+      }
       if (fixture.boundary) {
         // Legal synthetic inputs move section/entry starts through several
         // page offsets. No artificial spacers or modified print stylesheet.
@@ -266,9 +294,9 @@ void main(List<String> arguments) {
       );
     }
   }
-  File('${output.path}/manifest.json').writeAsStringSync(
-    const JsonEncoder.withIndent('  ').convert(manifest),
-  );
+  File(
+    '${output.path}/manifest.json',
+  ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(manifest));
   stdout.writeln(
     regression
         ? 'Wrote canonical EN/AR regression fixtures and source manifest.'

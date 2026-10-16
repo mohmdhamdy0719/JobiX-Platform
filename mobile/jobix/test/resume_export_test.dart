@@ -213,6 +213,7 @@ void main() {
               ResumeExportPanel(
                 profileId: profileId,
                 canPrepare: true,
+                historyOnly: true,
                 showDocument: (_) async {},
               ),
               language: language,
@@ -229,6 +230,12 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byType(TextButton), findsWidgets);
           expect(find.text('Refresh history'), findsNothing);
+          expect(
+            find.text(
+              language == 'en' ? 'Retry history' : 'إعادة محاولة تحميل السجل',
+            ),
+            findsOneWidget,
+          );
           expect(tester.takeException(), isNull);
         },
       );
@@ -250,6 +257,8 @@ void main() {
   late List<Map<String, dynamic>> configurationSaveCommands;
   bool paginate = false;
   int creditBalance = 8;
+  bool creditBalanceUnavailable = false;
+  int creditBalanceReads = 0;
   bool expiredDownload = true;
   bool loseResponse = false;
   bool loseConfigurationResponse = false;
@@ -264,6 +273,7 @@ void main() {
     String language = 'en',
     bool initial = false,
     bool includeCompleted = false,
+    bool historyOnly = false,
     GlobalKey<ResumeExportPanelState>? panelKey,
   }) async {
     await tester.pumpWidget(
@@ -272,17 +282,23 @@ void main() {
           key: panelKey,
           profileId: profileId,
           canPrepare: true,
+          historyOnly: historyOnly,
           initialDocument: initial ? document : null,
           showDocument: (value) async {
             observedDocument = value;
           },
+          onOperation: (_) {},
         ),
         language: language,
         overrides: [
           supabaseClientProvider.overrideWith((_) async => client),
           databaseProvider.overrideWith((_) async => db),
-          coreSummaryProvider.overrideWith(
-            (_) async => CoreSummary(
+          coreSummaryProvider.overrideWith((_) async {
+            creditBalanceReads++;
+            if (creditBalanceUnavailable) {
+              throw StateError('synthetic balance failure');
+            }
+            return CoreSummary(
               balance: CreditBalance(
                 finalized: creditBalance,
                 reserved: 0,
@@ -291,8 +307,8 @@ void main() {
               ),
               profiles: const [],
               slots: const [],
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );
@@ -324,6 +340,8 @@ void main() {
     rejectedRetryAfter = null;
     paginate = false;
     creditBalance = 8;
+    creditBalanceUnavailable = false;
+    creditBalanceReads = 0;
     expiredDownload = true;
     prepared = {
       ...document,
@@ -640,6 +658,7 @@ void main() {
       expect(commands.map((item) => item['action']), ['document']);
       expect(panelKey.currentState!.reviewRequired, isTrue);
       expect(accepted, 0);
+      expect(creditBalanceReads, 1);
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
       expect(find.byType(AlertDialog), findsOneWidget);
       await tester.tap(find.text('Close'));
@@ -662,6 +681,8 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await mount(tester, language: language, initial: true);
       expect(find.byType(CheckboxListTile), findsNWidgets(10));
+      expect(find.text('Refresh history'), findsNothing);
+      expect(find.text('Retry history'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     });
@@ -684,12 +705,95 @@ void main() {
   testWidgets(
     'cost confirmation can decline without a request or saved outbox',
     (tester) async {
+      creditBalance = 2;
       await mount(tester, initial: true);
       await tap(tester, 'Create PDF — 2 Credits');
       await tap(tester, 'Cancel');
       expect(accepted, 0);
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
       expect(commands.where((c) => c['action'] == 'create'), isEmpty);
+    },
+  );
+  for (final language in ['en', 'ar']) {
+    for (final balance in [0, 1]) {
+      testWidgets(
+        '$language verified balance $balance shows the compact Credit dialog before any export request',
+        (tester) async {
+          creditBalance = balance;
+          await mount(tester, language: language, initial: true);
+          await tap(
+            tester,
+            language == 'en' ? 'Create PDF — 2 Credits' : 'إنشاء PDF — رصيدان',
+          );
+          expect(
+            find.text(
+              language == 'en' ? 'Not enough Credits' : 'الرصيد غير كافٍ',
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              language == 'en'
+                  ? 'A new PDF export costs 2 Credits. You currently have $balance Credits.'
+                  : 'يكلف تصدير PDF جديد رصيدين. رصيدك الحالي $balance.',
+            ),
+            findsOneWidget,
+          );
+          expect(
+            commands.where(
+              (command) =>
+                  ['document', 'create', 'again'].contains(command['action']),
+            ),
+            isEmpty,
+          );
+          expect(accepted, 0);
+          expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+          await tap(tester, language == 'en' ? 'Cancel' : 'إلغاء');
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+  testWidgets(
+    'unknown balance is not described as insufficient and sends no export request',
+    (tester) async {
+      creditBalanceUnavailable = true;
+      await mount(tester, initial: true);
+      await tap(tester, 'Create PDF — 2 Credits');
+      expect(find.text('Credit balance unavailable'), findsOneWidget);
+      expect(find.text('Not enough Credits'), findsNothing);
+      expect(
+        commands.where(
+          (command) =>
+              ['document', 'create', 'again'].contains(command['action']),
+        ),
+        isEmpty,
+      );
+      expect(accepted, 0);
+      await tap(tester, 'Cancel');
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'low-balance local Preview checks Credits before server document action',
+    (tester) async {
+      creditBalance = 1;
+      final panelKey = GlobalKey<ResumeExportPanelState>();
+      await mount(tester, panelKey: panelKey);
+      commands.clear();
+      final local = {...document, 'document_sha256': null};
+      await panelKey.currentState!.showLocalDocument(local);
+      final export = panelKey.currentState!.createPdf(local);
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Not enough Credits'), findsOneWidget);
+      expect(commands, isEmpty);
+      expect(accepted, 0);
+      expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+      await tap(tester, 'Cancel');
+      await export;
+      expect(creditBalanceReads, 1);
     },
   );
   testWidgets('ambiguous acceptance freezes key/payload and reconciles once', (
@@ -916,7 +1020,7 @@ void main() {
       await tap(tester, 'Create — 2 Credits');
       expect(find.text('Not enough Credits'), findsOneWidget);
       expect(find.textContaining('currently have 1'), findsOneWidget);
-      await tap(tester, 'Close');
+      await tap(tester, 'Cancel');
       final initial =
           jsonDecode((await db.setting('resume:$actor:export:$profileId'))!)
               as Map;

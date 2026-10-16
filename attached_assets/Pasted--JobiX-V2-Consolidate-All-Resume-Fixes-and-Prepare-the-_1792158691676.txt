@@ -1,0 +1,225 @@
+# JobiX V2 — Consolidate All Resume Fixes and Prepare the Production APK
+
+Continue from the existing JobiX codebase, the previous implementation reports, and the user's latest Android screenshots.
+
+This is a continuation of the existing work, NOT a new implementation, a separate prototype, or a new flavor that bypasses the main application.
+
+## 1. Primary Objective
+
+Prepare one coherent, production-ready JobiX Android application that includes ALL previously requested Resume Builder, PDF Export, state-management, UI/UX, dialog, credit, and pagination fixes, plus the additional corrections described below.
+
+The user needs a Production APK that can eventually be installed and evaluated on multiple Android devices.
+
+Do not assume that earlier fixes are correct merely because focused tests passed. Inspect the actual current repository, trace the implementation, and verify the final integrated result.
+
+**Important:** The previously built `localPreviewDebug` APK is a Development/debug artifact, not the requested Production APK. Do not treat it as the release artifact or create another disconnected implementation.
+
+## 2. Safety, Environment, and Production Boundaries
+
+Before editing:
+
+1. Inspect the repository status, current branch, existing diffs, recent changes, build flavors, application IDs, environment configurations, and previous implementation.
+2. Identify where each previously requested change currently exists and whether it is included in the standard application entry point and production build.
+3. Preserve all legitimate existing user changes. Do not reset, overwrite, or discard work.
+4. Avoid duplicate implementations and unnecessary refactoring.
+
+Production requirements:
+
+- Build the release APK using the project's existing official Production configuration and standard production application ID.
+- Do not use `localPreviewDebug`, Development endpoints, Development Supabase credentials, debug-only feature flags, mock services, or synthetic runtime shortcuts in the Production APK.
+- Do not hardcode, print, expose, or embed privileged secrets in the APK.
+- Do not modify Production database records, migrations, secrets, Supabase functions, Cloud Run services, IAM, buckets, billing, infrastructure, or backend deployment as part of this task.
+- Do not silently enable Production export gates or change Production credit policies.
+- Perform a read-only Production readiness audit before claiming that PDF export is ready for Production.
+- If a required Production backend service, configuration, authentication callback, export gate, credit policy, or security prerequisite is not ready, stop and report the exact blocker. Do not bypass the blocker or switch the APK to Development just to make it work.
+- Do not run a real Production PDF export, create a real export job, download private Production documents, or debit real Credits during this task.
+- Do not claim the application is Production-ready merely because a release APK builds successfully.
+
+You are authorized to prepare and validate the Production APK. This does not authorize changing or deploying Production backend resources.
+
+## 3. Consolidate All Previously Requested Changes
+
+Use the existing implementation and the prior instructions in this conversation as the complete requirements baseline. Include all of the following in the same standard application:
+
+### Resume Details
+
+- Eliminate unexplained recurring refreshes and repeated loading indicators.
+- Remove the bottom `Refresh details` control from the normal user-facing screen.
+- Load details appropriately on entry and synchronize only when justified.
+- Keep Download available and stable while the screen is idle.
+- Make `Completed` a compact, content-sized badge instead of a full-width background.
+- Align the `−2 Credits` impact to the appropriate edge in both LTR and RTL layouts.
+- Use the friendly display name `ATS Professional` rather than the internal identifier `resume_ats_en_v1`.
+- Fix labels such as `1 pages` to use correct singular/plural grammar.
+- Preserve correct export status, expiration, download eligibility, and server-authoritative details.
+
+### Credit & Export History
+
+- Remove unexplained recurring history refreshes and duplicate network requests.
+- Keep the history, filters, balance, and Details buttons stable while loading.
+- Keep refresh behavior explicit and recoverable when needed.
+- Preserve legitimate updates following completed operations.
+- Do not replace authoritative server balance/history with local-only state.
+
+### Download and Export State
+
+- Trace the actual action and loading lifecycle from tap to completion.
+- Keep unrelated controls visible while a download is in progress.
+- Do not create a new export or charge Credits when downloading an eligible existing PDF.
+- Show a useful recoverable error when a download genuinely fails or an export expires.
+- Never display fabricated success or rely on stale data as confirmed server state.
+
+### Ambiguous Saves and Local Drafts
+
+- Fix the root cause of `A previous save is still unconfirmed`.
+- Verify the complete save lifecycle and authoritative server state.
+- Retain idempotent recovery for ambiguous writes without duplicate writes or lost edits.
+- Do not silently discard user edits or clear an unresolved state without evidence.
+- Remove the user-facing `Reconcile saved export request` and standalone `Refresh export history` controls from the Resume Export screen when they are only technical recovery controls.
+- Preserve essential internal reconciliation/recovery functionality.
+- Allow Preview when the latest save is authoritatively confirmed.
+
+### Professional Summary
+
+- Make Save and Back properly sized, professional buttons.
+- Keep both accessible in a persistent bottom action area while the form scrolls.
+- Respect keyboard visibility, device safe areas, small screens, and final input visibility.
+- Preserve validation, save-in-progress protection, and unsaved-change handling.
+
+### Resume Language Selection
+
+- Make English and Arabic options equal-width, equal-height controls that collectively fill the available row width.
+- Remove the redundant `Save selected language` button.
+- Apply the selected language and preview direction immediately.
+- Persist the selection safely if required and communicate failures honestly.
+- Do not translate the resume's existing content automatically.
+- Remove redundant explanatory text while retaining useful guidance.
+- Ensure selection, preview, template direction, and final PDF agree.
+
+### Dialogs and Credit UX
+
+- Apply the shared JobiX dialog design consistently to confirmation, error, discard, sign-out, and export-related dialogs.
+- Ensure dialogs look intentional and branded, not like inconsistent default platform dialogs.
+- Preserve clear destructive-action styling, accessibility, and scrolling for long content.
+
+## 4. New Correction: Insufficient Credits Must Not Distort Preview
+
+The latest screenshot shows a large red `Not enough Credits` panel occupying substantial space below the resume preview. It makes the screen look broken and pushes the primary actions into an awkward layout.
+
+Change the behavior as follows:
+
+1. Keep the resume preview visually clean. Do not place a large persistent red error panel inside the preview's main layout simply because the balance is insufficient.
+2. Keep `Export PDF` visible as the normal primary action, provided the resume is otherwise valid and the export feature is enabled.
+3. When the user taps `Export PDF`, first check the verified current balance and whether at least 2 Credits are available for a new export.
+4. If the verified balance is below 2 Credits, show a compact, branded JobiX dialog or similarly clear contextual message:
+   - **Not enough Credits**
+   - `A new PDF export costs 2 Credits. You currently have {balance} Credits.`
+   - Offer `Review Credit History` and `Cancel`.
+5. Do not create an export job, call the export pipeline, reserve/debit Credits, or invoke the Worker when the client already knows from a verified balance that the new export is unaffordable.
+6. The server must remain authoritative. Handle `CREDIT_INSUFFICIENT` safely if the balance changes between the client check and the server request.
+7. Do not block free downloads of existing eligible PDFs at zero Credits.
+8. Do not invent a purchase or top-up flow if purchasing Credits is not implemented.
+9. If the balance is still loading or cannot be verified, explain that state and avoid falsely claiming the user has insufficient Credits.
+10. Ensure the primary action gives clear feedback and never appears to do nothing.
+
+The new-export price remains 2 Credits. Do not change pricing or credit accounting.
+
+## 5. New Correction: Resume Details Credit Alignment
+
+In the receipt header, the `Completed` badge and credit impact must be separate layout elements.
+
+- Use a responsive row or equivalent layout.
+- In LTR, place `−2 Credits` at the far right of the receipt status row.
+- In RTL, respect the appropriate directional layout.
+- The status badge must wrap only its label and intended padding.
+- On narrow screens, allow a deliberate wrap without overlap, clipping, or an oversized badge background.
+
+## 6. New Correction: Unexplained Loading on Resume Export
+
+The user reports a loading indicator at the bottom of the Resume Export screen without understanding what is loading.
+
+Trace all loading indicators and state updates on this screen.
+
+- Identify the exact request or state responsible for each indicator.
+- Remove any indicator that is driven by an unnecessary recurring refresh or unrelated request.
+- Show loading only for a real pending operation, in the relevant component.
+- Ensure a balance/history refresh cannot make the entire export screen look busy or prevent normal interaction.
+- Ensure every loading state has a valid exit path on success, error, timeout, and navigation.
+- Do not merely hide indicators while leaving repeated requests running.
+
+## 7. Professional PDF Preview and Rendering
+
+The screenshots show an Arabic RTL resume preview with excessive blank space and a nearly empty second page containing the Languages section.
+
+Inspect the actual renderer and pagination implementation.
+
+- Fix the underlying layout and pagination calculation.
+- Use professional A4 dimensions, appropriate margins, consistent typography, and readable section spacing.
+- Prevent avoidable page breaks, orphaned headings, excessive blank regions, and sections being pushed onto a mostly empty page unnecessarily.
+- Preserve all user content. Never truncate, hide, overlap, or silently omit sections.
+- Do not indiscriminately shrink all text or force every resume onto one page.
+- Ensure short resumes fit naturally on one page when their actual content permits it.
+- Ensure longer resumes flow cleanly onto additional pages.
+- Verify both Arabic RTL and English LTR, including mixed-language content, dates, and bullets.
+- Confirm the preview and final renderer share the same pagination/layout logic where the architecture allows it.
+
+Use synthetic fixtures for short and long resumes. Do not perform a live export to validate pagination.
+
+## 8. Regression Tests
+
+Add or update focused tests in the existing architecture for:
+
+- No unexplained repeated Resume Details refreshes.
+- No unexplained repeated Credit & Export History refreshes.
+- No overlapping refresh requests or stuck loading indicators.
+- Download action visibility and stable loading/success/failure transitions.
+- Eligible free re-downloads at zero Credits.
+- Confirmed save recovery and ambiguous-save idempotency.
+- Absence of unnecessary technical recovery controls from Resume Export.
+- Persistent, accessible Save/Back controls.
+- Equal-width English/Arabic selectors and immediate selection behavior.
+- Branded dialog presentation.
+- Insufficient-credit dialog behavior for balances 0, 1, 2, and a higher balance.
+- A verified insufficient balance does not invoke the export pipeline.
+- A server-side insufficient-credit response is handled correctly.
+- The clean Preview layout does not retain a large red credit error panel.
+- Correct receipt status-badge sizing and credit alignment in LTR and RTL.
+- Short and long PDF fixtures in English LTR and Arabic RTL.
+- All required sections are preserved and pagination is reasonable.
+- Existing server-authoritative credit accounting, authorization, idempotency, rate limits, and deletion safeguards remain intact.
+
+Run relevant focused tests, then formatting, static analysis, and diff checks. Report actual results and exit codes. Distinguish tests from device validation.
+
+## 9. Build the Correct Production APK
+
+After the code changes and focused tests are complete:
+
+1. Inspect the repository's documented release process and actual Production build configuration.
+2. Confirm that the standard application ID and official Production configuration are being used.
+3. Confirm that no Development-only flavor, `localPreviewDebug` application ID, test fixture, mock backend, or debug-only export flag is present.
+4. Confirm that authentication redirects and callback schemes match the standard Production application ID.
+5. Build the appropriate signed release APK using the repository's established signing process. Never print signing credentials or secrets.
+6. If signing credentials are unavailable, do not substitute a debug build or fabricate a release signature. Report the exact blocker.
+7. Verify the output artifact exists and report its exact path, variant, application ID, build mode, size, modification time, and SHA-256.
+8. Inspect the resulting APK metadata and configuration to confirm it is the intended release artifact. Do not expose secret values.
+9. Do not install it on user devices or distribute it externally unless specifically requested.
+10. If Production readiness depends on a backend change or deployment, stop before making that change and report what requires separate authorization.
+
+## 10. Final Report
+
+Provide a concise but evidence-based report containing:
+
+- The root causes discovered for the refresh, loading, save, download, credit UI, and pagination issues.
+- The exact fixes implemented.
+- All files changed and any relevant configuration changes.
+- Focused test results with actual pass/fail counts.
+- Static analysis, formatting, and diff-check results.
+- Whether the Production release APK was successfully built and signed.
+- Exact APK metadata and SHA-256, if built.
+- What was and was not validated on a physical device.
+- Any Production readiness blocker.
+- Confirmation that no live export occurred, no Credits were charged, and no Production backend/infrastructure was modified.
+
+Do not mark a task complete merely because the code compiles or tests pass. Do not claim a fix is verified unless the relevant verification actually occurred.
+
+**Execution priority:** First inspect and consolidate the existing implementation; fix refresh/save/download state; correct Credit UX and the latest screenshot issues; fix PDF pagination; run regression tests; perform a read-only Production readiness audit; then build the standard signed Production APK if all release prerequisites are satisfied.

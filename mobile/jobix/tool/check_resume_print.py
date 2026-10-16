@@ -56,7 +56,9 @@ DOM = r"""(() => {
   for (const a of document.querySelectorAll('article')) {
     const h=a.querySelector('h3');
     add(h,a.querySelector('.meta'));
-    const first=[...a.children].find(e=>!e.matches('header,.meta'));
+    const lead=a.querySelector('.entry-lead');
+    const first=lead && [...lead.children].find(e=>!e.matches('header,.meta'))
+      || [...a.children].find(e=>!e.matches('header,.meta,.entry-lead'));
     add(h,first?.matches('ul') ? first.querySelector('li') : first);
   }
   const elements=[...document.querySelectorAll('h1,h2,h3,p,li,a,.contact,header')];
@@ -299,8 +301,18 @@ def check_pdf(case, dom, text, xml, fonts):
     expected = check_pdf_content(dom, text)
     pages, lines = pdf_lines(xml)
     require(len(pages) == 1 if case["case"] == "short" else
-            len(pages) >= 1 if case["case"] == "credentials" else len(pages) > 1,
+            len(pages) >= 1 if case["case"] in ("medium", "credentials") else len(pages) > 1,
             "short fixture must fit; expanded fixture must exercise pagination")
+    if case["case"] == "medium":
+        ar = case["language"] == "ar"
+        language_heading = "اللغات" if ar else "Languages"
+        language_key = word_key(language_heading)
+        language_pages = [
+            page for page in pages if language_key in words(page)
+        ]
+        require(len(language_pages) == 1 and
+                "SQL" in language_pages[0],
+                "Languages must not be isolated on a mostly empty page")
     check_cohesion(dom["anchors"], lines)
     records = case["source"]["experiences"]
     expected_markers = re.findall(r"JXR[A-Z]L[A-Z]", "\n".join(r["description"] for r in records))

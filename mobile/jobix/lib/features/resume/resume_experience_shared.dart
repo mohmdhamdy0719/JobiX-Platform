@@ -51,7 +51,6 @@ class ResumeCopy {
       ? 'التنزيل غير متاح لهذه المهمة.'
       : 'Download is not available for this job.';
   String get expires => isArabic ? 'ينتهي في' : 'Expires';
-  String get refreshDetails => isArabic ? 'تحديث التفاصيل' : 'Refresh details';
   String get resumeReceipt =>
       isArabic ? 'إيصال تصدير السيرة الذاتية' : 'Resume export receipt';
   String get resumeCompilation => isArabic
@@ -90,7 +89,17 @@ class ResumeCopy {
   String get stateCompleted => isArabic ? 'مكتمل' : 'Completed';
   String get stateFailed => isArabic ? 'فشل' : 'Failed';
   String get statePending => isArabic ? 'قيد الانتظار' : 'Pending';
-  String pageCount(int count) => isArabic ? '$count صفحات' : '$count pages';
+  String pageCount(int count) {
+    if (isArabic) {
+      return switch (count) {
+        1 => 'صفحة واحدة',
+        2 => 'صفحتان',
+        _ => '$count صفحات',
+      };
+    }
+    return count == 1 ? '1 page' : '$count pages';
+  }
+
   String get languageArabic => isArabic ? 'العربية' : 'Arabic';
   String get languageEnglish => isArabic ? 'الإنجليزية' : 'English';
   String downloadPdfWithSize(String size) =>

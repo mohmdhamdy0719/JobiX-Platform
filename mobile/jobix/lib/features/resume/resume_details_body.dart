@@ -10,8 +10,6 @@ class ResumeDetailsBody extends StatelessWidget {
     required this.job,
     this.onDownload,
     this.onAgain,
-    required this.onRefresh,
-    this.busy = false,
     this.downloading = false,
     super.key,
   });
@@ -19,8 +17,6 @@ class ResumeDetailsBody extends StatelessWidget {
   final Map<String, dynamic> job;
   final VoidCallback? onDownload;
   final VoidCallback? onAgain;
-  final VoidCallback onRefresh;
-  final bool busy;
   final bool downloading;
 
   @override
@@ -158,21 +154,6 @@ class ResumeDetailsBody extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: TokensV0.space12),
-        SizedBox(
-          width: double.infinity,
-          child: TextButton.icon(
-            onPressed: busy ? null : onRefresh,
-            icon: busy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh),
-            label: Text(copy.refreshDetails),
-          ),
-        ),
       ],
     );
   }

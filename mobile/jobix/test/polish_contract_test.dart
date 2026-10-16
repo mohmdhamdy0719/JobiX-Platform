@@ -75,12 +75,24 @@ void main() {
       expect(result, contains('size:A4'));
       expect(result, contains('break-after:avoid;page-break-after:avoid'));
       expect(result, contains('break-inside:avoid;page-break-inside:avoid'));
-      expect(result, contains('article{margin-bottom:4mm}'));
+      expect(result, contains('margin:3mm 0 1mm;break-after:avoid'));
+      expect(
+        result,
+        contains('section{break-inside:avoid;page-break-inside:avoid}'),
+      );
+      expect(
+        result,
+        contains('.resume-final-sections{display:inline-block;width:100%'),
+      );
+      expect(result, contains('article{margin-bottom:2.5mm}'));
+      expect(result, contains('.entry-lead{display:inline-block;width:100%'));
       expect(
         result,
         isNot(contains('article{margin-bottom:4mm;break-inside:avoid')),
       );
       expect(ResumePreviewPage.paginationScript, contains('column-fill:auto'));
+      expect(ResumePreviewPage.paginationScript, contains('Math.ceil'));
+      expect(ResumePreviewPage.paginationScript, isNot(contains('Math.round')));
       expect(
         ResumePreviewPage.paginationScript,
         contains('li{break-inside:avoid;page-break-inside:avoid}'),

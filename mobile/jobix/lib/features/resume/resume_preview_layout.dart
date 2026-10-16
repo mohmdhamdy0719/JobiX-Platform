@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'resume_credit_notice.dart';
-
 /// The document owns scrolling. Navigation and actions occupy separate space;
 /// they never overlay the platform view or change its canonical content.
 class ResumePreviewLayout extends StatelessWidget {
@@ -14,14 +12,10 @@ class ResumePreviewLayout extends StatelessWidget {
     required this.exportEnabled,
     required this.valid,
     this.availableCredits,
-    this.creditBalanceLoading = false,
-    this.creditBalanceUnavailable = false,
     required this.onExport,
     required this.onEditProfile,
     required this.onPrevious,
     required this.onNext,
-    this.onRetryCredits,
-    this.onReviewCredits,
     super.key,
   });
   final Widget paper;
@@ -29,9 +23,7 @@ class ResumePreviewLayout extends StatelessWidget {
   final int page, pages;
   final bool busy, exportEnabled, valid;
   final int? availableCredits;
-  final bool creditBalanceLoading, creditBalanceUnavailable;
   final VoidCallback? onExport, onEditProfile, onPrevious, onNext;
-  final VoidCallback? onRetryCredits, onReviewCredits;
 
   @override
   Widget build(BuildContext context) {
@@ -42,23 +34,7 @@ class ResumePreviewLayout extends StatelessWidget {
       'en' => 'English (LTR)',
       _ => t('CV language unavailable', 'لغة السيرة غير متاحة'),
     };
-    final balanceUnknown =
-        creditBalanceLoading ||
-        creditBalanceUnavailable ||
-        availableCredits == null;
-    final insufficientCredits = !balanceUnknown && availableCredits! < 2;
-    final exportReady =
-        exportEnabled &&
-        valid &&
-        !creditBalanceLoading &&
-        !creditBalanceUnavailable &&
-        availableCredits != null &&
-        availableCredits! >= 2;
-    final exportLabel = insufficientCredits
-        ? t('Not enough Credits', 'الرصيد غير كافٍ')
-        : balanceUnknown
-        ? t('Check Credits', 'تحقق من الرصيد')
-        : t('Export PDF', 'تصدير PDF');
+    final exportReady = exportEnabled && valid && !busy;
     return Scaffold(
       appBar: AppBar(title: Text(t('Preview', 'المعاينة'))),
       body: SafeArea(
@@ -117,13 +93,6 @@ class ResumePreviewLayout extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                ResumeCreditNotice(
-                  availableCredits: availableCredits,
-                  loading: creditBalanceLoading,
-                  unavailable: creditBalanceUnavailable,
-                  onRetry: onRetryCredits,
-                  onReviewHistory: onReviewCredits,
-                ),
                 LayoutBuilder(
                   builder: (context, size) {
                     final export = FilledButton.icon(
@@ -138,7 +107,7 @@ class ResumePreviewLayout extends StatelessWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.download_outlined),
-                      label: Text(exportLabel),
+                      label: Text(t('Export PDF', 'تصدير PDF')),
                     );
                     final edit = OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(

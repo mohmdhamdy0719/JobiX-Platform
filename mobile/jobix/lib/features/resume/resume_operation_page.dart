@@ -258,6 +258,20 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
           icon: const BackButtonIcon(),
           onPressed: _backToPreviousScreen,
         ),
+        actions: [
+          if (job != null)
+            IconButton(
+              tooltip: t('Refresh status', 'تحديث الحالة'),
+              onPressed: busy || refreshInFlight ? null : () => refresh(),
+              icon: busy || refreshInFlight
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh),
+            ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -287,14 +301,12 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
                       padding: const EdgeInsets.all(16),
                       child: ResumeDetailsBody(
                         job: job!,
-                        busy: busy,
                         onDownload: downloadable ? download : null,
                         downloading: saving,
                         onAgain: canAgain && !busy
                             ? () =>
                                   context.go('/resume?again=${widget.exportId}')
                             : null,
-                        onRefresh: refresh,
                       ),
                     ),
             ),

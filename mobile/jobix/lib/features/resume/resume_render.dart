@@ -25,35 +25,44 @@ class ResumeRender {
     String e(String? text) => const HtmlEscape().convert(text ?? '');
     String bi(String? text) => '<bdi>${e(text)}</bdi>';
     String label(String en, String arabic) => ar ? arabic : en;
-    String lines(String text) {
-      if (text.isEmpty) return '';
-      final out = StringBuffer();
+    List<String> blocks(String text) {
+      if (text.isEmpty) return [];
+      final out = <String>[];
+      var list = StringBuffer();
       final marker = RegExp(r'^\s*[-•]\s+(.+)$');
-      var inList = false;
       for (final line in text.split('\n')) {
         final bullet = marker.firstMatch(line);
         if (bullet != null) {
-          if (!inList) out.write('<ul>');
-          inList = true;
-          out.write('<li>${bi(bullet.group(1))}</li>');
+          if (list.isEmpty) list.write('<ul>');
+          list.write('<li>${bi(bullet.group(1))}</li>');
         } else {
-          if (inList) out.write('</ul>');
-          inList = false;
-          out.write(
+          if (list.isNotEmpty) {
+            list.write('</ul>');
+            out.add(list.toString());
+            list = StringBuffer();
+          }
+          out.add(
             line.trim().isEmpty
                 ? '<p class="blank"><br></p>'
                 : '<p>${bi(line)}</p>',
           );
         }
       }
-      if (inList) out.write('</ul>');
-      return out.toString();
+      if (list.isNotEmpty) {
+        list.write('</ul>');
+        out.add(list.toString());
+      }
+      return out;
     }
 
+    String lines(String text) => blocks(text).join();
+
     final sections = <String>[];
-    void section(String title, String body) {
+    final finalSections = <String>[];
+    void section(String title, String body, {bool keepAtEnd = false}) {
       if (body.trim().isNotEmpty) {
-        sections.add('<section><h2>${e(title)}</h2>$body</section>');
+        final markup = '<section><h2>${e(title)}</h2>$body</section>';
+        (keepAtEnd ? finalSections : sections).add(markup);
       }
     }
 
@@ -84,6 +93,7 @@ class ResumeRender {
           profile.of(type).isEmpty
               ? ''
               : '<p class="skills">${profile.of(type).map((i) => bi(i.text('name'))).join(' · ')}</p>',
+          keepAtEnd: true,
         );
         continue;
       }
@@ -136,18 +146,42 @@ class ResumeRender {
           if (index >= 0) metadata.add(e((ar ? arabic : english)[index]));
         }
         final url = normalizeUrl(item.text('url'));
-        content.write(
-          '<article><header><h3>${bi(title)}</h3>'
+        final descriptionBlocks = blocks(item.text('description'));
+        final leadIncludesParagraph =
+            descriptionBlocks.isNotEmpty &&
+            descriptionBlocks.first.startsWith('<p');
+        final entryLead = StringBuffer();
+        if (leadIncludesParagraph) {
+          entryLead.write('<div class="entry-lead">');
+        }
+        entryLead.write(
+          '<header><h3>${bi(title)}</h3>'
           '${dates.isEmpty ? '' : '<span class="dates">$dates</span>'}</header>'
-          '${metadata.isEmpty ? '' : '<p class="meta">${metadata.join(' · ')}</p>'}'
-          '${lines(item.text('description'))}'
+          '${metadata.isEmpty ? '' : '<p class="meta">${metadata.join(' · ')}</p>'}',
+        );
+        if (leadIncludesParagraph) {
+          entryLead.write(descriptionBlocks.first);
+          entryLead.write('</div>');
+        }
+        content.write(
+          '<article>$entryLead'
+          '${descriptionBlocks.skip(leadIncludesParagraph ? 1 : 0).join()}'
           '${item.text('credential_id').isEmpty ? '' : '<p>${bi(item.text('credential_id'))}</p>'}'
           '${item.list('technologies').isEmpty ? '' : '<p>${item.list('technologies').map(bi).join(' · ')}</p>'}'
           '${url == null || url.isEmpty ? '' : '<p><a href="${e(url)}">${bi(url)}</a></p>'}</article>',
         );
       }
-      section(labels[type]!, content.toString());
+      section(
+        labels[type]!,
+        content.toString(),
+        keepAtEnd: type == EntitySection.language,
+      );
     }
+    final renderedSections = [
+      ...sections,
+      if (finalSections.isNotEmpty)
+        '<div class="resume-final-sections">${finalSections.join('\n')}</div>',
+    ].join('\n');
     final contacts = [
       for (final key in [
         'email',
@@ -177,14 +211,20 @@ class ResumeRender {
 @font-face{font-family:Plex;src:url(data:font/ttf;base64,$arabicFontBase64)}
 @page{size:A4;margin:18mm}
 *{box-sizing:border-box}html{background:#e8edf4}body{background:white;color:#152237;
-font-family:${ar ? 'Plex,Inter' : 'Inter,Plex'},sans-serif;font-size:11pt;line-height:${ar ? '1.8' : '1.55'};
+ font-family:${ar ? 'Plex,Inter' : 'Inter,Plex'},sans-serif;font-size:11pt;line-height:${ar ? '1.65' : '1.55'};
 width:210mm;min-height:297mm;margin:16px auto;padding:18mm;overflow-wrap:anywhere}
-h1{font-size:24pt;margin:0 0 5mm;font-weight:700}h2{font-size:13pt;border-bottom:1pt solid #334155;
-padding-bottom:2mm;margin:7mm 0 3mm;break-after:avoid;page-break-after:avoid}h3{font-size:11.5pt;margin:0}
-article{margin-bottom:4mm}article header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2mm;
+section{break-inside:avoid;page-break-inside:avoid}
+.resume-final-sections{display:inline-block;width:100%;break-inside:avoid;page-break-inside:avoid}
+h1{font-size:24pt;margin:0 0 4mm;font-weight:700}
+h2{font-size:13pt;border-bottom:1pt solid #334155;padding-bottom:1.5mm;
+margin:3mm 0 1mm;break-after:avoid;page-break-after:avoid}
+h3{font-size:11.5pt;margin:0}
+.entry-lead{display:inline-block;width:100%;break-inside:avoid;page-break-inside:avoid;
+break-after:avoid;page-break-after:avoid}
+article{margin-bottom:2.5mm}article header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2mm;
 break-after:avoid;break-inside:avoid;page-break-inside:avoid}
 p{margin:1mm 0;white-space:pre-wrap}.contact{font-size:9.5pt}.meta,.dates{color:#43516a}
-.personal-header{text-align:center;break-inside:avoid;page-break-inside:avoid}.skills{line-height:1.7}
+.personal-header{text-align:center;break-inside:avoid;page-break-inside:avoid}.skills{line-height:1.55}
 ul{margin:1mm 0;padding-inline-start:6mm}li{margin:1mm 0;padding-inline-start:1mm}
 article .meta{break-after:avoid}p.blank{margin:0;height:2mm}
 .dates{font-size:9.5pt}a{color:inherit;text-decoration:none}bdi{unicode-bidi:plaintext}
@@ -194,6 +234,6 @@ p,li{orphans:3;widows:3}h1,h2,h3,article header{break-after:avoid}}
 </style></head><body>
 <header class="personal-header"><h1>${bi(profile.personal['full_name'])}</h1><div class="contact">${contacts.join(' · ')}</div>
 ${hiddenSections.contains('target_role') || profile.targetRole.trim().isEmpty ? '' : '<p>${bi(profile.targetRole)}</p>'}
-</header>${sections.join('\n')}</body></html>''';
+</header>$renderedSections</body></html>''';
   }
 }

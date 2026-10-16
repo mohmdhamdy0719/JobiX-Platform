@@ -23,6 +23,7 @@ class ResumeReceiptPanel extends StatelessWidget {
     final completed = state == 'completed' || completedAt != null;
     final timestamp = completedAt ?? createdAt;
     return Container(
+      key: const ValueKey('resume-receipt-panel'),
       width: double.infinity,
       decoration: BoxDecoration(
         color: TokensV0.surfaceCard,
@@ -92,22 +93,40 @@ class ResumeReceiptPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: ResumeStatePill(state: state, copy: copy),
-                    ),
-                    if (completed)
-                      Text(
-                        copy.chargedTwoCredits,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: TokensV0.error,
-                              fontWeight: FontWeight.w700,
-                            ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final cost = Text(
+                      copy.chargedTwoCredits,
+                      key: const ValueKey('receipt-credit-impact'),
+                      textAlign: TextAlign.end,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: TokensV0.error,
+                        fontWeight: FontWeight.w700,
                       ),
-                  ],
+                    );
+                    final pill = ResumeStatePill(state: state, copy: copy);
+                    if (!completed) return pill;
+                    if (constraints.maxWidth < 340) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: pill,
+                          ),
+                          const SizedBox(height: TokensV0.space8),
+                          Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: cost,
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [pill, cost],
+                    );
+                  },
                 ),
                 if (timestamp != null) ...[
                   const SizedBox(height: TokensV0.space8),

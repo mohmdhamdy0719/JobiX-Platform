@@ -13,7 +13,7 @@ import 'resume_document.dart';
 import 'resume_experience_widgets.dart';
 import 'resume_export_service.dart';
 import 'resume_preview_snapshot.dart';
-import 'resume_credit_notice.dart';
+import 'resume_credit_dialog.dart';
 export 'resume_export_service.dart' show ExportFailure;
 
 /// Rollout is closed by default; this widget never grants/debits Credits.
@@ -44,14 +44,14 @@ class ResumeExportPanel extends ConsumerStatefulWidget {
 
 class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   static const enabled = bool.fromEnvironment('JOBIX_ENABLE_PDF_EXPORT');
-  Map<String, dynamic>? document, current;
+  Map<String, dynamic>? document;
   List<Map<String, dynamic>> jobs = [];
   String? pending, message, cursor;
   bool busy = false, failureDialogOpen = false;
+  bool historyLoadFailed = false;
   final Set<String> downloadingExportIds = {};
   bool get savingPdf => downloadingExportIds.isNotEmpty;
   bool reviewRequired = false;
-  Timer? timer;
   bool get ar => Localizations.localeOf(context).languageCode == 'ar';
   String t(String en, String arabic) => ar ? arabic : en;
   bool get creationEnabled => enabled;
@@ -69,6 +69,12 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     Map<String, dynamic> reviewedDocument, [
     String? historicalId,
   ]) => _run(() async {
+    if (!enabled ||
+        pending != null ||
+        (reviewedDocument['issues'] as List? ?? []).isNotEmpty) {
+      return;
+    }
+    if (!await _ensureCurrentCredits()) return;
     if (mounted) setState(() => reviewRequired = false);
     final authoritative = await _call('document', {
       'profile_id': widget.profileId,
@@ -78,7 +84,10 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     }
     if (!mounted) return;
     setState(() => document = authoritative);
-    await _submit(historicalId ?? widget.historicalExportId);
+    await _submit(
+      historicalId: historicalId ?? widget.historicalExportId,
+      creditsAlreadyVerified: true,
+    );
   }, showFailureDialog: true);
   @override
   void initState() {
@@ -88,11 +97,9 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       authSessionProvider.select((session) => session.valueOrNull?.user.id),
       (previous, next) {
         if (previous != null && previous != next) {
-          timer?.cancel();
           if (mounted) {
             setState(() {
               jobs = [];
-              current = null;
               document = null;
               pending = null;
               cursor = null;
@@ -106,7 +113,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
 
   @override
   void dispose() {
-    timer?.cancel();
     if (savingPdf) {
       const MethodChannel(
         'jobix/pdf_save',
@@ -152,6 +158,18 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
         final code = error is ExportFailure
             ? error.code
             : 'SERVICE_UNAVAILABLE';
+        int? refreshedBalance;
+        if (code == 'CREDIT_INSUFFICIENT') {
+          ref.invalidate(coreSummaryProvider);
+          try {
+            refreshedBalance = (await ref.read(
+              coreSummaryProvider.future,
+            )).balance.available;
+          } catch (_) {
+            // The server rejection is authoritative; omit a numeric balance
+            // when the separate balance refresh is unavailable.
+          }
+        }
         setState(() {
           final retryAfter = error is ExportFailure
               ? error.retryAfterSeconds
@@ -181,8 +199,8 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                     'أصلح المحتوى المحفوظ غير الصالح أو أخفه صراحةً ثم راجع المعاينة.',
                   ),
                   'CREDIT_INSUFFICIENT' => t(
-                    'Not enough Credits. No export was accepted. Retry the same request after Credits are available.',
-                    'الرصيد غير كافٍ. لم يُقبل التصدير. أعد محاولة الطلب نفسه عند توفر الرصيد.',
+                    'Not enough Credits. The server did not accept this export; no export was created or charged.',
+                    'الرصيد غير كافٍ. لم يقبل الخادم هذا التصدير ولم يتم إنشاء ملف أو خصم رصيد.',
                   ),
                   'EXPORT_NOT_READY' => t(
                     'Export is disabled. No new export can be accepted.',
@@ -208,46 +226,64 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                   ),
                 };
         });
-        if (code == 'CREDIT_INSUFFICIENT') {
-          ref.invalidate(coreSummaryProvider);
-        }
         if (showFailureDialog && mounted) {
           setState(() => failureDialogOpen = true);
-          await showDialog<void>(
-            context: context,
-            builder: (dialog) => JobixAlertDialog(
-              icon: Icon(
-                code == 'CREDIT_INSUFFICIENT'
-                    ? Icons.account_balance_wallet_outlined
-                    : Icons.error_outline,
-              ),
-              title: Text(
-                code == 'CREDIT_INSUFFICIENT'
-                    ? t('PDF export was not accepted', 'لم يُقبل تصدير PDF')
-                    : t('PDF request issue', 'مشكلة في طلب PDF'),
-              ),
-              content: Text(
-                message ??
-                    AppLocalizations.of(context)!.exportTemporarilyUnavailable,
-              ),
-              actions: [
-                if (code == 'CREDIT_INSUFFICIENT')
+          if (code == 'CREDIT_INSUFFICIENT' &&
+              refreshedBalance != null &&
+              refreshedBalance < 2) {
+            final action = await showNotEnoughResumeCreditsDialog(
+              context,
+              availableCredits: refreshedBalance,
+            );
+            if (action == ResumeCreditDialogAction.reviewHistory && mounted) {
+              await context.push('/credits');
+              if (mounted) ref.invalidate(coreSummaryProvider);
+            }
+          } else {
+            await showDialog<void>(
+              context: context,
+              builder: (dialog) => JobixAlertDialog(
+                icon: Icon(
+                  code == 'CREDIT_INSUFFICIENT'
+                      ? Icons.account_balance_wallet_outlined
+                      : Icons.error_outline,
+                ),
+                title: Text(
+                  code == 'CREDIT_INSUFFICIENT'
+                      ? t('Not enough Credits', 'الرصيد غير كافٍ')
+                      : t('PDF request issue', 'مشكلة في طلب PDF'),
+                ),
+                content: Text(
+                  message ??
+                      AppLocalizations.of(
+                        context,
+                      )!.exportTemporarilyUnavailable,
+                ),
+                actions: [
+                  if (code == 'CREDIT_INSUFFICIENT')
+                    JobixDialogAction.secondary(
+                      onPressed: () {
+                        Navigator.pop(dialog);
+                        context.push('/credits').whenComplete(() {
+                          if (mounted) ref.invalidate(coreSummaryProvider);
+                        });
+                      },
+                      child: Text(
+                        t('Review Credit history', 'مراجعة سجل الرصيد'),
+                      ),
+                    ),
                   JobixDialogAction.secondary(
-                    onPressed: () {
-                      Navigator.pop(dialog);
-                      context.push('/credits');
-                    },
+                    onPressed: () => Navigator.pop(dialog),
                     child: Text(
-                      t('Review Credit history', 'مراجعة سجل الرصيد'),
+                      code == 'CREDIT_INSUFFICIENT'
+                          ? t('Cancel', 'رجوع')
+                          : t('Close', 'إغلاق'),
                     ),
                   ),
-                JobixDialogAction.secondary(
-                  onPressed: () => Navigator.pop(dialog),
-                  child: Text(t('Close', 'إغلاق')),
-                ),
-              ],
-            ),
-          );
+                ],
+              ),
+            );
+          }
           if (mounted) setState(() => failureDialogOpen = false);
         }
       }
@@ -257,24 +293,30 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   }
 
   Future<void> _load() async {
-    final client = await ref.read(supabaseClientProvider.future);
-    final user = client.auth.currentUser?.id;
-    if (user == null) return;
-    final db = await ref.read(databaseProvider.future);
-    final raw = await db.setting(storageKey(user));
-    final history = await _call('history', {});
-    final decorated = await Future.wait([
-      for (final job in history['jobs'] as List)
-        ResumeExportService(
-          client,
-        ).withDisplay(Map<String, dynamic>.from(job as Map), db.setting),
-    ]);
-    if (!mounted || client.auth.currentUser?.id != user) return;
-    setState(() {
-      pending = raw;
-      jobs = decorated;
-      cursor = history['next_cursor'] as String?;
-    });
+    try {
+      final client = await ref.read(supabaseClientProvider.future);
+      final user = client.auth.currentUser?.id;
+      if (user == null) return;
+      final db = await ref.read(databaseProvider.future);
+      final raw = await db.setting(storageKey(user));
+      final history = await _call('history', {});
+      final decorated = await Future.wait([
+        for (final job in history['jobs'] as List)
+          ResumeExportService(
+            client,
+          ).withDisplay(Map<String, dynamic>.from(job as Map), db.setting),
+      ]);
+      if (!mounted || client.auth.currentUser?.id != user) return;
+      setState(() {
+        pending = raw;
+        jobs = decorated;
+        cursor = history['next_cursor'] as String?;
+        historyLoadFailed = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => historyLoadFailed = true);
+      rethrow;
+    }
   }
 
   Future<void> _prepare() async {
@@ -284,13 +326,17 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     await widget.showDocument(result);
   }
 
-  Future<void> _submit([String? historicalId]) async {
+  Future<void> _submit({
+    String? historicalId,
+    bool creditsAlreadyVerified = false,
+  }) async {
     if (!enabled ||
         document == null ||
         pending != null ||
         (document!['issues'] as List? ?? []).isNotEmpty) {
       return;
     }
+    if (!creditsAlreadyVerified && !await _ensureCurrentCredits()) return;
     // Re-read the durable request before allocating a new intent. This also
     // protects against an initial history load still in flight.
     final client = await ref.read(supabaseClientProvider.future);
@@ -367,6 +413,31 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     await _retry();
   }
 
+  Future<bool> _ensureCurrentCredits() async {
+    while (mounted) {
+      ref.invalidate(coreSummaryProvider);
+      try {
+        final summary = await ref.read(coreSummaryProvider.future);
+        if (!mounted) return false;
+        if (summary.balance.available >= 2) return true;
+        final action = await showNotEnoughResumeCreditsDialog(
+          context,
+          availableCredits: summary.balance.available,
+        );
+        if (action == ResumeCreditDialogAction.reviewHistory && mounted) {
+          await context.push('/credits');
+          if (mounted) ref.invalidate(coreSummaryProvider);
+        }
+        return false;
+      } catch (_) {
+        if (!mounted) return false;
+        final action = await showResumeCreditBalanceUnavailableDialog(context);
+        if (action != ResumeCreditDialogAction.retry) return false;
+      }
+    }
+    return false;
+  }
+
   Future<void> _retry() async {
     final client = await ref.read(supabaseClientProvider.future);
     final user = client.auth.currentUser!.id;
@@ -418,30 +489,13 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       );
     });
     final id = ack['operation_id'] as String;
-    timer?.cancel();
     if (widget.onOperation != null) {
       if (mounted) widget.onOperation!.call(id);
       return;
     }
-    timer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!busy && mounted) {
-        _run(() async {
-          final status = await _call('status', {'export_id': id});
-          if (!mounted) return;
-          setState(() => current = status);
-          if ([
-            'COMPLETED',
-            'FAILED',
-            'EXPIRED',
-            'MISSING_OBJECT',
-          ].contains(status['state'])) {
-            timer?.cancel();
-            await _load();
-          }
-        });
-      }
-    });
-    await _load();
+    if (!mounted) return;
+    await context.push('/resume-status/$id');
+    if (mounted) await _load();
   }
 
   Future<void> _visibility(String section, bool visible) async {
@@ -511,15 +565,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   };
   @override
   Widget build(BuildContext context) {
-    final creditState = !widget.experience && !widget.historyOnly
-        ? ref.watch(coreSummaryProvider)
-        : null;
-    final availableCredits = creditState?.valueOrNull?.balance.available;
-    final canAffordNewExport =
-        availableCredits != null &&
-        availableCredits >= 2 &&
-        !(creditState?.isLoading ?? true) &&
-        !(creditState?.hasError ?? true);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -568,23 +613,14 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                 ),
               ),
           if (!widget.experience)
-            ResumeCreditNotice(
-              availableCredits: availableCredits,
-              loading: creditState?.isLoading ?? false,
-              unavailable: creditState?.hasError ?? false,
-              onRetry: () => ref.invalidate(coreSummaryProvider),
-              onReviewHistory: () => context.push('/credits'),
-            ),
-          if (!widget.experience)
             TextButton(
               onPressed:
                   !enabled ||
                       busy ||
                       pending != null ||
-                      !canAffordNewExport ||
                       (document!['issues'] as List).isNotEmpty
                   ? null
-                  : () => _run(_submit, showFailureDialog: true),
+                  : () => _run(() => _submit(), showFailureDialog: true),
               child: Text(t('Create PDF — 2 Credits', 'إنشاء PDF — رصيدان')),
             ),
         ],
@@ -623,11 +659,10 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               ),
             ),
           ),
-        if (current != null) Text(stateLabel(current!['state'] as String)),
-        if (widget.historyOnly)
+        if (widget.historyOnly && historyLoadFailed)
           TextButton(
             onPressed: busy ? null : () => _run(_load),
-            child: Text(t('Refresh history', 'تحديث السجل')),
+            child: Text(t('Retry history', 'إعادة محاولة تحميل السجل')),
           ),
         if (widget.experience && !widget.historyOnly)
           TextButton.icon(
@@ -709,7 +744,10 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                               pending != null ||
                               (document!['issues'] as List).isNotEmpty
                           ? null
-                          : () => _run(() => _submit(job['id'] as String)),
+                          : () => _run(
+                              () => _submit(historicalId: job['id'] as String),
+                              showFailureDialog: true,
+                            ),
                       child: Text(t('Export Again — 2', 'تصدير جديد — رصيدان')),
                     ),
                   ],
