@@ -1,0 +1,618 @@
+# JobiX — Final UX Refinement, Data Persistence, and PDF Export Polish
+
+## Objective
+
+We are preparing JobiX for Production. Before starting the ATS Score and AI Generation features, we must resolve the current UX problems, simplify the user experience, and make the existing profile and PDF export flows consistent and reliable.
+
+Act as a senior Flutter engineer, product designer, UX writer, and QA engineer.
+
+Inspect the existing implementation first. Reuse established components and patterns where appropriate. Implement the changes below without unnecessarily rewriting working features.
+
+**Important:** This is preparation for Production, not authorization to deploy to Production or modify Production infrastructure.
+
+## 1. Critical product principle: Cloud-first persistence
+
+The Supabase account data is the single authoritative source of truth.
+
+We do not want users to think about local drafts, cloud copies, synchronization, or competing versions of their information. Local storage is only a temporary recovery mechanism to protect users from unexpected interruptions.
+
+Implement and preserve these principles:
+
+- Saved profile data must be loaded from and persisted to Supabase.
+- Local recovery data must never become a second authoritative profile or override newer server data.
+- If a user is interrupted while editing, preserve recoverable unsaved input temporarily so they can return and explicitly save it to Supabase.
+- If the user deliberately discards the unfinished changes, those changes must not be saved to Supabase or restored later.
+- If the user chooses to leave an editing flow with unsaved changes, present a short, clear confirmation that allows them to continue editing, save when possible, or discard their unfinished changes.
+- If recovery data exists after an unexpected interruption, restore the editing experience and let the user explicitly save the recovered changes to Supabase. Do not silently treat recovered changes as saved data.
+- If the user cannot return to the interrupted editing flow, or deliberately discards the changes, do not persist those changes to Supabase.
+- Signing out must not present local recovery as a separate account version. Preserve already-saved Supabase data.
+- Do not introduce a general offline mode. JobiX remains an online application; local recovery is only a temporary UX safeguard.
+
+Remove user-facing concepts such as “local draft,” “cloud version,” “review latest saved version,” and “back — retain local draft” wherever they expose internal implementation details.
+
+Do not simply hide these messages while leaving inconsistent data behavior underneath. Review the actual persistence and recovery flow, then implement the smallest safe changes needed.
+
+Do not weaken existing authentication, Row Level Security, authorization, validation, or server-side ownership rules.
+
+## 2. Onboarding — Career research question
+
+On the onboarding question, “What are you currently looking to achieve in your career?”, replace the explanatory text:
+
+“These answers are context only. They do not become CV content or change your access to Jobix.”
+
+Use this concise, professional replacement:
+
+“Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings.”
+
+These answers are preferences, not resume content. Do not change the underlying answer options or data model unless required by the existing implementation.
+
+## 3. Authentication welcome screen
+
+After the onboarding questions, improve the authentication welcome screen.
+
+Current problems:
+
+- The header displays a separate logo on the left without a clear purpose.
+- The welcome content is not visually balanced.
+- The explanatory text is unnecessary.
+
+Preferred design:
+
+- Remove the redundant top-left logo header.
+- Center the main JobiX logo.
+- Center “Welcome to Jobix” and a short supporting line beneath it.
+- Present Create account, Sign in, and Continue with Google in a clear, consistent hierarchy.
+- Use appropriate spacing, button sizes, and responsive layouts.
+- Keep the screen clean and professional, consistent with the existing JobiX design system.
+
+Use this supporting line:
+
+“Build your career profile and prepare for your next opportunity.”
+
+Keep the existing authentication flows and their security behavior intact. Do not remove the welcome screen in this iteration; improve it first.
+
+## 4. Home screen and Continue Profile behavior
+
+Remove the redundant sign-out icon from the Home screen. Signing out should be available through Settings only.
+
+Fix Continue Profile navigation:
+
+- If the user has never completed the Profile Creation Journey, Continue Profile should resume the unfinished journey at the correct step.
+- Once the user completes the journey and reaches Review Profile, persist that completion state appropriately.
+- After that, signing out and signing back in must not restart the user at Step 1.
+- Continue Profile should take a user who has completed the journey to the Career area.
+- Determine completion from durable, account-associated state rather than a transient in-memory flag or device-only state.
+- Do not mark the journey complete prematurely if the user has not reached the defined completion point.
+
+Verify the behavior across app restarts and fresh authentication sessions.
+
+## 5. Credits and AI-generation indicators
+
+### Work Experience and other profile sections
+
+Remove the “AI generations: 0 / 3 used” indicator.
+
+The intended product model is that AI Generation will eventually consume one Credit per eligible generation. The existing two-Credit charge for a successful new PDF export must remain unchanged.
+
+Display the user's available Credits in the top-right header using the existing Credits component and behavior already available on the Home screen.
+
+Do not implement the future AI-generation feature or charge Credits for it in this task.
+
+Remove irrelevant internal or repetitive explanatory text from the Work Experience page, including:
+
+- Profile completeness explanations that do not help the user complete the current form.
+- Volunteer-experience explanations that belong to internal product logic rather than the user's immediate task.
+- The redundant “Improve with Jobix” section where it has no working action or useful purpose.
+
+Apply the same cleanup to equivalent profile pages where the same unnecessary AI-generation indicator or redundant explanatory components appear.
+
+## 6. Professional Summary — Improve the question-and-answer guidance
+
+The current collapsible question section is visually poor and difficult to use.
+
+Redesign it as a polished, compact guidance component that helps users understand what to write without overwhelming them.
+
+Use these questions and examples:
+
+1. **What is your professional background?**
+   Example: “Marketing specialist with three years of experience in digital campaigns and content strategy.”
+
+2. **What are your strongest skills or areas of expertise?**
+   Example: “SEO, campaign analytics, content planning, and stakeholder communication.”
+
+3. **What work or problems do you solve best?**
+   Example: “I turn campaign data into practical improvements that increase engagement and conversion.”
+
+4. **What achievements or results are you proud of?**
+   Example: “Improved organic traffic by 25% over six months.” Make clear that examples are illustrative; users must enter their own truthful results.
+
+5. **What type of role are you looking for next?**
+   Example: “A digital marketing role focused on growth, experimentation, and measurable results.”
+
+6. **What value do you bring to an employer or team?**
+   Example: “I combine analytical thinking with clear communication to help teams make better marketing decisions.”
+
+UX requirements:
+
+- Keep the questions easy to scan and expand.
+- Use readable typography, appropriate spacing, and clear visual hierarchy.
+- Avoid a wall of large bordered accordions.
+- Let users consult examples without forcing them to answer every question.
+- Do not automatically insert example text into the user's actual resume.
+- Keep the actual resume content separate from guidance.
+
+## 7. Professional Summary — Input field and AI section
+
+Remove the unnecessary text above the input field:
+
+“Optional. Write in your own words; incomplete content can be saved.”
+
+The text field should be clearly identified as the user's Professional Summary. Its content is the text intended to appear in the resume.
+
+Remove unnecessary explanations about incomplete drafts, local storage, and server validation from the normal writing experience.
+
+Keep the “Improve with Jobix” area only as a distinct, understandable AI-assistance concept. Explain its intended behavior briefly:
+
+“Write in your own words. JobiX can help refine your wording while keeping your experience and facts accurate.”
+
+AI improvement is currently unavailable, so:
+
+- Do not pretend the feature works.
+- Do not generate fabricated content.
+- Keep the action visibly unavailable or otherwise communicate its actual status clearly.
+- Do not let an unavailable AI action block users from entering or saving their own text.
+
+## 8. Consistent question guidance across profile sections
+
+The Professional Summary is not the only place that needs guided questions.
+
+Review and apply the same design approach to the relevant profile sections, including:
+
+- Work Experience
+- Education
+- Achievements
+- Volunteer Experience
+- Other relevant career-history sections already implemented
+
+Create appropriate questions and illustrative answers for each section. Do not force the same questions onto unrelated fields.
+
+Use the following content as the starting point.
+
+### Work Experience
+
+- **What was your role and what were you responsible for?**
+  Example: “Managed customer accounts and coordinated daily client requests.”
+
+- **What were your main contributions?**
+  Example: “Improved the team's reporting process and reduced repetitive manual work.”
+
+- **What measurable results did you achieve?**
+  Example: “Reduced report preparation time by 30%.” This is illustrative, not a claim about the user.
+
+### Education
+
+- **What qualification did you earn, and in which field?**
+  Example: “Bachelor's degree in Business Administration.”
+
+- **Was there a relevant project, specialization, or academic achievement?**
+  Example: “Completed a research project on customer behavior and market segmentation.”
+
+### Achievements
+
+- **What did you accomplish?**
+  Example: “Received an award for outstanding project delivery.”
+
+- **Why was it important, or what was the result?**
+  Example: “Recognized for completing a cross-functional project ahead of schedule.”
+
+- **Is there a public link or evidence worth including?**
+  Example: A certificate, publication, award page, or portfolio URL.
+
+### Volunteer Experience
+
+- **What organization or cause did you support, and what was your role?**
+  Example: “Volunteered with a local community initiative to coordinate donation drives.”
+
+- **What did you contribute or accomplish?**
+  Example: “Helped organize events and coordinate volunteers.”
+
+These questions are guidance, not additional mandatory fields. Preserve the existing data model and save behavior unless a change is necessary and justified.
+
+## 9. Work Experience, Volunteer Experience, and Achievements — Text-field UX
+
+Standardize the description fields across these forms.
+
+Current problems:
+
+- “Description (optional)” appears as oversized text in the middle of an empty field.
+- The helper text underneath is long, awkward, and overly instructional.
+- The note about required fields and the asterisk is unnecessary.
+- Achievements and Work Experience contain similar issues.
+
+Required behavior:
+
+- Keep a clear field label such as “Description”.
+- Put concise, helpful placeholder text inside the empty text field, using the existing hint/placeholder pattern.
+- The placeholder should disappear naturally when the user starts typing.
+- Use a smaller, readable text style for helper content.
+- Remove “Optional” from the label where the field is already optional and no asterisk is shown.
+- Remove the “Optional. Aim for at least 20 characters...” guidance.
+- Remove the redundant “Fields marked \* are required...” explanation.
+- Keep actual required-field validation intact. Do not remove required fields or weaken validation.
+
+Use these placeholder examples:
+
+**Work Experience description**
+“Describe your responsibilities, key contributions, and measurable results.”
+
+**Volunteer Experience description**
+“Describe the cause you supported, your role, and how you contributed.”
+
+**Achievement description**
+“Describe what you achieved, why it mattered, and any measurable result.”
+
+**Education description, where applicable**
+“Add relevant coursework, projects, honors, or academic achievements.”
+
+Keep placeholders visible only while the corresponding field is empty. Do not overwrite existing user input.
+
+### Achievement links
+
+Remove the arbitrary character limit from achievement URLs if it is imposed only by the UI or a database field that does not need such a limit.
+
+Validate links safely and appropriately. In the resume, display a clear label or linked text rather than exposing an unnecessarily long raw URL when the existing template supports that behavior.
+
+Do not weaken security or accept invalid URLs merely to remove a character limit.
+
+## 10. Settings screen — Copy cleanup
+
+Review the Settings screen and remove unnecessary explanatory text.
+
+### Credit History
+
+Replace:
+
+“Server-recorded changes to your available Credits.”
+
+With:
+
+“View your Credit balance and transaction history.”
+
+### Sign out
+
+Remove:
+
+“Signing out removes unsaved local work from this device. Data already saved to your account is kept.”
+
+Replace the normal supporting copy with:
+
+“Sign out of your JobiX account.”
+
+Use a straightforward sign-out confirmation:
+
+**Title:** “Sign out?”
+
+**Message:** “Are you sure you want to sign out?”
+
+**Actions:** “Cancel” and “Sign out”
+
+Do not describe internal local-storage implementation. Preserve already-saved account data and existing secure sign-out behavior.
+
+### Other Settings entries
+
+Review all other subtitles and explanatory messages:
+
+- Keep text only when it helps the user understand the feature or its status.
+- Use concise, natural, professional language.
+- Do not claim that Support, Privacy Policy, Terms of Service, or other unavailable features are configured when they are not.
+- Do not invent URLs, support addresses, or feature functionality.
+
+## 11. Account Information
+
+Review the current Account Information destination and make it useful for account management.
+
+Where supported by the existing authentication architecture, allow the user to manage important account information such as:
+
+- Email address
+- Password change or password-reset flow
+- Account identity information and relevant security actions
+
+Keep account credentials separate from resume contact information. Resume contact details belong to Personal Information; authentication details belong to account management.
+
+Preserve Supabase Auth requirements, email-verification behavior, reauthentication requirements, and secure password handling. Do not expose or store passwords in profile tables.
+
+If a capability is not currently implemented or cannot be completed safely within this change, report it clearly instead of presenting a fake working action.
+
+## 12. Personal Information — Language controls
+
+The app-language selector must appear only in the intended locations:
+
+- Initial onboarding, where the language is selected.
+- Settings, where the user can change the app language.
+
+Remove the redundant language-switching control from Personal Information and any other in-app screens where it appears outside these approved locations.
+
+Search the application for duplicate language selectors rather than fixing only the screenshot shown.
+
+### Resume Language selector
+
+Keep the resume-language selector in Personal Information because it controls the resume's language, not the application's interface language.
+
+Fix the Arabic (RTL) and English (LTR) selection controls so they have consistent dimensions, full-width behavior within their shared container, correct alignment, and appropriate responsive behavior.
+
+Do not break RTL layout or the selected-state indicator.
+
+### Country and City fields
+
+The Country and City inputs must have matching heights, consistent padding, aligned labels, and balanced widths within their existing layout.
+
+Fix the layout so neither input appears accidentally smaller or misaligned. Preserve their existing values and validation behavior.
+
+## 13. Photo and Custom Links
+
+### Photo section
+
+Remove the awkward explanatory text currently shown beneath “Photo & custom links.”
+
+If useful, replace it with:
+
+“Add a profile photo and professional links to personalize your resume.”
+
+Do not make the photo mandatory unless that is already an explicit product requirement.
+
+Keep the existing JPEG/PNG and 1 MiB image-size constraint. The current maximum image dimensions of 1024 × 1024 are acceptable and should remain unchanged.
+
+### Custom links
+
+Replace the current lengthy explanation with:
+
+“Add a publication, portfolio, or other relevant professional link.”
+
+Keep clear labels for links and require valid HTTPS URLs where the current product rules require HTTPS.
+
+### Remove internal draft/version controls
+
+Remove the user-facing controls:
+
+- “Review latest saved version”
+- “Back · retain local draft”
+
+These labels expose internal implementation concepts and are not part of the intended product experience.
+
+Preserve the underlying cloud-first persistence and safe recovery behavior described in Section 1. Do not remove recovery safeguards simply to remove the labels.
+
+### Leaving the editor
+
+Keep the existing leave/confirmation capability if it is useful, but rewrite the message to be concise and understandable.
+
+For example:
+
+**Title:** “Leave without saving?”
+
+**Message:** “Your changes haven't been saved. You can keep editing or discard them.”
+
+**Actions:** “Keep editing” and “Discard”
+
+Only offer “Save” where the current screen can safely save to Supabase. Do not claim changes are saved if the save request failed.
+
+## 14. Resume Export — Template selection screen
+
+The template selector currently shows an abstract resume illustration rather than a convincing example of the final document.
+
+Replace the illustration with a realistic preview image of a complete fictional resume.
+
+The example should include:
+
+- A fictional person's name and contact details
+- A professional summary
+- One work experience entry
+- One education entry
+- One volunteer experience entry
+- One achievement
+- Approximately four skills
+- A fictional phone number such as 0100000000
+- Appropriate fictional dates and details
+
+Use only fictional information. Never use real user data in template previews.
+
+The preview should resemble the actual exported template, including typography, spacing, section hierarchy, and layout. Use a static preview asset or another reliable approach consistent with the existing architecture.
+
+Give the template a concise, professional name. Suggested name: **ATS Professional**.
+
+Use this short description:
+
+“A clean, single-column resume designed for readability and ATS compatibility.”
+
+Replace the confusing template specifications underneath with:
+
+“A4 page · Single column · Consistent spacing and typography.”
+
+Only claim ATS compatibility to the extent supported by the actual template structure and renderer.
+
+### Export history controls
+
+Remove the manual “Refresh export history” action from this screen.
+
+Do not poll or refresh export history every five seconds. Remove unnecessary repeated network requests and automatic refresh behavior that is not needed.
+
+History should update at appropriate lifecycle points, such as when the user opens or explicitly reloads the history screen, or after a known export-state transition. Follow the existing architecture and avoid redundant requests.
+
+Keep the “Credit & Export History” navigation action.
+
+Remove the lengthy explanatory text at the bottom of the template-selection screen.
+
+## 15. Create PDF confirmation
+
+Keep the confirmation dialog, but improve its wording.
+
+Suggested content:
+
+**Title:** “Create your resume PDF?”
+
+**Message:** “Creating a new PDF costs 2 Credits. You can download a valid existing PDF again for free.”
+
+**Actions:** “Cancel” and “Create — 2 Credits”
+
+Preserve the existing server-authoritative charging rules:
+
+- A new successful PDF export costs 2 Credits.
+- Eligible downloads of an existing valid PDF are free.
+- A failed export must not incur a final charge.
+- Keep existing reservation, release, idempotency, and retry safeguards.
+
+Do not introduce a client-only Credit deduction or weaken server-side enforcement.
+
+## 16. Preparing Resume screen
+
+The current screen displays an indefinite-looking spinner and a long internal job identifier. Improve it so the user understands the actual export status.
+
+### Progress and status
+
+Display clear status messaging that reflects the real backend state, for example:
+
+- “Preparing your resume…”
+- “Generating your PDF…”
+- “Your resume is ready.”
+
+Only show a status when it corresponds to the actual state or a known processing stage.
+
+Do not fabricate a percentage, pretend the export is progressing when no progress data exists, or display “Finished” before the server confirms success.
+
+If the backend cannot provide genuine percentage progress, use a clear indeterminate progress indicator and truthful status messaging instead.
+
+If reliable duration data is available, a reasonable estimate may be shown. Do not invent a guaranteed completion time.
+
+### Job identifiers
+
+The current UUID-like identifier is too technical for users.
+
+Keep the full internal job ID unchanged for backend correlation, support, security, and idempotency.
+
+For the user interface, prefer a short, stable numeric reference, such as an 8-digit display reference, if it can be generated and stored safely without collisions or authorization problems. Do not truncate the internal UUID and treat it as a new unique identifier.
+
+Use the actual user's name for the downloaded filename where supported, with a safe filename such as:
+
+`Hamdy_Hassan_Resume.pdf`
+
+Sanitize the filename and use a sensible fallback when the name is missing. Do not expose internal job IDs in the filename.
+
+### Navigation
+
+Review the top-left back control. The user must not be accidentally trapped in a processing flow or sent to an unrelated screen.
+
+Use the simplest navigation that fits the existing flow. If a back control is retained, it should return to a safe, relevant screen without cancelling or corrupting an in-progress export.
+
+The “Return to dashboard” action should return to the Home screen. Keep navigation labels and destinations consistent.
+
+### Performance
+
+Investigate why PDF generation takes as long as it does. Identify measurable bottlenecks before changing implementation.
+
+Optimize only where it is safe and supported by evidence. Preserve export correctness, authorization, output validation, storage privacy, and retry safety.
+
+Do not weaken security controls to make the spinner disappear faster.
+
+## 17. Credit & Export History screen
+
+This is a dedicated history/details area, not a tab inside the Career section.
+
+Fix its navigation and layout accordingly.
+
+### Screen structure
+
+- Remove the bottom navigation bar from the dedicated Credit & Export History and relevant detail screens.
+- Do not present the history screen as if it were the Career page.
+- Preserve clear back navigation to the previous relevant screen.
+
+### Export transaction cards
+
+Keep the transaction title “Resume export.”
+
+Replace the long internal Job ID with a short, user-friendly numeric reference when supported by a proper persisted mapping.
+
+Show useful, real information where available:
+
+- Export date and time
+- Short reference number
+- Career profile or resume name
+- Resume template name
+- Export status
+- Credit impact
+
+Do not invent profile names, template names, or reference numbers. If a value is not available, use an appropriate fallback or omit it.
+
+### Reserved Credits
+
+“2 Credits are reserved while this request is processing” is temporary operational information, not the main transaction identity.
+
+Move it into the Details area as a concise status note, or show it only when relevant to a currently processing request.
+
+Keep the reservation state accurate. Once processing finishes, display the actual final outcome and charge.
+
+### Details and Android back navigation
+
+When the user opens Resume Details and presses the Android system Back button, return to Credit & Export History rather than exiting JobiX.
+
+Review the route stack and system-back handling for the relevant detail screens. Do not show the “Exit JobiX?” dialog while the user is navigating back from a nested details page where an in-app destination exists.
+
+Preserve the exit confirmation only when the user is genuinely attempting to exit the app from the appropriate root screen.
+
+### Download availability
+
+Explain the seven-day download window in a clear, concise way.
+
+Suggested wording:
+
+“Your PDF is available to download for 7 days after export.”
+
+Use the actual server-provided expiration time where available. Do not calculate or display a misleading expiration time based only on the device clock.
+
+## 18. Engineering and QA requirements
+
+Before implementing:
+
+1. Inspect the existing navigation, persistence, authentication, resume forms, export flow, and relevant tests.
+2. Identify the shared components responsible for repeated text fields, question guidance, language controls, Credit headers, and confirmation dialogs.
+3. Prefer shared fixes over duplicated per-screen implementations.
+4. Identify any requirement that conflicts with existing server-side rules and resolve it safely before changing behavior.
+
+After implementing:
+
+1. Run the relevant Flutter analysis and focused widget/unit tests.
+2. Run the existing tests for profile persistence, recovery/discard behavior, authentication navigation, Credit accounting, export lifecycle, download expiry, and system-back navigation where available.
+3. Verify that valid existing PDFs can be downloaded without additional Credits.
+4. Verify that failed exports do not receive a final charge.
+5. Verify that an interrupted unsaved edit can be recovered and explicitly saved without creating a second authoritative profile.
+6. Verify that deliberate discard does not save or restore the discarded changes.
+7. Verify that a completed Profile Creation Journey remains completed after signing out and signing back in.
+8. Verify that no unwanted periodic export-history polling remains.
+9. Verify the relevant layouts in both English (LTR) and Arabic (RTL).
+10. Run `git diff --check` and inspect the final diff for unintended changes.
+
+Do not use real user data as test fixtures. Use fictional data and isolated test accounts where required.
+
+## 19. Scope and restrictions
+
+- Do not deploy to Production.
+- Do not enable new Production features or change Production configuration.
+- Do not change Production secrets, IAM, infrastructure, or database settings.
+- Do not implement ATS Score or AI Generation in this task.
+- Do not invent working functionality for features that are not implemented.
+- Do not weaken authentication, RLS, data ownership, server-side Credit enforcement, or export security.
+- Do not modify unrelated features or perform broad refactors without a clear need.
+- Preserve existing working PDF export behavior and the current two-Credit pricing model.
+
+Make the changes in small, reviewable steps. If a requested change requires a database migration, backend change, or a behavior that cannot safely be implemented within the existing architecture, explain the reason and propose the smallest safe solution rather than silently changing the data model.
+
+## 20. Final report
+
+When finished, provide:
+
+1. A concise summary of changes completed.
+2. The files changed and the purpose of each group of changes.
+3. The tests run and their actual results.
+4. Any remaining issues or unsupported requirements.
+5. Confirmation that Production was not modified.
+6. Any persistence, recovery, navigation, or export behaviors that still require manual device testing.
+
+Do not report a feature as complete merely because its UI was changed. Distinguish implemented behavior from visual changes and unverified assumptions.

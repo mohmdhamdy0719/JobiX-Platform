@@ -76,3 +76,16 @@ Block unresolved save requests and unsupported saved settings rather than
 silently omitting data. Before PDF submission, re-fetch the authoritative
 document and require the existing review flow if it differs. Do not build or
 deploy a production APK until the owner reviews the implementation report.
+
+## Export interaction state
+
+Keep background status refresh, each PDF download, and saved-configuration
+requests in independent UI states. A status poll must not hide or disable an
+otherwise eligible download, and download progress should be scoped to the
+specific export rather than to the entire history view.
+
+**Why:** Reusing one global busy flag made useful actions disappear during
+background refreshes and obscured which export was downloading.
+
+**How to apply:** Keep quiet polling free of full-screen progress, stop it for
+terminal jobs, and give each in-flight download its own visible progress state.

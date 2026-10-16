@@ -12,6 +12,7 @@ class ResumeDetailsBody extends StatelessWidget {
     this.onAgain,
     required this.onRefresh,
     this.busy = false,
+    this.downloading = false,
     super.key,
   });
 
@@ -20,6 +21,7 @@ class ResumeDetailsBody extends StatelessWidget {
   final VoidCallback? onAgain;
   final VoidCallback onRefresh;
   final bool busy;
+  final bool downloading;
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +38,10 @@ class ResumeDetailsBody extends StatelessWidget {
       'profile_title',
       'role_title',
     ]);
-    final template = resumeFirstString(job, const [
-      'template_name',
-      'template',
-    ]);
+    final template = resumeTemplateDisplayName(
+      copy,
+      resumeFirstString(job, const ['template_name', 'template']),
+    );
     final language = resumeFirstString(job, const [
       'language',
       'resume_language',
@@ -51,7 +53,6 @@ class ResumeDetailsBody extends StatelessWidget {
       children: [
         ResumeReceiptPanel(
           copy: copy,
-          id: job['id'],
           state: state,
           createdAt: createdAt,
           completedAt: completedAt,
@@ -120,15 +121,23 @@ class ResumeDetailsBody extends StatelessWidget {
                 const SizedBox(height: TokensV0.space8),
                 ResumeDetailLine(label: copy.expires, value: expiresAt),
               ],
-              if (eligible && onDownload != null) ...[
+              if (eligible) ...[
                 const SizedBox(height: TokensV0.space12),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: onDownload,
-                    icon: const Icon(Icons.download_outlined),
+                    onPressed: downloading ? null : onDownload,
+                    icon: downloading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download_outlined),
                     label: Text(
-                      bytes == null
+                      downloading
+                          ? copy.downloading
+                          : bytes == null
                           ? copy.downloadPdf
                           : copy.downloadPdfWithSize(resumeFormatBytes(bytes)),
                     ),

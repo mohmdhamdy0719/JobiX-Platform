@@ -4,6 +4,7 @@ import 'package:jobix/features/boot/startup.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/resume/resume_render.dart';
+import 'package:jobix/features/resume/resume_preview_page.dart';
 
 void main() {
   test('completed first launch without retained answers routes to Auth', () {
@@ -72,6 +73,18 @@ void main() {
         hasLength(100),
       );
       expect(result, contains('size:A4'));
+      expect(result, contains('break-after:avoid;page-break-after:avoid'));
+      expect(result, contains('break-inside:avoid;page-break-inside:avoid'));
+      expect(result, contains('article{margin-bottom:4mm}'));
+      expect(
+        result,
+        isNot(contains('article{margin-bottom:4mm;break-inside:avoid')),
+      );
+      expect(ResumePreviewPage.paginationScript, contains('column-fill:auto'));
+      expect(
+        ResumePreviewPage.paginationScript,
+        contains('li{break-inside:avoid;page-break-inside:avoid}'),
+      );
       expect(result, contains('jobix-profile-version" content="7'));
       expect(result, isNot(contains('overflow:hidden')));
       expect(profile.id, 'same-profile');

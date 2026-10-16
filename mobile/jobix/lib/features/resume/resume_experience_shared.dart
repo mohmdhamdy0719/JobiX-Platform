@@ -25,6 +25,7 @@ class ResumeCopy {
   String get downloadPdf => isArabic ? 'تنزيل ملف PDF' : 'Download PDF';
   String get details => isArabic ? 'التفاصيل' : 'Details';
   String get download => isArabic ? 'تنزيل' : 'Download';
+  String get downloading => isArabic ? 'جارٍ التنزيل' : 'Downloading';
   String get tryAgain => isArabic ? 'إعادة المحاولة' : 'Try again';
   String get jobId => isArabic ? 'رقم المهمة' : 'Job ID';
   String get exportDetails => isArabic ? 'تفاصيل التصدير' : 'Export details';
@@ -210,6 +211,16 @@ String? resumeFirstString(Map<String, dynamic> data, List<String> keys) {
     if (value is String && value.trim().isNotEmpty) return value.trim();
   }
   return null;
+}
+
+String? resumeTemplateDisplayName(ResumeCopy copy, String? value) {
+  final template = value?.trim();
+  if (template == null || template.isEmpty) return null;
+  if (template == 'ATS Professional' ||
+      RegExp(r'^resume_ats_(en|ar)_v\d+$').hasMatch(template)) {
+    return copy.atsProfessional;
+  }
+  return template;
 }
 
 int? resumePositiveInt(Object? value) {

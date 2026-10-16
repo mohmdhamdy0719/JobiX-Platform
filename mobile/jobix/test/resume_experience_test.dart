@@ -234,13 +234,25 @@ void main() {
                   onRefresh: () {},
                   onDownload: () => downloaded = true,
                   onAgain: () {},
+                  busy: true,
+                  downloading: true,
                 ),
               ),
             ),
             language: language,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
+        final downloadingLabel = language == 'en'
+            ? 'Downloading'
+            : 'جارٍ التنزيل';
+        expect(find.text(downloadingLabel), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) => widget is ElevatedButton && widget.onPressed == null,
+          ),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
         final boundary =
             capture.currentContext!.findRenderObject()!
@@ -255,10 +267,37 @@ void main() {
           ).writeAsBytes(png!.buffer.asUint8List());
           image.dispose();
         });
+        await tester.pumpWidget(
+          fixtures.app(
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ResumeDetailsBody(
+                job: job,
+                onRefresh: () {},
+                onDownload: () => downloaded = true,
+                onAgain: () {},
+                busy: true,
+              ),
+            ),
+            language: language,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.byIcon(Icons.download_outlined), findsOneWidget);
         final button = find.byIcon(Icons.download_outlined);
         await tester.ensureVisible(button);
         await tester.tap(button);
         expect(downloaded, isTrue);
+        await tester.pumpWidget(
+          fixtures.app(
+            ResumeJobCard(job: job, onDetails: () {}, downloading: true),
+            language: language,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text(downloadingLabel), findsOneWidget);
+        expect(find.byIcon(Icons.hourglass_top), findsOneWidget);
+        expect(find.textContaining(job['id'] as String), findsNothing);
         await tester.pumpWidget(
           fixtures.app(
             ResumeJobCard(job: {...job, 'state': 'FAILED'}, onDetails: () {}),
@@ -267,6 +306,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.text('−2 Credits'), findsNothing);
+        expect(find.textContaining(job['id'] as String), findsNothing);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(
           fixtures.app(

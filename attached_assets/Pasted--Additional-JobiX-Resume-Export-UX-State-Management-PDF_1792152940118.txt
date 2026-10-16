@@ -1,0 +1,209 @@
+## Additional JobiX — Resume Export UX, State Management & PDF Quality Fixes
+
+Continue from the previous instructions and the existing JobiX implementation. Treat the following as additional requirements, not a replacement for the previous scope.
+
+### 1. Strict Scope and Safety
+
+- Work in Development only, using the existing Development configuration and Supabase project `lmouxhbjhtqdtiqijcee`.
+- Do not modify Production resources, Production data, Production secrets, Production infrastructure, or Production configuration.
+- Do not change export pricing, credit accounting, authorization, idempotency, rate limits, deletion policies, or backend security gates as part of these UI fixes.
+- Do not perform a live PDF export, create a real export job, or debit Credits during this task.
+- Do not modify unrelated features or undertake a broad refactor.
+- Inspect the existing implementation before editing. Identify the relevant files, state ownership, refresh triggers, persistence flow, and PDF rendering implementation.
+- Make the smallest coherent changes that solve the root causes. Preserve existing working functionality.
+- Run focused tests and report the actual results. Do not claim a fix is verified if it was only inspected.
+
+### 2. Resume Details — Repeated Refresh and Unusable Download Controls
+
+**Observed problem:** The bottom `Refresh details` control repeatedly displays a loading indicator approximately every 2–3 seconds. This makes the page feel unstable and interferes with tapping the download action.
+
+Requirements:
+
+1. Trace every source of detail refreshes, including timers, polling, lifecycle callbacks, widget rebuilds, listeners, automatic retries, and asynchronous state updates.
+2. Determine exactly what causes the repeated refresh and fix the underlying trigger. Do not merely hide the loading indicator.
+3. Remove unnecessary periodic refreshes. Resume details must not refresh repeatedly when the record has not changed and no legitimate operation is pending.
+4. Load details when the page opens, and refresh after a relevant operation or explicit user action when necessary.
+5. Prevent overlapping requests and duplicate fetches. Ensure loading state is reset on success, failure, timeout, and navigation/disposal.
+6. Keep download and other valid actions stable and tappable while details are displayed. A refresh must not repeatedly replace the page content, disable unrelated controls, or cause buttons to disappear.
+7. If background synchronization is genuinely necessary, use a justified, bounded strategy that does not block the UI. Explain why it is necessary.
+8. Preserve correct handling of completed, failed, expired, and downloadable exports.
+
+**Acceptance criteria:**
+
+- Leaving Resume Details open for at least 30 seconds does not trigger unexplained repeated refreshes.
+- Opening the page performs the required initial load without duplicate overlapping requests.
+- The download action remains visible and usable while the page is idle.
+- A legitimate manual refresh works and displays an appropriate loading state without destabilizing the page.
+
+### 3. Credit & Export History — Stop Unnecessary Refreshing
+
+**Observed problem:** The `Refresh export history` control repeatedly shows a loading indicator, similar to Resume Details.
+
+Requirements:
+
+1. Trace the source of repeated history refreshes and fix it at its origin.
+2. Remove unnecessary polling, timers, duplicate listeners, and refreshes triggered by ordinary rebuilds or tab changes.
+3. Fetch history on initial entry and after relevant operations, such as a completed export, a credit transaction, or a user-requested refresh.
+4. Avoid duplicate concurrent requests and unnecessary repeated network calls.
+5. Keep the history list, filters, credit balance, and Details buttons stable while requests run.
+6. A failed history request must not cause an endless loading state or repeated automatic retry loop. Show a clear, recoverable error state where appropriate.
+7. Retain legitimate synchronization with the server. Do not replace server-authoritative credit or export data with local-only values.
+
+**Acceptance criteria:**
+
+- Leaving Credit & Export History open for at least 30 seconds does not cause unexplained repeated refreshes.
+- The history loads correctly on entry and updates after a relevant completed operation or a deliberate refresh.
+- Loading the history does not make its controls disappear or become unnecessarily disabled.
+
+### 4. Resume Details — Visual Polish and Template Naming
+
+The screenshots show a completed export with the status badge stretching across most of the available width.
+
+Requirements:
+
+1. Make `Completed` a compact, content-sized status badge with its background and padding surrounding the label. It must not expand to fill the entire row.
+2. Keep the status and the `-2 Credits` impact visually distinct, aligned, readable, and responsive to smaller screens and right-to-left layouts.
+3. Improve the export receipt header and metadata spacing without removing useful information.
+4. Replace the technical template identifier `resume_ats_en_v1` in user-facing UI with a short, professional display name of no more than two words, such as **ATS Professional**. Use the existing template metadata and avoid hardcoding inconsistent names across screens.
+5. Keep internal template IDs unchanged wherever they are required by the backend or renderer. This is a presentation change, not a database migration.
+6. Correct awkward labels and grammar where relevant, including `1 pages` → `1 page`, while preserving the existing meaning.
+7. Maintain consistent visual treatment for status, dates, page count, file size, credit impact, and download expiry.
+
+### 5. Download and Export Actions — Diagnose Disappearing Buttons
+
+**Observed problem:** The user reports that the Download button disappears when tapped or becomes difficult to use. The screenshots also show a previous completed export, an available download window, and repeated refresh indicators.
+
+Requirements:
+
+1. Trace the complete UI state transition when Download is tapped, including the download action, loading state, history/detail reload, navigation, and error handling.
+2. Identify whether the action disappears because of a rebuild, conditional rendering, navigation, a stale export record, or an incorrect loading-state lifecycle.
+3. Fix the actual cause so the action remains stable and behaves correctly.
+4. Preserve the distinction between a new PDF export and downloading an existing eligible PDF. Re-downloading an eligible existing PDF must not create a new export job or charge additional Credits.
+5. Disable only the action currently being processed when necessary. Do not hide the entire action or unrelated controls.
+6. Show clear feedback if a download cannot proceed because the export expired, its record is unavailable, or a genuine download error occurred.
+7. Never fabricate a successful download or display stale data as confirmed server state.
+
+Do not perform a live download or export during this task if it would access the actual backend or stored PDF. Use focused tests or mocked responses to validate the UI transitions.
+
+### 6. Resume Export — Resolve the “Previous Save Is Still Unconfirmed” State
+
+**Observed problem:** The Resume Export screen displays:
+
+`A previous save is still unconfirmed. Retry or resolve that request before Preview.`
+
+It also exposes `Reconcile saved export request` and `Refresh export history` controls, which make the workflow confusing.
+
+Requirements:
+
+1. Trace the complete save lifecycle from Professional Summary and other resume editing screens through the persistence layer to Resume Export.
+2. Identify the exact conditions that set and clear the unconfirmed-save state. Determine whether the cause is a genuine network timeout, an ambiguous write result, a stale local draft, duplicate save requests, an incorrectly retained pending operation, or another issue.
+3. Fix the root cause rather than automatically clearing the error or assuming the save succeeded.
+4. Ensure a successful save is acknowledged and the latest server-confirmed profile is used for Preview and Export.
+5. For ambiguous save outcomes, use the existing safe recovery mechanism to check the authoritative saved state before retrying. Avoid duplicate writes and lost edits.
+6. Handle offline states, timeouts, retries, app navigation, and process restarts without leaving the user permanently blocked.
+7. Do not silently discard unsaved edits, overwrite newer server data, or report a save as successful without confirmation.
+8. Once the save is confirmed, remove the blocking warning and allow the normal Preview flow.
+9. If a save genuinely remains unresolved, provide one clear recovery path with an understandable explanation. Do not expose several confusing technical actions.
+
+#### Simplify the Resume Export screen
+
+- Remove the user-facing `Reconcile saved export request` button and the standalone `Refresh export history` button from this screen if they are only technical recovery/debug controls.
+- Move any necessary recovery and synchronization into the appropriate automatic workflow or a clear error state.
+- Keep the dedicated Credit & Export History screen as the normal place to inspect export history.
+- Do not delete backend reconciliation functionality or remove a recovery mechanism that is still needed for correctness. Remove the unnecessary UI controls, not essential internal safeguards.
+- Keep `Preview & Export` as the clear primary action and retain a concise, useful explanation of the two-Credit charge for a new successful export.
+- Ensure the flow is not blocked by an obsolete local draft or a stale pending-save flag once the authoritative saved state confirms completion.
+
+### 7. Professional Summary — Fixed Save and Back Actions
+
+**Observed problem:** The `Save` button is large, but `Back` is a small text-style action at the bottom. Users must scroll to the bottom to access the actions.
+
+Requirements:
+
+1. Provide a consistent, professional action area for `Save` and `Back`.
+2. Prefer two properly sized buttons side by side when they fit comfortably; otherwise use a balanced, vertically stacked layout appropriate for narrow screens.
+3. Keep both actions fixed or persistently accessible at the bottom of the usable screen area while the form content scrolls.
+4. Respect device safe areas, system navigation bars, keyboard visibility, and scroll padding. The action area must not cover the final input fields.
+5. Ensure `Save` and `Back` remain accessible when the keyboard opens and on smaller devices.
+6. Preserve save validation, save-in-progress protection, error handling, and unsaved-changes safety.
+7. Make the `Back` action visually recognizable as a real button, not an inconspicuous text link.
+8. Use the existing design system and shared components where appropriate.
+
+### 8. Resume Export — Simplify Language Selection and Explanatory Text
+
+**Observed problem:** The language section contains excessive explanatory copy and a separate `Save selected language` button. The English and Arabic selectors are not consistently sized.
+
+Requirements:
+
+1. Make the English and Arabic options equal-width, full-width collectively, equal-height controls. Each option should occupy exactly half the available row width, with consistent spacing, padding, typography, and selected-state styling.
+2. Keep both options visually balanced on small screens and in right-to-left layouts.
+3. Remove the separate `Save selected language` button.
+4. Selecting a language should immediately update the selected state and the layout/template preview using the selected language, without requiring a second save tap.
+5. Preserve the distinction between a temporary selection and a persisted user preference. If the selection must be saved to the server, save it through a reliable flow and provide clear feedback when persistence fails. Do not imply that a preference is saved if it is only local.
+6. Do not automatically translate resume content when the user switches the resume language. Preserve the existing documented behavior that content is not automatically translated.
+7. Remove redundant paragraphs and unnecessary implementation-oriented explanations. Retain only concise guidance that materially helps users understand the choice.
+8. Use clear copy similar to:
+   - **Resume language**
+   - **Choose the language and layout direction for your resume. Your existing content will not be translated automatically.**
+9. Ensure the selected language, preview, template direction, and final exported PDF remain consistent.
+
+### 9. PDF Preview and Final Resume — Fix Pagination and Excessive Blank Space
+
+**Observed problem:** The Arabic RTL preview shows a large blank area near the bottom of the first page and moves the remaining content, including the Languages section, onto a second page. The second page contains very little content. This is not acceptable for a professional ATS resume.
+
+Requirements:
+
+1. Inspect the actual PDF renderer and pagination algorithm, including page dimensions, content measurements, margins, line heights, section spacing, fonts, RTL handling, and page-break rules.
+2. Determine why substantial blank space is left on page one and why the Languages section is pushed onto page two.
+3. Correct the layout and pagination at the rendering layer. Do not solve this by hiding content, shrinking everything indiscriminately, or simply forcing all content onto one page.
+4. Use the intended A4 page dimensions and consistent professional margins and typography.
+5. Keep section headings, their dividers, and their content together where practical. Prevent unnecessary page breaks and orphaned headings.
+6. Allow content to flow naturally between pages when it genuinely exceeds one page. Never truncate, omit, overlap, or clip resume content to achieve a one-page result.
+7. For short resumes that fit on one page, ensure all sections—including Languages—fit naturally on that page without a large unexplained blank region.
+8. For longer resumes, produce clean additional pages with consistent margins and spacing, not a nearly empty second page.
+9. Validate both English LTR and Arabic RTL. Ensure mixed Arabic and English text, dates, bullet points, and alignment remain readable.
+10. Verify that the preview and downloaded PDF use the same layout calculations and pagination behavior.
+11. Keep the template ATS-friendly: conventional section structure, readable typography, predictable text flow, and no unnecessary decorative elements that interfere with parsing.
+12. Use representative synthetic test profiles with different content lengths. Include a short profile that should fit on one page and a longer profile that legitimately needs two or more pages.
+
+**Acceptance criteria:**
+
+- The supplied short Arabic example no longer creates a mostly empty second page solely because of incorrect spacing or pagination.
+- All resume sections and fields are present.
+- No content is clipped, overlapped, or silently omitted.
+- Page dimensions, margins, typography, and section spacing are consistent with a professional A4 ATS resume.
+- English LTR and Arabic RTL rendering both pass focused tests.
+
+### 10. Focused Regression Tests and Verification
+
+Add or update focused tests for the relevant existing architecture. At minimum, cover:
+
+- Resume Details does not trigger unexplained recurring refreshes.
+- Credit & Export History does not trigger unexplained recurring refreshes.
+- Refresh requests cannot overlap or leave loading indicators stuck.
+- Download remains visible and correctly transitions through loading, success, and failure states.
+- Re-downloading an eligible export does not create a new job or incur another Credit charge.
+- A confirmed save clears the blocking unconfirmed-save state.
+- An ambiguous save is recovered safely without duplicate writes or lost edits.
+- The unnecessary reconciliation and history-refresh controls are absent from the Resume Export UI, while essential internal recovery logic remains functional.
+- Save and Back actions remain accessible while Professional Summary content scrolls.
+- English and Arabic selectors are equally sized and update the selected preview immediately.
+- Short and long PDF fixtures paginate correctly in English LTR and Arabic RTL.
+- Existing credit accounting, backend authorization, export idempotency, and deletion safeguards remain unchanged.
+
+Run only the relevant focused tests first. Also run applicable formatting, static analysis, and diff checks. Do not claim that tests passed unless their actual exit codes and results confirm it.
+
+### 11. Delivery Report
+
+At completion, report:
+
+1. The root cause of each repeated refresh and the precise fix.
+2. The root cause of the unconfirmed-save warning and how recovery now works.
+3. Why the Download action disappeared and how its state transitions were corrected.
+4. The files changed and a concise summary of each change.
+5. Tests executed, actual pass/fail counts, and any tests not run.
+6. Evidence that the PDF renderer was checked in both English LTR and Arabic RTL using representative fixtures.
+7. Confirmation that no live export was triggered, no Credits were charged, and no Production resources were modified.
+8. Any remaining limitation that requires a separate decision.
+
+**Execution order:** First diagnose and fix the repeated refreshes and save-state bug; second stabilize the action buttons and simplify the UI; third correct PDF pagination; finally run focused regression tests. Keep this task limited to these requirements and the previously agreed Development-only scope.

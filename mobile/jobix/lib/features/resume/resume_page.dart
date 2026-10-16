@@ -141,9 +141,10 @@ class _ResumePageState extends ConsumerState<ResumePage> {
 
   Future<void> saveLanguage() async {
     if (language == null || profile == null || busy) return;
+    final selectedLanguage = language!;
     setState(() {
       busy = true;
-      message = null;
+      message = t('Saving Resume language…', 'جارٍ حفظ لغة السيرة الذاتية…');
     });
     try {
       final client = await ref.read(supabaseClientProvider.future);
@@ -156,8 +157,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
         'command_key': newCommandKey(),
         'requested_profile': profile!.id,
         'expected_version': version,
-        'language': language,
-        'template_id': 'resume_ats_${language}_v1',
+        'language': selectedLanguage,
+        'template_id': 'resume_ats_${selectedLanguage}_v1',
       });
       await db.setSetting(storageKey, raw);
       if (client.auth.currentUser?.id != user) {
@@ -173,16 +174,21 @@ class _ResumePageState extends ConsumerState<ResumePage> {
       if (client.auth.currentUser?.id != user) {
         throw StateError('AUTH_REQUIRED');
       }
-      if (result is! Map) throw StateError('SAVE_NOT_CONFIRMED');
+      if (result is! Map ||
+          result['language'] != selectedLanguage ||
+          result['version'] is! int) {
+        throw StateError('SAVE_NOT_CONFIRMED');
+      }
       await db.removeSetting(storageKey);
-      await load();
       if (mounted) {
         setState(() {
+          savedLanguage = selectedLanguage;
+          language = selectedLanguage;
+          version = result['version'] as int;
+          pending = false;
+          configurationConflict = false;
           confirmedDraftFingerprint = null;
-          message = t(
-            'Language saved. Preview is available using the saved version.',
-            'تم حفظ اللغة. يمكنك معاينة النسخة المحفوظة.',
-          );
+          message = t('Resume language saved.', 'تم حفظ لغة السيرة الذاتية.');
         });
       }
     } on PostgrestException catch (error) {
@@ -207,6 +213,24 @@ class _ResumePageState extends ConsumerState<ResumePage> {
     } finally {
       if (mounted) setState(() => busy = false);
     }
+  }
+
+  Future<void> selectLanguage(String selectedLanguage) async {
+    if (busy || pending) return;
+    if (selectedLanguage == savedLanguage && languageDirty) {
+      setState(() {
+        language = savedLanguage;
+        confirmedDraftFingerprint = null;
+        message = null;
+      });
+      return;
+    }
+    if (selectedLanguage == language) return;
+    setState(() {
+      language = selectedLanguage;
+      confirmedDraftFingerprint = null;
+    });
+    await saveLanguage();
   }
 
   Future<void> showPreview() async {
@@ -343,28 +367,38 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: busy ? null : () => context.go('/career'),
+                  onPressed: busy ? null : () => context.push('/career'),
                   icon: const Icon(Icons.edit_outlined),
                   label: Text(
                     t('Edit profile content', 'تعديل محتوى الملف المهني'),
                   ),
                 ),
                 const SizedBox(height: 20),
-                Wrap(
-                  spacing: 12,
+                Row(
                   children: [
                     for (final code in ['en', 'ar'])
-                      ChoiceChip(
-                        label: Text(
-                          code == 'en' ? 'English (LTR)' : 'العربية (RTL)',
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.symmetric(
+                            horizontal: 4,
+                          ),
+                          child: ChoiceChip(
+                            label: SizedBox(
+                              width: double.infinity,
+                              child: Center(
+                                child: Text(
+                                  code == 'en'
+                                      ? 'English (LTR)'
+                                      : 'العربية (RTL)',
+                                ),
+                              ),
+                            ),
+                            selected: language == code,
+                            onSelected: busy || pending
+                                ? null
+                                : (_) => selectLanguage(code),
+                          ),
                         ),
-                        selected: language == code,
-                        onSelected: busy || pending
-                            ? null
-                            : (_) => setState(() {
-                                language = code;
-                                confirmedDraftFingerprint = null;
-                              }),
                       ),
                   ],
                 ),
@@ -375,18 +409,18 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                     'لغة السيرة مستقلة عن لغة التطبيق. لا تتم ترجمة محتواك تلقائيًا.',
                   ),
                 ),
-                if (languageDirty)
+                if (languageDirty && !busy)
                   Text(
                     t(
-                      'This language choice is not saved. Preview uses the saved language until you choose Save selected language.',
-                      'اختيار اللغة غير محفوظ. ستستخدم المعاينة اللغة المحفوظة حتى تختار حفظ اللغة المحددة.',
+                      'This language choice is not saved. Preview will use the saved language.',
+                      'اختيار اللغة غير محفوظ. ستستخدم المعاينة اللغة المحفوظة.',
                     ),
                   ),
-                if (languageDirty)
+                if (pending)
                   TextButton(
-                    onPressed: busy || pending ? null : saveLanguage,
+                    onPressed: busy ? null : saveLanguage,
                     child: Text(
-                      t('Save selected language', 'حفظ اللغة المحددة'),
+                      t('Retry saving this language', 'إعادة محاولة حفظ اللغة'),
                     ),
                   ),
                 const SizedBox(height: 24),
@@ -447,24 +481,40 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                 ),
                 const SizedBox(height: 20),
                 if (message != null)
-                  Text(message!, style: const TextStyle(color: TokensV0.error)),
+                  Text(
+                    message!,
+                    style: TextStyle(
+                      color:
+                          message ==
+                              t(
+                                'Resume language saved.',
+                                'تم حفظ لغة السيرة الذاتية.',
+                              )
+                          ? TokensV0.success
+                          : message ==
+                                t(
+                                  'Saving Resume language…',
+                                  'جارٍ حفظ لغة السيرة الذاتية…',
+                                )
+                          ? TokensV0.primary
+                          : TokensV0.error,
+                    ),
+                  ),
                 PrimaryAction(
                   label: t(
-                    pending
-                        ? 'Retry saved request'
-                        : (confirmedDraftFingerprint != null || languageDirty
-                              ? 'Preview saved version'
-                              : 'Preview & Export'),
-                    pending
-                        ? 'إعادة محاولة الطلب المحفوظ'
-                        : (confirmedDraftFingerprint != null || languageDirty
-                              ? 'معاينة النسخة المحفوظة'
-                              : 'معاينة وتصدير'),
+                    confirmedDraftFingerprint != null ||
+                            languageDirty ||
+                            pending
+                        ? 'Preview saved version'
+                        : 'Preview & Export',
+                    confirmedDraftFingerprint != null ||
+                            languageDirty ||
+                            pending
+                        ? 'معاينة النسخة المحفوظة'
+                        : 'معاينة وتصدير',
                   ),
                   busy: busy,
-                  onPressed: language == null
-                      ? null
-                      : (pending ? saveLanguage : showPreview),
+                  onPressed: language == null || pending ? null : showPreview,
                 ),
                 if (configurationConflict)
                   TextButton(
@@ -499,7 +549,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                   profileId: profile!.id,
                   experience: true,
                   historicalExportId: widget.historicalExportId,
-                  onOperation: (id) => context.go('/resume-status/$id'),
+                  onOperation: (id) => context.push('/resume-status/$id'),
                   canPrepare: !pending && !busy,
                   rebuildLocalDocument: () async =>
                       (await _loadLocalSnapshot()).document,

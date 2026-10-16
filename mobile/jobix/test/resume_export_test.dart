@@ -13,10 +13,12 @@ import 'package:jobix/core/database/encryption.dart';
 import 'package:jobix/core/design/tokens.dart';
 import 'package:jobix/core/providers.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
+import 'package:jobix/features/career_profile/career_profile_repository.dart';
 import 'package:jobix/features/resume/resume_document.dart';
 import 'package:jobix/features/resume/resume_export_panel.dart';
 import 'package:jobix/features/resume/resume_render.dart';
 import 'package:jobix/features/resume/resume_operation_page.dart';
+import 'package:jobix/features/resume/resume_page.dart';
 import 'package:jobix/features/auth/auth_controller.dart';
 import 'package:jobix/features/builder/resume_journey.dart';
 import 'package:jobix/features/resume/resume_export_service.dart';
@@ -24,6 +26,7 @@ import 'package:jobix/l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'support/production_fonts.dart';
+import 'support/slice_fakes.dart';
 
 class _PdfOverrides extends HttpOverrides {
   final bytes = Uint8List.fromList(utf8.encode('%PDF-synthetic fixture'));
@@ -224,6 +227,7 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(find.byType(TextButton), findsWidgets);
+          expect(find.text('Refresh history'), findsNothing);
           expect(tester.takeException(), isNull);
         },
       );
@@ -240,9 +244,13 @@ void main() {
   late List<Map<String, dynamic>> commands;
   Map<String, dynamic>? acknowledgement;
   late Map<String, dynamic> prepared;
+  late Map<String, dynamic> resumeConfiguration;
+  late Map<String, Map<String, dynamic>> configurationAcknowledgements;
+  late List<Map<String, dynamic>> configurationSaveCommands;
   bool paginate = false;
   bool expiredDownload = true;
   bool loseResponse = false;
+  bool loseConfigurationResponse = false;
   String workerState = 'QUEUED';
   String? rejected;
   int? rejectedRetryAfter;
@@ -306,12 +314,62 @@ void main() {
       ...document,
       'configuration': {'section_visibility': <String, dynamic>{}},
     };
+    resumeConfiguration = {
+      'profile_id': profileId,
+      'language': 'en',
+      'template_id': 'resume_ats_en_v1',
+      'section_visibility': <String, dynamic>{},
+      'version': 1,
+    };
+    configurationAcknowledgements = {};
+    configurationSaveCommands = [];
+    loseConfigurationResponse = false;
     client = SupabaseClient(
       'https://synthetic.example.invalid',
       'synthetic-publishable',
       authOptions: const AuthClientOptions(autoRefreshToken: false),
       httpClient: MockClient((request) async {
         final body = jsonDecode(request.body) as Map;
+        if (request.url.path.endsWith('/read_resume_configuration')) {
+          return http.Response(
+            jsonEncode(resumeConfiguration),
+            200,
+            request: request,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        if (request.url.path.endsWith('/save_resume_configuration')) {
+          final command = Map<String, dynamic>.from(body);
+          final commandKey = command['command_key'] as String;
+          configurationSaveCommands.add(command);
+          final saved = configurationAcknowledgements.putIfAbsent(
+            commandKey,
+            () {
+              resumeConfiguration = {
+                ...resumeConfiguration,
+                'language': command['language'],
+                'template_id': command['template_id'],
+                'version': (resumeConfiguration['version'] as int) + 1,
+              };
+              return Map<String, dynamic>.from(resumeConfiguration);
+            },
+          );
+          if (loseConfigurationResponse) {
+            loseConfigurationResponse = false;
+            return http.Response(
+              '{"message":"synthetic response lost after commit"}',
+              503,
+              request: request,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          return http.Response(
+            jsonEncode(saved),
+            200,
+            request: request,
+            headers: {'content-type': 'application/json'},
+          );
+        }
         if (request.url.path.endsWith('/save_resume_presentation')) {
           commands.add({
             'action': 'presentation',
@@ -461,6 +519,84 @@ void main() {
     await db.setting('resume:$actor:export:$profileId');
   });
   testWidgets(
+    'language selection saves immediately and retries the same request after a lost acknowledgement',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final profileApi = FakeProfileApi()
+        ..server = CareerProfile.fromJson(savedProfile);
+      final repository = DraftRepository(
+        db,
+        profileApi,
+        actor,
+        () => client.auth.currentUser?.id == actor,
+      );
+      loseConfigurationResponse = true;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            supabaseClientProvider.overrideWith((_) async => client),
+            databaseProvider.overrideWith((_) async => db),
+            draftRepositoryProvider.overrideWith((_) async => repository),
+          ],
+          child: MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: foundationTheme(languageCode: 'en'),
+            home: const ResumePage(),
+          ),
+        ),
+      );
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      final englishSelector = find.widgetWithText(ChoiceChip, 'English (LTR)');
+      final arabicSelector = find.widgetWithText(ChoiceChip, 'العربية (RTL)');
+      expect(
+        tester.getSize(englishSelector).width,
+        closeTo(tester.getSize(arabicSelector).width, 0.5),
+      );
+      final arabicChoice = find.text('العربية (RTL)');
+      await tester.ensureVisible(arabicChoice);
+      await tester.tap(arabicChoice);
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Retry saving this language'), findsOneWidget);
+      final outboxKey = 'resume:$actor:$profileId';
+      final frozen = jsonDecode((await db.setting(outboxKey))!) as Map;
+      final commandKey = frozen['command_key'];
+      expect(configurationSaveCommands, hasLength(1));
+      expect(resumeConfiguration['language'], 'ar');
+      expect(resumeConfiguration['version'], 2);
+
+      await tester.tap(find.text('Retry saving this language'));
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Resume language saved.'), findsOneWidget);
+      expect(await db.setting(outboxKey), isNull);
+      expect(configurationSaveCommands, hasLength(2));
+      expect(
+        configurationSaveCommands.map((command) => command['command_key']),
+        everyElement(commandKey),
+      );
+      expect(resumeConfiguration['version'], 2);
+      expect(accepted, 0);
+      expect(
+        commands.where(
+          (command) =>
+              ['document', 'create', 'again'].contains(command['action']),
+        ),
+        isEmpty,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+  testWidgets(
     'local Preview installs its document without preparing online and rejects stale export review',
     (tester) async {
       final panelKey = GlobalKey<ResumeExportPanelState>();
@@ -553,7 +689,7 @@ void main() {
     // Reopen the controls as after navigation/restart, using the encrypted outbox.
     await tester.pumpWidget(const SizedBox.shrink());
     await mount(tester);
-    await tap(tester, 'Reconcile saved export request');
+    await tap(tester, 'Retry the saved request');
     final attempts = commands
         .where((c) => c['action'] == 'create')
         .map((c) => c['command'] as Map)
@@ -746,7 +882,7 @@ void main() {
           jsonDecode((await db.setting('resume:$actor:export:$profileId'))!)
               as Map;
       rejected = null;
-      await tap(tester, 'Reconcile saved export request');
+      await tap(tester, 'Retry the saved request');
       final attempts = commands.where((c) => c['action'] == 'create').toList();
       expect(
         (attempts.last['command'] as Map)['idempotency_key'],
@@ -887,7 +1023,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.text('Your resume is being prepared'), findsOneWidget);
       expect(find.textContaining('English'), findsWidgets);
-      expect(find.text('resume_ats_en_v1'), findsOneWidget);
+      expect(find.text('ATS Professional'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       workerState = 'COMPLETED';
       await tester.pump(const Duration(seconds: 4));
@@ -901,6 +1037,15 @@ void main() {
         commands.where((c) => ['create', 'again'].contains(c['action'])),
         isEmpty,
       );
+      final terminalStatusReads = commands
+          .where((c) => c['action'] == 'status')
+          .length;
+      await tester.pump(const Duration(seconds: 30));
+      expect(
+        commands.where((c) => c['action'] == 'status').length,
+        terminalStatusReads,
+      );
+      expect(find.byType(LinearProgressIndicator), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

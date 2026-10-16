@@ -21,6 +21,8 @@ class ResumePreviewPage extends ConsumerStatefulWidget {
   final bool exportEnabled;
   final String ownerId;
   final VoidCallback onEditProfile;
+  static String get paginationScript =>
+      _ResumePreviewPageState.paginationScript;
   @override
   ConsumerState<ResumePreviewPage> createState() => _ResumePreviewPageState();
 }
@@ -93,7 +95,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
     while(document.body.firstChild) container.appendChild(document.body.firstChild);
     document.body.appendChild(container);
     const style = document.createElement('style');
-    style.textContent = 'html{width:100%;background:white;overflow-x:hidden;overflow-y:auto;margin:0;padding:0}body{box-sizing:border-box;width:210mm;height:297mm;min-height:0;margin:0;padding:18mm;overflow:hidden}#jobix-pages{width:174mm;height:261mm;column-width:174mm;column-gap:36mm;column-fill:auto}p,li{orphans:3;widows:3}h1,h2,h3,article header{break-after:avoid}';
+    style.textContent = 'html{width:100%;background:white;overflow-x:hidden;overflow-y:auto;margin:0;padding:0}body{box-sizing:border-box;width:210mm;height:297mm;min-height:0;margin:0;padding:18mm;overflow:hidden}#jobix-pages{width:174mm;height:261mm;column-width:174mm;column-gap:36mm;column-fill:auto}p,li{orphans:3;widows:3}h1,h2,h3,article header{break-after:avoid}h1,.personal-header,article header{break-inside:avoid;page-break-inside:avoid}li{break-inside:avoid;page-break-inside:avoid}';
     document.head.appendChild(style);
     const stride = 210 * 96 / 25.4;
     const gap = 36 * 96 / 25.4;

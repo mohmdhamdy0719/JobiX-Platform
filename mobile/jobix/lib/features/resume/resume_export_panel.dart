@@ -45,7 +45,8 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   List<Map<String, dynamic>> jobs = [];
   String? pending, message, cursor;
   bool busy = false;
-  bool savingPdf = false;
+  final Set<String> downloadingExportIds = {};
+  bool get savingPdf => downloadingExportIds.isNotEmpty;
   bool reviewRequired = false;
   Timer? timer;
   bool get ar => Localizations.localeOf(context).languageCode == 'ar';
@@ -129,9 +130,12 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     }
   }
 
-  Future<void> _run(Future<void> Function() operation) async {
-    if (busy) return;
-    if (mounted) {
+  Future<void> _run(
+    Future<void> Function() operation, {
+    bool allowWhileBusy = false,
+  }) async {
+    if (busy && !allowWhileBusy) return;
+    if (mounted && !allowWhileBusy) {
       setState(() {
         busy = true;
         message = null;
@@ -202,7 +206,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
         });
       }
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted && !allowWhileBusy) setState(() => busy = false);
     }
   }
 
@@ -421,9 +425,15 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   }
 
   Future<void> _download(String id) async {
-    final client = await ref.read(supabaseClientProvider.future);
-    savingPdf = true;
+    if (downloadingExportIds.contains(id)) return;
+    if (mounted) {
+      setState(() {
+        downloadingExportIds.add(id);
+        message = null;
+      });
+    }
     try {
+      final client = await ref.read(supabaseClientProvider.future);
       final saved = await ResumeExportService(client).download(id);
       if (mounted) {
         setState(
@@ -433,7 +443,8 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
         );
       }
     } finally {
-      savingPdf = false;
+      downloadingExportIds.remove(id);
+      if (mounted) setState(() {});
     }
   }
 
@@ -516,7 +527,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
           TextButton(
             onPressed: busy ? null : () => _run(_retry),
             child: Text(
-              t('Reconcile saved export request', 'تأكيد طلب التصدير المحفوظ'),
+              t('Retry the saved request', 'إعادة محاولة الطلب المحفوظ'),
             ),
           ),
         if (pending != null && reviewRequired)
@@ -546,13 +557,14 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
             ),
           ),
         if (current != null) Text(stateLabel(current!['state'] as String)),
-        TextButton(
-          onPressed: busy ? null : () => _run(_load),
-          child: Text(t('Refresh export history', 'تحديث سجل التصدير')),
-        ),
+        if (widget.historyOnly)
+          TextButton(
+            onPressed: busy ? null : () => _run(_load),
+            child: Text(t('Refresh history', 'تحديث السجل')),
+          ),
         if (widget.experience && !widget.historyOnly)
           TextButton.icon(
-            onPressed: () => context.go('/export-history'),
+            onPressed: () => context.push('/export-history'),
             icon: const Icon(Icons.history),
             label: Text(t('Credit & Export History', 'سجل الأرصدة والتصدير')),
           ),
@@ -572,13 +584,16 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               padding: const EdgeInsetsDirectional.only(bottom: 12),
               child: ResumeJobCard(
                 job: job,
-                onDetails: () => context.go('/resume-details/${job['id']}'),
+                onDetails: () => context.push('/resume-details/${job['id']}'),
                 onDownload:
-                    busy ||
-                        job['state'] != 'COMPLETED' ||
+                    job['state'] != 'COMPLETED' ||
                         job['download_eligible'] == false
                     ? null
-                    : () => _run(() => _download(job['id'] as String)),
+                    : () => _run(
+                        () => _download(job['id'] as String),
+                        allowWhileBusy: true,
+                      ),
+                downloading: downloadingExportIds.contains(job['id'] as String),
                 onAgain:
                     busy ||
                         !enabled ||

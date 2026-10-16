@@ -180,14 +180,15 @@ class ResumeRender {
 font-family:${ar ? 'Plex,Inter' : 'Inter,Plex'},sans-serif;font-size:11pt;line-height:${ar ? '1.8' : '1.55'};
 width:210mm;min-height:297mm;margin:16px auto;padding:18mm;overflow-wrap:anywhere}
 h1{font-size:24pt;margin:0 0 5mm;font-weight:700}h2{font-size:13pt;border-bottom:1pt solid #334155;
-padding-bottom:2mm;margin:7mm 0 3mm;break-after:avoid}h3{font-size:11.5pt;margin:0}
-article{margin-bottom:4mm}article header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2mm}
+padding-bottom:2mm;margin:7mm 0 3mm;break-after:avoid;page-break-after:avoid}h3{font-size:11.5pt;margin:0}
+article{margin-bottom:4mm}article header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2mm;
+break-after:avoid;break-inside:avoid;page-break-inside:avoid}
 p{margin:1mm 0;white-space:pre-wrap}.contact{font-size:9.5pt}.meta,.dates{color:#43516a}
-.personal-header{text-align:center;break-inside:avoid}.skills{line-height:1.7}
+.personal-header{text-align:center;break-inside:avoid;page-break-inside:avoid}.skills{line-height:1.7}
 ul{margin:1mm 0;padding-inline-start:6mm}li{margin:1mm 0;padding-inline-start:1mm}
 article .meta{break-after:avoid}p.blank{margin:0;height:2mm}
 .dates{font-size:9.5pt}a{color:inherit;text-decoration:none}bdi{unicode-bidi:plaintext}
-li{list-style-position:outside}
+li{list-style-position:outside;break-inside:avoid;page-break-inside:avoid}
 @media print{html{background:white}body{width:auto;min-height:0;margin:0;padding:0}
 p,li{orphans:3;widows:3}h1,h2,h3,article header{break-after:avoid}}
 </style></head><body>

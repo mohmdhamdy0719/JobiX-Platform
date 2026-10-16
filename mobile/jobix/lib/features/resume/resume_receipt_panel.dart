@@ -7,7 +7,6 @@ import 'resume_experience_shared.dart';
 class ResumeReceiptPanel extends StatelessWidget {
   const ResumeReceiptPanel({
     required this.copy,
-    required this.id,
     required this.state,
     required this.createdAt,
     required this.completedAt,
@@ -15,7 +14,6 @@ class ResumeReceiptPanel extends StatelessWidget {
   });
 
   final ResumeCopy copy;
-  final Object? id;
   final String state;
   final String? createdAt;
   final String? completedAt;
@@ -61,9 +59,7 @@ class ResumeReceiptPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        id == null
-                            ? copy.resumeReceipt
-                            : '${copy.resumeReceipt} · ${id.toString()}',
+                        copy.resumeReceipt,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelMedium
@@ -98,7 +94,8 @@ class ResumeReceiptPanel extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(
+                    Flexible(
+                      fit: FlexFit.loose,
                       child: ResumeStatePill(state: state, copy: copy),
                     ),
                     if (completed)

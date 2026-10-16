@@ -28,12 +28,17 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
   Timer? timer;
   String? message;
   bool busy = false;
+  bool refreshInFlight = false;
   bool saving = false;
   int generation = 0;
+  int pollStep = 0;
+  Stopwatch? pollClock;
   bool foreground = true;
   bool get ar => Localizations.localeOf(context).languageCode == 'ar';
   String t(String en, String arabic) => ar ? arabic : en;
   static const terminal = {'COMPLETED', 'FAILED', 'EXPIRED', 'MISSING_OBJECT'};
+  static const pollDelays = [3, 5, 10, 20, 30];
+  static const pollWindow = Duration(minutes: 30);
   @override
   void initState() {
     super.initState();
@@ -49,6 +54,8 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
               job = null;
               busy = false;
               message = null;
+              pollStep = 0;
+              pollClock = null;
             });
           }
         }
@@ -74,13 +81,26 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     foreground = state == AppLifecycleState.resumed;
     timer?.cancel();
-    if (foreground && mounted) refresh();
+    if (foreground && mounted) {
+      pollStep = 0;
+      pollClock = Stopwatch()..start();
+      refresh(showProgress: job == null);
+    }
   }
 
-  Future<void> refresh() async {
-    if (busy) return;
+  Future<void> refresh({bool showProgress = true}) async {
+    if (refreshInFlight) return;
+    refreshInFlight = true;
     final token = generation;
-    setState(() => busy = true);
+    timer?.cancel();
+    if (showProgress && mounted) {
+      setState(() {
+        busy = true;
+        message = null;
+      });
+      pollStep = 0;
+      pollClock = Stopwatch()..start();
+    }
     try {
       final service = await ref.read(resumeExportServiceProvider.future);
       final response = await service.call('status', {
@@ -89,15 +109,21 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       final database = await ref.read(databaseProvider.future);
       final data = await service.withDisplay(response, database.setting);
       if (!mounted || generation != token) return;
+      final previousState = job?['state'];
       setState(() {
         job = data;
         message = null;
       });
       timer?.cancel();
-      if (foreground && !terminal.contains(data['state'])) {
-        timer = Timer(const Duration(seconds: 3), refresh);
+      if (terminal.contains(data['state'])) {
+        pollClock = null;
+        pollStep = 0;
+      } else {
+        if (previousState != data['state']) pollStep = 0;
+        _scheduleStatusPoll();
       }
     } catch (_) {
+      timer?.cancel();
       if (mounted && generation == token) {
         setState(
           () => message = t(
@@ -107,14 +133,50 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
         );
       }
     } finally {
-      if (mounted && generation == token) setState(() => busy = false);
+      refreshInFlight = false;
+      if (showProgress && mounted && generation == token) {
+        setState(() => busy = false);
+      }
+    }
+  }
+
+  void _scheduleStatusPoll() {
+    timer?.cancel();
+    final state = job?['state'];
+    if (!foreground || state == null || terminal.contains(state)) return;
+    pollClock ??= Stopwatch()..start();
+    if (pollClock!.elapsed >= pollWindow) {
+      if (mounted) {
+        setState(
+          () => message = t(
+            'This request is still processing. Refresh to check its latest status.',
+            'لا يزال الطلب قيد المعالجة. حدّث الصفحة للتحقق من أحدث حالة.',
+          ),
+        );
+      }
+      return;
+    }
+    final delayIndex = pollStep < pollDelays.length
+        ? pollStep
+        : pollDelays.length - 1;
+    final delay = pollDelays[delayIndex];
+    pollStep++;
+    timer = Timer(Duration(seconds: delay), () {
+      if (mounted && foreground) refresh(showProgress: false);
+    });
+  }
+
+  void _backToPreviousScreen() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/export-history');
     }
   }
 
   Future<void> download() async {
-    if (busy) return;
+    if (saving) return;
     setState(() {
-      busy = true;
       saving = true;
       message = null;
     });
@@ -147,7 +209,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       }
     } finally {
       saving = false;
-      if (mounted) setState(() => busy = false);
+      if (mounted) setState(() {});
     }
   }
 
@@ -176,7 +238,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
         ),
         leading: IconButton(
           icon: const BackButtonIcon(),
-          onPressed: () => context.go('/export-history'),
+          onPressed: _backToPreviousScreen,
         ),
       ),
       body: SafeArea(
@@ -200,14 +262,16 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
                       job: job!,
                       onHistory: () => context.go('/export-history'),
                       onDashboard: () => context.go('/home'),
-                      onDownload: downloadable && !busy ? download : null,
+                      onDownload: downloadable ? download : null,
+                      downloading: saving,
                     )
                   : SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
                       child: ResumeDetailsBody(
                         job: job!,
                         busy: busy,
-                        onDownload: downloadable && !busy ? download : null,
+                        onDownload: downloadable ? download : null,
+                        downloading: saving,
                         onAgain: canAgain && !busy
                             ? () =>
                                   context.go('/resume?again=${widget.exportId}')

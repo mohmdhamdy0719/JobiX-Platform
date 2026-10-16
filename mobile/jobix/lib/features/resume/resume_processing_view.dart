@@ -9,6 +9,7 @@ class ResumeProcessingView extends StatelessWidget {
     required this.onHistory,
     required this.onDashboard,
     this.onDownload,
+    this.downloading = false,
     super.key,
   });
 
@@ -16,6 +17,7 @@ class ResumeProcessingView extends StatelessWidget {
   final VoidCallback onHistory;
   final VoidCallback onDashboard;
   final VoidCallback? onDownload;
+  final bool downloading;
 
   @override
   Widget build(BuildContext context) {
@@ -79,13 +81,23 @@ class ResumeProcessingView extends StatelessWidget {
                   ),
                   Column(
                     children: [
-                      if (eligible && onDownload != null) ...[
+                      if (eligible) ...[
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: onDownload,
-                            icon: const Icon(Icons.download_outlined),
-                            label: Text(copy.downloadPdf),
+                            onPressed: downloading ? null : onDownload,
+                            icon: downloading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.download_outlined),
+                            label: Text(
+                              downloading ? copy.downloading : copy.downloadPdf,
+                            ),
                           ),
                         ),
                         const SizedBox(height: TokensV0.space8),
@@ -158,12 +170,11 @@ class _JobSummary extends StatelessWidget {
       'profile_name',
       'profile_title',
       'role_title',
-      'profile_id',
     ]);
-    final template = resumeFirstString(job, const [
-      'template_name',
-      'template',
-    ]);
+    final template = resumeTemplateDisplayName(
+      copy,
+      resumeFirstString(job, const ['template_name', 'template']),
+    );
     final pages = resumePositiveInt(job['page_count']);
     final language = resumeFirstString(job, const [
       'language',

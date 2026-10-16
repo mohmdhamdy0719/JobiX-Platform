@@ -9,6 +9,7 @@ class ResumeJobCard extends StatelessWidget {
     required this.job,
     required this.onDetails,
     this.onDownload,
+    this.downloading = false,
     this.onAgain,
     super.key,
   });
@@ -16,6 +17,7 @@ class ResumeJobCard extends StatelessWidget {
   final Map<String, dynamic> job;
   final VoidCallback onDetails;
   final VoidCallback? onDownload;
+  final bool downloading;
   final VoidCallback? onAgain;
 
   @override
@@ -31,7 +33,7 @@ class ResumeJobCard extends StatelessWidget {
           'profile_title',
         ]) ??
         copy.resumeExport;
-    final id = job['id'];
+    final displayTitle = resumeTemplateDisplayName(copy, title) ?? title;
     final createdAt = resumeDateLabel(job['created_at']);
     final pages = resumePositiveInt(job['page_count']);
     final language = resumeFirstString(job, const [
@@ -67,7 +69,7 @@ class ResumeJobCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        displayTitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium
@@ -90,16 +92,12 @@ class ResumeJobCard extends StatelessWidget {
                 ResumeStatePill(state: state, copy: copy),
               ],
             ),
-            if (id != null || pages != null || language != null) ...[
+            if (pages != null || language != null) ...[
               const SizedBox(height: TokensV0.space12),
               Wrap(
                 spacing: TokensV0.space8,
                 runSpacing: TokensV0.space4,
                 children: [
-                  if (id != null)
-                    ResumeMetadataChip(
-                      label: '${copy.jobId}: ${id.toString()}',
-                    ),
                   if (pages != null)
                     ResumeMetadataChip(label: copy.pageCount(pages)),
                   if (language != null)
@@ -140,11 +138,13 @@ class ResumeJobCard extends StatelessWidget {
                   onPressed: onDetails,
                   primary: true,
                 ),
-                if (eligible && onDownload != null)
+                if (eligible)
                   ResumeCompactAction(
-                    label: copy.download,
-                    icon: Icons.download_outlined,
-                    onPressed: onDownload!,
+                    label: downloading ? copy.downloading : copy.download,
+                    icon: downloading
+                        ? Icons.hourglass_top
+                        : Icons.download_outlined,
+                    onPressed: downloading ? null : onDownload,
                   ),
                 if (state == 'failed' && onAgain != null)
                   ResumeCompactAction(
