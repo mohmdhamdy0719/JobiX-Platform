@@ -241,3 +241,14 @@ background build continued with an active Gradle worker.
 **How to apply:** Run cold APK builds through the managed background shell and
 monitor that same task. Check worker CPU and cache timestamps before treating
 quiet output as a stall; do not launch duplicate builds.
+
+A successful Flutter "Built" line does not prove the requested Android flavor
+was refreshed. Compare the requested APK's timestamp/hash and package ID with
+the flavor-specific outputs and intermediates.
+
+**Why:** A no-flavor ARM64 build reported the generic debug APK path but refreshed
+the `localPreviewDebug` artifact while the standard debug APK stayed stale.
+
+**How to apply:** Verify the actual flavor, package ID, and output metadata after
+every build; never substitute a Local Preview APK for the standard app or alter
+flavor configuration without explicit approval.

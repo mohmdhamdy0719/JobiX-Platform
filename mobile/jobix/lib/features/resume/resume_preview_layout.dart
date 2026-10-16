@@ -49,7 +49,7 @@ class ResumePreviewLayout extends StatelessWidget {
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -135,7 +135,7 @@ class ResumePreviewLayout extends StatelessWidget {
                 ),
                 if (!valid || !exportEnabled)
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsetsDirectional.only(top: 4),
                     child: Text(
                       !valid
                           ? t(

@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthClientOptions, AuthException, SupabaseClient;
 import 'package:jobix/app.dart';
 import 'package:jobix/core/database/database.dart';
 import 'package:jobix/core/database/encryption.dart';
@@ -17,6 +21,7 @@ import 'package:jobix/features/boot/startup.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/career_profile/career_profile_repository.dart';
 import 'package:jobix/features/core_mvp/core_api.dart';
+import 'package:jobix/features/resume/resume_export_panel.dart';
 import 'package:jobix/features/career_profile/text_section_repository.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
 import 'package:jobix/features/career_profile/entity_repository.dart';
@@ -43,8 +48,76 @@ void main() {
   late FakeAuthApi auth;
   late _CoreFixture core;
   late FakeEntityServer entities;
+  late SupabaseClient resumeClient;
+  late List<String> resumeRequests;
   ProviderContainer? container;
   setUpAll(loadProductionFonts);
+  SupabaseClient createResumeClient() => SupabaseClient(
+    'https://synthetic.example.invalid',
+    'synthetic-publishable',
+    authOptions: const AuthClientOptions(autoRefreshToken: false),
+    httpClient: MockClient((request) async {
+      resumeRequests.add('${request.method} ${request.url.path}');
+      if (request.url.path.endsWith('/functions/v1/resume-export')) {
+        final Object? decoded;
+        try {
+          decoded = jsonDecode(request.body);
+        } catch (_) {
+          resumeRequests.add('invalid-json');
+          return http.Response('{"error":"invalid test request"}', 500);
+        }
+        final body = decoded as Map<String, dynamic>;
+        final action = body['action']?.toString() ?? 'missing';
+        resumeRequests.add('action=$action');
+        if (body['action'] == 'history') {
+          return http.Response(
+            jsonEncode({
+              'data': {'jobs': <Map<String, Object>>[], 'next_cursor': null},
+              'error': null,
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+      }
+      return http.Response(
+        jsonEncode({
+          'data': null,
+          'error': {'code': 'UNEXPECTED_TEST_REQUEST'},
+        }),
+        500,
+        request: request,
+        headers: {'content-type': 'application/json'},
+      );
+    }),
+  );
+  Future<SupabaseClient> createAuthenticatedResumeClient() async {
+    final client = createResumeClient();
+    String segment(Map<String, Object> payload) =>
+        base64Url.encode(utf8.encode(jsonEncode(payload))).replaceAll('=', '');
+    final expiry = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
+    final token =
+        '${segment({'alg': 'HS256', 'typ': 'JWT'})}.'
+        '${segment({'sub': testSession().user.id, 'exp': expiry, 'role': 'authenticated'})}.synthetic-signature';
+    await client.auth.recoverSession(
+      jsonEncode({
+        'access_token': token,
+        'refresh_token': 'synthetic-only',
+        'expires_in': 3600,
+        'expires_at': expiry,
+        'token_type': 'bearer',
+        'user': {
+          'id': testSession().user.id,
+          'aud': 'authenticated',
+          'role': 'authenticated',
+          'email': 'fixture@example.invalid',
+          'created_at': '2026-10-03T00:00:00Z',
+        },
+      }),
+    );
+    return client;
+  }
+
   setUp(() async {
     directory = Directory.systemTemp.createTempSync('jobix-widget-');
     databaseKey = generateDatabaseKey();
@@ -56,6 +129,8 @@ void main() {
     auth = FakeAuthApi();
     core = _CoreFixture();
     entities = FakeEntityServer(api);
+    resumeRequests = [];
+    resumeClient = createResumeClient();
     await database.setting(
       'locale',
     ); // Open the actual encrypted engine outside the widget flow.
@@ -63,6 +138,7 @@ void main() {
   tearDown(() async {
     container?.dispose();
     container = null;
+    resumeClient.dispose();
     await database.close();
     directory.deleteSync(recursive: true);
   });
@@ -84,6 +160,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWith((_) async => database),
+        supabaseClientProvider.overrideWith((_) async => resumeClient),
         startupProvider.overrideWith(
           (ref) async => ref.watch(testStartupProvider),
         ),
@@ -127,6 +204,10 @@ void main() {
         firstEntryProvider.overrideWith((_) async => newEntry),
         contextMergeProvider.overrideWith((_) async {}),
       ],
+    );
+    expect(
+      await container!.read(supabaseClientProvider.future),
+      same(resumeClient),
     );
     container!.read(testStartupProvider.notifier).state = state;
     auth.onSignedIn = () =>
@@ -284,8 +365,18 @@ void main() {
     testWidgets('core shell native production-font captures $locale', (
       tester,
     ) async {
+      resumeClient.dispose();
+      resumeClient = await createAuthenticatedResumeClient();
       await pump(tester, state: StartupState.signedIn, locale: locale);
       for (final page in ['home', 'career', 'settings', 'credits']) {
+        if (page == 'credits') {
+          final previousClient = resumeClient;
+          resumeClient = createResumeClient();
+          container!.invalidate(supabaseClientProvider);
+          await container!.read(supabaseClientProvider.future);
+          previousClient.dispose();
+          expect(resumeRequests, isEmpty);
+        }
         container!.read(routerProvider).go('/$page');
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
@@ -293,6 +384,39 @@ void main() {
           Directionality.of(tester.element(find.byType(Scaffold).first)),
           locale == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         );
+        if (page == 'credits') {
+          expect(
+            await container!.read(databaseProvider.future),
+            same(database),
+          );
+          expect(
+            await database.setting('resume:user-one:export:profile-one'),
+            isNull,
+          );
+          expect(resumeClient.auth.currentUser, isNull);
+          expect(
+            tester
+                .widget<ResumeExportPanel>(find.byType(ResumeExportPanel))
+                .profileId,
+            'profile-one',
+          );
+          expect(resumeRequests, isEmpty);
+          expect(find.byType(ResumeExportPanel), findsOneWidget);
+          final exportPanel = tester.state<ResumeExportPanelState>(
+            find.byType(ResumeExportPanel),
+          );
+          expect(
+            exportPanel.historyLoadFailed,
+            isFalse,
+            reason: 'message=${exportPanel.message}; requests=$resumeRequests',
+          );
+          expect(
+            find.textContaining(
+              locale == 'ar' ? 'إعادة محاولة تحميل السجل' : 'Retry history',
+            ),
+            findsNothing,
+          );
+        }
         noUnsupportedContent(tester);
         await expectLater(
           find.byType(Scaffold),

@@ -1,0 +1,95 @@
+# JobiX V2 — Consolidate All Changes into One Development APK
+
+We are pausing all Production release work for now.
+
+The current objective is to deliver one complete, integrated **Development ARM64 debug APK** containing all previously requested JobiX UI/UX, resume editing, persistence, Credit, PDF preview, export, download, and state-management fixes.
+
+We will test this version on physical Android devices. Only after the Development version is verified will we resume Production preparation and Google Play Console work.
+
+## 1. Scope and environment
+
+- Use the existing Development configuration and Supabase project `lmouxhbjhtqdtiqijcee`.
+- Build the standard Development application variant using the project's existing configuration and the standard application ID `com.mhflow.jobix`, unless the documented build setup requires otherwise.
+- Enable the existing client PDF export flag explicitly with `JOBIX_ENABLE_PDF_EXPORT=true`.
+- Do not use the `localPreview` flavor as a substitute for the standard Development app.
+- Do not modify Production configuration, gates, secrets, databases, infrastructure, or deployment.
+- Do not work on Google Play Console, release signing, Production environment creation, or Production backend isolation in this task.
+- Do not perform a live PDF export, create a real export job, or debit Credits during automated testing.
+
+## 2. Consolidate all previously requested changes
+
+Review the complete existing implementation and all previous requirements in this conversation. Ensure the following are integrated into the same standard Development application:
+
+- Cloud-first profile persistence with temporary recovery only, no competing local/cloud versions, and safe handling of interrupted or discarded edits.
+- Onboarding preference copy and the improved centered authentication welcome screen.
+- Correct Continue Profile behavior after the user completes the Profile Creation Journey.
+- Credits displayed appropriately, with no obsolete AI-generation counters or irrelevant internal profile guidance.
+- Improved Professional Summary questions/examples and consistent guided questions across Work Experience, Education, Achievements, and Volunteer Experience.
+- Consistent description field labels, helpful placeholders, and removal of unnecessary optional/required-field explanations and arbitrary URL limits where safe.
+- Settings copy cleanup and the shared branded JobiX dialog design.
+- Correct language controls, Personal Information layout, photo/custom-link copy, and removal of redundant language selectors.
+- Stable Professional Summary Save/Back controls.
+- Clean resume template selection and professional `ATS Professional` display naming.
+- No unexplained recurring refreshes in Resume Details or Credit & Export History.
+- Stable Download and Details actions, no unnecessary loading indicators, and removal of the bottom `Refresh details` control.
+- Removal of unnecessary technical reconciliation/history-refresh controls from Resume Export while preserving essential recovery logic.
+- Correct handling of ambiguous saves without losing edits, duplicating writes, or leaving the user permanently blocked.
+- Insufficient-Credits feedback when attempting a new export with fewer than 2 Credits, without a large red panel distorting the preview. Keep the Export button visible when otherwise eligible, and show a clear branded dialog on tap when the verified balance is insufficient.
+- Preserve free re-downloads of eligible existing PDFs at zero Credits.
+- Correct receipt layout, compact Completed badge, credit impact alignment, and user-friendly page-count labels.
+- Correct A4 pagination and layout in both Arabic RTL and English LTR, including section cohesion and avoidance of excessive blank space or unnecessary nearly empty pages.
+- Ensure the preview and final server-rendered PDF are consistent wherever the architecture allows verification.
+
+Do not assume these changes are complete just because previous reports said they were. Inspect the current code and final integrated diff.
+
+## 3. Development backend and export safeguards
+
+Keep the existing Development backend behavior and server-authoritative Credit rules intact.
+
+Do not modify the existing export pricing, idempotency, authorization, rate limits, deletion policy, or accounting configuration as part of this task.
+
+If a code path is still pinned to Development, preserve the existing Development behavior for this build. Do not attempt to solve the Production environment-isolation issue now.
+
+The client flag is not a substitute for server-side authorization or export gates. Do not bypass a backend gate or weaken security to make the button work.
+
+## 4. Testing requirements
+
+Run the relevant focused tests and report actual results, including:
+
+- Resume export, Credit affordability, free download, retry/idempotency, and ambiguous-save behavior.
+- Resume Details and Credit & Export History refresh behavior.
+- Dialogs, navigation, Save/Back controls, and language selection.
+- Preview layout and pagination for synthetic English LTR and Arabic RTL profiles.
+- Relevant persistence/recovery tests.
+- `flutter analyze --no-pub`.
+- Dart formatting checks and `git diff --check`.
+
+Investigate any failing, hanging, or timed-out tests. Do not report incomplete tests as passing.
+
+Do not run a real export or debit Credits during these tests.
+
+## 5. Build the Development APK
+
+After the integrated changes and focused tests pass:
+
+1. Use the existing official Development build configuration and the standard application ID `com.mhflow.jobix`.
+2. Enable `JOBIX_ENABLE_PDF_EXPORT=true` explicitly.
+3. Build a fresh ARM64 debug APK using the documented project build procedure.
+4. Verify that the APK targets Development project `lmouxhbjhtqdtiqijcee`, uses the standard application ID, includes the latest code changes, and is not the stale `localPreviewDebug` artifact.
+5. Report the exact artifact path, variant, application ID, file size, modification time, and SHA-256.
+6. Provide a usable download link if the environment supports one. Do not invent a link or report a stale APK as the new build.
+
+Do not install the APK on the user's device or perform a live export.
+
+## 6. Final report
+
+Provide:
+
+- The actual files changed and the purpose of each change group.
+- The test commands and actual results.
+- Any remaining known issues.
+- The verified APK metadata and download location.
+- Confirmation that Production, Google Play Console, and all Production services were left untouched.
+- A short manual test checklist for the user.
+
+**Stop after delivering the Development APK and report.** Do not begin Production preparation until the user has tested the Development version and explicitly asks to continue.

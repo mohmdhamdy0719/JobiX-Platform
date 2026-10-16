@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'tokens.dart';
+
 /// Shared JobiX alert surface. Keeps confirmation semantics in the caller while
 /// standardizing safe-area spacing, scrolling, shape, and typography.
 class JobixAlertDialog extends StatelessWidget {
@@ -54,7 +56,7 @@ abstract final class JobixDialogAction {
   }) => TextButton(
     key: key,
     onPressed: onPressed,
-    style: TextButton.styleFrom(foregroundColor: const Color(0xFFB42332)),
+    style: TextButton.styleFrom(foregroundColor: TokensV0.error),
     child: child,
   );
 }
