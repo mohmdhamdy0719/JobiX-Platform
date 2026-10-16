@@ -1,0 +1,60 @@
+# JobiX — Prepare the Production Release Prerequisites
+
+Continue from the latest Production readiness report. Do not repeat the completed UI implementation or test investigation.
+
+Our goal is to prepare JobiX for a properly signed Production Android release, while preserving all existing changes and keeping Production services untouched.
+
+## 1. Prepare a safe release checklist
+
+Inspect the existing repository documentation and build configuration. Produce a concrete checklist covering:
+
+- The required Production client configuration and how it differs from Development and Staging.
+- The required Staging configuration, because the current validation requires all three environments to be distinct.
+- The approved Android release signing setup.
+- The Production Supabase project reference and authentication redirect allowlist.
+- The PDF export feature flag and the server-side readiness checks that must be verified before enabling it.
+- The final release build and verification commands.
+
+For every item, identify whether it can be prepared in the repository or requires an owner-provided value, credential, or authorization.
+
+Do not invent project references, endpoints, credentials, redirect URLs, signing identities, or configuration values.
+
+## 2. Prepare repository changes only when safe
+
+You may prepare non-secret configuration templates, validation improvements, and release documentation if they are consistent with the existing architecture.
+
+Do not create fake Production values or copy Development configuration into Production or Staging.
+
+Do not change application behavior, export gates, backend services, database records, migrations, Cloud Run, IAM, secrets, or infrastructure as part of this task.
+
+Do not change the existing application ID or authentication callback scheme.
+
+Preserve all existing user changes and inspect the Git diff before and after any edits.
+
+## 3. Release signing
+
+Do not generate or substitute a debug signing key for Production.
+
+Check whether the repository documents a supported secure mechanism for supplying an owner-approved release keystore and its credentials. If no approved mechanism exists, recommend the safest compatible approach and specify exactly what the owner must provide and where it should be configured.
+
+Never request that the owner paste private keys, passwords, service-role keys, or other secrets into the chat or logs.
+
+## 4. Production verification boundaries
+
+Identify how an authorized operator can verify the Production Supabase project, redirect allowlist, export feature gates, and readiness settings using read-only checks.
+
+Do not access or modify Production unless the existing approved access method explicitly permits the required read-only verification. Do not enable the Production PDF export feature gate.
+
+## 5. Final output
+
+Return:
+
+1. The exact owner actions required, in priority order.
+2. Any safe repository-only changes made, with file names.
+3. The secure signing procedure supported by this project.
+4. The final release build procedure, once prerequisites are satisfied.
+5. A clear statement of what remains unverified.
+
+Do not build an APK yet. Do not deploy or change Production or Development services. Do not perform a live export or debit Credits.
+
+Keep the task focused on removing the release blockers, not redesigning the application again.
