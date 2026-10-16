@@ -521,6 +521,59 @@ class _PersonalInformationPageState
           ),
         ],
         const SizedBox(height: TokensV0.space24),
+        if (language == null)
+          Text(copy.chooseResumeLanguage)
+        else
+          PersonalInformationFields(
+            copy: profileCopy,
+            clearLabel: language == 'ar' ? 'مسح الحقل' : 'Clear field',
+            language: language,
+            controllers: controllers,
+            errors: errors,
+            enabled: !busy,
+            regionEgypt:
+                WidgetsBinding.instance.platformDispatcher.locale.countryCode ==
+                'EG',
+            cityHistory: cityHistory,
+            targetRoleSection: SliceCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SectionHeading(
+                    title: copy.targetRoleOptional,
+                    subtitle: copy.localeName.startsWith('ar')
+                        ? 'يظهر هذا الدور أعلى سيرتك الذاتية.'
+                        : 'This role appears near the top of your resume.',
+                  ),
+                  if (profile!.targetRole.trim().isNotEmpty) ...[
+                    const SizedBox(height: TokensV0.space8),
+                    Text(profile!.targetRole),
+                  ],
+                  const SizedBox(height: TokensV0.space8),
+                  OutlinedButton.icon(
+                    key: const Key('personal-edit-target-role'),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: Text(copy.editAction),
+                    onPressed: busy
+                        ? null
+                        : () async {
+                            if (!await persistNow() || !mounted) return;
+                            context.go('/career/target-role?origin=personal');
+                          },
+                  ),
+                ],
+              ),
+            ),
+            onChanged: (field, value) {
+              errors.remove(field);
+              retain(draft!.edit(field, value));
+            },
+            onBlur: (field) {
+              if (!mounted) return;
+              setState(() => errors.add(field));
+            },
+          ),
+        const SizedBox(height: TokensV0.space24),
         SliceCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -557,30 +610,6 @@ class _PersonalInformationPageState
             ],
           ),
         ),
-        const SizedBox(height: TokensV0.space24),
-        if (language == null)
-          Text(copy.chooseResumeLanguage)
-        else
-          PersonalInformationFields(
-            copy: profileCopy,
-            clearLabel: language == 'ar' ? 'مسح الحقل' : 'Clear field',
-            language: language,
-            controllers: controllers,
-            errors: errors,
-            enabled: !busy,
-            regionEgypt:
-                WidgetsBinding.instance.platformDispatcher.locale.countryCode ==
-                'EG',
-            cityHistory: cityHistory,
-            onChanged: (field, value) {
-              errors.remove(field);
-              retain(draft!.edit(field, value));
-            },
-            onBlur: (field) {
-              if (!mounted) return;
-              setState(() => errors.add(field));
-            },
-          ),
       ],
     );
   }

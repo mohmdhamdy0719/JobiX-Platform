@@ -4,7 +4,7 @@ import '../../core/navigation/back_policy.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
-import 'jobix_improvement.dart';
+import 'profile_overview.dart';
 import 'resume_journey.dart';
 
 const builderSteps = 6;
@@ -73,6 +73,7 @@ class BuilderScaffold extends StatelessWidget {
     if (reviewEditor) {
       return SliceScaffold(
         title: title,
+        actions: const [CreditsPill()],
         leading: IconButton(
           key: const Key('builder-back'),
           tooltip: copy.backToReview,
@@ -103,6 +104,7 @@ class BuilderScaffold extends StatelessWidget {
     }
     return SliceScaffold(
       title: title,
+      actions: const [CreditsPill()],
       leading: onBack == null || step == 1 || step == 6
           ? null
           : IconButton(
@@ -154,7 +156,6 @@ class BuilderScaffold extends StatelessWidget {
                 backgroundColor: TokensV0.surfaceContainer,
               ),
             ),
-            if (step >= 2 && step <= 5) const JobixAllowance(),
           ],
         ),
       ),

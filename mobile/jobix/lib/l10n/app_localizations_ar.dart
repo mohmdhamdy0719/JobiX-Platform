@@ -113,7 +113,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get contextOnly =>
-      'تساعدنا تفضيلاتك على تخصيص تجربة JobiX مستقبلًا. يمكنك تغييرها في أي وقت من الإعدادات. هذه الإجابات للسياق فقط؛ ولا تصبح محتوى في سيرتك الذاتية أو تغيّر إمكانية استخدامك لـ Jobix.';
+      'تساعدنا تفضيلاتك على تخصيص تجربة JobiX مستقبلًا. يمكنك تغييرها في أي وقت من الإعدادات.';
 
   @override
   String get questionStage => 'أي وصف يناسب مرحلتك المهنية الحالية؟';

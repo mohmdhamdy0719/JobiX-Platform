@@ -45,33 +45,37 @@ class SummaryWritingHints extends StatelessWidget {
         'الجمع بين التفكير التحليلي والتواصل الواضح لتحسين نتائج الفريق.',
       ],
     ];
-    return Column(
+    return Wrap(
+      runSpacing: TokensV0.space8,
       children: [
         for (var i = 0; i < examples.length; i++)
-          ExpansionTile(
-            key: Key('summary-hint-$i'),
-            tilePadding: const EdgeInsets.symmetric(
-              horizontal: TokensV0.space12,
-            ),
-            collapsedBackgroundColor: TokensV0.surfaceCard,
-            backgroundColor: TokensV0.surfaceContainerLow,
-            collapsedShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(TokensV0.cardRadius),
-              side: const BorderSide(color: TokensV0.border),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(TokensV0.cardRadius),
-              side: const BorderSide(color: TokensV0.border),
-            ),
-            title: Text(examples[i][ar ? 1 : 0]),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(TokensV0.space16),
-                child: Text(
-                  '${ar ? 'مثال إرشادي فقط — لا يُضاف إلى ملفك:' : 'Illustrative example only — not added to your profile:'}\n${examples[i][ar ? 3 : 2]}',
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: ExpansionTile(
+              key: Key('summary-hint-$i'),
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: TokensV0.space12,
               ),
-            ],
+              collapsedBackgroundColor: TokensV0.surfaceCard,
+              backgroundColor: TokensV0.surfaceContainerLow,
+              collapsedShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(TokensV0.cardRadius),
+                side: const BorderSide(color: TokensV0.border),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(TokensV0.cardRadius),
+                side: const BorderSide(color: TokensV0.border),
+              ),
+              title: Text(examples[i][ar ? 1 : 0]),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(TokensV0.space12),
+                  child: Text(
+                    '${ar ? 'مثال:' : 'For example:'} ${examples[i][ar ? 3 : 2]}',
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     );

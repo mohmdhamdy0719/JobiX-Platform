@@ -114,7 +114,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contextOnly =>
-      'Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings. These answers are context only; they do not become CV content or change your access to Jobix.';
+      'Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings.';
 
   @override
   String get questionStage => 'Which best describes your current career stage?';

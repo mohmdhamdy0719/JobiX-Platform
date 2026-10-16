@@ -1,6 +1,7 @@
 import 'dart:convert';
 import '../career_profile/career_profile.dart';
 import '../career_profile/profile_sections.dart';
+import '../builder/entity_labels.dart' show degreeLabel;
 
 /// Immutable render-package contract. Preview and the future Chromium worker
 /// consume this same HTML, not a second PDF-specific layout or screenshot.
@@ -102,7 +103,7 @@ class ResumeRender {
         final title = switch (type) {
           EntitySection.experience => item.text('job_title'),
           EntitySection.volunteer => item.text('role'),
-          EntitySection.education => item.text('degree'),
+          EntitySection.education => degreeLabel(item.text('degree'), language),
           EntitySection.achievement => item.text('title'),
           _ => item.text('name'),
         };

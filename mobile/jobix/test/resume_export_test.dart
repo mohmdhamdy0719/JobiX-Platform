@@ -689,6 +689,26 @@ void main() {
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
       await createFuture;
+
+      final currentDocument = panelKey.currentState!.document!;
+      expect(find.byKey(const Key('review-updated-preview')), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const Key('review-updated-preview')),
+      );
+      await tester.tap(find.byKey(const Key('review-updated-preview')));
+      await tester.pumpAndSettle();
+      expect(observedDocument, same(currentDocument));
+
+      final reviewedAgain = panelKey.currentState!.createPdf(currentDocument);
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(commands.map((item) => item['action']), ['document', 'document']);
+      expect(accepted, 0);
+      expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      await reviewedAgain;
     },
   );
   tearDown(() async {

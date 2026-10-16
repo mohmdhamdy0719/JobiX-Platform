@@ -1,0 +1,591 @@
+# JobiX — Critical UI/UX Corrections, PDF Export Root-Cause Fix, and Fresh Development APK
+
+## Objective
+
+Inspect the **current JobiX codebase and the latest Development APK implementation**, then fix the specific remaining issues listed below. Deliver one fresh, verified standard Development ARM64 debug APK for device testing.
+
+This is a continuation of the previously approved JobiX UI/UX prompts. Treat those prompts and this one as a **single combined specification**.
+
+The latest APK still has visible issues. In particular, the Professional Summary and Work Experience screens still show unwanted AI-generation indicators, some writing guidance has poor layout, the redundant onboarding preference explanation remains, and PDF export can be blocked by a “saved document changed” error.
+
+**Do not merely hide error messages or UI elements. Identify and fix the underlying causes. Do not rewrite the application, undo successful fixes, or modify unrelated screens.**
+
+---
+
+## 1. Onboarding — Move Skip Below Continue
+
+**Scope:** The three introductory onboarding pages, not the career-preferences questionnaire.
+
+- Keep the existing translation/language button in its current top-right position. Do not move, resize, remove, or redesign it.
+- Keep the existing onboarding progress indicator and back navigation.
+- Move the `Skip` action from the top navigation area to a secondary action directly below the main `Continue` button.
+- Style the new Skip action professionally and consistently with JobiX's existing design system. It must remain clearly distinguishable from the primary button without competing with it.
+- On the **third and final onboarding page**, hide Skip entirely because there is no remaining onboarding page to skip.
+- Verify the layout on different Android screen sizes and with system navigation/safe-area insets. Do not allow the new action to overlap the primary button or bottom system navigation.
+
+Do not apply this change to unrelated screens that happen to contain a Skip action.
+
+## 2. Career Preferences Questionnaire — Remove Only the Redundant Explanation
+
+**Scope:** The onboarding page titled `A little about your career`, containing the options Student, Recent Graduate, Early-Career Professional, Mid-Career Professional, Experienced Professional, Return to work after a break, and Career Changer.
+
+The intended explanation is:
+
+`Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings.`
+
+Remove the additional text currently appended to it, starting with:
+
+`These answers are context only; they do not become CV content or change your access to JobiX.`
+
+Do not duplicate the explanation elsewhere on this page. Preserve all existing career-stage options, selection behavior, validation, saved preference values, and Continue behavior.
+
+## 3. Authentication / Welcome Screen — Improve Layout and Add Google Sign-In
+
+**Scope:** The unauthenticated Welcome screen showing the JobiX logo, `Welcome to Jobix`, the supporting sentence, and the Create account and Sign in buttons.
+
+### Required UI changes
+
+- Remove the entire bottom information panel beginning with `Your preferences help us tailor your future JobiX experience...`. It is redundant on the authentication screen.
+
+- Center the logo, heading, supporting text, and authentication actions within the available screen area to create a balanced, polished layout.
+
+- Increase the logo size moderately while preserving its proportions and avoiding excessive empty space.
+
+- Retain the exact supporting sentence:
+
+  `Build your career profile and prepare for your next opportunity.`
+
+- Preserve the existing Create account and Sign in routes and authentication behavior.
+
+- Add a clearly labeled `Continue with Google` button, with an appropriate Google icon and professional styling consistent with the existing screen.
+
+### Google authentication requirements
+
+First inspect the current Supabase Auth configuration and existing authentication implementation.
+
+- Use the actual supported Google OAuth flow and preserve secure redirect/deep-link handling.
+- Handle cancellation, provider errors, and successful sign-in correctly.
+- Do not create a fake button that only looks functional.
+- Do not hard-code secrets or modify Production credentials/configuration.
+- If the required Google provider configuration or redirect setup is missing, implement only what can be completed safely in the current Development environment and report the exact remaining configuration needed. Do not claim Google sign-in is functional until it has been verified.
+
+## 4. All Career Builder Steps — Remove AI Usage Indicators and Restore Credits
+
+**Scope:** The six-step Career/profile builder and all relevant builder subpages. Examples include Professional Summary and the Work Experience overview currently showing:
+
+- `AI generations: 0 / 6 used`
+- `AI provider unavailable`
+
+Remove these AI-generation counters and provider-status messages from **every Career Builder step and its subpages**. Do not just remove them from Professional Summary.
+
+Instead, display the same existing Credits component used on the Home page in the **top-right area of the builder header**, showing the actual available Credit balance.
+
+Requirements:
+
+- Reuse the existing Credits component and its established navigation/refresh behavior. Do not create a separate hard-coded balance or another source of truth.
+- Keep the Credits indicator compact and correctly aligned with the page title and back button.
+- Ensure it does not overlap the title, progress indicator, or content on narrow screens.
+- Preserve the existing builder progress indicator, step labels, and navigation where appropriate.
+- Do not display AI availability messages in these steps.
+
+### Important distinction: Restore Improve with JobiX
+
+The removal of AI-generation counters must **not** remove the `Improve with JobiX` action from fields where it has a real purpose.
+
+Restore `Improve with JobiX` underneath the relevant Description field in:
+
+- Professional Summary
+- Work Experience
+- Education
+- Volunteer Experience
+- Projects
+- Achievements
+
+Also include it in any other existing resume section that has an editable Description field and supports the same improvement workflow.
+
+Do **not** show it on the general Work Experience overview/list page merely because that page is Step 3 of 6. It belongs under the relevant editable Description field, not in the overview header or unrelated locations.
+
+Preserve the intended AI integration, request flow, loading state, errors, and safe editing behavior. If the provider is not configured or the feature is unavailable, do not fabricate an AI result or silently change the user's text. Report any actual backend/configuration blocker.
+
+---
+
+## 5. Professional Summary — Fix the Writing Guidance UI
+
+**Scope:** The `Professional Summary` editor, specifically the large Description field, six question/example panels, header, and bottom actions.
+
+The current screenshot shows the unwanted AI indicators above the field, an oversized field container, large guidance panels, and question cards that crowd each other and the fixed bottom buttons.
+
+### Description field
+
+- Keep the field clearly identified as `Professional Summary`.
+
+- Retain the useful placeholder:
+
+  `Tell us about your experience, strengths, and career direction.`
+
+- Keep the six optional questions and their examples separate from the actual Description content.
+
+- Do not insert examples into the user's text automatically.
+
+- Keep `Improve with JobiX` directly below the Description field, not inside the question cards.
+
+- Keep the editor comfortable to type into, with sensible padding and a clear visual boundary. Avoid excessive nested borders and unnecessary empty space.
+
+### Six optional questions and examples
+
+Use these questions and examples:
+
+1. **What is your professional background?**
+   Example: `Marketing specialist with 3 years of experience in digital campaigns and content creation.`
+
+2. **What are your strongest skills or areas of expertise?**
+   Example: `SEO, campaign analytics, content planning, and stakeholder communication.`
+
+3. **What kind of work or problems do you solve best?**
+   Example: `Turning performance data into actionable campaign improvements.`
+
+4. **What achievements or results are you most proud of?**
+   Example: `Increased organic traffic by 25% over 6 months.`
+
+5. **What role are you targeting next?**
+   Example: `A digital marketing role focused on growth and experimentation.`
+
+6. **What value would you bring to an employer or team?**
+   Example: `Combining analytical thinking with clear communication to improve team outcomes.`
+
+### Guidance design
+
+- Remove the repetitive disclaimer `Illustrative example only — not added to your profile:` from every guidance item.
+- Introduce each example with a concise label such as `For example:`. The example wording itself must remain visible.
+- Use a compact, readable accordion/list design with consistent spacing and clear separation between items.
+- Prevent cards from visually touching, overlapping, or appearing as one continuous block.
+- Keep text wrapping natural on narrow screens.
+- Users must be able to expand and collapse questions without losing their entered text.
+- Guidance must remain optional and must not introduce new mandatory fields.
+
+### Bottom actions
+
+- Keep the Summary editor's Save and Back actions in a persistent bottom action area, visible while scrolling.
+- Match the clear Back button treatment used on other Career editor pages.
+- Respect keyboard visibility and Android safe areas. When the keyboard is open, prevent it from covering the text being entered or making essential actions inaccessible.
+- Preserve the existing save operation and save confirmation behavior. Do not report a successful save before the authoritative save completes.
+
+---
+
+## 6. Work Experience Overview — Remove Irrelevant Explanatory Text
+
+**Scope:** The Work Experience overview/list page currently showing a saved role card, `Add Role`, `Volunteer Experience`, and `Add volunteer role`.
+
+Remove the entire bottom explanation beginning:
+
+`Volunteer roles are separate unpaid career evidence and appear in your Resume. They do not change Profile Completeness.`
+
+It adds unnecessary implementation detail to the user interface.
+
+Preserve the actual Volunteer Experience section, Add volunteer role action, existing data, role cards, validation, and navigation. Remove only the redundant explanatory text.
+
+Also remove the AI-generation counter/provider-status lines from this page as specified in Section 4.
+
+---
+
+## 7. Writing Guidance for Every Description-Based Editor
+
+**Scope:** The actual add/edit forms, not the general list/overview screens.
+
+Add or refine compact, page-specific writing guidance similar to the Professional Summary guidance. Each section must have guidance relevant to that section, with fictional examples clearly labeled `For example:`.
+
+### Work Experience
+
+Guidance:
+
+- `What was your role and what were you responsible for?`
+  Example: `Managed customer accounts and coordinated daily client requests.`
+- `What were your main contributions?`
+  Example: `Improved the team's reporting process and reduced repetitive manual work.`
+- `What measurable results did you achieve?`
+  Example: `Reduced report preparation time by 30%.`
+
+Description placeholder:
+
+`Describe your responsibilities, key contributions, and measurable results.`
+
+### Education
+
+Guidance:
+
+- `What qualification did you earn, and in which field?`
+  Example: `Bachelor's degree in Business Administration.`
+- `Was there a relevant project, specialization, or academic achievement?`
+  Example: `Completed a research project on customer behavior and market segmentation.`
+
+Description placeholder:
+
+`Add relevant coursework, projects, honors, or academic achievements.`
+
+### Volunteer Experience
+
+Guidance:
+
+- `What organization or cause did you support, and what was your role?`
+  Example: `Volunteered with a local community initiative to coordinate donation drives.`
+- `What did you contribute or accomplish?`
+  Example: `Helped organize events and coordinate volunteers.`
+
+Description placeholder:
+
+`Describe the cause you supported, your role, and how you contributed.`
+
+### Projects
+
+Provide guidance about the project's objective, the user's contribution, the technologies or methods used where relevant, and the outcome.
+
+Use this placeholder:
+
+`Describe the project's purpose, your contribution, and its outcome.`
+
+Use a clearly fictional example, such as:
+
+`Built a task-tracking application to simplify team workflow and progress reporting.`
+
+### Achievements
+
+Guidance:
+
+- `What did you accomplish?`
+  Example: `Received an award for outstanding project delivery.`
+- `Why was it important, or what was the result?`
+  Example: `Recognized for completing a cross-functional project ahead of schedule.`
+- `Is there a public link or evidence worth including?`
+  Example: `A certificate, publication, award page, or portfolio URL.`
+
+Description placeholder:
+
+`Describe what you achieved, why it mattered, and any measurable result.`
+
+### Shared implementation rules
+
+- Do not create additional required fields just to accommodate these questions.
+- Do not auto-fill the Description with sample text.
+- Keep examples outside the saved profile content.
+- Use the same polished visual treatment across the editors while adapting the actual questions to each section.
+- Avoid oversized bordered containers, cramped columns, unnecessary disclaimers, and excessive vertical spacing.
+- Place `Improve with JobiX` underneath the relevant Description field in each supported editor.
+- Preserve existing validation, persistence, and save behavior.
+
+---
+
+## 8. Target Role — Move It into Personal Information
+
+**Scope:** The separate Target Role step/page in the Career/profile-building journey.
+
+Remove the standalone Target Role page from the user journey and integrate the existing Target Role section into the Personal Information editor.
+
+Place it in this exact order within Personal Information:
+
+1. Existing personal details.
+2. Existing `Contact Essentials` section.
+3. **Target Role** section.
+4. Existing `Professional Links` section.
+
+Keep the existing Target Role UI and behavior as much as possible. This is primarily a relocation, not a redesign.
+
+Requirements:
+
+- Preserve existing target-role fields, selection options, validation, and saved values.
+- Ensure existing users' saved Target Role data remains available after the migration.
+- Update step navigation, progress calculation, Continue/Back behavior, and completion logic so the removed standalone step is no longer treated as a separate destination.
+- Update any internal route or deep-link references that point to the removed step.
+- Prevent duplicate Target Role sections.
+- Do not remove Target Role data from Supabase or reset existing profiles.
+- Verify the journey for both new users and users with partially completed profiles.
+
+---
+
+## 9. Resume Export — Fix the Template Name, Preview Text, and User-Facing Copy
+
+**Scope:** The `Resume Export` screen shown in the screenshots, including the template selection card, its preview/sample resume, the template specifications panel, the `Preview & Export` button, and the explanatory text below it.
+
+### Correct template name and preview
+
+The first template must be named:
+
+`ATS Professional`
+
+Use this description:
+
+`A clean, single-column resume designed for readability and ATS compatibility.`
+
+Use these specifications:
+
+`A4 page · Single column · Consistent spacing and typography.`
+
+The current template card shows a fictional resume sample. Preserve a realistic fictional sample preview, but ensure the template title/name is **ATS Professional**, not the long descriptive sentence or a misplaced description.
+
+- The template name must appear in the correct title position.
+- The descriptive sentence belongs in the description area.
+- The A4/single-column specifications belong in the specifications area.
+- Do not substitute the description for the resume name, user's actual resume identity, or template title.
+- Do not mix fictional sample data into the user's real resume or overwrite the user's profile.
+- Use the same friendly template name consistently in the selection card, PDF preview metadata, export history, and details screen where applicable. Never display internal template IDs to users.
+
+### Replace the bottom explanatory copy
+
+Remove the current wording:
+
+`Preview is free. A new successful PDF export will cost 2 Credits once the export service is available.`
+
+Replace it with concise, polished copy that explains both the cost and the retention window. Use:
+
+`Creating a new resume PDF costs 2 Credits. You can download it for free within 7 days of creation. After 7 days, the PDF expires and is deleted.`
+
+Only display this exact expiration promise if the backend really enforces the seven-day expiry and deletion policy. Inspect the current storage lifecycle, signed download URLs, and expiration/deletion implementation first.
+
+If seven-day deletion is not currently enforced, implement it safely using the existing backend architecture and server-authoritative timestamps. Do not merely display a promise that the system does not fulfill. Retain the permitted export/history metadata according to the existing data-retention design.
+
+Requirements:
+
+- A newly generated successful PDF costs 2 Credits, using the existing server-authoritative accounting.
+- A valid, existing PDF can be downloaded again for free while it remains available.
+- A failed export must not incur a final charge.
+- Expired files must not be offered as downloadable.
+- Do not introduce a fake purchase or payment flow.
+- Keep the `Credit & Export History` navigation available.
+- Keep the main export action visible and usable whenever the existing business rules permit it.
+
+---
+
+## 10. Credit & Export History — Fix Back Navigation and Exit Behavior
+
+**Scope:** The dedicated `Credit & Export History` screen shown with the Available Credits card, All/Resumes/Credits filters, Resume exports, and Credit transactions.
+
+The user currently becomes trapped on this page. Pressing Android system Back displays an app-exit confirmation instead of returning to the previous screen.
+
+Fix the actual navigation stack and back handling.
+
+Requirements:
+
+- Add a clear, visible in-app Back action or equivalent navigation affordance at the top of the Credit & Export History screen.
+- Tapping it must return the user to the screen they navigated from, such as Resume Export or Settings, rather than unexpectedly closing the app.
+- Android system Back must perform the same valid in-app navigation when a previous destination exists.
+- Show an app-exit confirmation only when the user is genuinely at the app's root and no valid back destination exists.
+- Prevent the history screen or its child details from creating an invalid or duplicate navigation stack.
+- If Resume Details is opened from History, Android Back from Resume Details must return to History.
+- Preserve filters, displayed data, and existing Credit History functionality.
+- Do not add redundant bottom navigation to the history/detail screens if that conflicts with the established navigation design.
+
+Test both in-app Back and physical/system Back on Android.
+
+---
+
+## 11. PDF Export Error — Diagnose and Permanently Fix the Root Cause
+
+**Priority: Critical.**
+
+**Scope:** The `Preview` screen's export workflow and the corresponding `Resume Export` screen.
+
+The actual error shown in the screenshot is:
+
+Title: `PDF request issue`
+
+Message:
+
+`The saved document changed. Review the current Preview before creating a new export.`
+
+The same message also appears below the `Preview & Export` button after returning to Resume Export.
+
+The user encounters this while trying to export a resume. Their available balance is 5 Credits, and the screen indicates a new PDF costs 2 Credits.
+
+**Do not simply hide this message, weaken the validation, automatically retry indefinitely, or bypass the export safety checks. Identify exactly why the saved document is considered changed.**
+
+### Required investigation
+
+Trace the entire export flow through the current implementation:
+
+1. The source of the user's resume data.
+2. The authoritative Supabase-saved profile/document state.
+3. The save operation and confirmation returned to the client.
+4. The document/profile revision, version, fingerprint, hash, or snapshot used to build the preview.
+5. The data sent in the export request.
+6. The backend validation comparing the current saved document with the preview/export request.
+7. Any asynchronous save, refresh, canonicalization, serialization, normalization, or state update that can cause a mismatch.
+8. Any client-side recovery cache or persisted local draft that could incorrectly participate in the comparison.
+9. The export reservation/idempotency state and its interaction with document versions.
+
+Identify and report the **specific root cause found in the code and/or reproducible test**, not a guess.
+
+### Cloud-first requirement
+
+Supabase must remain the authoritative source for saved profile data.
+
+- Do not treat a separate local profile copy as an alternative saved version.
+- Do not export from stale local data when the authoritative saved document differs.
+- Do not silently synchronize an outdated local profile over newer cloud data.
+- Do not remove or bypass the server's integrity/version checks simply to make the error disappear.
+- Preserve temporary interrupted-edit recovery only where required by the existing approved specification; recovered edits must not be treated as saved until explicitly saved successfully.
+- A deliberately discarded edit must not be restored or synchronized later.
+- Do not delete existing user data or reset the user's profile as a workaround.
+
+### Correct behavior
+
+After a user edits and saves a profile:
+
+1. Wait for the authoritative save to complete.
+2. Ensure the preview corresponds to the confirmed saved document/revision.
+3. Use the correct authoritative revision or snapshot when requesting the PDF.
+4. If the document changes legitimately between preview and export, refresh/rebuild the preview safely and explain what happened without losing edits.
+5. Do not repeatedly show the same stale-state error after the underlying mismatch has been resolved.
+6. Avoid duplicate export requests, duplicate reservations, and duplicate Credit charges during retries.
+
+Add a focused regression test that reproduces the original failure before the fix and proves the corrected flow afterward.
+
+Also test concurrent or stale document changes so legitimate integrity protection still works.
+
+### Credit safety
+
+- Never charge 2 Credits merely because the request was attempted.
+- Preserve the existing reservation, finalization, release, and idempotency mechanisms.
+- Charge only when a new PDF export succeeds according to the established backend contract.
+- Release or reconcile failed reservations correctly.
+- Existing valid PDF downloads must remain free.
+- Do not perform a live PDF export or debit Credits during automated testing.
+
+In your final report, explicitly state:
+
+- The root cause.
+- The exact code path or condition responsible.
+- The fix implemented.
+- The regression test that verifies the fix.
+- Whether any backend/configuration issue remains.
+
+---
+
+## 12. Education — Make Degree a Dropdown with Localized Options
+
+**Scope:** The `Education` add/edit form, specifically the currently free-text `Degree` field above Institution and Field of study.
+
+Replace the free-text Degree input with a proper selectable dropdown, similar in interaction and visual treatment to the existing Language proficiency selector.
+
+Include a comprehensive set of common qualifications, covering at least:
+
+- High School Diploma
+- Secondary School Certificate
+- Vocational Certificate
+- Vocational Diploma
+- Professional Certificate
+- Certificate
+- Diploma
+- Associate Degree
+- Foundation Degree
+- Bachelor's Degree
+- Postgraduate Diploma
+- Graduate Certificate
+- Master's Degree
+- Professional Doctorate
+- Other
+
+Avoid duplicate or confusing options where one qualification is already adequately represented. Keep `Other` available for qualifications that do not fit the list. If the current data model supports it safely, allow a custom degree title when `Other` is selected; do not make the common selection flow unnecessarily complicated.
+
+### Data and localization requirements
+
+- Store a stable degree identifier/value rather than storing the currently displayed translated label as the canonical value.
+- Display appropriate localized labels in English and Arabic.
+- When rendering the resume, translate the selected degree label according to the **resume language**, not merely the app UI language.
+- Switching the resume language must not change the selected qualification or erase the underlying degree.
+- Preserve existing saved free-text degrees during migration. Map known values to the appropriate options where safe; retain unknown/custom values rather than silently deleting them.
+- Preserve required-field validation and existing save behavior.
+- Match the existing Language selector's usability, spacing, and accessibility without copying unrelated language-specific logic.
+
+Add tests for selection, persistence, legacy values, and English/Arabic resume rendering.
+
+---
+
+## 13. Preserve Existing Approved Requirements
+
+The changes above do not replace or cancel the earlier approved JobiX requirements. Continue to preserve them, especially:
+
+- Cloud-first Supabase persistence, authentication, ownership checks, RLS, and data validation.
+- Safe recovery of interrupted edits and deliberate discard behavior.
+- Profile completion and Continue Profile behavior across logout/login.
+- Correct Arabic RTL and English LTR layout.
+- Server-authoritative Credit balances and export accounting.
+- Free downloads of valid existing PDFs.
+- PDF layout, pagination, and resume content integrity.
+- Correct navigation and nested Android Back behavior.
+- Friendly user-facing template names and filenames.
+- The already successful shared dialog and refresh fixes.
+- The existing app language and resume language distinction.
+- All user data and existing profiles.
+
+Do not reintroduce obsolete UI copy such as `local draft`, `cloud version`, `review latest saved version`, or `back — retain local draft`.
+
+Do not invent unsupported features or claim that an unavailable integration works.
+
+---
+
+## 14. Testing and Verification
+
+Inspect the current implementation and existing tests before changing anything. Prefer small, focused fixes to the actual root causes.
+
+Add/update tests covering:
+
+- Skip placement on onboarding pages 1 and 2 and its absence on page 3.
+- Preservation of the onboarding translation button.
+- Career questionnaire copy without the redundant suffix.
+- Authentication layout and the actual Google sign-in flow/configuration status.
+- Removal of AI counters from every builder step.
+- Reuse of the existing Credits component in builder headers.
+- Improve with JobiX visibility only under supported Description fields.
+- Writing guidance and example text across all relevant editors.
+- Target Role relocation without loss or duplication of saved data.
+- Template name/description/specification placement.
+- Seven-day PDF expiration and deletion behavior where applicable.
+- Credit History in-app Back and Android system Back.
+- The PDF export mismatch root cause and regression scenario.
+- No charge on failed export and no duplicate charge on retry.
+- Degree selection, legacy saved values, and Arabic/English resume rendering.
+- Cloud persistence and the absence of stale-local overwrites.
+
+Run the relevant tests, UI/widget tests and goldens, `flutter analyze --no-pub`, and `git diff --check`.
+
+Do not report a test as passed unless it actually ran and passed. Clearly list any skipped tests and explain why. Review the final diff for unintended changes.
+
+---
+
+## 15. Build and Deliver a Fresh Development APK
+
+After implementation and verification, build **one fresh standard Development ARM64 debug APK** using the existing project configuration:
+
+- Flavor: `development`
+- Configuration: `config/dev.local.json`
+- `JOBIX_ENABLE_PDF_EXPORT=true`
+- Application ID: `com.mhflow.jobix`
+- Artifact: `mobile/jobix/build/app/outputs/flutter-apk/app-arm64-v8a-development-debug.apk`
+
+Verify the actual generated artifact, including:
+
+- Package ID.
+- Build timestamp.
+- File size.
+- SHA-256.
+- Development Supabase/configuration target.
+- Successful build exit code.
+
+Provide the exact artifact path and a usable download link if the environment supports one. Do not substitute a stale APK or the `localPreview` flavor.
+
+Do not install the APK. Do not perform a live export or debit Credits during testing.
+
+**Do not modify Production, Google Play, signing configuration, secrets, or infrastructure. Do not uninstall or clear data from any existing installed app. Stop after delivering the Development APK and the honest implementation/test report. Production remains out of scope until explicitly approved.**
+
+### Final report format
+
+Return a concise but complete report with:
+
+1. **Implemented:** Each requested item, with the exact screens/files changed.
+2. **PDF root cause:** What caused `The saved document changed`, and the verified fix.
+3. **Google sign-in:** Whether the Development flow is functional or what configuration remains.
+4. **Seven-day expiry:** Whether backend expiry/deletion is implemented and verified.
+5. **Tests:** Actual passed/failed/skipped results.
+6. **APK:** Exact path, package ID, build time, size, SHA-256, and download link.
+7. **Outstanding issues:** Anything not implemented or not verified.
+
+Do not mark the work complete merely because the APK builds. The requested behavior and regression tests must also be verified.

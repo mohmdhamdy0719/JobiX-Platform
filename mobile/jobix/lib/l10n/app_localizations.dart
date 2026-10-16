@@ -293,7 +293,7 @@ abstract class AppLocalizations {
   /// No description provided for @contextOnly.
   ///
   /// In en, this message translates to:
-  /// **'Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings. These answers are context only; they do not become CV content or change your access to Jobix.'**
+  /// **'Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings.'**
   String get contextOnly;
 
   /// No description provided for @questionStage.

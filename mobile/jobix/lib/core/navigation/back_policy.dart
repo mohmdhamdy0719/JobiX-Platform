@@ -19,9 +19,13 @@ String? backDestination(Uri uri) {
     return step > 1 ? '/builder/${step - 1}' : '/home';
   }
   if (path.startsWith('/career/')) {
+    if (origin == 'personal' && path == '/career/target-role') {
+      return '/career/personal';
+    }
     return origin == 'review' ? '/builder/6' : '/career';
   }
   if (path == '/resume') return '/career';
+  if (path == '/export-history') return '/resume';
   if (path == '/credits') return '/home';
   if (path == '/confirm' || path == '/forgot') return '/auth?mode=login';
   if (path == '/auth' && uri.queryParameters.containsKey('mode')) {
@@ -62,6 +66,10 @@ class _JobixBackBoundaryState extends State<JobixBackBoundary> {
     try {
       if (handlers.isNotEmpty) {
         await handlers.values.last();
+        return;
+      }
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
         return;
       }
       final parent = backDestination(widget.uri);

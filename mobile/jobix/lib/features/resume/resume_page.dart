@@ -577,8 +577,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                 ),
                 Text(
                   t(
-                    'Preview is free. A new successful PDF export will cost 2 Credits once the export service is available.',
-                    'المعاينة مجانية. سيكلف كل تصدير PDF جديد وناجح رصيدين عند توفر خدمة التصدير.',
+                    'Preview is free. A successful new PDF export costs 2 Credits. Valid downloads are free for 7 days after the file is created.',
+                    'المعاينة مجانية. يكلف تصدير PDF جديد ناجح رصيدين. يتاح تنزيل الملف الصالح مجانًا لمدة ٧ أيام بعد إنشائه.',
                   ),
                 ),
               ],

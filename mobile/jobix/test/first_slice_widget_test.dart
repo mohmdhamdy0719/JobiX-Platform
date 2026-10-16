@@ -240,6 +240,34 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> editFirstEntityField(
+    WidgetTester tester,
+    EntitySection section,
+    String value,
+    String locale,
+  ) async {
+    if (section == EntitySection.education) {
+      final other = find.byKey(const Key('field-degree-other'));
+      if (other.evaluate().isEmpty) {
+        await tester.tap(find.byKey(const Key('field-degree')));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find
+              .text(locale == 'ar' ? 'درجة البكالوريوس' : "Bachelor's degree")
+              .last,
+        );
+        await tester.pumpAndSettle();
+      } else {
+        await tester.enterText(other, value);
+      }
+      return;
+    }
+    await tester.enterText(
+      find.byKey(Key('field-${section.fields.first.name}')),
+      value,
+    );
+  }
+
   void noUnsupportedContent(WidgetTester tester) {
     final text = tester.allWidgets
         .whereType<Text>()
@@ -296,6 +324,14 @@ void main() {
         matchesGoldenFile('goldens/slice_onboarding_en.png'),
       );
       for (var next = 1; next <= 2; next++) {
+        final skip = find.byKey(const Key('skip-onboarding'));
+        expect(skip, findsOneWidget);
+        expect(
+          tester.getRect(skip).top,
+          greaterThan(
+            tester.getRect(find.byKey(const Key('onboarding-continue'))).top,
+          ),
+        );
         await tester.tap(find.byKey(const Key('onboarding-continue')));
         await tester.pumpAndSettle();
         expect(find.byKey(Key('onboarding-title-$next')), findsOneWidget);
@@ -585,7 +621,16 @@ void main() {
             final bounds = tester.getRect(next);
             expect(bounds.bottom, lessThanOrEqualTo(size.height));
             expect(bounds.height, greaterThanOrEqualTo(48));
-            expect(find.byKey(const Key('skip-onboarding')), findsOneWidget);
+            expect(
+              find.byKey(const Key('skip-onboarding')),
+              page < 2 ? findsOneWidget : findsNothing,
+            );
+            if (page < 2) {
+              expect(
+                tester.getRect(find.byKey(const Key('skip-onboarding'))).top,
+                greaterThan(bounds.top),
+              );
+            }
             await tester.tap(next);
             await tester.pumpAndSettle();
           }
@@ -891,6 +936,41 @@ void main() {
       expect(find.byKey(const Key('resume-en')), findsOneWidget);
       expect(find.byKey(const Key('personal-full_name')), findsNothing);
       expect(find.textContaining('Choose a Resume Language'), findsOneWidget);
+    },
+  );
+  testWidgets(
+    'Target Role is placed inside Personal Information without saving pending edits',
+    (tester) async {
+      await pump(tester, state: StartupState.signedIn);
+      final savedTargetRole = api.server.targetRole;
+      await route(tester, '/career/personal');
+      if (find.byKey(const Key('personal-full_name')).evaluate().isEmpty) {
+        await tester.tap(find.byKey(const Key('resume-en')));
+        await tester.pumpAndSettle();
+      }
+      final name = find.byKey(const Key('personal-full_name'));
+      expect(name, findsOneWidget);
+      await tester.enterText(name, 'Local-only name');
+      final editTargetRole = find.byKey(const Key('personal-edit-target-role'));
+      await tester.ensureVisible(editTargetRole);
+      await tester.tap(editTargetRole);
+      await tester.pumpAndSettle();
+      expect(
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/career/target-role',
+      );
+      expect(find.byKey(const Key('editor-target_role')), findsOneWidget);
+      expect(api.requests, isEmpty);
+      expect(api.server.personal['full_name'], isNot('Local-only name'));
+      expect(
+        (await repository.draft(api.server))!.personal['full_name'],
+        'Local-only name',
+      );
+
+      await route(tester, '/career');
+      expect(find.byKey(const Key('career-edit-target_role')), findsNothing);
+      expect(api.server.targetRole, savedTargetRole);
+      expect(api.requests, isEmpty);
     },
   );
   testWidgets(
@@ -1431,9 +1511,7 @@ void main() {
         final repo = EntityRepository(repository, entities.send);
         for (final section in EntitySection.values) {
           await route(tester, '/career/edit/${section.key}/new?origin=career');
-          final field = find.byKey(Key('field-${section.fields.first.name}'));
-          await tester.ensureVisible(field);
-          await tester.enterText(field, 'Unsubmitted');
+          await editFirstEntityField(tester, section, 'Unsubmitted', locale);
           // Back while the local write is still in progress.
           await tester.binding.handlePopRoute();
           await tester.pumpAndSettle();
@@ -1488,10 +1566,7 @@ void main() {
         final id = '${section.key}-saved';
         final path = '/career/edit/${section.key}/$id?origin=review';
         await route(tester, path);
-        await tester.enterText(
-          find.byKey(Key('field-${section.fields.first.name}')),
-          'Changed',
-        );
+        await editFirstEntityField(tester, section, 'Changed', locale);
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
         final copy = AppLocalizations.of(
@@ -1512,11 +1587,12 @@ void main() {
         expect(await repo.draft(api.server.id, section, id), isNull);
         expect(entities.requests, isEmpty);
         await route(tester, path);
+        final firstField = section == EntitySection.education
+            ? 'field-degree-other'
+            : 'field-${section.fields.first.name}';
         expect(
           tester
-              .widget<TextField>(
-                find.byKey(Key('field-${section.fields.first.name}')),
-              )
+              .widget<TextField>(find.byKey(Key(firstField)))
               .controller!
               .text,
           'Original',
@@ -1638,7 +1714,7 @@ void main() {
       );
       await pump(tester, state: StartupState.signedIn, entityOverride: slow);
       await route(tester, '/career/edit/education/new?origin=career');
-      await tester.enterText(find.byKey(const Key('field-degree')), 'BSc');
+      await editFirstEntityField(tester, EntitySection.education, 'BSc', 'en');
       await tester.pump();
       await tester.enterText(
         find.byKey(const Key('field-institution')),
@@ -1663,7 +1739,11 @@ void main() {
   ) async {
     await pump(tester, state: StartupState.signedIn);
     await route(tester, '/career/edit/education/new?origin=career');
-    await tester.enterText(find.byKey(const Key('field-degree')), 'BSc');
+    await editFirstEntityField(tester, EntitySection.education, 'BSc', 'en');
+    await tester.enterText(
+      find.byKey(const Key('field-institution')),
+      'Local school',
+    );
     tester.view.viewInsets = const FakeViewPadding(bottom: 220);
     addTearDown(tester.view.resetViewInsets);
     await tester.pump();
@@ -1674,7 +1754,7 @@ void main() {
       tester
           .widget<EditableText>(
             find.descendant(
-              of: find.byKey(const Key('field-degree')),
+              of: find.byKey(const Key('field-institution')),
               matching: find.byType(EditableText),
             ),
           )

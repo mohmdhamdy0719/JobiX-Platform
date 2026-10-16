@@ -131,9 +131,7 @@ void main() {
       await tester.tap(last);
       await tester.pumpAndSettle();
       expect(
-        find.textContaining(
-          locale == 'ar' ? 'مثال إرشادي فقط' : 'Illustrative example only',
-        ),
+        find.textContaining(locale == 'ar' ? 'مثال:' : 'For example:'),
         findsOneWidget,
       );
     });
@@ -160,10 +158,14 @@ void main() {
         findsOneWidget,
       );
       expect(
+        find.textContaining(locale == 'ar' ? 'مثال:' : 'For example:'),
+        findsWidgets,
+      );
+      expect(
         find.textContaining(
           locale == 'ar' ? 'لا يُضاف إلى ملفك' : 'not added to your profile',
         ),
-        findsWidgets,
+        findsNothing,
       );
     });
 

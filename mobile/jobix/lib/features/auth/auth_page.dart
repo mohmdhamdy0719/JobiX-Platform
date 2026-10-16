@@ -171,10 +171,27 @@ class _AuthPageState extends ConsumerState<AuthPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (gateway || signup || login)
-                const Center(child: BrandMark(size: 64)),
+                Center(child: BrandMark(size: gateway ? 92 : 64)),
               if (gateway || signup || login)
-                const SizedBox(height: TokensV0.space24),
-              SectionHeading(title: title, subtitle: subtitle),
+                SizedBox(height: gateway ? TokensV0.space32 : TokensV0.space24),
+              if (gateway)
+                Column(
+                  children: [
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: TokensV0.space8),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
+                )
+              else
+                SectionHeading(title: title, subtitle: subtitle),
               const SizedBox(height: TokensV0.space24),
               if (notice != null || flow.error)
                 Padding(
@@ -203,8 +220,22 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                   onPressed: () => context.go('/auth?mode=login'),
                   child: Text(copy.loginAction),
                 ),
-                const SizedBox(height: TokensV0.space24),
-                NoticePanel(message: copy.contextOnly),
+                if (googleEnabled) ...[
+                  const SizedBox(height: TokensV0.space12),
+                  OutlinedButton.icon(
+                    key: const Key('auth-google'),
+                    onPressed: busy ? null : google,
+                    icon: const Text(
+                      'G',
+                      style: TextStyle(
+                        color: Color(0xFF4285F4),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 19,
+                      ),
+                    ),
+                    label: Text(copy.googleSignIn),
+                  ),
+                ],
               ] else if (confirm) ...[
                 PrimaryAction(
                   label: copy.loginAction,

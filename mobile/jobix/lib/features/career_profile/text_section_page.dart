@@ -11,6 +11,7 @@ import '../../core/design/form_loading_state.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../builder/builder_scaffold.dart';
+import '../builder/jobix_improvement.dart';
 import '../home/home_page.dart';
 import 'career_profile.dart';
 import 'text_section_repository.dart';
@@ -51,8 +52,11 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   String say(String en, String arabic) => ar ? arabic : en;
   int get maximum => widget.section == 'summary' ? 1000 : 200;
   bool get fromReview => widget.origin == 'review';
+  bool get fromPersonal => widget.origin == 'personal';
   String get backRoute => fromReview
       ? '/builder/6'
+      : fromPersonal
+      ? '/career/personal'
       : widget.builderStep != null
       ? '/builder/${widget.builderStep! - 1}'
       : '/career';
@@ -63,7 +67,9 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
     if (!mounted || dirty) return;
     allowPop = true;
     context.go(
-      !fromReview && widget.builderStep != null
+      fromPersonal
+          ? '/career/personal'
+          : !fromReview && widget.builderStep != null
           ? '/builder/${widget.builderStep! + 1}'
           : '/builder/6',
     );
@@ -369,22 +375,11 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 ),
               ),
               const SizedBox(height: TokensV0.space12),
+              const SizedBox(height: TokensV0.space20),
               if (widget.section == 'summary') ...[
+                JobixImprovement(original: controller.text),
                 const SizedBox(height: TokensV0.space12),
                 const SummaryWritingHints(),
-              ],
-              const SizedBox(height: TokensV0.space20),
-              if (widget.builderStep == null || fromReview) ...[
-                PrimaryAction(
-                  key: Key('save-${widget.section}'),
-                  label: copy.saveAction,
-                  onPressed: busy ? null : (fromReview ? advance : save),
-                ),
-                const SizedBox(height: TokensV0.space12),
-                TextButton(
-                  onPressed: busy ? null : () => requestJobixBack(context),
-                  child: Text(fromReview ? copy.backToReview : copy.backAction),
-                ),
               ],
               if (notice != null)
                 Text(notice!, key: const Key('section-notice')),
@@ -411,6 +406,25 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
         onPressed: busy ? null : () => requestJobixBack(context),
         icon: const Icon(Icons.arrow_back),
         tooltip: copy.backAction,
+      ),
+      bottom: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: busy ? null : () => requestJobixBack(context),
+              child: Text(fromReview ? copy.backToReview : copy.backAction),
+            ),
+          ),
+          const SizedBox(width: TokensV0.space12),
+          Expanded(
+            child: PrimaryAction(
+              key: Key('save-${widget.section}'),
+              label: copy.saveAction,
+              busy: busy,
+              onPressed: fromReview ? advance : save,
+            ),
+          ),
+        ],
       ),
       child: child,
     );

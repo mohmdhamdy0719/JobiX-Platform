@@ -251,15 +251,6 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                       onRemove: (item) => remove(profile, item),
                     ),
                   const SizedBox(height: TokensV0.space24),
-                  if (section == EntitySection.volunteer) ...[
-                    Text(
-                      copy.volunteerEvidenceHint,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: TokensV0.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: TokensV0.space16),
-                  ],
                 ],
               ],
             ),

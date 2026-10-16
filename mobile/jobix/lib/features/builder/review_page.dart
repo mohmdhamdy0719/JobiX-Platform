@@ -234,9 +234,9 @@ class _ReviewBody extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  itemTitle(item).isEmpty
+                                  itemTitle(item, locale).isEmpty
                                       ? copy.notProvided
-                                      : itemTitle(item),
+                                      : itemTitle(item, locale),
                                   style: theme.textTheme.titleSmall,
                                 ),
                                 if (itemSubtitle(copy, item, locale).isNotEmpty)

@@ -81,6 +81,15 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       'profile_id': widget.profileId,
     });
     if (!sameReviewedResume(reviewedDocument, authoritative)) {
+      // The saved source changed after the local Preview was built. Preserve
+      // the server's current document, require another user review, and never
+      // submit the stale document or its version/hash.
+      if (mounted) {
+        setState(() {
+          document = authoritative;
+          reviewRequired = true;
+        });
+      }
       throw const ExportFailure('VERSION_CONFLICT');
     }
     if (!mounted) return;
@@ -664,6 +673,16 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                 'Review rejected request with current Preview',
                 'مراجعة الطلب المرفوض بالمعاينة الحالية',
               ),
+            ),
+          ),
+        if (pending == null && reviewRequired && document != null)
+          TextButton(
+            key: const Key('review-updated-preview'),
+            onPressed: busy
+                ? null
+                : () => _run(() => widget.showDocument(document!)),
+            child: Text(
+              t('Review updated Preview', 'مراجعة المعاينة المحدّثة'),
             ),
           ),
         if (widget.historyOnly && historyLoadFailed)

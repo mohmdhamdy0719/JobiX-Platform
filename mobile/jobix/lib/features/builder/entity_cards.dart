@@ -140,7 +140,7 @@ class _EntityCardState extends State<_EntityCard> {
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).languageCode;
     final item = widget.item;
-    final title = itemTitle(item);
+    final title = itemTitle(item, locale);
     final subtitle = itemSubtitle(copy, item, locale);
     final description = item.text('description');
     final complete = item.complete;

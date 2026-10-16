@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
+import '../../core/navigation/back_policy.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/providers.dart';
 import 'core_api.dart';
@@ -136,7 +137,14 @@ class _CreditsPageState extends ConsumerState<CreditsPage> {
     final profile = ref.watch(firstProfileProvider).valueOrNull;
     return SliceScaffold(
       title: ar ? 'سجل الأرصدة والتصدير' : 'Credit & Export History',
-      leading: const BrandMark(size: 32),
+      leading: widget.initialTab == 1
+          ? IconButton(
+              key: const Key('export-history-back'),
+              tooltip: copy.backAction,
+              icon: const BackButtonIcon(),
+              onPressed: () => requestJobixBack(context),
+            )
+          : const BrandMark(size: 32),
       bottom: widget.initialTab == 1
           ? null
           : const AuthenticatedNavigation(selected: 1),

@@ -78,6 +78,20 @@ class SectionWritingGuidance extends StatelessWidget {
         'المساعدة في تنظيم الفعاليات وتنسيق المتطوعين.',
       ),
     ],
+    EntitySection.project: [
+      (
+        'What did you build or contribute?',
+        'ماذا أنشأت أو أضفت إلى المشروع؟',
+        'Built a reporting dashboard that brought weekly metrics into one view.',
+        'إنشاء لوحة تقارير تجمع المؤشرات الأسبوعية في عرض واحد.',
+      ),
+      (
+        'What tools did you use and what changed as a result?',
+        'ما الأدوات التي استخدمتها وما النتيجة؟',
+        'Used SQL and Python to reduce manual data preparation.',
+        'استخدام SQL وPython لتقليل تجهيز البيانات يدويًا.',
+      ),
+    ],
   };
 
   @override
@@ -85,25 +99,21 @@ class SectionWritingGuidance extends StatelessWidget {
     final prompts = _prompts[section];
     if (prompts == null) return const SizedBox.shrink();
     final arabic = Localizations.localeOf(context).languageCode == 'ar';
-    return Card(
-      elevation: 0,
-      child: ExpansionTile(
-        key: const Key('section-writing-guidance'),
-        title: Text(
-          arabic ? 'أفكار اختيارية للكتابة' : 'Optional writing prompts',
-        ),
-        children: [
-          for (var i = 0; i < prompts.length; i++)
-            ListTile(
-              key: Key('section-writing-prompt-$i'),
-              title: Text(arabic ? prompts[i].$2 : prompts[i].$1),
-              subtitle: Text(
-                '${arabic ? 'مثال إرشادي فقط — لا يُضاف إلى ملفك:' : 'Illustrative example only — not added to your profile:'}\n'
-                '${arabic ? prompts[i].$4 : prompts[i].$3}',
-              ),
+    return ExpansionTile(
+      key: const Key('section-writing-guidance'),
+      tilePadding: EdgeInsets.zero,
+      title: Text(arabic ? 'أفكار اختيارية للكتابة' : 'Writing prompts'),
+      children: [
+        for (var i = 0; i < prompts.length; i++)
+          ListTile(
+            key: Key('section-writing-prompt-$i'),
+            dense: true,
+            title: Text(arabic ? prompts[i].$2 : prompts[i].$1),
+            subtitle: Text(
+              '${arabic ? 'مثال:' : 'For example:'} ${arabic ? prompts[i].$4 : prompts[i].$3}',
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

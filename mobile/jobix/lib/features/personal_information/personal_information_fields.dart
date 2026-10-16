@@ -16,6 +16,7 @@ class PersonalInformationFields extends StatelessWidget {
     required this.errors,
     required this.regionEgypt,
     required this.cityHistory,
+    this.targetRoleSection,
     this.onBlur,
     this.enabled = true,
     super.key,
@@ -29,6 +30,7 @@ class PersonalInformationFields extends StatelessWidget {
   final Set<String> errors;
   final bool regionEgypt, enabled;
   final List<String> cityHistory;
+  final Widget? targetRoleSection;
 
   String? error(String field) {
     if (!errors.contains(field)) return null;
@@ -289,6 +291,10 @@ class PersonalInformationFields extends StatelessWidget {
                 ],
               ),
             ),
+            if (targetRoleSection != null) ...[
+              const SizedBox(height: TokensV0.space24),
+              targetRoleSection!,
+            ],
             const SizedBox(height: TokensV0.space24),
             SliceCard(
               child: Column(

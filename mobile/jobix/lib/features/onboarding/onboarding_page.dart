@@ -92,20 +92,28 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             fillViewport: true,
             header: _OnboardingHeader(
               page: page,
-              skipLabel: copy.skipOnboarding,
-              skipShort: copy.skipShort,
               backLabel: copy.backAction,
               busy: busy,
               showBack: page > 0,
               onBack: () => requestJobixBack(context),
-              onSkip: () => advance(progress, skip: true),
             ),
-            bottom: PrimaryAction(
-              key: const Key('onboarding-continue'),
-              label: copy.continueAction,
-              busy: busy,
-              onPressed: () => advance(progress),
-              icon: Icons.arrow_forward,
+            bottom: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PrimaryAction(
+                  key: const Key('onboarding-continue'),
+                  label: copy.continueAction,
+                  busy: busy,
+                  onPressed: () => advance(progress),
+                  icon: Icons.arrow_forward,
+                ),
+                if (page < 2)
+                  TextButton(
+                    key: const Key('skip-onboarding'),
+                    onPressed: busy ? null : () => advance(progress, skip: true),
+                    child: Text(copy.skipOnboarding),
+                  ),
+              ],
             ),
             child: LayoutBuilder(
               builder: (context, _) {
@@ -177,23 +185,17 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 class _OnboardingHeader extends StatelessWidget {
   const _OnboardingHeader({
     required this.page,
-    required this.skipLabel,
-    required this.skipShort,
     required this.backLabel,
     required this.busy,
     required this.showBack,
     required this.onBack,
-    required this.onSkip,
   });
 
   final int page;
-  final String skipLabel;
-  final String skipShort;
   final String backLabel;
   final bool busy;
   final bool showBack;
   final VoidCallback onBack;
-  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
@@ -250,11 +252,6 @@ class _OnboardingHeader extends StatelessWidget {
                   Expanded(child: Center(child: progress))
                 else
                   const Spacer(),
-                TextButton(
-                  key: const Key('skip-onboarding'),
-                  onPressed: busy ? null : onSkip,
-                  child: Tooltip(message: skipLabel, child: Text(skipShort)),
-                ),
                 const AppLanguageButton(),
               ],
             );

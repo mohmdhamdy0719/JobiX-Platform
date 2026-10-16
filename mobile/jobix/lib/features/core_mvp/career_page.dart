@@ -78,9 +78,9 @@ class _CareerBody extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    itemTitle(item).isEmpty
+                    itemTitle(item, locale).isEmpty
                         ? copy.notProvided
-                        : itemTitle(item),
+                        : itemTitle(item, locale),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -227,15 +227,6 @@ class _CareerBody extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium,
                 ),
-        ),
-        _SectionCard(
-          key: const Key('career-edit-target_role'),
-          icon: Icons.flag_outlined,
-          title: copy.targetRoleOptional,
-          onTap: () => context.go('/career/target-role'),
-          child: profile.targetRole.trim().isEmpty
-              ? empty()
-              : Text(profile.targetRole.trim()),
         ),
         _SectionCard(
           key: const Key('career-experience'),

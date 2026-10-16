@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
@@ -20,6 +21,7 @@ import 'entity_labels.dart';
 import 'save_feedback.dart';
 import 'month_input_formatter.dart';
 import 'section_writing_guidance.dart';
+import 'jobix_improvement.dart';
 
 String editorReturn(EntitySection section, EditorOrigin origin) =>
     switch (origin) {
@@ -45,6 +47,7 @@ class EntityEditorPage extends ConsumerStatefulWidget {
 
 class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   final controllers = <String, TextEditingController>{};
+  final degreeOtherController = TextEditingController();
   CareerProfile? profile;
   ProfileItem? item;
   Map<String, FieldProblem> problems = {};
@@ -73,6 +76,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     for (final c in controllers.values) {
       c.dispose();
     }
+    degreeOtherController.dispose();
     super.dispose();
   }
 
@@ -191,6 +195,14 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           ? source.list(field.name).join(', ')
           : source.text(field.name);
       (controllers[field.name] ??= TextEditingController()).text = text;
+    }
+    if (widget.section == EntitySection.education) {
+      final value = source.text('degree');
+      degreeOtherController.text = value.startsWith('other:')
+          ? value.substring(6)
+          : degreeCodes.contains(value)
+          ? ''
+          : value;
     }
   }
 
@@ -378,6 +390,10 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             const SizedBox(height: TokensV0.space16),
             for (final field in widget.section.fields) ...[
               _field(copy, field),
+              if (field.name == 'description') ...[
+                const SizedBox(height: TokensV0.space8),
+                JobixImprovement(original: item!.text('description')),
+              ],
               const SizedBox(height: TokensV0.space16),
             ],
           ],
@@ -413,6 +429,84 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             DropdownMenuItem(value: p, child: Text(proficiencyLabel(copy, p))),
         ],
         onChanged: busy ? null : (v) => edit(field.name, v),
+      );
+    }
+    if (widget.section == EntitySection.education && field.name == 'degree') {
+      final selected = degreeOption(item!.text('degree'));
+      final ar = copy.localeName.startsWith('ar');
+      const labelsEn = {
+        'degree:high_school': 'High school',
+        'degree:associate': 'Associate degree',
+        'degree:bachelor': "Bachelor's degree",
+        'degree:master': "Master's degree",
+        'degree:doctorate': 'Doctorate',
+        'degree:diploma': 'Diploma',
+        'degree:certificate': 'Certificate',
+        'degree:other': 'Other',
+      };
+      const labelsAr = {
+        'degree:high_school': 'الثانوية العامة',
+        'degree:associate': 'درجة جامعية متوسطة',
+        'degree:bachelor': 'درجة البكالوريوس',
+        'degree:master': 'درجة الماجستير',
+        'degree:doctorate': 'درجة الدكتوراه',
+        'degree:diploma': 'دبلوم',
+        'degree:certificate': 'شهادة',
+        'degree:other': 'أخرى',
+      };
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DropdownButtonFormField<String>(
+            key: key,
+            value: selected.isEmpty ? null : selected,
+            decoration: InputDecoration(
+              labelText: '$label *',
+              errorText: _error(copy, field),
+            ),
+            items: [
+              for (final option in degreeCodes)
+                DropdownMenuItem(
+                  value: option,
+                  child: Text((ar ? labelsAr : labelsEn)[option]!),
+                ),
+            ],
+            onChanged: busy
+                ? null
+                : (value) {
+                    if (value == null) return;
+                    if (value == 'degree:other') {
+                      edit(
+                        'degree',
+                        degreeOtherController.text.trim().isEmpty
+                            ? ''
+                            : 'other:${degreeOtherController.text}',
+                      );
+                    } else {
+                      degreeOtherController.clear();
+                      edit('degree', value);
+                    }
+                  },
+          ),
+          if (selected == 'degree:other') ...[
+            const SizedBox(height: TokensV0.space8),
+            TextField(
+              key: const Key('field-degree-other'),
+              enabled: !busy,
+              controller: degreeOtherController,
+              inputFormatters: [LengthLimitingTextInputFormatter(194)],
+              decoration: InputDecoration(
+                labelText: ar ? 'اكتب المؤهل' : 'Enter qualification',
+                errorText:
+                    saveAttempted && degreeOtherController.text.trim().isEmpty
+                    ? copy.problemRequired
+                    : null,
+              ),
+              onChanged: (value) =>
+                  edit('degree', value.trim().isEmpty ? '' : 'other:$value'),
+            ),
+          ],
+        ],
       );
     }
     final disabledEnd =
@@ -505,10 +599,20 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       arabic
           ? 'صِف القضية التي دعمتها ودورك وكيف أسهمت.'
           : 'Describe the cause you supported, your role, and how you contributed.',
+    EntitySection.project =>
+      arabic
+          ? 'صِف ما أنشأته، والأدوات التي استخدمتها، والنتيجة.'
+          : 'Describe what you built, the tools you used, and the result.',
     _ => null,
   };
 
   String? _error(AppLocalizations copy, SectionField field) {
+    if (widget.section == EntitySection.education &&
+        field.name == 'degree' &&
+        item!.text('degree').startsWith('other:') &&
+        item!.text('degree').substring(6).trim().isEmpty) {
+      return copy.problemRequired;
+    }
     final problem = problems[field.name];
     return problem == null ? null : problemText(copy, problem);
   }

@@ -58,6 +58,79 @@ String fieldLabel(AppLocalizations copy, EntitySection section, String field) =>
       _ => field,
     };
 
+const degreeCodes = <String>[
+  'degree:high_school',
+  'degree:associate',
+  'degree:bachelor',
+  'degree:master',
+  'degree:doctorate',
+  'degree:diploma',
+  'degree:certificate',
+  'degree:other',
+];
+
+String degreeOption(String saved) {
+  if (degreeCodes.contains(saved)) return saved;
+  if (saved.trim().isEmpty) return '';
+  final value = saved.trim().toLowerCase();
+  if (value.startsWith('other:')) return 'degree:other';
+  if (['high school', 'high-school', 'secondary school'].contains(value)) {
+    return 'degree:high_school';
+  }
+  if (['associate', "associate's", 'associate degree'].contains(value)) {
+    return 'degree:associate';
+  }
+  if ([
+    'bachelor',
+    "bachelor's",
+    'bachelor degree',
+    "bachelor's degree",
+  ].contains(value)) {
+    return 'degree:bachelor';
+  }
+  if ([
+    'master',
+    "master's",
+    'master degree',
+    "master's degree",
+  ].contains(value)) {
+    return 'degree:master';
+  }
+  if (['doctorate', 'doctoral', 'phd', 'ph.d.'].contains(value)) {
+    return 'degree:doctorate';
+  }
+  if (value == 'diploma') return 'degree:diploma';
+  if (value == 'certificate') return 'degree:certificate';
+  return 'degree:other';
+}
+
+String degreeLabel(String saved, String language) {
+  final code = degreeOption(saved);
+  if (code == 'degree:other') {
+    if (saved.startsWith('other:')) return saved.substring(6);
+    return saved;
+  }
+  const english = {
+    'degree:high_school': 'High school',
+    'degree:associate': 'Associate degree',
+    'degree:bachelor': "Bachelor's degree",
+    'degree:master': "Master's degree",
+    'degree:doctorate': 'Doctorate',
+    'degree:diploma': 'Diploma',
+    'degree:certificate': 'Certificate',
+  };
+  const arabic = {
+    'degree:high_school': 'الثانوية العامة',
+    'degree:associate': 'درجة جامعية متوسطة',
+    'degree:bachelor': 'درجة البكالوريوس',
+    'degree:master': 'درجة الماجستير',
+    'degree:doctorate': 'درجة الدكتوراه',
+    'degree:diploma': 'دبلوم',
+    'degree:certificate': 'شهادة',
+  };
+  return (language == 'ar' ? arabic : english)[code] ?? saved;
+}
+
 String problemText(AppLocalizations copy, FieldProblem problem) =>
     switch (problem) {
       FieldProblem.tooLong => copy.problemTooLong,
@@ -104,13 +177,14 @@ String monthLabel(String value, String locale) {
   return '${(locale == 'ar' ? ar : en)[month - 1]} ${match.group(1)}';
 }
 
-String itemTitle(ProfileItem item) => switch (item.section) {
-  EntitySection.experience => item.text('job_title'),
-  EntitySection.volunteer => item.text('role'),
-  EntitySection.education => item.text('degree'),
-  EntitySection.achievement => item.text('title'),
-  _ => item.text('name'),
-};
+String itemTitle(ProfileItem item, [String language = 'en']) =>
+    switch (item.section) {
+      EntitySection.experience => item.text('job_title'),
+      EntitySection.volunteer => item.text('role'),
+      EntitySection.education => degreeLabel(item.text('degree'), language),
+      EntitySection.achievement => item.text('title'),
+      _ => item.text('name'),
+    };
 
 String itemSubtitle(AppLocalizations copy, ProfileItem item, String locale) {
   String month(String field) => monthLabel(item.text(field), locale);
