@@ -2,6 +2,21 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
+## Current product intent: normal Development export
+
+Ship Local Preview and PDF Export together for physical Android validation.
+PDF Export must be a normal Credit-priced feature, not a one-export trial that
+automatically relocks. Preserve 2-Credit new exports, free valid downloads,
+existing limits, idempotency, authentication, private Worker and cleanup.
+
+**Why:** The owner explicitly replaced the earlier one-export testing scope
+with a working MVP journey and approved documented initial cost estimates.
+
+**How to apply:** Do not reuse the historical personal-export-window tooling
+as the normal feature-enablement mechanism. Development accounting and gates
+are in scope, but report any necessary new Cloud Run revision/infrastructure
+blocker before proceeding; production remains unauthorized.
+
 ## Owner-selected export gate semantics
 
 `JOBIX_EXPORT_ENABLED` is a new-export/billing gate. While false, block

@@ -9,11 +9,11 @@ Do not treat a region listed in a fetched pricing page as proof that the display
 
 **How to apply:** Verify region-selected SKUs/calculator output explicitly. Label default-region numerical models as references and mark unavailable regional rates UNKNOWN rather than inventing an uplift.
 
-For current PDF-export readiness, no cost exclusions are approved. Do not assume zero cost for download egress, Supabase, or shared recovery/cleanup, and do not invent a contingency reserve. Keep the live test blocked until modeled rates and residual-cost bounds are evidence-backed and an appropriate shared reserve is justified.
+For Development PDF-export readiness, the owner now approves reasonable, documented conservative non-zero engineering estimates for all five cost inputs, including a justified initial shared reserve. Do not assume zero download, Supabase, or cleanup costs, or present estimates as measured provider costs.
 
-**Why:** The owner explicitly chose evidence-backed coverage with no exclusions at this stage.
+**Why:** The owner superseded the earlier evidence-complete blocking requirement, preferring initial estimates that can be validated and adjusted after real usage over indefinite analysis.
 
-**How to apply:** Keep accounting_ready=false and all export gates disabled. This cost-scope decision does not authorize migration application, deployment, or a live export.
+**How to apply:** Development accounting configuration and normal export enablement are authorized once estimates are justified and relevant tests pass. New Cloud Run revisions or infrastructure changes require identifying and reporting the specific necessary blocker first. Preserve production and do not claim a successful real export without evidence.
 
 Distinguish alerts-only budgets from service spend-cap budgets, and recheck current official documentation before claiming that Google budgets cannot enforce limits.
 

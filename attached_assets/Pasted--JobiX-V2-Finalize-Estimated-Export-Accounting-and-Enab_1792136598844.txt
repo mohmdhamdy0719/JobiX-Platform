@@ -1,0 +1,110 @@
+# JobiX V2 — Finalize Estimated Export Accounting and Enable Dev PDF Export
+
+We have spent enough time investigating the PDF export cost model. I want you to make a practical engineering decision using **all existing project context, prior diagnostics, migration 021, the cost worksheet, implementation details, and the observed Google Cloud and Supabase usage**.
+
+The goal is to get the PDF Export MVP working in the **Development environment** so we can test the real Preview → Export → Download flow on a physical Android device.
+
+Do not continue an open-ended investigation or ask me to manually collect more reports unless a specific blocker makes the change unsafe or impossible.
+
+## 1. Review the complete existing implementation
+
+Before changing anything, inspect the current implementation and the existing cost worksheet, including:
+
+- Migration `202610100021_resume_export_cost_output_unit.sql`.
+- The five cost inputs and the current estimator formula.
+- The export reservation, credit debit, release, idempotency, retry, and recovery flows.
+- The actual Google Cloud Worker, Gateway, GCS storage, signed-download, and cleanup behavior.
+- Existing export limits, accounting tests, feature flags, and environment guards.
+- The existing agreed JobiX user journey and MVP scope.
+
+Use the project evidence and previously collected diagnostics. Do not invent evidence or claim that an estimate is an observed provider cost.
+
+## 2. Use the strongest available evidence
+
+Known findings include:
+
+- Google Cloud project: `mhflow-jobix`.
+- Region: `me-central1` (Doha).
+- Worker: `jobix-dev-pdf-export`.
+- Gateway: `jobix-dev-export-gateway`.
+- Private bucket: `mhflow-jobix-dev-pdfs`.
+- Worker configuration: 2 vCPU, 2 GiB RAM, request-based billing, minimum scale 0, maximum scale 3, concurrency 2, timeout 900 seconds.
+- Worker and export feature gates are currently disabled.
+- The bucket has a 7-day lifecycle deletion rule for PDF objects and Soft Delete is enabled for 7 days.
+- Supabase's current billing-cycle dashboard showed 145 Edge Function invocations, 0.08 GB Egress, 0.10 GB Log Ingestion, and 37.78 GB Log Query, with no displayed overages.
+- The read-only query for `public.export_cost_attempts` returned zero recorded export attempts for 2026-10-09 through 2026-10-16 UTC. This does not prove that there was no other cloud activity.
+- The billing CSV contained Cloud Run CPU and memory charges, a small intercontinental egress charge, and small Vertex AI charges. These amounts cannot be reliably attributed to individual PDF exports.
+- The existing worksheet estimates a conservative Cloud Run instance rate of 75 micro-USD per runtime second, a 7-day Standard Storage rate of 5,290 micro-USD per GiB, and a provisional storage-operation rate of 7 micro-USD per operation. Verify these against the actual implementation and existing worksheet before using them.
+- Existing estimator limits include 1,800,000 ms runtime, 10 MiB maximum PDF output, and 24 counted storage operations.
+- The existing estimator formula is:
+
+  `E = H + ceil(T_ms * R / 1000) + ceil(B_bytes * O / 1,073,741,824) + N_ops * S`
+
+  Where `H` is per-export overhead, `R` is runtime cost per second, `O` is storage cost per GiB over 7 days, and `S` is cost per storage operation.
+
+These are starting points, not permission to pretend that every cost component has been measured.
+
+## 3. Choose practical initial values for all five fields
+
+Determine and document initial, conservative, non-zero estimates for:
+
+1. `shared_cost_reserve_microusd`
+2. `runtime_cost_microusd_per_second`
+3. `output_cost_microusd_per_gib_7d`
+4. `storage_operation_cost_microusd`
+5. `per_export_overhead_microusd`
+
+For each value, document:
+
+- The selected integer value in micro-USD.
+- The evidence supporting it.
+- Any assumptions or unmeasured costs.
+- Whether the estimate is conservative, and why.
+- How the value interacts with the current formula and existing limits.
+
+Account for the 7-day lifecycle rule and the separate 7-day Soft Delete retention without double-counting storage. Review which storage operations the Worker actually counts, and identify any uncounted cleanup, Gateway, download, request, logging, or other costs that need a reasonable overhead allowance.
+
+Do not use the total Supabase or Google Cloud billing amount as if it were the cost of one export. Do not count provider costs twice. Do not set an unmeasured field to zero merely to make the estimator pass.
+
+For `shared_cost_reserve_microusd`, choose a reasonable initial operational reserve based on the best available evidence and explicitly state its limitations. Do not describe the reserve as a guaranteed invoice ceiling.
+
+**I prefer a reasonable, documented engineering estimate that we can validate and adjust after real usage over indefinite analysis.**
+
+## 4. Apply the estimates and enable Development export
+
+Once you have selected and justified the five values:
+
+- Apply them through the existing supported migration/configuration mechanism.
+- Set `accounting_ready = true` for the Development environment only.
+- Enable the Development PDF export feature gates required by the existing implementation.
+- Preserve the existing credit pricing: 2 Credits for a new export, with an existing valid download remaining free.
+- Preserve the existing rate limits: 1 export per 5 minutes, 3 per hour, 5 per day, and 10 per week.
+- Preserve idempotency, reservation/debit/release correctness, retry safety, and cleanup/recovery behavior.
+- Do not weaken authentication, authorization, ownership checks, PDF size limits, runtime limits, or private-bucket access.
+- Do not expose service-role keys, signed URLs, or other secrets in logs.
+- Do not enable production export or change production data, configuration, IAM, or secrets.
+- Do not create new BigQuery datasets or enable billing exports solely to complete this task.
+
+Use the project's existing approved tooling and migration conventions. Do not modify historical migrations to conceal changes. Do not deploy a new Google Cloud revision or change cloud infrastructure unless a specific required blocker is identified and explicitly reported first.
+
+## 5. Verify before declaring success
+
+Run the relevant existing tests, including cost calculation, accounting readiness, credit accounting, idempotency, rate limits, failure/release, retry, and recovery tests.
+
+Perform read-only verification after the changes and report:
+
+- The exact five values stored in Development.
+- The final `accounting_ready` and feature-gate values.
+- The exact migration/configuration changes made.
+- Test results and any remaining failures.
+- A worked estimate for a typical export and for the configured maximum runtime/output limits.
+- Which costs remain estimates rather than measured costs.
+- Any issue that still prevents a real Android Preview → Export → Download test.
+
+Do not claim that a real PDF export succeeded unless you actually verified it.
+
+## Definition of Done
+
+The Development estimator has five documented, defensible initial estimates; `accounting_ready` is true; the Development export gates are enabled; accounting and security tests pass; and the project is ready for an end-to-end Android export test.
+
+If a concrete safety or correctness blocker prevents completion, stop at that blocker and explain the exact reason and smallest necessary fix. Do not silently bypass the blocker.
