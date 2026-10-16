@@ -31,6 +31,9 @@ android {
 
     flavorDimensions += "previewMode"
     productFlavors {
+        create("development") {
+            dimension = "previewMode"
+        }
         create("localPreview") {
             dimension = "previewMode"
             applicationIdSuffix = ".localpreview"
