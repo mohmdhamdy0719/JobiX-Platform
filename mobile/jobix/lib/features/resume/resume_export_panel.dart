@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/design/jobix_dialog.dart';
 import '../../core/providers.dart';
+import '../core_mvp/core_api.dart';
 import '../../l10n/app_localizations.dart';
 import '../career_profile/career_profile.dart';
 import 'resume_document.dart';
 import 'resume_experience_widgets.dart';
 import 'resume_export_service.dart';
 import 'resume_preview_snapshot.dart';
+import 'resume_credit_notice.dart';
 export 'resume_export_service.dart' show ExportFailure;
 
 /// Rollout is closed by default; this widget never grants/debits Credits.
@@ -44,7 +47,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   Map<String, dynamic>? document, current;
   List<Map<String, dynamic>> jobs = [];
   String? pending, message, cursor;
-  bool busy = false;
+  bool busy = false, failureDialogOpen = false;
   final Set<String> downloadingExportIds = {};
   bool get savingPdf => downloadingExportIds.isNotEmpty;
   bool reviewRequired = false;
@@ -76,7 +79,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     if (!mounted) return;
     setState(() => document = authoritative);
     await _submit(historicalId ?? widget.historicalExportId);
-  });
+  }, showFailureDialog: true);
   @override
   void initState() {
     super.initState();
@@ -133,6 +136,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   Future<void> _run(
     Future<void> Function() operation, {
     bool allowWhileBusy = false,
+    bool showFailureDialog = false,
   }) async {
     if (busy && !allowWhileBusy) return;
     if (mounted && !allowWhileBusy) {
@@ -145,10 +149,10 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       await operation();
     } catch (error) {
       if (mounted) {
+        final code = error is ExportFailure
+            ? error.code
+            : 'SERVICE_UNAVAILABLE';
         setState(() {
-          final code = error is ExportFailure
-              ? error.code
-              : 'SERVICE_UNAVAILABLE';
           final retryAfter = error is ExportFailure
               ? error.retryAfterSeconds
               : null;
@@ -204,6 +208,48 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                   ),
                 };
         });
+        if (code == 'CREDIT_INSUFFICIENT') {
+          ref.invalidate(coreSummaryProvider);
+        }
+        if (showFailureDialog && mounted) {
+          setState(() => failureDialogOpen = true);
+          await showDialog<void>(
+            context: context,
+            builder: (dialog) => JobixAlertDialog(
+              icon: Icon(
+                code == 'CREDIT_INSUFFICIENT'
+                    ? Icons.account_balance_wallet_outlined
+                    : Icons.error_outline,
+              ),
+              title: Text(
+                code == 'CREDIT_INSUFFICIENT'
+                    ? t('PDF export was not accepted', 'لم يُقبل تصدير PDF')
+                    : t('PDF request issue', 'مشكلة في طلب PDF'),
+              ),
+              content: Text(
+                message ??
+                    AppLocalizations.of(context)!.exportTemporarilyUnavailable,
+              ),
+              actions: [
+                if (code == 'CREDIT_INSUFFICIENT')
+                  JobixDialogAction.secondary(
+                    onPressed: () {
+                      Navigator.pop(dialog);
+                      context.push('/credits');
+                    },
+                    child: Text(
+                      t('Review Credit history', 'مراجعة سجل الرصيد'),
+                    ),
+                  ),
+                JobixDialogAction.secondary(
+                  onPressed: () => Navigator.pop(dialog),
+                  child: Text(t('Close', 'إغلاق')),
+                ),
+              ],
+            ),
+          );
+          if (mounted) setState(() => failureDialogOpen = false);
+        }
       }
     } finally {
       if (mounted && !allowWhileBusy) setState(() => busy = false);
@@ -259,7 +305,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => JobixAlertDialog(
         title: Text(t('Create a new PDF?', 'إنشاء PDF جديد؟')),
         content: Text(
           t(
@@ -268,11 +314,11 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
           ),
         ),
         actions: [
-          TextButton(
+          JobixDialogAction.secondary(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(t('Cancel', 'رجوع')),
           ),
-          TextButton(
+          JobixDialogAction.primary(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(t('Create — 2 Credits', 'إنشاء — رصيدان')),
           ),
@@ -348,6 +394,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     final command = Map<String, dynamic>.from(packet['command'] as Map);
     command['request_id'] = newCommandKey(); // Logical key/payload unchanged.
     final ack = await _call(packet['action'] as String, command);
+    ref.invalidate(coreSummaryProvider);
     final db = await ref.read(databaseProvider.future);
     if (client.auth.currentUser?.id != user) throw StateError('AUTH_REQUIRED');
     if (packet['display'] is Map) {
@@ -464,6 +511,15 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   };
   @override
   Widget build(BuildContext context) {
+    final creditState = !widget.experience && !widget.historyOnly
+        ? ref.watch(coreSummaryProvider)
+        : null;
+    final availableCredits = creditState?.valueOrNull?.balance.available;
+    final canAffordNewExport =
+        availableCredits != null &&
+        availableCredits >= 2 &&
+        !(creditState?.isLoading ?? true) &&
+        !(creditState?.hasError ?? true);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -474,7 +530,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               'التصديرات الجديدة معطّلة حاليًا. المعاينة وتنزيل الملفات الصالحة الموجودة متاحان.',
             ),
           ),
-        if (message != null) Text(message!),
+        if (message != null && !failureDialogOpen) Text(message!),
         if (busy) const LinearProgressIndicator(),
         if (!widget.experience && !widget.historyOnly)
           TextButton(
@@ -512,20 +568,31 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                 ),
               ),
           if (!widget.experience)
+            ResumeCreditNotice(
+              availableCredits: availableCredits,
+              loading: creditState?.isLoading ?? false,
+              unavailable: creditState?.hasError ?? false,
+              onRetry: () => ref.invalidate(coreSummaryProvider),
+              onReviewHistory: () => context.push('/credits'),
+            ),
+          if (!widget.experience)
             TextButton(
               onPressed:
                   !enabled ||
                       busy ||
                       pending != null ||
+                      !canAffordNewExport ||
                       (document!['issues'] as List).isNotEmpty
                   ? null
-                  : () => _run(_submit),
+                  : () => _run(_submit, showFailureDialog: true),
               child: Text(t('Create PDF — 2 Credits', 'إنشاء PDF — رصيدان')),
             ),
         ],
         if (pending != null)
           TextButton(
-            onPressed: busy ? null : () => _run(_retry),
+            onPressed: busy
+                ? null
+                : () => _run(_retry, showFailureDialog: true),
             child: Text(
               t('Retry the saved request', 'إعادة محاولة الطلب المحفوظ'),
             ),
@@ -592,6 +659,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                     : () => _run(
                         () => _download(job['id'] as String),
                         allowWhileBusy: true,
+                        showFailureDialog: true,
                       ),
                 downloading: downloadingExportIds.contains(job['id'] as String),
                 onAgain:

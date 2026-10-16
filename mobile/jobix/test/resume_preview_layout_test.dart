@@ -46,6 +46,7 @@ void main() {
               busy: false,
               exportEnabled: false,
               valid: true,
+              availableCredits: 2,
               onExport: null,
               onEditProfile: () => edits++,
               onPrevious: null,
@@ -113,6 +114,7 @@ void main() {
           busy: false,
           exportEnabled: true,
           valid: true,
+          availableCredits: 2,
           onExport: () => exports++,
           onEditProfile: () {},
           onPrevious: () {},
@@ -125,4 +127,211 @@ void main() {
     expect(exports, 1);
     expect(find.text('Page 2 of 2'), findsOneWidget);
   });
+
+  Future<void> pumpBalanceState(
+    WidgetTester tester, {
+    required String locale,
+    int? balance,
+    bool loading = false,
+    bool unavailable = false,
+    VoidCallback? onExport,
+    VoidCallback? onRetry,
+    VoidCallback? onReview,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: Locale(locale),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: foundationTheme(languageCode: locale),
+        home: ResumePreviewLayout(
+          paper: const Text('Synthetic resume document'),
+          language: locale,
+          page: 0,
+          pages: 1,
+          busy: false,
+          exportEnabled: true,
+          valid: true,
+          availableCredits: balance,
+          creditBalanceLoading: loading,
+          creditBalanceUnavailable: unavailable,
+          onExport: onExport,
+          onRetryCredits: onRetry,
+          onReviewCredits: onReview,
+          onEditProfile: () {},
+          onPrevious: null,
+          onNext: null,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  for (final locale in ['en', 'ar']) {
+    for (final balance in [0, 1, 2]) {
+      testWidgets(
+        '$locale new-export balance $balance gates only new PDF creation',
+        (tester) async {
+          var exports = 0, history = 0;
+          await pumpBalanceState(
+            tester,
+            locale: locale,
+            balance: balance,
+            onExport: () => exports++,
+            onReview: () => history++,
+          );
+          final exportButton = tester.widget<FilledButton>(
+            find.byWidgetPredicate((widget) => widget is FilledButton),
+          );
+          expect(exportButton.onPressed == null, balance < 2);
+          if (balance < 2) {
+            expect(
+              find.textContaining(
+                locale == 'en' ? 'New PDF: 2 Credits' : 'ملف PDF جديد: رصيدان',
+              ),
+              findsOneWidget,
+            );
+            expect(
+              find.textContaining(
+                locale == 'en'
+                    ? 'currently have $balance'
+                    : 'رصيدك الحالي $balance',
+              ),
+              findsOneWidget,
+            );
+            expect(
+              find.textContaining(locale == 'en' ? 'purchases' : 'شراء'),
+              findsOneWidget,
+            );
+            await tester.tap(
+              find.text(
+                locale == 'en' ? 'Review Credit history' : 'مراجعة سجل الرصيد',
+              ),
+            );
+            expect(history, 1);
+            expect(exports, 0);
+          } else {
+            expect(exportButton.onPressed, isNotNull);
+            await tester.tap(
+              find.text(locale == 'en' ? 'Export PDF' : 'تصدير PDF'),
+            );
+            expect(exports, 1);
+          }
+        },
+      );
+    }
+
+    testWidgets(
+      '$locale unknown and refreshing balances never claim low balance',
+      (tester) async {
+        var retries = 0;
+        await pumpBalanceState(
+          tester,
+          locale: locale,
+          loading: true,
+          onRetry: () => retries++,
+        );
+        expect(
+          find.text(
+            locale == 'en'
+                ? 'Checking Credit balance'
+                : 'جارٍ التحقق من الرصيد',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byWidgetPredicate((widget) => widget is FilledButton),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        await pumpBalanceState(
+          tester,
+          locale: locale,
+          balance: 0,
+          loading: true,
+          onRetry: () => retries++,
+        );
+        expect(
+          find.text(
+            locale == 'en'
+                ? 'Checking Credit balance'
+                : 'جارٍ التحقق من الرصيد',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(
+            locale == 'en' ? 'Not enough Credits' : 'الرصيد غير كافٍ',
+          ),
+          findsNothing,
+        );
+
+        await pumpBalanceState(
+          tester,
+          locale: locale,
+          unavailable: true,
+          onRetry: () => retries++,
+        );
+        expect(
+          find.text(
+            locale == 'en' ? 'Credit balance unavailable' : 'الرصيد غير متاح',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(
+            locale == 'en' ? 'Not enough Credits' : 'الرصيد غير كافٍ',
+          ),
+          findsNothing,
+        );
+        await tester.tap(
+          find.text(
+            locale == 'en' ? 'Retry balance check' : 'إعادة التحقق من الرصيد',
+          ),
+        );
+        expect(retries, 1);
+      },
+    );
+  }
+
+  testWidgets(
+    'refreshed authoritative balance enables the same preview action',
+    (tester) async {
+      var exports = 0;
+      await pumpBalanceState(
+        tester,
+        locale: 'en',
+        balance: 1,
+        onExport: () => exports++,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byWidgetPredicate((widget) => widget is FilledButton),
+            )
+            .onPressed,
+        isNull,
+      );
+      await pumpBalanceState(
+        tester,
+        locale: 'en',
+        balance: 2,
+        onExport: () => exports++,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byWidgetPredicate((widget) => widget is FilledButton),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      await tester.tap(find.text('Export PDF'));
+      expect(exports, 1);
+    },
+  );
 }

@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/design/jobix_dialog.dart';
 import '../../core/providers.dart';
 import '../auth/auth_controller.dart';
 import '../../l10n/app_localizations.dart';
 import 'resume_export_service.dart';
+import '../core_mvp/core_api.dart';
 import 'resume_experience_widgets.dart';
 
 class ResumeOperationPage extends ConsumerStatefulWidget {
@@ -30,6 +32,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
   bool busy = false;
   bool refreshInFlight = false;
   bool saving = false;
+  bool failureDialogOpen = false;
   int generation = 0;
   int pollStep = 0;
   Stopwatch? pollClock;
@@ -116,6 +119,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       });
       timer?.cancel();
       if (terminal.contains(data['state'])) {
+        ref.invalidate(coreSummaryProvider);
         pollClock = null;
         pollStep = 0;
       } else {
@@ -193,19 +197,33 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       }
     } catch (error) {
       if (mounted) {
-        setState(
-          () => message =
-              error is ExportFailure &&
-                  [
-                    'EXPORT_EXPIRED',
-                    'EXPORT_OBJECT_MISSING',
-                  ].contains(error.code)
-              ? t(
-                  'File unavailable. It will not be regenerated or charged automatically.',
-                  'الملف غير متاح. لن تتم إعادة إنشائه أو خصم أرصدة تلقائيًا.',
-                )
-              : AppLocalizations.of(context)!.exportTemporarilyUnavailable,
+        final failureMessage =
+            error is ExportFailure &&
+                ['EXPORT_EXPIRED', 'EXPORT_OBJECT_MISSING'].contains(error.code)
+            ? t(
+                'File unavailable. It will not be regenerated or charged automatically.',
+                'الملف غير متاح. لن تتم إعادة إنشائه أو خصم أرصدة تلقائيًا.',
+              )
+            : AppLocalizations.of(context)!.exportTemporarilyUnavailable;
+        setState(() {
+          message = failureMessage;
+          failureDialogOpen = true;
+        });
+        await showDialog<void>(
+          context: context,
+          builder: (dialog) => JobixAlertDialog(
+            icon: const Icon(Icons.download_outlined),
+            title: Text(t('PDF download failed', 'فشل تنزيل PDF')),
+            content: Text(failureMessage),
+            actions: [
+              JobixDialogAction.secondary(
+                onPressed: () => Navigator.pop(dialog),
+                child: Text(t('Close', 'إغلاق')),
+              ),
+            ],
+          ),
         );
+        if (mounted) setState(() => failureDialogOpen = false);
       }
     } finally {
       saving = false;
@@ -245,7 +263,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
         child: Column(
           children: [
             if (busy) const LinearProgressIndicator(),
-            if (message != null)
+            if (message != null && !failureDialogOpen)
               Padding(padding: const EdgeInsets.all(16), child: Text(message!)),
             Expanded(
               child: job == null

@@ -205,6 +205,40 @@ ThemeData foundationTheme({String? languageCode}) {
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
     ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: TokensV0.surfaceCard,
+      surfaceTintColor: Colors.transparent,
+      elevation: 8,
+      shadowColor: TokensV0.navy.withValues(alpha: .18),
+      shape: RoundedRectangleBorder(
+        side: const BorderSide(color: TokensV0.border),
+        borderRadius: BorderRadius.circular(TokensV0.panelRadius),
+      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      iconColor: TokensV0.primary,
+      titleTextStyle: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: const [
+          TokensV0.fontFamily,
+          TokensV0.arabicFontFamily,
+        ],
+        color: TokensV0.navy,
+        fontSize: 18,
+        height: headingHeight,
+        fontWeight: FontWeight.w700,
+      ),
+      contentTextStyle: TextStyle(
+        fontFamily: family,
+        fontFamilyFallback: const [
+          TokensV0.fontFamily,
+          TokensV0.arabicFontFamily,
+        ],
+        color: TokensV0.textSecondary,
+        fontSize: TokensV0.bodyMediumSize,
+        height: bodyHeight,
+      ),
+      actionsPadding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 16),
+    ),
     cardTheme: CardThemeData(
       color: TokensV0.surfaceCard,
       elevation: 0,

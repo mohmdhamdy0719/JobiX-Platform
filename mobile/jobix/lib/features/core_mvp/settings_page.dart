@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/app_language_button.dart';
+import '../../core/design/jobix_dialog.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../core/providers.dart';
@@ -209,15 +210,15 @@ class SettingsPage extends ConsumerWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialog) => AlertDialog(
+      builder: (dialog) => JobixAlertDialog(
         title: Text(copy.signOut),
         content: Text(copy.signOutLocalWarning),
         actions: [
-          TextButton(
+          JobixDialogAction.secondary(
             onPressed: () => Navigator.pop(dialog, false),
             child: Text(copy.stayAction),
           ),
-          TextButton(
+          JobixDialogAction.destructive(
             onPressed: () => Navigator.pop(dialog, true),
             child: Text(copy.signOut),
           ),

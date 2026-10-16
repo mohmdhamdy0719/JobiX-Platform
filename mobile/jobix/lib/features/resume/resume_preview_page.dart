@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/providers.dart';
+import '../core_mvp/core_api.dart';
 import 'resume_preview_layout.dart';
 
 /// The locally reviewed saved Resume, fragmented into A4 columns for inspection.
@@ -27,7 +29,8 @@ class ResumePreviewPage extends ConsumerStatefulWidget {
   ConsumerState<ResumePreviewPage> createState() => _ResumePreviewPageState();
 }
 
-class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
+class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
+    with WidgetsBindingObserver {
   late final WebViewController controller;
   int page = 0, pages = 0;
   bool busy = false, failed = false;
@@ -37,6 +40,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     controller = WebViewController()
       // Only app-injected pagination runs. Canonical HTML has a restrictive
       // script-denying CSP and escaped profile content; all navigation is denied.
@@ -83,6 +87,13 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
     );
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(coreSummaryProvider);
+    }
+  }
+
   static const paginationScript = '''
   document.fonts.ready.then(function() {
     if(document.getElementById('jobix-pages')) return;
@@ -117,6 +128,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ownerInvalidated = true;
     controller
         .loadHtmlString('<html><body></body></html>')
@@ -139,6 +151,8 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final balanceState = ref.watch(coreSummaryProvider);
+    final availableCredits = balanceState.valueOrNull?.balance.available;
     final language =
         widget.document['language'] ??
         (widget.document['configuration'] as Map?)?['language'];
@@ -150,6 +164,15 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
       busy: busy,
       exportEnabled: widget.exportEnabled,
       valid: valid,
+      availableCredits: availableCredits,
+      creditBalanceLoading: balanceState.isLoading,
+      creditBalanceUnavailable: balanceState.hasError,
+      onRetryCredits: () => ref.invalidate(coreSummaryProvider),
+      onReviewCredits: () {
+        context.push('/credits').whenComplete(() {
+          if (mounted) ref.invalidate(coreSummaryProvider);
+        });
+      },
       paper: failed
           ? Center(
               child: Text(
@@ -165,7 +188,15 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage> {
           ? () => turn(page + 1)
           : null,
       onEditProfile: busy || ownerInvalidated ? null : widget.onEditProfile,
-      onExport: busy || !valid || !widget.exportEnabled || failed
+      onExport:
+          busy ||
+              !valid ||
+              !widget.exportEnabled ||
+              failed ||
+              balanceState.isLoading ||
+              balanceState.hasError ||
+              availableCredits == null ||
+              availableCredits < 2
           ? null
           : () async {
               setState(() => busy = true);

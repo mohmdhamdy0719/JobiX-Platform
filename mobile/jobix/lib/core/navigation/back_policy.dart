@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../design/jobix_dialog.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Meaningful parents for replacement navigation. Root tabs have no invented
@@ -71,16 +72,16 @@ class _JobixBackBoundaryState extends State<JobixBackBoundary> {
       final copy = AppLocalizations.of(context)!;
       final exit = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => JobixAlertDialog(
           title: Text(copy.exitTitle),
           content: Text(copy.exitMessage),
           actions: [
-            TextButton(
+            JobixDialogAction.secondary(
               key: const Key('stay-in-jobix'),
               onPressed: () => Navigator.pop(context, false),
               child: Text(copy.stayAction),
             ),
-            TextButton(
+            JobixDialogAction.destructive(
               key: const Key('exit-jobix'),
               onPressed: () => Navigator.pop(context, true),
               child: Text(copy.exitAction),

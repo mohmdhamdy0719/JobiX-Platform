@@ -1,0 +1,81 @@
+## Additional JobiX UX Fixes — Branded Dialogs and Insufficient Credits
+
+Continue from the previous implementation and the existing JobiX design system. These are two additional, focused requirements. Do not restart or rewrite the previously completed work.
+
+### 1. Replace Default-Looking Dialogs with JobiX-Branded Dialogs
+
+**Problem:** Confirmation dialogs, alerts, and other dialogs currently look generic or like default Flutter dialogs. They should feel polished and consistent with JobiX.
+
+Requirements:
+
+1. Inspect the existing dialogs and alert/confirmation patterns across the app, especially:
+   - Sign-out confirmation
+   - Leave/discard unsaved changes
+   - PDF export confirmation
+   - Save errors and retry prompts
+   - Insufficient Credits
+   - Download and export failures
+2. Create or reuse a shared dialog component/theme consistent with JobiX's existing design system.
+3. Use consistent typography, spacing, rounded corners, colors, button styles, and appropriate icons where helpful.
+4. Make primary and secondary actions visually distinct. Use clear action labels rather than generic or ambiguous buttons.
+5. Ensure dialogs look good in English (LTR) and Arabic (RTL), on small screens, and with longer translated text.
+6. Respect Android safe areas and keyboard behavior. Avoid overflow, clipped text, or inaccessible buttons.
+7. Preserve existing behavior, validation, cancellation, navigation, and security safeguards. A visual redesign must not accidentally change the meaning of a confirmation or make a destructive action too easy to trigger.
+8. Use shared components where practical rather than independently styling every dialog.
+9. Audit the relevant app dialogs and migrate the applicable ones to the shared JobiX style. Do not unnecessarily change unrelated third-party or system-owned dialogs.
+10. Do not introduce a new UI library unless the current architecture genuinely requires it.
+
+### 2. Insufficient Credits — Make the PDF Export State Obvious
+
+**Problem:** When the user has fewer than the required 2 Credits, the Export PDF action still appears normally available. Tapping it may do nothing useful, leaving the user unsure whether the app is broken.
+
+The UI must clearly communicate whether the user can afford a new PDF export.
+
+#### Required UX behavior
+
+1. Use the authoritative, currently available Credit balance already loaded by the app.
+2. A new PDF export requires 2 Credits. An eligible re-download of an existing valid PDF remains free.
+3. If the user has 0 or 1 Credit:
+   - Clearly display the available balance.
+   - Make it obvious that a new export requires 2 Credits.
+   - Do not present the normal enabled Export PDF action as if it can proceed successfully.
+   - Provide a clear explanation and a useful next step.
+4. Preferred UX: keep the export area visible, but show an explicit insufficient-Credits state instead of silently disabling the action. For example:
+   - **Title:** `Not enough Credits`
+   - **Message:** `A new resume PDF costs 2 Credits. You currently have {balance} {Credit/Credits}.`
+   - **Action:** `Get more Credits`
+5. The primary action should open the existing Credit purchase/top-up flow only if that flow is actually implemented and available. Do not invent a purchase screen, fake a successful top-up, or navigate to an unrelated page.
+6. If no Credit purchase/top-up flow exists yet, explain that the user needs more Credits and provide only an existing, valid destination or a clear non-actionable status. Do not create a fake working button.
+7. If the balance is unknown or still loading, show a loading/unknown state and do not incorrectly claim the user has insufficient Credits.
+8. If a balance update arrives after the screen opens, update the displayed state appropriately without requiring the user to restart the flow.
+9. If the user has 2 or more Credits, retain the existing export confirmation flow and its current pricing.
+10. Do not block free preview or an eligible free re-download because the user has insufficient Credits for a new export.
+11. Preserve server-authoritative Credit enforcement, reservation/debit/release behavior, and idempotency. The client-side check is for clear UX only and must not replace backend validation.
+12. If the user taps an export action during a stale balance or concurrent transaction, show the actual server response clearly. Do not silently ignore the tap or assume the client balance is authoritative.
+13. Keep the design consistent with JobiX, including the branded dialogs from Requirement 1.
+
+#### Focused tests
+
+Add or update tests covering:
+
+- Balance of 0 Credits: new export is clearly unavailable and the reason is visible.
+- Balance of 1 Credit: new export is clearly unavailable and the required 2 Credits are communicated.
+- Balance of 2 Credits: the normal export confirmation remains available.
+- Unknown/loading balance: no incorrect insufficient-Credits claim.
+- A valid existing PDF can still be re-downloaded for free with 0 Credits.
+- The top-up action navigates only to a real implemented destination, if one exists.
+- Arabic RTL and English LTR display the dialog and action area correctly.
+- Dialog redesign preserves cancel/confirm semantics and does not bypass existing safeguards.
+
+### 3. Scope and Verification
+
+- Development only. Do not modify Production resources or configuration.
+- Do not perform a live export, create a real export job, or debit Credits during testing.
+- Do not change Credit pricing, backend accounting, security gates, or database schema for these UX improvements.
+- Run focused Flutter tests, `flutter analyze --no-pub`, formatting checks, and `git diff --check`.
+- Report which dialogs were updated, the actual insufficient-Credits behavior, whether a real top-up flow exists, and the test results.
+- Do not claim physical-device verification unless the revised build was actually installed and tested on Android.
+
+After these changes, prepare a fresh Development ARM64 debug APK using the previously agreed configuration and `JOBIX_ENABLE_PDF_EXPORT=true`, if that build step remains within the current approved scope. Verify the APK metadata and Development target. Do not trigger a live PDF export.
+
+Keep this task focused on these two additions and the previously agreed Android verification. Do not start ATS Score, AI Generation, support-reference work, or Production deployment.

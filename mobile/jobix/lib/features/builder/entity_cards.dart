@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/design/tokens.dart';
+import '../../core/design/jobix_dialog.dart';
 import '../../l10n/app_localizations.dart';
 import '../career_profile/profile_sections.dart';
 import 'entity_labels.dart';
@@ -9,17 +10,16 @@ Future<bool> confirmRemove(BuildContext context) async {
   final copy = AppLocalizations.of(context)!;
   return await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => JobixAlertDialog(
           title: Text(copy.removeTitle),
           content: Text(copy.removeBody),
           actions: [
-            TextButton(
+            JobixDialogAction.secondary(
               onPressed: () => Navigator.pop(context, false),
               child: Text(copy.cancelAction),
             ),
-            TextButton(
+            JobixDialogAction.destructive(
               key: const Key('confirm-remove'),
-              style: TextButton.styleFrom(foregroundColor: TokensV0.error),
               onPressed: () => Navigator.pop(context, true),
               child: Text(copy.removeAction),
             ),

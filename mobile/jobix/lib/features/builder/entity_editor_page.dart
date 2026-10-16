@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../core/design/form_loading_state.dart';
+import '../../core/design/jobix_dialog.dart';
 import '../../core/navigation/back_policy.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
@@ -149,17 +150,17 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         final copy = AppLocalizations.of(context)!;
         final discard = await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
+          builder: (context) => JobixAlertDialog(
             title: Text(copy.leaveTitle),
             content: Text(
               pendingItem ? copy.pendingBackWarning : copy.discardWarning,
             ),
             actions: [
-              TextButton(
+              JobixDialogAction.secondary(
                 onPressed: () => Navigator.pop(context, false),
                 child: Text(copy.stayAction),
               ),
-              TextButton(
+              JobixDialogAction.destructive(
                 key: const Key('discard-entity'),
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(pendingItem ? copy.backAction : copy.discardAction),

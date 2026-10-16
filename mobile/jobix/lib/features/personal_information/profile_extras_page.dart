@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/design/form_loading_state.dart';
+import '../../core/design/jobix_dialog.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -206,7 +207,7 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
   Future<void> removeLink(CustomProfileLink link) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => JobixAlertDialog(
         title: Text(say('Remove this link?', 'حذف هذا الرابط؟')),
         content: Text(
           link.label.isEmpty
@@ -214,11 +215,11 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
               : link.label,
         ),
         actions: [
-          TextButton(
+          JobixDialogAction.secondary(
             onPressed: () => Navigator.pop(context, false),
             child: Text(say('Cancel', 'إلغاء')),
           ),
-          TextButton(
+          JobixDialogAction.destructive(
             onPressed: () => Navigator.pop(context, true),
             child: Text(say('Remove', 'حذف')),
           ),
@@ -340,7 +341,7 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
       if (!mounted) return;
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => JobixAlertDialog(
           title: Text(
             say('Review latest saved version', 'مراجعة أحدث نسخة محفوظة'),
           ),

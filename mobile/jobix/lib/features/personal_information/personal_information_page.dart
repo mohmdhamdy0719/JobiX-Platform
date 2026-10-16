@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/design/app_language_button.dart';
+import '../../core/design/jobix_dialog.dart';
 import '../../core/design/slice_widgets.dart';
 import '../../core/design/tokens.dart';
 import '../../core/providers.dart';
@@ -225,15 +226,15 @@ class _PersonalInformationPageState
       if (!mounted) return;
       final choice = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => JobixAlertDialog(
           title: Text(copy.conflictTitle),
           content: Text(copy.conflictBody),
           actions: [
-            TextButton(
+            JobixDialogAction.secondary(
               onPressed: () => Navigator.pop(context, false),
               child: Text(copy.keepServer),
             ),
-            TextButton(
+            JobixDialogAction.primary(
               onPressed: () => Navigator.pop(context, true),
               child: Text(copy.reapplyLocal),
             ),
@@ -281,15 +282,15 @@ class _PersonalInformationPageState
     final copy = AppLocalizations.of(context)!;
     final choice = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => JobixAlertDialog(
         title: Text(copy.leaveTitle),
         content: Text(copy.discardWarning),
         actions: [
-          TextButton(
+          JobixDialogAction.secondary(
             onPressed: () => Navigator.pop(context, 'stay'),
             child: Text(copy.stayAction),
           ),
-          TextButton(
+          JobixDialogAction.destructive(
             key: const Key('discard-draft'),
             onPressed: () => Navigator.pop(context, 'discard'),
             child: Text(copy.discardAction),

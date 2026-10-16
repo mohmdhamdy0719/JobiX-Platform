@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/design/jobix_dialog.dart';
 import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../career_profile/career_profile.dart';
@@ -41,15 +42,15 @@ class _LanguageEditorSheetState extends State<LanguageEditorSheet> {
         final copy = AppLocalizations.of(context)!;
         final discard = await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
+          builder: (context) => JobixAlertDialog(
             title: Text(copy.leaveTitle),
             content: Text(copy.discardWarning),
             actions: [
-              TextButton(
+              JobixDialogAction.secondary(
                 onPressed: () => Navigator.pop(context, false),
                 child: Text(copy.stayAction),
               ),
-              TextButton(
+              JobixDialogAction.destructive(
                 key: const Key('discard-language'),
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(copy.discardAction),

@@ -14,6 +14,7 @@ import 'package:jobix/core/design/tokens.dart';
 import 'package:jobix/core/providers.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/career_profile/career_profile_repository.dart';
+import 'package:jobix/features/core_mvp/core_api.dart';
 import 'package:jobix/features/resume/resume_document.dart';
 import 'package:jobix/features/resume/resume_export_panel.dart';
 import 'package:jobix/features/resume/resume_render.dart';
@@ -248,6 +249,7 @@ void main() {
   late Map<String, Map<String, dynamic>> configurationAcknowledgements;
   late List<Map<String, dynamic>> configurationSaveCommands;
   bool paginate = false;
+  int creditBalance = 8;
   bool expiredDownload = true;
   bool loseResponse = false;
   bool loseConfigurationResponse = false;
@@ -279,6 +281,18 @@ void main() {
         overrides: [
           supabaseClientProvider.overrideWith((_) async => client),
           databaseProvider.overrideWith((_) async => db),
+          coreSummaryProvider.overrideWith(
+            (_) async => CoreSummary(
+              balance: CreditBalance(
+                finalized: creditBalance,
+                reserved: 0,
+                available: creditBalance,
+                version: 1,
+              ),
+              profiles: const [],
+              slots: const [],
+            ),
+          ),
         ],
       ),
     );
@@ -309,6 +323,7 @@ void main() {
     rejected = null;
     rejectedRetryAfter = null;
     paginate = false;
+    creditBalance = 8;
     expiredDownload = true;
     prepared = {
       ...document,
@@ -614,13 +629,22 @@ void main() {
       expect(commands, isEmpty);
       expect(accepted, 0);
 
-      await panelKey.currentState!.createPdf({...local, 'profile_version': 5});
-      await tester.pumpAndSettle();
+      final createFuture = panelKey.currentState!.createPdf({
+        ...local,
+        'profile_version': 5,
+      });
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       expect(commands.map((item) => item['action']), ['document']);
       expect(panelKey.currentState!.reviewRequired, isTrue);
       expect(accepted, 0);
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      await createFuture;
     },
   );
   tearDown(() async {
@@ -724,7 +748,16 @@ void main() {
         ),
       );
       await HttpOverrides.runWithHttpOverrides(() async {
+        creditBalance = 0;
         await mount(tester, initial: true);
+        expect(
+          tester
+              .widget<TextButton>(
+                find.widgetWithText(TextButton, 'Download — free'),
+              )
+              .onPressed,
+          isNotNull,
+        );
         await tap(tester, 'Download — free');
         expect(saved!['bytes'], fixture.bytes);
         expect(saved!['name'], '$jobId.pdf');
@@ -805,6 +838,7 @@ void main() {
       await tap(tester, 'Create PDF — 2 Credits');
       await tap(tester, 'Create — 2 Credits');
       expect(await db.setting('resume:$actor:export:$profileId'), isNotNull);
+      await tap(tester, 'Close');
       await tap(tester, 'Review rejected request with current Preview');
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
       expect(observedDocument!['html'], documentHtml);
@@ -875,13 +909,19 @@ void main() {
     'insufficient Credits keeps frozen intent for retry without creating another key',
     (tester) async {
       rejected = 'CREDIT_INSUFFICIENT';
+      creditBalance = 2;
       await mount(tester, initial: true);
       await tap(tester, 'Create PDF — 2 Credits');
+      creditBalance = 1;
       await tap(tester, 'Create — 2 Credits');
+      expect(find.text('Not enough Credits'), findsOneWidget);
+      expect(find.textContaining('currently have 1'), findsOneWidget);
+      await tap(tester, 'Close');
       final initial =
           jsonDecode((await db.setting('resume:$actor:export:$profileId'))!)
               as Map;
       rejected = null;
+      creditBalance = 2;
       await tap(tester, 'Retry the saved request');
       final attempts = commands.where((c) => c['action'] == 'create').toList();
       expect(
