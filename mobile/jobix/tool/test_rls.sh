@@ -112,6 +112,7 @@ if [[ "$mode" != "full" ]]; then
     -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
     -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql
   echo "PASS: migrations 019–021"
+  JOBIX_DISPOSABLE_PG_SOCKET="$work/socket" node tool/configure_estimated_export_dev.mjs --verify-disposable
   "${local_psql[@]}" -f supabase/tests/resume_export_cost_output_unit.sql
   echo "PASS: resume_export_cost_output_unit.sql"
   "${local_psql[@]}" -f supabase/tests/resume_export_cost_protection.sql

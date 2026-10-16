@@ -14,6 +14,6 @@
 - [Read-only Git/LFS checks](plan-mode-lfs.md) — git status can invoke LFS and attempt temporary writes; avoid repair or filter bypass in Plan mode.
 - [Resume print verification](resume-print-verification.md) — bidi extraction and font boxes can cause false failures; keep logical-source and physical-print checks separate.
 - [PDF runtime verification](pdf-runtime-verification.md) — host Chromium success does not verify pinned Playwright; avoid mixing libc paths into Node.
-- [Cloud cost evidence](cloud-cost-evidence.md) — PDF-export readiness permits no cost exclusions; require evidenced rates/bounds and a justified reserve; region lists do not prove prices.
+- [Cloud cost evidence](cloud-cost-evidence.md) — owner now approves documented Development engineering estimates; distinguish estimates from measured costs and verify regional-price claims.
 - [Beta policy proposals](beta-policy-proposals.md) — owner proposes 10 exports per rolling 7 days, not 30; implementation and global budgets remain unapproved.
 - [Native resume experience](native-resume-experience.md) — explicit setup completion, renderer-supported presentation, and the owner’s live-activation boundary.
