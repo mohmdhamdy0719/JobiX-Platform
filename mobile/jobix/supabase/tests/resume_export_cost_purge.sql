@@ -5,6 +5,9 @@ DECLARE rejected boolean:=false; used_before numeric; used_after numeric;
  used_once numeric; used_twice numeric; settled_once bigint; settled_twice bigint;
  settled_at_once timestamptz; settled_at_twice timestamptz; result text;
 BEGIN
+  IF EXISTS(SELECT FROM public.export_admission_legacy_holds)
+  THEN RAISE EXCEPTION 'migration fabricated legacy purge evidence'; END IF;
+
  IF NOT EXISTS(SELECT FROM public.export_cost_reservations r
   WHERE r.operation='93000000-0000-0000-0000-000000000001'
   AND r.state='HELD' AND r.job_purged_at IS NULL AND r.orphan_discovered_at IS NOT NULL)

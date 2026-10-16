@@ -107,18 +107,26 @@ if [[ "$mode" != "full" ]]; then
   "${local_psql[@]}" -f supabase/tests/resume_export.sql
   echo "PASS: resume_export.sql"
 
-  "${local_psql[@]}" \
-    -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
-    -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
-    -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql
-  echo "PASS: migrations 019–021"
+  "${local_psql[@]}" -f supabase/migrations/202610100019_resume_export_cost_protection.sql
+  echo "PASS: migration 019"
+  "${local_psql[@]}" -f supabase/tests/resume_export_cost_protection.sql
+  echo "PASS: resume_export_cost_protection.sql (legacy hold seeded before migration 020)"
+  "${local_psql[@]}" -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql
+  echo "PASS: migration 020 discovered the pre-existing synthetic legacy hold"
+  "${local_psql[@]}" -f supabase/tests/resume_export_cost_purge.sql
+  echo "PASS: resume_export_cost_purge.sql"
+  "${local_psql[@]}" -c "UPDATE public.export_cost_budget_policy SET
+    shared_cost_reserve_microusd=NULL,runtime_cost_microusd_per_second=NULL,
+    output_cost_microusd_per_gib_7d=NULL,storage_operation_cost_microusd=NULL,
+    per_export_overhead_microusd=NULL,accounting_ready=false,model_version=1,
+    updated_at=clock_timestamp() WHERE singleton"
+  "${local_psql[@]}" -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql
+  echo "PASS: migration 021 after resolving disposable fixture holds"
   JOBIX_DISPOSABLE_PG_SOCKET="$work/socket" node tool/configure_estimated_export_dev.mjs --verify-disposable
   "${local_psql[@]}" -f supabase/tests/resume_export_cost_output_unit.sql
   echo "PASS: resume_export_cost_output_unit.sql"
-  "${local_psql[@]}" -f supabase/tests/resume_export_cost_protection.sql
-  echo "PASS: resume_export_cost_protection.sql (synthetic disposable rates only)"
-  "${local_psql[@]}" -f supabase/tests/resume_export_cost_purge.sql
-  echo "PASS: resume_export_cost_purge.sql"
+  "${local_psql[@]}" -f supabase/tests/resume_export_cost_accounting_fixture.sql
+  echo "PASS: synthetic accounting fixture for subsequent SQL regressions"
   "${local_psql[@]}" -f supabase/tests/resume_export_admission.sql
   echo "PASS: resume_export_admission.sql"
   "${local_psql[@]}" <<'PSQL'
@@ -191,11 +199,17 @@ psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/tests/resume_export.sql
 psql -X -q -U runner -v ON_ERROR_STOP=1 -h "$work/socket" -p 55439 -d postgres \
   -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
+  -f supabase/tests/resume_export_cost_protection.sql \
   -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
+  -f supabase/tests/resume_export_cost_purge.sql \
+  -c "UPDATE public.export_cost_budget_policy SET
+    shared_cost_reserve_microusd=NULL,runtime_cost_microusd_per_second=NULL,
+    output_cost_microusd_per_gib_7d=NULL,storage_operation_cost_microusd=NULL,
+    per_export_overhead_microusd=NULL,accounting_ready=false,model_version=1,
+    updated_at=clock_timestamp() WHERE singleton" \
   -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql \
   -f supabase/tests/resume_export_cost_output_unit.sql \
-  -f supabase/tests/resume_export_cost_protection.sql \
-  -f supabase/tests/resume_export_cost_purge.sql \
+  -f supabase/tests/resume_export_cost_accounting_fixture.sql \
   -f supabase/tests/resume_export_admission.sql \
   -f supabase/tests/resume_export_recovery.sql \
   -f supabase/tests/resume_export_deletion.sql

@@ -67,13 +67,12 @@ BEGIN
  OR has_table_privilege('jobix_export_worker','public.export_cost_reservations','SELECT') THEN
   RAISE EXCEPTION 'cost ledger is readable by application roles';
  END IF;
- IF EXISTS(SELECT FROM public.export_admission_legacy_holds) THEN
-  RAISE EXCEPTION 'migration fabricated legacy purge evidence';
- END IF;
 END $$;
 
--- Leave a tiny synthetic per-export cost for the existing disposable export
--- admission/lifecycle regression tests that run after this file.
+-- Leave a tiny synthetic per-export cost for later disposable regressions.
+-- This hold is intentionally seeded before migration 020 so its real discovery
+-- update can observe it; the purge test checks that migration invented no
+-- separate legacy admission evidence.
 DELETE FROM public.export_cost_attempts;
 DELETE FROM public.export_cost_reservations;
 DELETE FROM public.export_cost_provider_observations;
