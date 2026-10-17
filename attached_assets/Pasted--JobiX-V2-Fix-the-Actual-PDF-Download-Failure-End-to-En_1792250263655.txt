@@ -1,0 +1,147 @@
+# JobiX V2 — Fix the Actual PDF Download Failure End-to-End
+
+## Objective
+
+Fix the existing Android PDF download flow in JobiX V2.
+
+**The PDF exists in Google Cloud Storage, the supplied export jobs are marked `COMPLETED`, their recorded PDF size is 154,591 bytes, and the Worker reports no job error. However, downloading the PDF through the Android app fails.**
+
+Available evidence does NOT establish Google Cloud Storage as the root cause:
+- The Worker verifies the uploaded PDF before marking the job complete.
+- Gateway/Worker responses and IAM `SignBlob` calls succeeded near post-completion activity.
+- The observed HTTP 520 occurred before the first relevant job was created and does not explain these failures.
+- Available logs do not show the direct Storage GET response, the actual bytes received by Android, or whether local file saving succeeded.
+- The app maps multiple different failures to the same generic error message.
+- Database completion records do not independently prove current object availability or successful Credit settlement.
+
+Do not assume the failure is in Storage, URL signing, Flutter, Android file saving, or the Worker until the relevant evidence identifies the failing stage.
+
+## Non-negotiable safety constraints
+
+1. Do not trigger a new PDF export during diagnosis.
+2. Do not consume, reserve, refund, or otherwise modify user Credits for diagnostic testing.
+3. Do not delete, regenerate, overwrite, or alter the existing PDF.
+4. Do not deploy to Production, change Production configuration, apply database migrations, change IAM permissions, or modify cloud infrastructure without my explicit approval.
+5. Do not expose signed URLs, access tokens, service credentials, PDF contents, or other secrets in logs or reports.
+6. Do not repeatedly rebuild the APK without first identifying a code change justified by evidence.
+7. Preserve the existing idempotency, authorization, ownership checks, and Credit accounting behavior.
+8. Do not claim that the problem is fixed merely because static analysis or unit tests pass.
+
+## Phase 1 — Trace the existing download path
+
+Inspect the actual checked-in implementation and document the complete path used when the user taps Download on an already completed export:
+
+Android UI → Flutter download service → Supabase `resume-export` invocation → Gateway/Worker, if involved in obtaining the download URL → signed URL generation → direct HTTPS GET to Google Cloud Storage → response validation → Android/local file saving → success or error displayed to the user.
+
+Identify the exact functions, files, timeout settings, exception handlers, HTTP status handling, and state transitions involved.
+
+Specifically verify:
+
+- Whether a completed export retrieves an existing PDF or accidentally initiates new export work.
+- Whether the signed URL is generated for the correct existing object and remains valid when the direct GET occurs.
+- Whether the URL is passed to the HTTP client correctly without being logged.
+- Whether redirects, response headers, HTTP status codes, streaming, and binary response handling are correct.
+- Whether the app expects JSON when the response is actually PDF bytes, or vice versa.
+- Whether HTTP errors, timeouts, connection failures, empty responses, partial downloads, and local save errors are distinguishable.
+- Whether the app can incorrectly report failure after the file has already been saved.
+- Whether a UI lifecycle, temporary file, Android storage API, or permission issue can cause the failure.
+- Whether the current generic error discards useful information from an underlying exception.
+- Whether the 30-second direct-download timeout and the 50-second Supabase invocation timeout are appropriate for their respective operations. Do not change them without evidence.
+
+## Phase 2 — Establish evidence before modifying code
+
+Use the existing job records and existing cloud logs wherever possible. Do not run a new export just to reproduce the issue.
+
+If existing Storage Data Access logs contain the relevant `storage.objects.get` events, inspect the actual result and correlate it with the existing job and download attempt.
+
+If those logs are unavailable, state that explicitly. Do not invent a Storage response or pretend that a missing log proves a request failed.
+
+Inspect the current Android download code and add narrowly scoped, privacy-safe diagnostics if necessary. For an approved download of an existing completed PDF, record only:
+
+- A non-sensitive operation/job correlation identifier.
+- The download stage.
+- HTTP status code, if a response was received.
+- Exception class/type and a safe error category.
+- Expected PDF size, if already available from trusted metadata.
+- Actual bytes received and whether they match the expected size.
+- Whether the destination file was created and its final size.
+- Whether PDF signature/header validation and local save completed.
+- Elapsed time for each stage.
+
+Never log the signed URL, query parameters, credentials, raw response body, or PDF contents.
+
+Do not log or upload personal data unnecessarily.
+
+If a live download is needed, first identify the safest way to download an existing completed PDF without creating a new export or changing Credits. If this requires my action or approval, stop and tell me exactly what is needed before proceeding.
+
+## Phase 3 — Identify and fix the proven root cause
+
+Use the evidence to classify the failure into the actual failing stage:
+
+A. Existing export metadata or URL retrieval.
+
+B. Signed URL validity, expiration, object path, or authorization.
+
+C. Direct HTTP GET or Storage response.
+
+D. Response streaming, binary handling, truncation, or timeout.
+
+E. Android/local file writing, permissions, or file destination.
+
+F. Post-download validation, UI state, navigation, or error mapping.
+
+Fix only the demonstrated cause, including any directly necessary related issue.
+
+Replace misleading generic error handling with safe, actionable error categories. Keep technical details in diagnostics and show the user a clear message appropriate to the failure. Never show a signed URL or sensitive internal error.
+
+The download flow must:
+
+- Reuse the existing completed PDF.
+- Never initiate another export just because downloading failed.
+- Never charge Credits for downloading an existing valid PDF.
+- Preserve the original completed export and its Credit transaction.
+- Validate the HTTP response and received bytes before reporting success.
+- Avoid reporting success for a partial or empty file.
+- Handle retries safely without duplicate export jobs or Credit charges.
+- Report a local-save failure distinctly from a server or network failure.
+- Avoid deleting a previously valid local PDF because a subsequent retry failed.
+
+Do not rewrite the entire export architecture unless the evidence proves that a broader change is necessary.
+
+## Phase 4 — Regression tests
+
+Add or update focused tests for the actual fix and relevant failure cases:
+
+1. Successful download of an existing completed PDF.
+2. Non-success HTTP response.
+3. Expired or invalid signed URL, if applicable.
+4. Network exception and timeout.
+5. Empty or truncated PDF response.
+6. Local file save failure.
+7. Correct handling of PDF binary bytes.
+8. Accurate error classification and user-facing message.
+9. Retry of an existing download does not create a new export or charge Credits.
+10. Successful local save is not incorrectly reported as a failed download.
+11. Existing authorization and ownership checks remain intact.
+
+Use mocks/fakes for failure cases. Do not contact Production services or create real exports in tests.
+
+Run the focused tests, relevant existing regression tests, Flutter analyzer, and diff checks.
+
+## Phase 5 — Final verification and report
+
+Before proposing an APK build, report:
+
+1. The exact root cause, or explicitly state if the evidence is still insufficient.
+2. The concrete evidence supporting that conclusion.
+3. The source files and functions changed.
+4. The specific code fix.
+5. The tests run and their actual results.
+6. Whether an existing PDF was successfully downloaded and saved end-to-end. Distinguish a mocked test from a real device test.
+7. Whether Credits and export job records remained unchanged during diagnosis.
+8. Whether any migration, deployment, cloud configuration, IAM, or Production change was made. The expected answer is NO unless I explicitly approved it.
+9. Any remaining uncertainty and the precise next diagnostic needed.
+
+Do not say “fixed” unless the test evidence supports that statement. If the source fix is ready but real device verification is still required, state that clearly.
+
+**Start with Phase 1 and Phase 2. Diagnose first, then implement the smallest evidence-based fix. Do not deploy anything or run a new export.**

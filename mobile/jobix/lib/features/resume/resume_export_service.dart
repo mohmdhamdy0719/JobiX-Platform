@@ -1,16 +1,80 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers.dart';
 
 class ExportFailure implements Exception {
-  const ExportFailure(this.code, {this.retryAfterSeconds});
+  const ExportFailure(
+    this.code, {
+    this.retryAfterSeconds,
+    this.stage,
+    this.httpStatus,
+    this.receivedBytes,
+    this.expectedBytes,
+    this.exceptionType,
+  });
   final String code;
   final int? retryAfterSeconds;
+  final String? stage;
+  final int? httpStatus;
+  final int? receivedBytes;
+  final int? expectedBytes;
+  final String? exceptionType;
 }
+
+typedef DownloadDiagnosticSink = void Function(Map<String, Object?> event);
+
+class _DownloadDiagnostic {
+  const _DownloadDiagnostic({
+    required this.attemptId,
+    required this.attempt,
+    required this.stage,
+    required this.outcome,
+    required this.elapsedMs,
+    required this.stageElapsedMs,
+    this.httpStatus,
+    this.expectedBytes,
+    this.declaredBytes,
+    this.receivedBytes,
+    this.finalSizeBytes,
+    this.exceptionType,
+  });
+
+  final String attemptId;
+  final int attempt;
+  final String stage;
+  final String outcome;
+  final int elapsedMs;
+  final int stageElapsedMs;
+  final int? httpStatus;
+  final int? expectedBytes;
+  final int? declaredBytes;
+  final int? receivedBytes;
+  final int? finalSizeBytes;
+  final String? exceptionType;
+
+  Map<String, Object?> toSafeMap() => {
+    'attempt_id': attemptId,
+    'attempt': attempt,
+    'stage': stage,
+    'outcome': outcome,
+    'elapsed_ms': elapsedMs,
+    'stage_elapsed_ms': stageElapsedMs,
+    if (httpStatus != null) 'http_status': httpStatus,
+    if (expectedBytes != null) 'expected_bytes': expectedBytes,
+    if (declaredBytes != null) 'declared_bytes': declaredBytes,
+    if (receivedBytes != null) 'received_bytes': receivedBytes,
+    if (finalSizeBytes != null) 'final_size_bytes': finalSizeBytes,
+    if (exceptionType != null) 'exception_type': exceptionType,
+  };
+}
+
+int _nextDownloadAttempt = 0;
 
 String exportDisplayKey(String actor, String job) =>
     'resume:$actor:job:$job:display';
@@ -33,8 +97,54 @@ final resumeExportServiceProvider = FutureProvider<ResumeExportService>(
 
 /// No client balance mutation, stored signed URL or alternate export pathway.
 class ResumeExportService {
-  ResumeExportService(this.client);
+  ResumeExportService(this.client, {DownloadDiagnosticSink? diagnostics})
+    : _diagnostics = diagnostics ?? _debugDownloadDiagnostics;
+
   final SupabaseClient client;
+  final DownloadDiagnosticSink _diagnostics;
+
+  static void _debugDownloadDiagnostics(Map<String, Object?> event) {
+    if (kDebugMode) {
+      debugPrint('JOBIX_PDF_DOWNLOAD ${jsonEncode(event)}');
+    }
+  }
+
+  void _recordDownloadDiagnostic({
+    required String attemptId,
+    required int attempt,
+    required String stage,
+    required String outcome,
+    required Stopwatch overall,
+    required Stopwatch stageClock,
+    int? httpStatus,
+    int? expectedBytes,
+    int? declaredBytes,
+    int? receivedBytes,
+    int? finalSizeBytes,
+    Object? error,
+    String? exceptionType,
+  }) {
+    try {
+      _diagnostics(
+        _DownloadDiagnostic(
+          attemptId: attemptId,
+          attempt: attempt,
+          stage: stage,
+          outcome: outcome,
+          elapsedMs: overall.elapsedMilliseconds,
+          stageElapsedMs: stageClock.elapsedMilliseconds,
+          httpStatus: httpStatus,
+          expectedBytes: expectedBytes,
+          declaredBytes: declaredBytes,
+          receivedBytes: receivedBytes,
+          finalSizeBytes: finalSizeBytes,
+          exceptionType: exceptionType ?? error?.runtimeType.toString(),
+        ).toSafeMap(),
+      );
+    } catch (_) {
+      // Diagnostics must never affect a download.
+    }
+  }
 
   /// Supplemental frozen configuration only, never status, cost, or entitlement.
   /// Missing local metadata must not block essential status/download reads.
@@ -102,40 +212,310 @@ class ResumeExportService {
     );
   }
 
-  Future<bool> download(String id, {String? suggestedName}) async {
+  Future<bool> download(
+    String id, {
+    String? suggestedName,
+    int? expectedBytes,
+  }) async {
     final actor = client.auth.currentUser?.id;
-    final result = await call('download', {'export_id': id});
-    final uri = Uri.parse(result['url'] as String);
-    if (uri.scheme != 'https' || uri.host != 'storage.googleapis.com') {
-      throw const ExportFailure('FORBIDDEN');
+    final attempt = ++_nextDownloadAttempt;
+    final attemptId = '${DateTime.now().microsecondsSinceEpoch}-$attempt';
+    final overall = Stopwatch()..start();
+    var stage = 'download_link';
+    var stageClock = Stopwatch()..start();
+    int? httpStatus;
+    int? declaredBytes;
+    int? finalFileSizeBytes;
+    var receivedBytes = 0;
+    final expected = expectedBytes != null && expectedBytes > 0
+        ? expectedBytes
+        : null;
+    HttpClient? http;
+
+    void record(String outcome, {Object? error, int? finalSizeBytes}) {
+      _recordDownloadDiagnostic(
+        attemptId: attemptId,
+        attempt: attempt,
+        stage: stage,
+        outcome: outcome,
+        overall: overall,
+        stageClock: stageClock,
+        httpStatus: httpStatus,
+        expectedBytes: expected,
+        declaredBytes: declaredBytes,
+        receivedBytes: receivedBytes,
+        finalSizeBytes: finalSizeBytes ?? finalFileSizeBytes,
+        error: error,
+      );
     }
-    final http = HttpClient();
+
+    void enterStage(String next) {
+      record('complete');
+      stage = next;
+      stageClock = Stopwatch()..start();
+      record('started');
+    }
+
+    ExportFailure classify(Object error) {
+      if (error is ExportFailure) {
+        return ExportFailure(
+          error.code,
+          retryAfterSeconds: error.retryAfterSeconds,
+          stage: error.stage ?? stage,
+          httpStatus: error.httpStatus ?? httpStatus,
+          receivedBytes: error.receivedBytes ?? receivedBytes,
+          expectedBytes: error.expectedBytes ?? expected,
+          exceptionType: error.exceptionType,
+        );
+      }
+      if (error is TimeoutException) {
+        return ExportFailure(
+          'DOWNLOAD_TIMEOUT',
+          stage: stage,
+          httpStatus: httpStatus,
+          receivedBytes: receivedBytes,
+          expectedBytes: expected,
+          exceptionType: error.runtimeType.toString(),
+        );
+      }
+      if (error is SocketException ||
+          error is HandshakeException ||
+          error is HttpException) {
+        return ExportFailure(
+          'DOWNLOAD_NETWORK_ERROR',
+          stage: stage,
+          httpStatus: httpStatus,
+          receivedBytes: receivedBytes,
+          expectedBytes: expected,
+          exceptionType: error.runtimeType.toString(),
+        );
+      }
+      if (error is PlatformException) {
+        return ExportFailure(
+          'DOWNLOAD_SAVE_ERROR',
+          stage: stage,
+          receivedBytes: receivedBytes,
+          expectedBytes: expected,
+          exceptionType: error.runtimeType.toString(),
+        );
+      }
+      return ExportFailure(
+        'DOWNLOAD_FAILED',
+        stage: stage,
+        httpStatus: httpStatus,
+        receivedBytes: receivedBytes,
+        expectedBytes: expected,
+        exceptionType: error.runtimeType.toString(),
+      );
+    }
+
     try {
+      record('started');
+      final result = await call('download', {'export_id': id});
+      enterStage('url_validation');
+      final rawUrl = result['url'];
+      if (rawUrl is! String) {
+        throw const ExportFailure('DOWNLOAD_LINK_INVALID');
+      }
+      final uri = Uri.tryParse(rawUrl);
+      if (uri == null ||
+          uri.scheme != 'https' ||
+          uri.host != 'storage.googleapis.com') {
+        throw const ExportFailure('FORBIDDEN');
+      }
+
+      enterStage('storage_response');
+      http = HttpClient();
       final request = await http.getUrl(uri);
       request.followRedirects = false;
       final response = await request.close().timeout(
         const Duration(seconds: 30),
       );
+      httpStatus = response.statusCode;
+      declaredBytes = response.contentLength >= 0
+          ? response.contentLength
+          : null;
+      record('response_received');
       if (response.statusCode != 200) {
-        throw const ExportFailure('EXPORT_NOT_READY');
+        throw ExportFailure(
+          'DOWNLOAD_HTTP_ERROR',
+          httpStatus: response.statusCode,
+        );
       }
+
+      enterStage('storage_body');
       final builder = BytesBuilder(copy: false);
       await for (final chunk in response) {
         builder.add(chunk);
+        receivedBytes += chunk.length;
       }
+
+      final bytes = builder.takeBytes();
+      enterStage('pdf_validation');
+      if (expected != null && bytes.length != expected) {
+        throw ExportFailure(
+          'DOWNLOAD_SIZE_MISMATCH',
+          receivedBytes: bytes.length,
+          expectedBytes: expected,
+        );
+      }
+      if (declaredBytes != null && bytes.length != declaredBytes) {
+        throw ExportFailure(
+          'DOWNLOAD_SIZE_MISMATCH',
+          receivedBytes: bytes.length,
+          expectedBytes: expected ?? declaredBytes,
+        );
+      }
+      if (bytes.length < 5 ||
+          bytes[0] != 0x25 ||
+          bytes[1] != 0x50 ||
+          bytes[2] != 0x44 ||
+          bytes[3] != 0x46 ||
+          bytes[4] != 0x2d) {
+        throw ExportFailure(
+          'DOWNLOAD_INVALID_PDF',
+          receivedBytes: bytes.length,
+          expectedBytes: expected,
+        );
+      }
+
       if (client.auth.currentUser?.id != actor) {
         throw const ExportFailure('AUTH_REQUIRED');
       }
-      return await const MethodChannel('jobix/pdf_save').invokeMethod<bool>(
-            'save',
-            {
-              'bytes': builder.takeBytes(),
-              'name': resumePdfFilename(suggestedName),
-            },
-          ) ==
-          true;
+
+      enterStage('android_save');
+      final rawSave = await const MethodChannel('jobix/pdf_save')
+          .invokeMethod<Object?>('save', {
+            'bytes': bytes,
+            'name': resumePdfFilename(suggestedName),
+          });
+      final saveResult = rawSave is Map
+          ? Map<String, dynamic>.from(rawSave)
+          : <String, dynamic>{'saved': rawSave == true};
+      final saved = saveResult['saved'] == true;
+      final finalSize = saveResult['final_size_bytes'];
+      finalFileSizeBytes = finalSize is num ? finalSize.toInt() : null;
+      final submittedValue = saveResult['submitted_bytes'];
+      final submittedBytes = submittedValue is num
+          ? submittedValue.toInt()
+          : null;
+      final rawSaveStage = saveResult['stage'];
+      final allowedSaveStages = {
+        'saved',
+        'cancelled',
+        'output_unavailable',
+        'size_mismatch',
+        'write_failed',
+        'picker_start_failed',
+        'activity_destroyed',
+      };
+      final saveStage =
+          rawSaveStage is String && allowedSaveStages.contains(rawSaveStage)
+          ? rawSaveStage
+          : null;
+      final rawExceptionType = saveResult['exception_type'];
+      final nativeExceptionType =
+          rawExceptionType is String &&
+              RegExp(r'^[A-Za-z0-9_$]{1,64}$').hasMatch(rawExceptionType)
+          ? rawExceptionType
+          : null;
+      record(saved ? 'save_confirmed' : 'save_${saveStage ?? 'not_confirmed'}');
+      if (!saved) {
+        throw ExportFailure(
+          saveStage == 'cancelled'
+              ? 'DOWNLOAD_SAVE_NOT_CONFIRMED'
+              : 'DOWNLOAD_SAVE_ERROR',
+          receivedBytes: bytes.length,
+          expectedBytes: expected,
+          exceptionType: nativeExceptionType,
+        );
+      }
+      if (submittedBytes != null && submittedBytes != bytes.length) {
+        throw ExportFailure(
+          'DOWNLOAD_SAVE_SIZE_MISMATCH',
+          receivedBytes: submittedBytes,
+          expectedBytes: bytes.length,
+        );
+      }
+      if (finalFileSizeBytes != null && finalFileSizeBytes != bytes.length) {
+        throw ExportFailure(
+          'DOWNLOAD_SAVE_SIZE_MISMATCH',
+          receivedBytes: finalFileSizeBytes,
+          expectedBytes: bytes.length,
+        );
+      }
+      _recordDownloadDiagnostic(
+        attemptId: attemptId,
+        attempt: attempt,
+        stage: stage,
+        outcome: 'complete',
+        overall: overall,
+        stageClock: stageClock,
+        expectedBytes: expected,
+        declaredBytes: declaredBytes,
+        receivedBytes: bytes.length,
+        finalSizeBytes: finalFileSizeBytes,
+      );
+      return true;
+    } catch (error) {
+      final failure = classify(error);
+      _recordDownloadDiagnostic(
+        attemptId: attemptId,
+        attempt: attempt,
+        stage: failure.stage ?? stage,
+        outcome: failure.code,
+        overall: overall,
+        stageClock: stageClock,
+        httpStatus: failure.httpStatus ?? httpStatus,
+        expectedBytes: failure.expectedBytes ?? expected,
+        declaredBytes: declaredBytes,
+        receivedBytes: failure.receivedBytes ?? receivedBytes,
+        finalSizeBytes: finalFileSizeBytes,
+        exceptionType:
+            failure.exceptionType ??
+            (error is ExportFailure ? null : error.runtimeType.toString()),
+      );
+      throw failure;
     } finally {
-      http.close(force: true);
+      http?.close(force: true);
     }
   }
+}
+
+String? resumeDownloadFailureMessage(
+  ExportFailure error,
+  String Function(String, String) localize,
+) {
+  if (error.stage == null) return null;
+  return switch (error.code) {
+    'EXPORT_NOT_READY' => localize(
+      'This PDF is not ready to download. No new export or Credit charge was created.',
+      'ملف PDF هذا غير جاهز للتنزيل. لم يتم إنشاء تصدير جديد أو خصم أرصدة.',
+    ),
+    'DOWNLOAD_HTTP_ERROR' => localize(
+      'The file server returned HTTP ${error.httpStatus ?? 'unknown'}. Your completed export and Credits are unchanged; retry the download later.',
+      'أعاد خادم الملف HTTP ${error.httpStatus ?? 'غير معروف'}. ملفك المكتمل وأرصدتك لم يتغيرا؛ أعد محاولة التنزيل لاحقًا.',
+    ),
+    'DOWNLOAD_TIMEOUT' || 'DOWNLOAD_NETWORK_ERROR' => localize(
+      'The PDF transfer did not complete. Your existing export and Credits are unchanged; check your connection and retry.',
+      'لم يكتمل نقل ملف PDF. ملفك الحالي وأرصدتك لم يتغيرا؛ تحقق من الاتصال ثم أعد المحاولة.',
+    ),
+    'DOWNLOAD_SIZE_MISMATCH' || 'DOWNLOAD_INVALID_PDF' => localize(
+      'The downloaded file was incomplete or not a valid PDF. It was not saved, and no Credits were charged. Retry the download later.',
+      'الملف الذي تم تنزيله غير مكتمل أو ليس ملف PDF صالحًا. لم يتم حفظه ولم يتم خصم أرصدة؛ أعد المحاولة لاحقًا.',
+    ),
+    'DOWNLOAD_SAVE_NOT_CONFIRMED' => localize(
+      'Android did not confirm saving the PDF. If you cancelled the file picker, choose a location and complete the save. No Credits were charged.',
+      'لم يؤكد Android حفظ ملف PDF. إذا ألغيت نافذة اختيار الموقع، اختر موقعًا وأكمل الحفظ. لم يتم خصم أرصدة.',
+    ),
+    'DOWNLOAD_SAVE_ERROR' || 'DOWNLOAD_SAVE_SIZE_MISMATCH' => localize(
+      'Android could not confirm a complete PDF save. Check device storage and retry. Your existing export and Credits are unchanged.',
+      'تعذر على Android تأكيد حفظ ملف PDF كامل. تحقق من مساحة الجهاز ثم أعد المحاولة. ملفك الحالي وأرصدتك لم يتغيرا.',
+    ),
+    'DOWNLOAD_FAILED' || 'DOWNLOAD_LINK_INVALID' || 'FORBIDDEN' => localize(
+      'The download could not be completed. Your existing export and Credits are unchanged; try downloading again later.',
+      'تعذر إكمال التنزيل. ملفك الحالي وأرصدتك لم يتغيرا؛ أعد محاولة التنزيل لاحقًا.',
+    ),
+    _ => null,
+  };
 }

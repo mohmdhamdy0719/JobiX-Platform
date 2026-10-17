@@ -31,11 +31,25 @@ import 'support/production_fonts.dart';
 import 'support/slice_fakes.dart';
 
 class _PdfOverrides extends HttpOverrides {
-  final bytes = Uint8List.fromList(utf8.encode('%PDF-synthetic fixture'));
+  _PdfOverrides({
+    this.statusCode = 200,
+    List<int>? responseBytes,
+    this.requestFailure,
+    this.responseFailure,
+    this.streamFailure,
+  }) : bytes = Uint8List.fromList(responseBytes ?? _syntheticPdfBytes);
+
+  final int statusCode;
+  final Object? requestFailure;
+  final Object? responseFailure;
+  final Object? streamFailure;
+  final Uint8List bytes;
   bool closed = false;
   @override
   HttpClient createHttpClient(SecurityContext? context) => _PdfClient(this);
 }
+
+final _syntheticPdfBytes = utf8.encode('%PDF-synthetic fixture');
 
 class _PdfClient implements HttpClient {
   _PdfClient(this.fixture);
@@ -44,7 +58,8 @@ class _PdfClient implements HttpClient {
   Future<HttpClientRequest> getUrl(Uri uri) async {
     expect(uri.host, 'storage.googleapis.com');
     expect(uri.queryParameters['generation'], '7');
-    return _PdfRequest(fixture.bytes);
+    if (fixture.requestFailure != null) throw fixture.requestFailure!;
+    return _PdfRequest(fixture);
   }
 
   @override
@@ -57,36 +72,47 @@ class _PdfClient implements HttpClient {
 }
 
 class _PdfRequest implements HttpClientRequest {
-  _PdfRequest(this.bytes);
-  final Uint8List bytes;
+  _PdfRequest(this.fixture);
+  final _PdfOverrides fixture;
   @override
   set followRedirects(bool value) {
     expect(value, false);
   }
 
   @override
-  Future<HttpClientResponse> close() async => _PdfResponse(bytes);
+  Future<HttpClientResponse> close() async {
+    if (fixture.responseFailure != null) throw fixture.responseFailure!;
+    return _PdfResponse(fixture);
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _PdfResponse extends Stream<List<int>> implements HttpClientResponse {
-  _PdfResponse(this.bytes);
-  final Uint8List bytes;
+  _PdfResponse(this.fixture);
+  final _PdfOverrides fixture;
+  Uint8List get bytes => fixture.bytes;
   @override
-  int get statusCode => 200;
+  int get statusCode => fixture.statusCode;
+  @override
+  int get contentLength => bytes.length;
   @override
   StreamSubscription<List<int>> listen(
     void Function(List<int>)? onData, {
     Function? onError,
     void Function()? onDone,
     bool? cancelOnError,
-  }) => Stream<List<int>>.value(bytes).listen(
-    onData,
-    onError: onError,
-    onDone: onDone,
-    cancelOnError: cancelOnError,
-  );
+  }) =>
+      (fixture.streamFailure == null
+              ? Stream<List<int>>.value(bytes)
+              : Stream<List<int>>.error(fixture.streamFailure!))
+          .listen(
+            onData,
+            onError: onError,
+            onDone: onDone,
+            cancelOnError: cancelOnError,
+          );
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -465,6 +491,7 @@ void main() {
                 'profile_id': profileId,
                 'state': acknowledgement == null ? 'COMPLETED' : workerState,
                 'created_at': '2026-10-08T12:00:00Z',
+                'object_size': _syntheticPdfBytes.length,
               },
             ],
             'next_cursor': paginate && command['cursor'] == null ? jobId : null,
@@ -515,7 +542,7 @@ void main() {
             'profile_id': profileId,
             'state': workerState,
             'page_count': 1,
-            'object_size': 2048,
+            'object_size': _syntheticPdfBytes.length,
             'download_eligible': workerState == 'COMPLETED',
             'expires_at': DateTime.now()
                 .add(const Duration(days: 7))
@@ -955,13 +982,26 @@ void main() {
       expiredDownload = false;
       final fixture = _PdfOverrides();
       Map? saved;
+      final diagnostics = <String>[];
+      final previousDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) {
+        if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+          diagnostics.add(message!);
+        }
+      };
+      addTearDown(() => debugPrint = previousDebugPrint);
       const channel = MethodChannel('jobix/pdf_save');
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
         call,
       ) async {
         expect(call.method, 'save');
         saved = call.arguments as Map;
-        return true;
+        return {
+          'saved': true,
+          'stage': 'saved',
+          'submitted_bytes': fixture.bytes.length,
+          'final_size_bytes': fixture.bytes.length,
+        };
       });
       addTearDown(
         () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -988,6 +1028,286 @@ void main() {
         expect(accepted, 0);
         expect(fixture.closed, true);
         expect(find.text('PDF saved. No Credits charged.'), findsOneWidget);
+        await tap(tester, 'Download — free');
+        expect(find.text('PDF saved. No Credits charged.'), findsOneWidget);
+        expect(
+          commands.where((command) => command['action'] == 'download'),
+          hasLength(2),
+        );
+        expect(
+          commands.any(
+            (command) =>
+                command['action'] == 'create' || command['action'] == 'again',
+          ),
+          false,
+        );
+        final diagnosticText = diagnostics.join('\n');
+        final attemptIds = diagnostics
+            .map(
+              (line) =>
+                  jsonDecode(line.substring('JOBIX_PDF_DOWNLOAD '.length))
+                      as Map<String, dynamic>,
+            )
+            .map((event) => event['attempt_id'])
+            .toSet();
+        expect(attemptIds, hasLength(2));
+        expect(attemptIds, everyElement(isA<String>()));
+        expect(diagnosticText, contains('"stage":"storage_response"'));
+        expect(diagnosticText, contains('"stage":"storage_body"'));
+        expect(diagnosticText, contains('"stage":"android_save"'));
+        expect(diagnosticText, contains('"final_size_bytes":'));
+        expect(diagnosticText, isNot(contains('storage.googleapis.com')));
+        expect(diagnosticText, isNot(contains('synthetic-only')));
+        expect(diagnosticText, isNot(contains(jobId)));
+        expect(diagnosticText, isNot(contains('%PDF-synthetic fixture')));
+      }, fixture);
+    },
+  );
+  testWidgets('Storage HTTP failures keep status and do not save or export', (
+    tester,
+  ) async {
+    expiredDownload = false;
+    final fixture = _PdfOverrides(statusCode: 403);
+    var saveCalled = false;
+    const channel = MethodChannel('jobix/pdf_save');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+      call,
+    ) async {
+      saveCalled = true;
+      return {'saved': true};
+    });
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        null,
+      ),
+    );
+    await HttpOverrides.runWithHttpOverrides(() async {
+      creditBalance = 0;
+      await mount(tester, initial: true);
+      await tap(tester, 'Download — free');
+      expect(find.textContaining('HTTP 403'), findsOneWidget);
+      expect(saveCalled, false);
+      expect(accepted, 0);
+      expect(
+        commands.any(
+          (command) =>
+              command['action'] == 'create' || command['action'] == 'again',
+        ),
+        false,
+      );
+      expect(fixture.closed, true);
+    }, fixture);
+  });
+  testWidgets('invalid PDF bytes are rejected before Android save', (
+    tester,
+  ) async {
+    expiredDownload = false;
+    final fixture = _PdfOverrides(
+      responseBytes: List<int>.filled(_syntheticPdfBytes.length, 0x41),
+    );
+    var saveCalled = false;
+    const channel = MethodChannel('jobix/pdf_save');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+      call,
+    ) async {
+      saveCalled = true;
+      return {'saved': true};
+    });
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        null,
+      ),
+    );
+    await HttpOverrides.runWithHttpOverrides(() async {
+      creditBalance = 0;
+      await mount(tester, initial: true);
+      await tap(tester, 'Download — free');
+      expect(find.textContaining('not a valid PDF'), findsOneWidget);
+      expect(saveCalled, false);
+      expect(accepted, 0);
+    }, fixture);
+  });
+  testWidgets('truncated PDF body is rejected against server size metadata', (
+    tester,
+  ) async {
+    expiredDownload = false;
+    final fixture = _PdfOverrides(
+      responseBytes: _syntheticPdfBytes.sublist(
+        0,
+        _syntheticPdfBytes.length - 1,
+      ),
+    );
+    var saveCalled = false;
+    const channel = MethodChannel('jobix/pdf_save');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+      call,
+    ) async {
+      saveCalled = true;
+      return {'saved': true};
+    });
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        null,
+      ),
+    );
+    await HttpOverrides.runWithHttpOverrides(() async {
+      creditBalance = 0;
+      await mount(tester, initial: true);
+      await tap(tester, 'Download — free');
+      expect(find.textContaining('incomplete'), findsOneWidget);
+      expect(saveCalled, false);
+      expect(accepted, 0);
+    }, fixture);
+  });
+  testWidgets(
+    'network failures are categorized without exposing exception text',
+    (tester) async {
+      expiredDownload = false;
+      final fixture = _PdfOverrides(
+        requestFailure: const SocketException(
+          'synthetic private failure detail',
+        ),
+      );
+      final diagnostics = <String>[];
+      final previousDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) {
+        if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+          diagnostics.add(message!);
+        }
+      };
+      addTearDown(() => debugPrint = previousDebugPrint);
+      await HttpOverrides.runWithHttpOverrides(() async {
+        creditBalance = 0;
+        await mount(tester, initial: true);
+        await tap(tester, 'Download — free');
+        expect(find.textContaining('did not complete'), findsOneWidget);
+        expect(accepted, 0);
+        expect(diagnostics.join('\n'), contains('DOWNLOAD_NETWORK_ERROR'));
+        expect(
+          diagnostics.join('\n'),
+          isNot(contains('synthetic private failure detail')),
+        );
+        expect(diagnostics.join('\n'), isNot(contains('synthetic-only')));
+      }, fixture);
+    },
+  );
+  testWidgets('response-header timeout is distinct from HTTP status failure', (
+    tester,
+  ) async {
+    expiredDownload = false;
+    final fixture = _PdfOverrides(
+      responseFailure: TimeoutException('synthetic timeout detail'),
+    );
+    final diagnostics = <String>[];
+    final previousDebugPrint = debugPrint;
+    debugPrint = (message, {wrapWidth}) {
+      if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+        diagnostics.add(message!);
+      }
+    };
+    addTearDown(() => debugPrint = previousDebugPrint);
+    await HttpOverrides.runWithHttpOverrides(() async {
+      creditBalance = 0;
+      await mount(tester, initial: true);
+      await tap(tester, 'Download — free');
+      expect(find.textContaining('did not complete'), findsOneWidget);
+      expect(diagnostics.join('\n'), contains('"stage":"storage_response"'));
+      expect(diagnostics.join('\n'), contains('DOWNLOAD_TIMEOUT'));
+      expect(
+        diagnostics.join('\n'),
+        isNot(contains('synthetic timeout detail')),
+      );
+      expect(accepted, 0);
+    }, fixture);
+  });
+  testWidgets('interrupted response body is identified as a network failure', (
+    tester,
+  ) async {
+    expiredDownload = false;
+    final fixture = _PdfOverrides(
+      streamFailure: const SocketException('synthetic body failure detail'),
+    );
+    final diagnostics = <String>[];
+    final previousDebugPrint = debugPrint;
+    debugPrint = (message, {wrapWidth}) {
+      if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+        diagnostics.add(message!);
+      }
+    };
+    addTearDown(() => debugPrint = previousDebugPrint);
+    await HttpOverrides.runWithHttpOverrides(() async {
+      creditBalance = 0;
+      await mount(tester, initial: true);
+      await tap(tester, 'Download — free');
+      expect(find.textContaining('did not complete'), findsOneWidget);
+      expect(diagnostics.join('\n'), contains('"stage":"storage_body"'));
+      expect(diagnostics.join('\n'), contains('DOWNLOAD_NETWORK_ERROR'));
+      expect(
+        diagnostics.join('\n'),
+        isNot(contains('synthetic body failure detail')),
+      );
+      expect(accepted, 0);
+    }, fixture);
+  });
+  testWidgets('Android save cancellation is not reported as a saved PDF', (
+    tester,
+  ) async {
+    expiredDownload = false;
+    final fixture = _PdfOverrides();
+    const channel = MethodChannel('jobix/pdf_save');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      channel,
+      (call) async => {'saved': false, 'stage': 'cancelled'},
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        null,
+      ),
+    );
+    await HttpOverrides.runWithHttpOverrides(() async {
+      creditBalance = 0;
+      await mount(tester, initial: true);
+      await tap(tester, 'Download — free');
+      expect(find.textContaining('did not confirm saving'), findsOneWidget);
+      expect(find.text('PDF saved. No Credits charged.'), findsNothing);
+      expect(accepted, 0);
+    }, fixture);
+  });
+  testWidgets(
+    'Android write failure is reported separately from cancellation',
+    (tester) async {
+      expiredDownload = false;
+      final fixture = _PdfOverrides();
+      const channel = MethodChannel('jobix/pdf_save');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (call) async => {
+          'saved': false,
+          'stage': 'write_failed',
+          'submitted_bytes': fixture.bytes.length,
+          'exception_type': 'IOException',
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await HttpOverrides.runWithHttpOverrides(() async {
+        creditBalance = 0;
+        await mount(tester, initial: true);
+        await tap(tester, 'Download — free');
+        expect(
+          find.textContaining('could not confirm a complete PDF save'),
+          findsOneWidget,
+        );
+        expect(find.text('PDF saved. No Credits charged.'), findsNothing);
+        expect(accepted, 0);
       }, fixture);
     },
   );

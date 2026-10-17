@@ -201,6 +201,7 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       final saved = await service.download(
         widget.exportId,
         suggestedName: fullName,
+        expectedBytes: resumePositiveInt(job?['object_size']),
       );
       if (mounted && saved) {
         setState(
@@ -212,14 +213,19 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       }
     } catch (error) {
       if (mounted) {
-        final failureMessage =
+        final downloadMessage = error is ExportFailure
+            ? resumeDownloadFailureMessage(error, t)
+            : null;
+        final existingFileUnavailable =
             error is ExportFailure &&
-                ['EXPORT_EXPIRED', 'EXPORT_OBJECT_MISSING'].contains(error.code)
+            ['EXPORT_EXPIRED', 'EXPORT_OBJECT_MISSING'].contains(error.code);
+        final fallbackMessage = existingFileUnavailable
             ? t(
                 'File unavailable. It will not be regenerated or charged automatically.',
                 'الملف غير متاح. لن تتم إعادة إنشائه أو خصم أرصدة تلقائيًا.',
               )
             : AppLocalizations.of(context)!.exportTemporarilyUnavailable;
+        final failureMessage = downloadMessage ?? fallbackMessage;
         setState(() {
           message = failureMessage;
           failureDialogOpen = true;

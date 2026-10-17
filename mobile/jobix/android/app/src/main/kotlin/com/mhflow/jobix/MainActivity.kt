@@ -5,6 +5,8 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
 
 class MainActivity : FlutterActivity() {
     private var saveResult: MethodChannel.Result? = null
@@ -16,7 +18,7 @@ class MainActivity : FlutterActivity() {
         MethodChannel(engine.dartExecutor.binaryMessenger, "jobix/pdf_save")
             .setMethodCallHandler { call, result ->
                 if (call.method == "cancel") {
-                    clearSave(false)
+                    completeSave(saved = false, stage = "cancelled")
                     result.success(null)
                     return@setMethodCallHandler
                 }
@@ -37,8 +39,12 @@ class MainActivity : FlutterActivity() {
                         .setType("application/pdf")
                         .putExtra(Intent.EXTRA_TITLE, name)
                     startActivityForResult(intent, saveRequest)
-                } catch (_: Exception) {
-                    clearSave(false)
+                } catch (error: Exception) {
+                    completeSave(
+                        saved = false,
+                        stage = "picker_start_failed",
+                        exceptionType = error.javaClass.simpleName
+                    )
                 }
             }
     }
@@ -49,22 +55,76 @@ class MainActivity : FlutterActivity() {
         val uri = data?.data
         try {
             if (resultCode == Activity.RESULT_OK && uri != null && pdfBytes != null) {
+                val bytes = pdfBytes!!
                 val stream = contentResolver.openOutputStream(uri)
-                if (stream == null) clearSave(false)
-                else { stream.use { it.write(pdfBytes!!) }; clearSave(true) }
-            } else clearSave(false)
-        } catch (_: Exception) { clearSave(false) }
+                if (stream == null) {
+                    completeSave(
+                        saved = false,
+                        stage = "output_unavailable",
+                        submittedBytes = bytes.size
+                    )
+                } else {
+                    stream.use { it.write(bytes) }
+                    val finalSize = readDocumentSize(uri)
+                    val sizeMatches = finalSize == null || finalSize == bytes.size.toLong()
+                    completeSave(
+                        saved = sizeMatches,
+                        stage = if (sizeMatches) "saved" else "size_mismatch",
+                        submittedBytes = bytes.size,
+                        finalSizeBytes = finalSize
+                    )
+                }
+            } else {
+                completeSave(saved = false, stage = "cancelled")
+            }
+        } catch (error: Exception) {
+            completeSave(
+                saved = false,
+                stage = "write_failed",
+                submittedBytes = pdfBytes?.size,
+                exceptionType = error.javaClass.simpleName
+            )
+        }
     }
 
-    private fun clearSave(saved: Boolean) {
+    private fun readDocumentSize(uri: Uri): Long? = try {
+        contentResolver.query(
+            uri,
+            arrayOf(OpenableColumns.SIZE),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                cursor.getLong(0).takeIf { it >= 0L }
+            } else null
+        }
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun completeSave(
+        saved: Boolean,
+        stage: String,
+        submittedBytes: Int? = null,
+        finalSizeBytes: Long? = null,
+        exceptionType: String? = null
+    ) {
         pdfBytes?.fill(0)
         pdfBytes = null
-        saveResult?.success(saved)
+        val result = mutableMapOf<String, Any?>(
+            "saved" to saved,
+            "stage" to stage
+        )
+        if (submittedBytes != null) result["submitted_bytes"] = submittedBytes
+        if (finalSizeBytes != null) result["final_size_bytes"] = finalSizeBytes
+        if (exceptionType != null) result["exception_type"] = exceptionType
+        saveResult?.success(result)
         saveResult = null
     }
 
     override fun onDestroy() {
-        clearSave(false)
+        completeSave(saved = false, stage = "activity_destroyed")
         super.onDestroy()
     }
 }

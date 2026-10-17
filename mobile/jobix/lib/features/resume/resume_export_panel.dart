@@ -12,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import '../career_profile/career_profile.dart';
 import '../auth/auth_controller.dart';
 import 'resume_document.dart';
+import 'resume_experience_shared.dart';
 import 'resume_experience_widgets.dart';
 import 'resume_export_service.dart';
 import 'resume_preview_snapshot.dart';
@@ -235,6 +236,9 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               ? error.retryAfterSeconds
               : null;
           final l10n = AppLocalizations.of(context)!;
+          final downloadMessage = error is ExportFailure
+              ? resumeDownloadFailureMessage(error, t)
+              : null;
           message = error is ResumePreviewNeedsConfirmation
               ? t(
                   'Presentation was saved, but other edits are still unsaved. Use Preview saved version to review only saved content.',
@@ -245,46 +249,48 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                   'Presentation was saved, but the current Resume snapshot could not be rebuilt safely. Return to Preview and retry.',
                   'تم حفظ إعدادات العرض، لكن تعذّر تجهيز نسخة السيرة بأمان. ارجع إلى المعاينة وأعد المحاولة.',
                 )
-              : switch (code) {
-                  'VERSION_CONFLICT' => t(
-                    'The saved Resume changed elsewhere. Open Preview to see the current saved version. No new PDF was accepted.',
-                    'تغيّرت السيرة المحفوظة من مكان آخر. افتح المعاينة للاطلاع على النسخة الحالية. لم يتم قبول ملف PDF جديد.',
-                  ),
-                  'RENDERER_UPDATE_REQUIRED' => t(
-                    'This layout needs the Development PDF service update. No export was created or charged.',
-                    'يتطلب هذا التصميم تحديث خدمة PDF للتطوير. لم يتم إنشاء تصدير أو خصم رصيد.',
-                  ),
-                  'VALIDATION_FAILED' => t(
-                    'Fix or explicitly hide invalid saved content, then review Preview.',
-                    'أصلح المحتوى المحفوظ غير الصالح أو أخفه صراحةً ثم راجع المعاينة.',
-                  ),
-                  'CREDIT_INSUFFICIENT' => t(
-                    'Not enough Credits. The server did not accept this export; no export was created or charged.',
-                    'الرصيد غير كافٍ. لم يقبل الخادم هذا التصدير ولم يتم إنشاء ملف أو خصم رصيد.',
-                  ),
-                  'EXPORT_NOT_READY' => t(
-                    'Export is disabled. No new export can be accepted.',
-                    'التصدير معطّل. لا يمكن قبول تصدير جديد.',
-                  ),
-                  'EXPORT_EXPIRED' => t(
-                    'The file expired. No automatic regeneration or charge.',
-                    'انتهت صلاحية الملف. لا توجد إعادة إنشاء أو رسوم تلقائية.',
-                  ),
-                  'EXPORT_OBJECT_MISSING' => t(
-                    'The file is unavailable. No automatic regeneration or charge.',
-                    'الملف غير متاح. لا توجد إعادة إنشاء أو رسوم تلقائية.',
-                  ),
-                  'SERVICE_UNAVAILABLE' => l10n.exportTemporarilyUnavailable,
-                  'RATE_LIMITED' =>
-                    retryAfter == null
-                        ? l10n.exportRateLimited
-                        : l10n.exportRateLimitedRetry(retryAfter),
-                  'EXPORT_IN_PROGRESS' => l10n.exportInProgress,
-                  _ => t(
-                    'The request could not be confirmed. It is preserved to prevent a duplicate export.',
-                    'تعذّر تأكيد الطلب. تم الاحتفاظ به لمنع إنشاء تصدير مكرر.',
-                  ),
-                };
+              : downloadMessage ??
+                    switch (code) {
+                      'VERSION_CONFLICT' => t(
+                        'The saved Resume changed elsewhere. Open Preview to see the current saved version. No new PDF was accepted.',
+                        'تغيّرت السيرة المحفوظة من مكان آخر. افتح المعاينة للاطلاع على النسخة الحالية. لم يتم قبول ملف PDF جديد.',
+                      ),
+                      'RENDERER_UPDATE_REQUIRED' => t(
+                        'This layout needs the Development PDF service update. No export was created or charged.',
+                        'يتطلب هذا التصميم تحديث خدمة PDF للتطوير. لم يتم إنشاء تصدير أو خصم رصيد.',
+                      ),
+                      'VALIDATION_FAILED' => t(
+                        'Fix or explicitly hide invalid saved content, then review Preview.',
+                        'أصلح المحتوى المحفوظ غير الصالح أو أخفه صراحةً ثم راجع المعاينة.',
+                      ),
+                      'CREDIT_INSUFFICIENT' => t(
+                        'Not enough Credits. The server did not accept this export; no export was created or charged.',
+                        'الرصيد غير كافٍ. لم يقبل الخادم هذا التصدير ولم يتم إنشاء ملف أو خصم رصيد.',
+                      ),
+                      'EXPORT_NOT_READY' => t(
+                        'Export is disabled. No new export can be accepted.',
+                        'التصدير معطّل. لا يمكن قبول تصدير جديد.',
+                      ),
+                      'EXPORT_EXPIRED' => t(
+                        'The file expired. No automatic regeneration or charge.',
+                        'انتهت صلاحية الملف. لا توجد إعادة إنشاء أو رسوم تلقائية.',
+                      ),
+                      'EXPORT_OBJECT_MISSING' => t(
+                        'The file is unavailable. No automatic regeneration or charge.',
+                        'الملف غير متاح. لا توجد إعادة إنشاء أو رسوم تلقائية.',
+                      ),
+                      'SERVICE_UNAVAILABLE' =>
+                        l10n.exportTemporarilyUnavailable,
+                      'RATE_LIMITED' =>
+                        retryAfter == null
+                            ? l10n.exportRateLimited
+                            : l10n.exportRateLimitedRetry(retryAfter),
+                      'EXPORT_IN_PROGRESS' => l10n.exportInProgress,
+                      _ => t(
+                        'The request could not be confirmed. It is preserved to prevent a duplicate export.',
+                        'تعذّر تأكيد الطلب. تم الاحتفاظ به لمنع إنشاء تصدير مكرر.',
+                      ),
+                    };
         });
         if (showFailureDialog && mounted) {
           setState(() => failureDialogOpen = true);
@@ -634,7 +640,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     await _retry();
   }
 
-  Future<void> _download(String id) async {
+  Future<void> _download(String id, {int? expectedBytes}) async {
     if (downloadingExportIds.contains(id)) return;
     if (mounted) {
       setState(() {
@@ -650,7 +656,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
           ?.personal['full_name'];
       final saved = await ResumeExportService(
         client,
-      ).download(id, suggestedName: fullName);
+      ).download(id, suggestedName: fullName, expectedBytes: expectedBytes);
       if (mounted) {
         setState(
           () => message = saved == true
@@ -785,7 +791,10 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                         job['download_eligible'] == false
                     ? null
                     : () => _run(
-                        () => _download(job['id'] as String),
+                        () => _download(
+                          job['id'] as String,
+                          expectedBytes: resumePositiveInt(job['object_size']),
+                        ),
                         allowWhileBusy: true,
                         showFailureDialog: true,
                       ),
@@ -809,7 +818,14 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                         ),
                         onPressed: busy
                             ? null
-                            : () => _run(() => _download(job['id'] as String)),
+                            : () => _run(
+                                () => _download(
+                                  job['id'] as String,
+                                  expectedBytes: resumePositiveInt(
+                                    job['object_size'],
+                                  ),
+                                ),
+                              ),
                         child: Text(t('Download — free', 'تنزيل — مجاني')),
                       ),
                   ],
