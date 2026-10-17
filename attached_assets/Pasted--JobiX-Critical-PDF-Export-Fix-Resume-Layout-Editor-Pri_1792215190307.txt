@@ -1,0 +1,153 @@
+# JobiX — Critical PDF Export Fix + Resume Layout Editor
+
+**Priority: Critical. Fix the actual PDF export failure first. Build a fresh standard Development APK after verification. Do not modify Production.**
+
+Work in the existing JobiX codebase. Inspect the current implementation and trace the real export flow before changing code. Do not merely change error messages, suppress version checks, or add UI workarounds.
+
+## 1. Fix the recurring PDF export failure — highest priority
+
+On the standard Development APK, pressing **Export PDF** from Preview repeatedly shows:
+
+> PDF request issue  
+> The saved document changed. Review the current Preview before creating a new export.
+
+The same error persists despite the previous attempted fix.
+
+### Required investigation
+
+Trace the complete flow through `ResumePage.showPreview`, `ResumeExportPanel`, the saved-document/version/hash checks, and the backend PDF export request.
+
+Determine exactly:
+- Which document/version/hash is sent when Preview opens and when Export PDF is pressed.
+- Which server-side value differs and why.
+- Whether a local Preview document, server-authoritative document, selected sections, resume language, or another state is causing the mismatch.
+- Whether a refreshed document is being overwritten, discarded, or compared against a stale snapshot.
+- Whether the client and server calculate or serialize the document hash/version differently.
+
+Add targeted diagnostic tests or safe development-only logging that identifies the mismatching fields and the stage where the conflict occurs. Do not log credentials, tokens, private resume content, or other sensitive information.
+
+### Required fix
+
+Implement one coherent source of truth for the document being exported.
+
+- A Preview must correspond to a clearly identified document snapshot and version/hash.
+- Export must use that same snapshot and the appropriate authoritative server version.
+- If the user edits the resume or changes its layout, update the snapshot/version/hash consistently before export.
+- If a genuine concurrent server change occurs, handle it explicitly and safely. Do not enter an endless review/conflict loop.
+- A routine export must not require a separate **Review updated Preview** action just to get past a stale-state error.
+- Remove the **Review updated Preview** button and its obsolete status message from the normal export flow.
+- Do not bypass version/hash validation, accept arbitrary stale documents, weaken authorization, or disable concurrency protection.
+- Preserve server-authoritative Credit accounting, idempotency, retry/recovery, and the rule that a failed export is not charged as a successful export.
+
+**Acceptance criterion:** Reproduce the currently failing scenario with a regression test, fix its root cause, and verify that an eligible user can successfully create a new PDF using the Development backend. A mocked test alone is insufficient to claim the real export issue is fixed. If live verification is impossible, clearly report that limitation and never label live export as verified.
+
+## 2. Replace “Edit profile content” with a Resume Layout Editor
+
+On the **Resume Export** page:
+
+Replace the heading/description:
+
+“Choose an ATS-friendly layout for your saved Career Profile.”
+
+with:
+
+“Customize your resume layout and choose what to include.”
+
+Replace **Edit profile content** with **Edit resume layout**.
+
+Open a dedicated, polished layout editor consistent with JobiX’s existing design system.
+
+### Layout editor UI
+
+- Standard page header with a Back button. Back returns to Resume Export without losing unsaved layout changes unexpectedly.
+- Show the resume sections as draggable, reorderable rows.
+- Each row includes a clear section name, a drag handle, and an accessible On/Off switch.
+- Enabled sections look active; disabled sections use a subtle, polished muted appearance. Maintain readable contrast and clear switch states.
+- Support drag-and-drop reordering with visible feedback and suitable touch targets.
+- Use balanced spacing, responsive sizing, and the existing JobiX typography, colors, cards, and controls.
+- Avoid oversized cards, unnecessary explanatory paragraphs, and default-looking controls.
+
+Include the existing applicable sections:
+1. Professional Summary
+2. Target Role
+3. Work Experience
+4. Volunteer Experience
+5. Education
+6. Certifications
+7. Achievements
+8. Projects
+9. Skills
+10. Languages
+
+Keep section identifiers stable and compatible with existing profile data and rendering. Do not rename or migrate stored profile fields unnecessarily.
+
+At the bottom, provide:
+- **Reset** — restore the default section order and default enabled/disabled settings.
+- **Done** — validate and apply the selected layout, then return to Resume Export.
+
+Provide the standard Back action at the top. Avoid adding redundant confirmation dialogs when there are no changes.
+
+### Layout persistence and PDF rendering
+
+- Persist layout preferences using the appropriate existing user/profile-scoped storage mechanism, if available.
+- Keep unsaved layout changes separate until Done is pressed.
+- Reset must restore the documented default order and section visibility, not erase the user's resume content.
+- The Preview and generated PDF must use the same selected section order and enabled/disabled states.
+- Disabled sections must not appear in the PDF. Reordering sections must change their actual rendered order.
+- Never delete underlying profile data when a section is switched off.
+- Ensure the layout is isolated per user and does not leak between accounts.
+- If persistence requires a schema change, explain why before making an unnecessary migration; prefer the existing supported storage model.
+
+The existing stale-review error must not reappear merely because the user changes the layout.
+
+## 3. Style the export cost and availability note
+
+On Resume Export, restyle the existing note about free Preview, the 2-Credit cost of a successful new PDF, and the seven-day free-download window.
+
+Use a compact JobiX-style information note with:
+- A thin vertical blue accent line on the left.
+- A subtle background and consistent padding.
+- Readable typography and proper spacing.
+- Correct RTL/LTR behavior.
+- No excessive height or distracting decoration.
+
+Preserve the actual pricing and availability rules. Do not imply that failed exports consume Credits or that expired files remain downloadable.
+
+## 4. Tests and verification
+
+Add or update focused tests for:
+- The actual version/hash conflict root cause and recovery.
+- Exporting after a Preview refresh or document update.
+- Exporting after section reordering and enabling/disabling sections.
+- Preview/PDF consistency for section order and visibility.
+- Reset and Done behavior.
+- Layout persistence and user isolation.
+- English and Arabic layouts, including RTL alignment.
+- Existing Credit accounting, idempotency, failed-export recovery, and free valid downloads.
+
+Run the relevant Flutter tests, PDF export/backend regression tests, `flutter analyze --no-pub`, and `git diff --check`. Report any failures honestly.
+
+## 5. Build a fresh Development APK
+
+After the implementation and tests:
+
+- Build `assembleDevelopmentDebug`.
+- Use the standard `com.mhflow.jobix` application ID and the existing Development configuration.
+- Keep `JOBIX_ENABLE_PDF_EXPORT=true`.
+- Keep the `localPreview` flavor separate and unchanged.
+- Verify the actual APK path, build timestamp, size, SHA-256, application ID, and ARM64 native libraries.
+- Provide the exact artifact or a ZIP containing the exact APK if necessary.
+- Do not install it on a device, charge real Credits, modify Production, change signing configuration, or deploy backend/infrastructure changes without explicit authorization.
+
+## Final report
+
+Clearly separate:
+1. Root cause identified.
+2. Actual fix implemented.
+3. Automated tests passed and failed.
+4. Whether real Development-backend PDF export was successfully verified.
+5. Whether layout preferences affect the actual Preview and PDF.
+6. APK metadata and exact download artifact.
+7. Any remaining limitations.
+
+**Do not mark this task complete just because the build succeeds or mocked tests pass. The recurring export failure is the primary acceptance criterion.**
