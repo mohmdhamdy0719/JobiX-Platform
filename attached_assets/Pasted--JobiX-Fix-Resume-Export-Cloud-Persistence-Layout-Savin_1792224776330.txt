@@ -1,0 +1,182 @@
+# JobiX — Fix Resume Export, Cloud Persistence, Layout Saving, and User Experience
+
+## Objective
+
+Fix the recurring PDF export failures and redesign the related user flows. Prioritize reliability, export speed, accurate Credit accounting, and a simple user experience.
+
+Do not merely hide error messages or weaken server-side validation. Investigate the actual causes, implement the smallest safe complete fix, and verify it with tests.
+
+## 1. Fix Resume Layout saving
+
+The Layout Editor currently displays:
+
+“Layout saving needs the Development backend update. The saved layout was not changed.”
+
+- Make the editor save section order and visibility correctly to the authoritative backend.
+- Migration 022 and shared-renderer support were previously added locally. Inspect the current code and migration before changing anything.
+- Preserve section ordering and visibility in the rendered PDF, including Target Role, Skills, and Languages.
+- Ensure Reset restores the default order and visibility.
+- Ensure Done confirms successful persistence; do not claim success if saving fails.
+- If the Development backend is not ready, show a concise, localized error and preserve the user's unsaved layout changes.
+- Improve the leave/discard confirmation dialog: make it wider within safe screen margins, visually balanced, and consistent with JobiX's existing design.
+
+Do not apply migrations, deploy workers, modify Production, or change live gates without explicit approval.
+
+## 2. Remove the obsolete cloud-preview review flow
+
+The intended architecture is:
+
+- Supabase is the authoritative source for saved resume data.
+- Local HTML preview is for fast on-device display only.
+- Resume edits are persisted to the cloud when the user explicitly saves.
+- Temporary local recovery data may exist only to recover interrupted, unsaved edits. It must not become a competing profile or a required synchronization workflow.
+- Discarding unsaved edits must discard them.
+- Export must use the latest authoritative saved resume data and saved presentation settings.
+
+Remove the obsolete requirement to review a cloud-generated PDF preview before exporting. Remove the old “Review updated Preview” action and messages such as “The saved document changed. Review the current Preview before creating a new export.”
+
+Do not bypass legitimate authorization, ownership, version, or integrity checks. Instead, fix the client/server contract so a normal export from the final Preview does not fail because of an unnecessary or incompatible HTML snapshot comparison.
+
+Inspect renderer-version and bundle-version compatibility. Determine whether the exact HTML comparison or stale version/hash handling is causing the recurring conflict. Add regression tests for the actual root cause.
+
+## 3. Eliminate misleading pending-save blockers
+
+Remove the user-facing blocker:
+
+“A previous save is still unconfirmed. Retry or resolve that request before Preview.”
+
+The user should not need to resolve an internal request before viewing or exporting the latest saved resume.
+
+- Investigate why a save becomes unconfirmed.
+- Resolve ambiguous write outcomes safely using the existing request identity/idempotency mechanisms where applicable.
+- Do not silently discard edits, create duplicate writes, or treat an unconfirmed write as a confirmed save.
+- If an explicit Save fails because the user is offline, show a clear red inline error near the relevant action, for example: “No internet connection. Your changes were not saved.”
+- Keep temporary recovery behavior separate from authoritative cloud persistence.
+- Export must use confirmed, authoritative saved data. Never silently export unsaved edits.
+
+## 4. Remove “Retry the saved request” from the user experience
+
+Remove the “Retry the saved request” button and related persistent messages from Resume Export, Preview, Credit & Export History, and other user-facing screens.
+
+Users initiate a new export explicitly from the final Preview. They must not be able to initiate PDF generation from Credit & Export History or another unrelated screen.
+
+Preserve safe internal recovery for already-submitted operations when necessary to prevent duplicate files or duplicate Credit charges. Internal idempotent recovery must not become a user-facing alternate export flow.
+
+Do not delete legitimate history or break the ability to download an existing valid PDF for free within its availability period.
+
+## 5. Diagnose and fix slow and failed exports
+
+The user observed:
+- A long wait followed by “Service is temporarily unavailable.”
+- A subsequent export that succeeded but remained in the preparing state for a long time.
+- A queued state followed by a prepared state.
+- An export-limit error after waiting for the PDF.
+
+Do not guess the root cause. Inspect Development logs and measure each stage separately, including request acceptance, queue wait, Worker startup, HTML rendering, PDF generation, storage upload, database finalization, and response delivery.
+
+Determine whether the delay is caused by queue congestion, cold starts, timeouts, renderer failures, storage, database contention, or another verified cause.
+
+Then:
+- Fix the demonstrated bottleneck with the smallest safe change.
+- Keep the existing queue/preparing experience where appropriate.
+- Replace “Processing time is not estimated” with concise, reassuring copy such as “Your resume is being finalized. Your download will be available here when it’s ready.” Only show this while the operation is actually processing.
+- Do not invent a percentage or countdown. Show progress only if it reflects real measured progress.
+- Avoid indefinite loading states. Use bounded polling/backoff, handle terminal failures, and provide a clear path back to the app.
+- Avoid aggressive polling and unnecessary repeated backend requests.
+- Ensure retries cannot produce duplicate PDFs or duplicate charges.
+
+Do not claim the export is faster unless before/after measurements demonstrate an improvement.
+
+## 6. Export-limit behavior
+
+The user accepts seeing an export-limit error after opening Preview and explicitly pressing Export.
+
+- Check the applicable limit before starting expensive PDF generation.
+- If the limit is reached, return a clear, immediate response without unnecessarily generating a PDF.
+- Remove persistent “You have reached the export limit” text from the Resume Export page.
+- Remove the persistent retry button and retry instructions.
+- Let the user initiate a new export only through a new explicit Export action from the final Preview after the restriction permits it.
+- Preserve existing server-side rate limits and security controls.
+- Do not reset, weaken, or bypass rate limits to make tests pass.
+
+A rejected request must not create a new export or charge Credits.
+
+## 7. Credit accounting and failures
+
+Preserve server-authoritative accounting and existing idempotency protections.
+
+Verify:
+- A successful new PDF export charges the configured 2 Credits exactly once.
+- A failed export does not leave a final charge.
+- A timeout or lost response does not cause a duplicate charge when the operation is retried or recovered.
+- A rejected rate-limited or insufficient-Credit request does not start PDF generation unnecessarily.
+- A valid existing PDF can be downloaded again without an additional charge during its availability period.
+- An ambiguous outcome is reconciled with the existing operation before another export is created.
+
+Do not modify live Credit balances or perform real charges as part of automated tests.
+
+## 8. Credit & Export History navigation
+
+Credit & Export History must be a standalone page.
+
+- Remove the bottom application navigation bar from the history screen and its nested detail screens.
+- Provide a clear Back button that returns to the actual previous screen.
+- Android system Back from export details must return to history.
+- Keep export history and legitimate download actions intact.
+- Remove “Retry the saved request” and any other action that starts a new export from history.
+- Do not add polling or manual refresh actions without a demonstrated need.
+
+## 9. PDF filename
+
+Generate a safe filename based on the user's name, followed by “Resume”.
+
+Example:
+- Name: `Mohamed Hamdy`
+- Filename: `Mohamed Hamdy Resume.pdf`
+
+Sanitize filesystem-invalid characters, trim whitespace, handle empty names with a safe fallback, and ensure the generated filename is used consistently for the downloaded file. Do not expose internal IDs or request UUIDs in the filename.
+
+## 10. Preserve the existing UI improvements
+
+Keep the compact, blue-accented pricing note:
+
+“Preview is free. A successful new PDF export costs 2 Credits. Valid downloads are free for 7 days after the file is created.”
+
+Do not reintroduce the removed cloud-preview review button or persistent export-limit/retry messages.
+
+Maintain the current JobiX visual language, Arabic/English localization, RTL/LTR behavior, safe areas, and fixed bottom actions.
+
+## 11. Required verification
+
+Run and report:
+- Regression tests reproducing the exact version/hash or renderer compatibility conflict.
+- Layout ordering, visibility, Reset, save failure, and saved-rendering tests.
+- Save interruption, offline save, recovery, and discard tests.
+- Export success, temporary service failure, timeout, rate limiting, and insufficient-Credit tests.
+- Idempotency, duplicate-charge prevention, and free redownload tests.
+- Queue/Worker failure handling and bounded polling tests.
+- Filename sanitization tests.
+- Navigation tests confirming History and Details have no bottom navigation and Back behaves correctly.
+- English and Arabic UI tests.
+- `flutter analyze --no-pub` and `git diff --check`.
+
+Run relevant backend tests and disposable-database integration tests where available. Do not claim live Development behavior is verified by mocked tests.
+
+## 12. Development rollout and APK
+
+First implement and verify changes locally. Review existing Migration 022 and the current Worker implementation before adding duplicate changes.
+
+Report separately:
+1. Local code and migration changes.
+2. Tests and their actual results.
+3. Remaining Development backend work.
+4. The precise reason for any live failure, supported by logs or reproducible evidence.
+5. Any required Development migration or Worker deployment.
+
+Do not apply migrations or deploy the Worker until explicitly approved. Do not modify Production, live gates, Credit accounting configuration, IAM, infrastructure, or signing settings.
+
+Build a fresh standard ARM64 `developmentDebug` APK only after the relevant local implementation is complete. Preserve package ID `com.mhflow.jobix`, the Development Supabase configuration, and `JOBIX_ENABLE_PDF_EXPORT=true`. Verify the APK timestamp, size, SHA-256, and artifact freshness. Do not uninstall the existing app or clear its data to work around signing issues.
+
+The final report must distinguish what is implemented locally, what is verified in tests, what is verified on a real Android device, and what still requires Development deployment.
+
+Do not start unrelated UI work. Prioritize the export root cause and the requirements above.

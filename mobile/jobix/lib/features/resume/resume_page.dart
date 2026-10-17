@@ -244,7 +244,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
   }
 
   Future<void> showPreview() async {
-    if (language == null || profile == null || busy || pending) return;
+    if (language == null || profile == null || busy) return;
     setState(() {
       busy = true;
       message = null;
@@ -260,8 +260,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
         setState(() {
           confirmedDraftFingerprint = error.fingerprint;
           message = t(
-            'You have unsaved edits. Preview will show the last saved version only; nothing will be saved or discarded. Select Preview saved version to continue.',
-            'لديك تعديلات غير محفوظة. ستعرض المعاينة آخر نسخة محفوظة فقط، ولن يتم حفظ التعديلات أو حذفها. اختر معاينة النسخة المحفوظة للمتابعة.',
+            'Some edits or a save are not confirmed. Preview will show only the latest version currently saved on the server; it will not save, retry, or discard local work. Select Preview saved version to continue.',
+            'بعض التعديلات أو عملية الحفظ غير مؤكدة. ستعرض المعاينة أحدث نسخة محفوظة حاليًا على الخادم فقط، ولن تحفظ العمل المحلي أو تعيد إرساله أو تحذفه. اختر معاينة النسخة المحفوظة للمتابعة.',
           );
         });
       }
@@ -270,8 +270,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
         setState(
           () => message = switch (error.code) {
             'SAVE_RECONCILIATION_REQUIRED' => t(
-              'A previous save is still unconfirmed. Retry or resolve that request before Preview.',
-              'هناك حفظ سابق لم يتم تأكيده. أعد المحاولة أو أكمل تسوية الطلب قبل المعاينة.',
+              'The current saved version could not be checked. Try Preview again.',
+              'تعذّر التحقق من النسخة المحفوظة الحالية. أعد محاولة المعاينة.',
             ),
             'SAVED_RESUME_CHANGED' => t(
               'The saved Resume changed while Preview was loading. Retry to review the latest version.',
@@ -617,7 +617,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                   label: t(
                     confirmedDraftFingerprint != null ||
                             languageDirty ||
-                            pending
+                            pending ||
+                            layoutPending
                         ? 'Preview saved version'
                         : 'Preview & Export',
                     confirmedDraftFingerprint != null ||
@@ -627,9 +628,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                         : 'معاينة وتصدير',
                   ),
                   busy: busy,
-                  onPressed: language == null || pending || layoutPending
-                      ? null
-                      : showPreview,
+                   onPressed: language == null ? null : showPreview,
                 ),
                 if (configurationConflict)
                   TextButton(

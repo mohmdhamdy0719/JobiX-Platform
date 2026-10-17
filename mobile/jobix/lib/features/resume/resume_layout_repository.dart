@@ -78,8 +78,13 @@ class ResumeLayoutRepository {
           ? 'VERSION_CONFLICT'
           : null;
       if (code == null) rethrow;
-      // These are definite non-acceptance responses, not a network timeout.
-      await database.removeSetting(key);
+      // A missing RPC is a rollout gap. Keep the exact frozen request locally
+      // so the user's layout can be retried after the Development backend is
+      // updated. A version conflict is a definite rejection of this baseline
+      // and may be discarded only after the UI offers reload/reapply.
+      if (code != 'BACKEND_UPDATE_REQUIRED') {
+        await database.removeSetting(key);
+      }
       throw ResumeLayoutSaveFailure(code);
     }
     _authorize();

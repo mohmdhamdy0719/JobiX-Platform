@@ -224,7 +224,7 @@ void main() {
   );
 
   test(
-    'requires explicit confirmation for unsaved edits and blocks ambiguous saves',
+    'requires explicit saved-version confirmation for unsaved and ambiguous edits',
     () async {
       const draftState = ResumePreviewDraftState(
         hasUnsentEdits: true,
@@ -257,21 +257,26 @@ void main() {
         profiles: [_profile(3), _profile(3)],
         configuration: _configuration(),
         drafts: const ResumePreviewDraftState(
-          hasUnsentEdits: true,
+          hasUnsentEdits: false,
           hasUnresolvedSave: true,
           fingerprint: 'pending-save',
         ),
       );
       await expectLater(
-        unresolved.load(confirmedDraftFingerprint: 'pending-save'),
+        unresolved.load(),
         throwsA(
-          isA<ResumePreviewBlocked>().having(
-            (error) => error.code,
-            'code',
-            'SAVE_RECONCILIATION_REQUIRED',
+          isA<ResumePreviewNeedsConfirmation>().having(
+            (error) => error.fingerprint,
+            'fingerprint',
+            'pending-save',
           ),
         ),
       );
+      final savedSnapshot = await unresolved.load(
+        confirmedDraftFingerprint: 'pending-save',
+      );
+      expect(savedSnapshot.hasUnsentEdits, isFalse);
+      expect(savedSnapshot.document['profile_version'], 3);
     },
   );
 

@@ -133,8 +133,8 @@ class _ResumeLayoutPageState extends State<ResumeLayoutPage> {
             failure is ResumeLayoutSaveFailure &&
                 failure.code == 'BACKEND_UPDATE_REQUIRED'
             ? t(
-                'Layout saving needs the Development backend update. The saved layout was not changed.',
-                'يتطلب حفظ التصميم تحديث الخادم للتطوير. لم يتغير التصميم المحفوظ.',
+                'The Development backend needs its layout update. Your requested layout is kept on this device and has not been applied to your account.',
+                'يحتاج خادم التطوير إلى تحديث التصميم. تم الاحتفاظ بتصميمك المطلوب على هذا الجهاز ولم يُطبّق على حسابك.',
               )
             : conflict
             ? t(

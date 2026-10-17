@@ -117,9 +117,18 @@ void main() {
       );
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      for (final failure in [
-        const PostgrestException(message: 'RPC absent', code: 'PGRST202'),
-        const PostgrestException(message: 'VERSION_CONFLICT', code: 'P0001'),
+      for (final (failure, keepRequest) in <(PostgrestException, bool)>[
+        (
+          const PostgrestException(message: 'RPC absent', code: 'PGRST202'),
+          true,
+        ),
+        (
+          const PostgrestException(
+            message: 'VERSION_CONFLICT',
+            code: 'P0001',
+          ),
+          false,
+        ),
       ]) {
         final store = ResumeLayoutRepository(
           database: db,
@@ -137,7 +146,7 @@ void main() {
           ),
           throwsA(isA<ResumeLayoutSaveFailure>()),
         );
-        expect(await store.pending(), isNull);
+        expect(await store.pending() != null, keepRequest);
       }
     },
   );

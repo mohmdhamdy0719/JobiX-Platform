@@ -94,10 +94,6 @@ class ResumePreviewSnapshotLoader {
       final beforeProfile = await loadFreshProfile();
       final beforeExtras = await readFreshExtras(beforeProfile.id);
       final beforeDrafts = await inspectDrafts(beforeProfile, beforeExtras);
-      if (beforeDrafts.hasUnresolvedSave) {
-        throw const ResumePreviewBlocked('SAVE_RECONCILIATION_REQUIRED');
-      }
-
       final beforeConfiguration = await readConfiguration(beforeProfile.id);
       final afterProfile = await loadFreshProfile();
       final afterExtras = await readFreshExtras(afterProfile.id);
@@ -115,10 +111,12 @@ class ResumePreviewSnapshotLoader {
           beforeDrafts.fingerprint == afterDrafts.fingerprint;
       if (!stable) continue;
 
-      if (afterDrafts.hasUnresolvedSave) {
-        throw const ResumePreviewBlocked('SAVE_RECONCILIATION_REQUIRED');
-      }
-      if (afterDrafts.hasUnsentEdits &&
+      // Preview is a read-only view of the saved server snapshot. An
+      // unacknowledged local write must not be silently discarded or replayed,
+      // but it also must not prevent the user from reviewing what the server
+      // currently has. Require the same explicit saved-version confirmation
+      // used for ordinary local edits.
+      if ((afterDrafts.hasUnsentEdits || afterDrafts.hasUnresolvedSave) &&
           confirmedDraftFingerprint != afterDrafts.fingerprint) {
         throw ResumePreviewNeedsConfirmation(afterDrafts.fingerprint);
       }
