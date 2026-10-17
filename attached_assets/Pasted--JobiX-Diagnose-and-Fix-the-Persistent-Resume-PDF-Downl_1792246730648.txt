@@ -1,0 +1,141 @@
+# JobiX — Diagnose and Fix the Persistent Resume PDF Download Failure
+
+## Objective
+
+The Development app displays:
+
+“Service is temporarily unavailable. Please try again later.”
+
+This happens after waiting while downloading a Resume PDF, even though the export appears as `Completed` in Credit & Export History.
+
+**Find the actual failure stage, prove the root cause with evidence, and implement the smallest safe fix. Do not merely hide the error or rebuild the APK without fixing the underlying issue.**
+
+## 1. Identify the exact failed operation
+
+The previous investigation could not recover the export/request ID. Do not assume the most recent completed export is the failed operation.
+
+Inspect the existing application flow and identify how to retrieve the internal export ID associated with the Details screen. Use the relevant operation's displayed timestamp, status, and receipt reference to locate it.
+
+If the ID cannot be recovered from existing logs or UI state, add a safe diagnostic mechanism only if necessary. Do not expose resume content, access tokens, signed download URLs, or other secrets.
+
+Do not initiate another real export merely to obtain an ID.
+
+## 2. Trace the failed download end to end
+
+Using read-only Development evidence, correlate the identified operation across:
+
+1. Flutter app request and response.
+2. Supabase `resume-export` function invocation.
+3. Gateway/API and Worker processing, where applicable.
+4. PDF generation and Cloud Storage upload.
+5. Export database record and terminal status.
+6. Signed download URL creation and actual HTTPS download.
+
+Determine precisely which stage failed:
+
+- Function invocation or timeout.
+- Request admission or rate limiting.
+- Queue delay or Worker startup.
+- HTML rendering or PDF generation.
+- Storage upload.
+- Database finalization.
+- Signed URL creation, expiry, or authorization.
+- Actual file download or response handling.
+
+The client currently has a 50-second function timeout and a 30-second direct-download timeout. Verify whether either timeout actually occurred; do not assume either is the cause.
+
+## 3. Reconcile Completed status with download failure
+
+For the same export ID, verify:
+
+- Whether the PDF was successfully generated.
+- Whether the object exists in the expected Development bucket.
+- Whether its stored object key and export record match.
+- Whether the export reached `Completed` only after all required completion steps succeeded.
+- Whether the download URL refers to that exact object and is valid at download time.
+- Whether the file is actually retrievable using the normal authenticated application flow.
+
+Never expose or paste a signed URL into the report.
+
+If the export is marked `Completed` but the file is missing or inaccessible, determine why the status was finalized prematurely or why the download path is failing.
+
+Do not mark an export completed merely because a request was accepted or a database row was created.
+
+## 4. Verify Credit accounting for the exact operation
+
+The screenshots show a visible balance of 1 Credit, a completed export displaying `-2 Credits`, and a generic download error. These screenshots may represent different operations; do not assume they refer to the same transaction.
+
+For the identified operation, read the associated export, Credit transaction, reservation, and release records.
+
+Determine whether:
+- A new export succeeded and was charged exactly once.
+- A failed export left a final charge.
+- A valid existing PDF download incorrectly initiated a new export or charge.
+- A timeout or retry created duplicate operations or charges.
+
+Preserve server-authoritative accounting and existing idempotency protections.
+
+Do not modify balances or perform real Credit operations during diagnosis or automated tests.
+
+## 5. Fix the proven root cause
+
+After the failing stage is established, implement the smallest complete fix.
+
+Requirements:
+- Preserve authorization, ownership, rate limits, and signed-URL security.
+- Do not weaken source/hash validation or bypass server-side checks.
+- Do not create duplicate PDFs or duplicate Credit charges.
+- Do not classify every download failure as a generic service outage when a more accurate safe error can be shown.
+- Keep existing valid PDF downloads free during their configured availability period.
+- If the file is genuinely unavailable, show an actionable message without pretending the download succeeded.
+- Ensure loading states terminate appropriately and do not leave the user waiting indefinitely.
+- Do not expose internal request IDs to ordinary users.
+
+If the root cause is in the deployed Worker or Development backend rather than Flutter, explain the required Development deployment separately. Do not assume a new APK alone can fix a server-side failure.
+
+## 6. Access and safety boundaries
+
+Start with existing read-only Development logs. If access is unavailable, specify the minimum additional read-only permission required for the exact evidence needed.
+
+Potential sources:
+- Supabase Edge Function invocation logs for project `lmouxhbjhtqdtiqijcee`.
+- Cloud Run/Gateway/Worker logs in GCP project `mhflow-jobix`, using narrowly scoped `logging.logEntries.list` access.
+- A read-only query limited to the identified export and its associated Credit/reservation records.
+- Existing Cloud Storage request logs, if already enabled.
+
+Do not enable new logging, change IAM, apply migrations, deploy services, alter configuration, or modify Production without explicit approval.
+
+Do not broaden access merely because the first query failed.
+
+## 7. Required regression tests
+
+Add or update tests that cover:
+
+- A completed export with an accessible PDF.
+- A completed export whose object is missing or inaccessible.
+- Signed URL creation failure and URL expiry.
+- Function timeout versus actual download timeout.
+- Correct mapping of server and storage errors.
+- No duplicate export or Credit charge after an uncertain response.
+- Free re-download of a valid existing PDF.
+- Failed export cleanup and Credit reservation reconciliation.
+- Bounded loading and polling behavior.
+- A user-friendly error that accurately reflects the known failure stage.
+
+Run the focused Flutter tests, relevant backend tests, `flutter analyze --no-pub`, and `git diff --check`.
+
+## 8. Final report
+
+Return:
+1. The exact operation ID and timestamp, or why they could not be recovered.
+2. The confirmed failing stage and supporting error evidence.
+3. Whether the PDF object exists and is retrievable.
+4. The Credit transaction/reservation state for that same operation.
+5. The actual root cause and exact fix.
+6. Test results and any untested live behavior.
+7. Whether a Development backend/Worker deployment is required.
+8. Whether a fresh Development APK is needed.
+
+Do not claim the problem is fixed until the relevant failure is reproduced and the correction is verified. If required evidence is unavailable, report the precise blocker instead of guessing.
+
+**Initial scope: diagnosis first. No Production changes, no real Credit operations, no new export attempt, and no deployment or database mutation without explicit approval.**

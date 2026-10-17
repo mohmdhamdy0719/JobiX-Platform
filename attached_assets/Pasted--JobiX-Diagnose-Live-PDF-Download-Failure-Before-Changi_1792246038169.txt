@@ -1,0 +1,48 @@
+## JobiX — Diagnose Live PDF Download Failure Before Changing Code
+
+The Development Android app shows `Service not available` after waiting while exporting/downloading a Resume PDF.
+
+Previous reports confirm that local tests passed, but no real Android export was verified. Cloud Logging access was unavailable, and the Worker only had limited total-duration telemetry.
+
+**Do not guess the cause, rebuild the APK, or change backend code yet. Diagnose the actual failed request first.**
+
+### 1. Trace one failed export
+
+Using the exact Development environment, correlate one failed attempt by its request/export ID and timestamp across the app, API, Worker, database, and storage.
+
+Determine which stage failed:
+
+- Request admission or rate limiting
+- Queue wait or Worker startup
+- HTML rendering or PDF generation
+- Storage upload
+- Database finalization or export status
+- Signed download URL creation
+- Actual file download
+
+Inspect existing Development logs and error responses. If access is missing, specify the minimum read-only permission required for the relevant Development logs. Do not request broad project permissions.
+
+### 2. Verify the final export state
+
+For the same request, determine whether:
+- A PDF was generated and stored.
+- The export record reached its correct terminal state.
+- The download URL was created and remained valid.
+- The failure occurred before or after a Credit reservation or charge.
+- Any Credit reservation was released or reconciled correctly.
+
+Never expose secrets, access tokens, signed URLs, or private resume data in the report.
+
+### 3. Report evidence before proposing a fix
+
+Provide:
+1. The failing stage and exact error code/message from logs.
+2. Measured duration of each available stage.
+3. Whether a PDF exists and whether its download is possible.
+4. Whether Credits were charged, reserved, or released.
+5. The root cause, or clearly state what evidence is still missing.
+6. The smallest safe fix and the tests needed to verify it.
+
+Do not disable rate limits, weaken security, create duplicate exports, or charge Credits for failed exports.
+
+**Scope:** Diagnosis only. No code changes, migration application, deployment, configuration changes, or real Credit operations without my approval.
