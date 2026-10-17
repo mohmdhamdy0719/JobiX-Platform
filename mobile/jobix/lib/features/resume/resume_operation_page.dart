@@ -216,6 +216,9 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
         final downloadMessage = error is ExportFailure
             ? resumeDownloadFailureMessage(error, t)
             : null;
+        final saveDiagnostic = error is ExportFailure
+            ? error.saveDiagnosticJson
+            : null;
         final existingFileUnavailable =
             error is ExportFailure &&
             ['EXPORT_EXPIRED', 'EXPORT_OBJECT_MISSING'].contains(error.code);
@@ -237,6 +240,11 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
             title: Text(t('PDF download failed', 'فشل تنزيل PDF')),
             content: Text(failureMessage),
             actions: [
+              if (saveDiagnostic != null)
+                JobixDialogAction.secondary(
+                  onPressed: () => _copySaveDiagnostic(dialog, saveDiagnostic),
+                  child: Text(t('Copy diagnostics', 'نسخ معلومات التشخيص')),
+                ),
               JobixDialogAction.secondary(
                 onPressed: () => Navigator.pop(dialog),
                 child: Text(t('Close', 'إغلاق')),
@@ -250,6 +258,26 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
       saving = false;
       if (mounted) setState(() {});
     }
+  }
+
+  Future<void> _copySaveDiagnostic(
+    BuildContext dialog,
+    String diagnostic,
+  ) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: diagnostic));
+    } catch (_) {
+      return;
+    }
+    if (!mounted || !dialog.mounted) return;
+    Navigator.of(dialog).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          t('Safe diagnostics copied.', 'تم نسخ معلومات التشخيص الآمنة.'),
+        ),
+      ),
+    );
   }
 
   @override

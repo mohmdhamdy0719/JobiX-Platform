@@ -1940,6 +1940,110 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  testWidgets(
+    'operation-page save failure offers copyable diagnostics without private data',
+    (tester) async {
+      workerState = 'QUEUED';
+      expiredDownload = false;
+      commands.clear();
+      final fixture = _PdfOverrides();
+      String? clipboardText;
+      const saveChannel = MethodChannel('jobix/pdf_save');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        saveChannel,
+        (call) async => {
+          'saved': false,
+          'stage': 'write_failed',
+          'destination_selected': true,
+          'uri_returned': true,
+          'stream_opened': true,
+          'write_completed': false,
+          'stream_closed': false,
+          'submitted_bytes': fixture.bytes.length,
+          'final_size_available': false,
+          'exception_type': 'IOException',
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          saveChannel,
+          null,
+        ),
+      );
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            clipboardText = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await HttpOverrides.runWithHttpOverrides(() async {
+        await tester.pumpWidget(
+          app(
+            const SizedBox(
+              width: 390,
+              height: 780,
+              child: ResumeOperationPage(exportId: jobId, waiting: true),
+            ),
+            overrides: [
+              supabaseClientProvider.overrideWith((_) async => client),
+              databaseProvider.overrideWith((_) async => db),
+              firstProfileProvider.overrideWith(
+                (_) async => CareerProfile.fromJson(savedProfile),
+              ),
+            ],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text('Your resume is being prepared'), findsOneWidget);
+        workerState = 'COMPLETED';
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump(const Duration(milliseconds: 100));
+        final downloadLabel = find.text('Download PDF (22 B)');
+        await tester.ensureVisible(downloadLabel);
+        await tester.tap(downloadLabel);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text('Copy diagnostics'), findsOneWidget);
+        expect(
+          commands.where((command) => command['action'] == 'download'),
+          hasLength(1),
+        );
+        expect(
+          commands.any(
+            (command) =>
+                command['action'] == 'create' || command['action'] == 'again',
+          ),
+          isFalse,
+        );
+        expect(accepted, 0);
+
+        await tester.tap(find.text('Copy diagnostics'));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(clipboardText, isNotNull);
+        final diagnostic = jsonDecode(clipboardText!) as Map<String, dynamic>;
+        expect(diagnostic['download_stage'], 'android_save');
+        expect(diagnostic['method_result_type'], 'map');
+        expect(diagnostic['save_stage'], 'write_failed');
+        expect(diagnostic['stream_opened'], true);
+        expect(diagnostic['write_completed'], false);
+        expect(diagnostic['stream_closed'], false);
+        expect(diagnostic['exception_type'], 'IOException');
+        expect(clipboardText, isNot(contains('storage.googleapis.com')));
+        expect(clipboardText, isNot(contains('synthetic-only')));
+        expect(clipboardText, isNot(contains(jobId)));
+        expect(clipboardText, isNot(contains('%PDF')));
+      }, fixture);
+    },
+  );
   test(
     'account cleanup removes only its own resume journey completion',
     () async {

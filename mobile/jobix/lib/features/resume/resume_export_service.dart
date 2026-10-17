@@ -17,6 +17,7 @@ class ExportFailure implements Exception {
     this.receivedBytes,
     this.expectedBytes,
     this.exceptionType,
+    this.saveDiagnosticJson,
   });
   final String code;
   final int? retryAfterSeconds;
@@ -25,6 +26,7 @@ class ExportFailure implements Exception {
   final int? receivedBytes;
   final int? expectedBytes;
   final String? exceptionType;
+  final String? saveDiagnosticJson;
 }
 
 typedef DownloadDiagnosticSink = void Function(Map<String, Object?> event);
@@ -288,6 +290,7 @@ class ResumeExportService {
     int? bytesWritten;
     bool? finalSizeAvailable;
     String? saveExceptionType;
+    int? nativeSubmittedBytes;
     var receivedBytes = 0;
     final expected = expectedBytes != null && expectedBytes > 0
         ? expectedBytes
@@ -320,6 +323,40 @@ class ResumeExportService {
       );
     }
 
+    String? buildSafeSaveDiagnostic({
+      required String outcome,
+      String? exceptionType,
+    }) {
+      if (!kDebugMode || stage != 'android_save') return null;
+      final rawExceptionType = exceptionType ?? saveExceptionType;
+      final safeExceptionType =
+          rawExceptionType != null &&
+              RegExp(r'^[A-Za-z0-9_$]{1,64}$').hasMatch(rawExceptionType)
+          ? rawExceptionType
+          : null;
+      return jsonEncode({
+        'version': 1,
+        'download_stage': 'android_save',
+        'outcome': outcome,
+        'method_result_type': saveResultType ?? 'unavailable',
+        'save_stage': saveStage ?? 'unknown',
+        'destination_selected': destinationSelected,
+        'uri_returned': uriReturned,
+        'stream_opened': streamOpened,
+        'write_completed': writeCompleted,
+        'stream_closed': streamClosed,
+        if (nativeSubmittedBytes != null)
+          'submitted_bytes': nativeSubmittedBytes,
+        if (bytesWritten != null) 'bytes_written': bytesWritten,
+        'expected_bytes': expected,
+        'downloaded_bytes': receivedBytes,
+        'final_size_available': finalSizeAvailable,
+        if (finalFileSizeBytes != null) 'final_size_bytes': finalFileSizeBytes,
+        if (httpStatus != null) 'download_http_status': httpStatus,
+        if (safeExceptionType != null) 'exception_type': safeExceptionType,
+      });
+    }
+
     void enterStage(String next) {
       record('complete');
       stage = next;
@@ -329,14 +366,23 @@ class ResumeExportService {
 
     ExportFailure classify(Object error) {
       if (error is ExportFailure) {
+        final failureStage = error.stage ?? stage;
         return ExportFailure(
           error.code,
           retryAfterSeconds: error.retryAfterSeconds,
-          stage: error.stage ?? stage,
+          stage: failureStage,
           httpStatus: error.httpStatus ?? httpStatus,
           receivedBytes: error.receivedBytes ?? receivedBytes,
           expectedBytes: error.expectedBytes ?? expected,
           exceptionType: error.exceptionType,
+          saveDiagnosticJson:
+              error.saveDiagnosticJson ??
+              (failureStage == 'android_save'
+                  ? buildSafeSaveDiagnostic(
+                      outcome: error.code,
+                      exceptionType: error.exceptionType,
+                    )
+                  : null),
         );
       }
       if (error is TimeoutException) {
@@ -347,6 +393,12 @@ class ResumeExportService {
           receivedBytes: receivedBytes,
           expectedBytes: expected,
           exceptionType: error.runtimeType.toString(),
+          saveDiagnosticJson: stage == 'android_save'
+              ? buildSafeSaveDiagnostic(
+                  outcome: 'DOWNLOAD_TIMEOUT',
+                  exceptionType: error.runtimeType.toString(),
+                )
+              : null,
         );
       }
       if (error is SocketException ||
@@ -359,6 +411,12 @@ class ResumeExportService {
           receivedBytes: receivedBytes,
           expectedBytes: expected,
           exceptionType: error.runtimeType.toString(),
+          saveDiagnosticJson: stage == 'android_save'
+              ? buildSafeSaveDiagnostic(
+                  outcome: 'DOWNLOAD_NETWORK_ERROR',
+                  exceptionType: error.runtimeType.toString(),
+                )
+              : null,
         );
       }
       if (error is PlatformException) {
@@ -368,6 +426,12 @@ class ResumeExportService {
           receivedBytes: receivedBytes,
           expectedBytes: expected,
           exceptionType: error.runtimeType.toString(),
+          saveDiagnosticJson: stage == 'android_save'
+              ? buildSafeSaveDiagnostic(
+                  outcome: 'DOWNLOAD_SAVE_ERROR',
+                  exceptionType: error.runtimeType.toString(),
+                )
+              : null,
         );
       }
       return ExportFailure(
@@ -377,6 +441,12 @@ class ResumeExportService {
         receivedBytes: receivedBytes,
         expectedBytes: expected,
         exceptionType: error.runtimeType.toString(),
+        saveDiagnosticJson: stage == 'android_save'
+            ? buildSafeSaveDiagnostic(
+                outcome: 'DOWNLOAD_FAILED',
+                exceptionType: error.runtimeType.toString(),
+              )
+            : null,
       );
     }
 
@@ -478,6 +548,7 @@ class ResumeExportService {
       finalFileSizeBytes = finalSize is int ? finalSize : null;
       final submittedValue = saveResult['submitted_bytes'];
       final submittedBytes = submittedValue is int ? submittedValue : null;
+      nativeSubmittedBytes = submittedBytes;
       final writtenValue = saveResult['bytes_written'];
       bytesWritten = writtenValue is int ? writtenValue : null;
       destinationSelected = saveResult['destination_selected'] is bool
