@@ -999,7 +999,14 @@ void main() {
         return {
           'saved': true,
           'stage': 'saved',
+          'destination_selected': true,
+          'uri_returned': true,
+          'stream_opened': true,
+          'write_completed': true,
+          'stream_closed': true,
+          'bytes_written': fixture.bytes.length,
           'submitted_bytes': fixture.bytes.length,
+          'final_size_available': true,
           'final_size_bytes': fixture.bytes.length,
         };
       });
@@ -1055,11 +1062,74 @@ void main() {
         expect(diagnosticText, contains('"stage":"storage_response"'));
         expect(diagnosticText, contains('"stage":"storage_body"'));
         expect(diagnosticText, contains('"stage":"android_save"'));
+        expect(diagnosticText, contains('"save_result_type":"map"'));
+        expect(diagnosticText, contains('"save_stage":"saved"'));
+        expect(diagnosticText, contains('"destination_selected":true'));
+        expect(diagnosticText, contains('"uri_returned":true'));
+        expect(diagnosticText, contains('"stream_opened":true'));
+        expect(diagnosticText, contains('"write_completed":true'));
+        expect(diagnosticText, contains('"stream_closed":true'));
+        expect(
+          diagnosticText,
+          contains('"bytes_written":${fixture.bytes.length}'),
+        );
+        expect(diagnosticText, contains('"final_size_available":true'));
         expect(diagnosticText, contains('"final_size_bytes":'));
         expect(diagnosticText, isNot(contains('storage.googleapis.com')));
         expect(diagnosticText, isNot(contains('synthetic-only')));
         expect(diagnosticText, isNot(contains(jobId)));
         expect(diagnosticText, isNot(contains('%PDF-synthetic fixture')));
+      }, fixture);
+    },
+  );
+  testWidgets(
+    'completed Android write succeeds when provider cannot report final size',
+    (tester) async {
+      expiredDownload = false;
+      final fixture = _PdfOverrides();
+      final diagnostics = <String>[];
+      final previousDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) {
+        if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+          diagnostics.add(message!);
+        }
+      };
+      addTearDown(() => debugPrint = previousDebugPrint);
+      const channel = MethodChannel('jobix/pdf_save');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+        call,
+      ) async {
+        expect(call.method, 'save');
+        return {
+          'saved': true,
+          'stage': 'saved',
+          'destination_selected': true,
+          'uri_returned': true,
+          'stream_opened': true,
+          'write_completed': true,
+          'stream_closed': true,
+          'bytes_written': fixture.bytes.length,
+          'submitted_bytes': fixture.bytes.length,
+          'final_size_available': false,
+        };
+      });
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await HttpOverrides.runWithHttpOverrides(() async {
+        creditBalance = 0;
+        await mount(tester, initial: true);
+        await tap(tester, 'Download — free');
+        expect(find.text('PDF saved. No Credits charged.'), findsOneWidget);
+        expect(
+          diagnostics.join('\n'),
+          contains('"final_size_available":false'),
+        );
+        expect(diagnostics.join('\n'), isNot(contains('"final_size_bytes":')));
+        expect(accepted, 0);
       }, fixture);
     },
   );
@@ -1099,6 +1169,60 @@ void main() {
       expect(fixture.closed, true);
     }, fixture);
   });
+  testWidgets(
+    'reported Android file-size mismatch is not treated as a successful save',
+    (tester) async {
+      expiredDownload = false;
+      final fixture = _PdfOverrides();
+      final diagnostics = <String>[];
+      final previousDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) {
+        if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+          diagnostics.add(message!);
+        }
+      };
+      addTearDown(() => debugPrint = previousDebugPrint);
+      const channel = MethodChannel('jobix/pdf_save');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (call) async => {
+          'saved': false,
+          'stage': 'size_mismatch',
+          'destination_selected': true,
+          'uri_returned': true,
+          'stream_opened': true,
+          'write_completed': true,
+          'stream_closed': true,
+          'bytes_written': fixture.bytes.length,
+          'submitted_bytes': fixture.bytes.length,
+          'final_size_available': true,
+          'final_size_bytes': fixture.bytes.length - 1,
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await HttpOverrides.runWithHttpOverrides(() async {
+        creditBalance = 0;
+        await mount(tester, initial: true);
+        await tap(tester, 'Download — free');
+        expect(
+          find.textContaining('could not confirm a complete PDF save'),
+          findsOneWidget,
+        );
+        expect(find.text('PDF saved. No Credits charged.'), findsNothing);
+        expect(
+          diagnostics.join('\n'),
+          contains('"save_stage":"size_mismatch"'),
+        );
+        expect(diagnostics.join('\n'), contains('"final_size_available":true'));
+        expect(accepted, 0);
+      }, fixture);
+    },
+  );
   testWidgets('invalid PDF bytes are rejected before Android save', (
     tester,
   ) async {
@@ -1260,7 +1384,16 @@ void main() {
     const channel = MethodChannel('jobix/pdf_save');
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       channel,
-      (call) async => {'saved': false, 'stage': 'cancelled'},
+      (call) async => {
+        'saved': false,
+        'stage': 'cancelled',
+        'destination_selected': false,
+        'uri_returned': false,
+        'stream_opened': false,
+        'write_completed': false,
+        'stream_closed': false,
+        'final_size_available': false,
+      },
     );
     addTearDown(
       () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -1288,7 +1421,13 @@ void main() {
         (call) async => {
           'saved': false,
           'stage': 'write_failed',
+          'destination_selected': true,
+          'uri_returned': true,
+          'stream_opened': true,
+          'write_completed': false,
+          'stream_closed': false,
           'submitted_bytes': fixture.bytes.length,
+          'final_size_available': false,
           'exception_type': 'IOException',
         },
       );
@@ -1307,6 +1446,84 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('PDF saved. No Credits charged.'), findsNothing);
+        expect(accepted, 0);
+      }, fixture);
+    },
+  );
+  testWidgets(
+    'malformed Android save result fails closed without reporting saved',
+    (tester) async {
+      expiredDownload = false;
+      final fixture = _PdfOverrides();
+      final diagnostics = <String>[];
+      final previousDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) {
+        if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+          diagnostics.add(message!);
+        }
+      };
+      addTearDown(() => debugPrint = previousDebugPrint);
+      const channel = MethodChannel('jobix/pdf_save');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (call) async => {'saved': true},
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await HttpOverrides.runWithHttpOverrides(() async {
+        creditBalance = 0;
+        await mount(tester, initial: true);
+        await tap(tester, 'Download — free');
+        expect(
+          find.textContaining('could not confirm a complete PDF save'),
+          findsOneWidget,
+        );
+        expect(find.text('PDF saved. No Credits charged.'), findsNothing);
+        expect(diagnostics.join('\n'), contains('"save_result_type":"map"'));
+        expect(diagnostics.join('\n'), contains('DOWNLOAD_SAVE_ERROR'));
+        expect(accepted, 0);
+      }, fixture);
+    },
+  );
+  testWidgets(
+    'non-map Android save result fails closed and records only its safe type',
+    (tester) async {
+      expiredDownload = false;
+      final fixture = _PdfOverrides();
+      final diagnostics = <String>[];
+      final previousDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) {
+        if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+          diagnostics.add(message!);
+        }
+      };
+      addTearDown(() => debugPrint = previousDebugPrint);
+      const channel = MethodChannel('jobix/pdf_save');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (call) async => true,
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await HttpOverrides.runWithHttpOverrides(() async {
+        creditBalance = 0;
+        await mount(tester, initial: true);
+        await tap(tester, 'Download — free');
+        expect(
+          find.textContaining('could not confirm a complete PDF save'),
+          findsOneWidget,
+        );
+        expect(find.text('PDF saved. No Credits charged.'), findsNothing);
+        expect(diagnostics.join('\n'), contains('"save_result_type":"bool"'));
+        expect(diagnostics.join('\n'), contains('DOWNLOAD_SAVE_ERROR'));
         expect(accepted, 0);
       }, fixture);
     },

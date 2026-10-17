@@ -1,0 +1,18 @@
+The Development diagnostic APK is now installed on my phone. When I download an existing completed PDF, I get this exact error:
+
+"PDF download failed
+Android could not confirm a complete PDF save. check device storage and retry. Your existing export and Credits are unchanged"
+
+This is new, actionable evidence. Investigate the Android save-confirmation path first.
+
+1. Trace the exact code in `MainActivity.kt` that writes the PDF and returns the save result, and the corresponding Flutter code in `resume_export_service.dart` that interprets it.
+2. Identify the exact condition that produces "Android could not confirm a complete PDF save." Determine whether Android actually failed to write the file, returned an incomplete/missing byte count, returned an unexpected method-channel response, or saved the file but could not verify its final size.
+3. Check the Android destination/document-provider API being used. Verify how cancellation, null URI, output-stream closure, flush/write errors, and final-size availability are handled. Do not assume every Android document provider exposes a reliable final file size.
+4. Add safe, narrowly scoped diagnostics for the save result: whether a destination was selected, whether a URI was returned, whether the stream opened/wrote/closed successfully, bytes written, whether a final size was available, and the method-channel result type. Never log the URI, filename if it contains personal information, PDF contents, or secrets.
+5. Fix the confirmed cause with the smallest appropriate change. Do not weaken PDF integrity checks or report success when the write failed. If final-size verification is unavailable for a legitimate document provider, implement a reliable verification strategy rather than treating an unavailable size as proof of failure.
+6. Add regression tests for successful saving when final size is available, successful saving when the provider cannot report final size, real write failure, cancellation, and malformed/missing method-channel results.
+7. Build the Development APK and report the exact root cause, code change, test results, APK path, and SHA-256.
+
+Do not create a new export, charge or modify Credits, alter the existing PDF, deploy anything, or change Production/cloud infrastructure. Do not claim the issue is fixed until the new APK is tested on my phone.
+
+Start by identifying the precise branch that generated this message. Do not guess

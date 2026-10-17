@@ -42,6 +42,15 @@ class _DownloadDiagnostic {
     this.declaredBytes,
     this.receivedBytes,
     this.finalSizeBytes,
+    this.saveResultType,
+    this.saveStage,
+    this.destinationSelected,
+    this.uriReturned,
+    this.streamOpened,
+    this.writeCompleted,
+    this.streamClosed,
+    this.bytesWritten,
+    this.finalSizeAvailable,
     this.exceptionType,
   });
 
@@ -56,6 +65,15 @@ class _DownloadDiagnostic {
   final int? declaredBytes;
   final int? receivedBytes;
   final int? finalSizeBytes;
+  final String? saveResultType;
+  final String? saveStage;
+  final bool? destinationSelected;
+  final bool? uriReturned;
+  final bool? streamOpened;
+  final bool? writeCompleted;
+  final bool? streamClosed;
+  final int? bytesWritten;
+  final bool? finalSizeAvailable;
   final String? exceptionType;
 
   Map<String, Object?> toSafeMap() => {
@@ -70,6 +88,16 @@ class _DownloadDiagnostic {
     if (declaredBytes != null) 'declared_bytes': declaredBytes,
     if (receivedBytes != null) 'received_bytes': receivedBytes,
     if (finalSizeBytes != null) 'final_size_bytes': finalSizeBytes,
+    if (saveResultType != null) 'save_result_type': saveResultType,
+    if (saveStage != null) 'save_stage': saveStage,
+    if (destinationSelected != null)
+      'destination_selected': destinationSelected,
+    if (uriReturned != null) 'uri_returned': uriReturned,
+    if (streamOpened != null) 'stream_opened': streamOpened,
+    if (writeCompleted != null) 'write_completed': writeCompleted,
+    if (streamClosed != null) 'stream_closed': streamClosed,
+    if (bytesWritten != null) 'bytes_written': bytesWritten,
+    if (finalSizeAvailable != null) 'final_size_available': finalSizeAvailable,
     if (exceptionType != null) 'exception_type': exceptionType,
   };
 }
@@ -121,10 +149,25 @@ class ResumeExportService {
     int? declaredBytes,
     int? receivedBytes,
     int? finalSizeBytes,
+    String? saveResultType,
+    String? saveStage,
+    bool? destinationSelected,
+    bool? uriReturned,
+    bool? streamOpened,
+    bool? writeCompleted,
+    bool? streamClosed,
+    int? bytesWritten,
+    bool? finalSizeAvailable,
     Object? error,
     String? exceptionType,
   }) {
     try {
+      final rawExceptionType = exceptionType ?? error?.runtimeType.toString();
+      final safeExceptionType =
+          rawExceptionType != null &&
+              RegExp(r'^[A-Za-z0-9_$]{1,64}$').hasMatch(rawExceptionType)
+          ? rawExceptionType
+          : null;
       _diagnostics(
         _DownloadDiagnostic(
           attemptId: attemptId,
@@ -138,7 +181,16 @@ class ResumeExportService {
           declaredBytes: declaredBytes,
           receivedBytes: receivedBytes,
           finalSizeBytes: finalSizeBytes,
-          exceptionType: exceptionType ?? error?.runtimeType.toString(),
+          saveResultType: saveResultType,
+          saveStage: saveStage,
+          destinationSelected: destinationSelected,
+          uriReturned: uriReturned,
+          streamOpened: streamOpened,
+          writeCompleted: writeCompleted,
+          streamClosed: streamClosed,
+          bytesWritten: bytesWritten,
+          finalSizeAvailable: finalSizeAvailable,
+          exceptionType: safeExceptionType,
         ).toSafeMap(),
       );
     } catch (_) {
@@ -226,6 +278,16 @@ class ResumeExportService {
     int? httpStatus;
     int? declaredBytes;
     int? finalFileSizeBytes;
+    String? saveResultType;
+    String? saveStage;
+    bool? destinationSelected;
+    bool? uriReturned;
+    bool? streamOpened;
+    bool? writeCompleted;
+    bool? streamClosed;
+    int? bytesWritten;
+    bool? finalSizeAvailable;
+    String? saveExceptionType;
     var receivedBytes = 0;
     final expected = expectedBytes != null && expectedBytes > 0
         ? expectedBytes
@@ -245,6 +307,15 @@ class ResumeExportService {
         declaredBytes: declaredBytes,
         receivedBytes: receivedBytes,
         finalSizeBytes: finalSizeBytes ?? finalFileSizeBytes,
+        saveResultType: saveResultType,
+        saveStage: saveStage,
+        destinationSelected: destinationSelected,
+        uriReturned: uriReturned,
+        streamOpened: streamOpened,
+        writeCompleted: writeCompleted,
+        streamClosed: streamClosed,
+        bytesWritten: bytesWritten,
+        finalSizeAvailable: finalSizeAvailable,
         error: error,
       );
     }
@@ -389,57 +460,136 @@ class ResumeExportService {
             'bytes': bytes,
             'name': resumePdfFilename(suggestedName),
           });
-      final saveResult = rawSave is Map
-          ? Map<String, dynamic>.from(rawSave)
-          : <String, dynamic>{'saved': rawSave == true};
+      if (rawSave is Map) {
+        saveResultType = 'map';
+      } else if (rawSave is bool) {
+        saveResultType = 'bool';
+      } else if (rawSave == null) {
+        saveResultType = 'null';
+      } else {
+        saveResultType = 'other';
+      }
+      if (rawSave is! Map) {
+        throw const ExportFailure('DOWNLOAD_SAVE_ERROR');
+      }
+      final saveResult = rawSave;
       final saved = saveResult['saved'] == true;
       final finalSize = saveResult['final_size_bytes'];
-      finalFileSizeBytes = finalSize is num ? finalSize.toInt() : null;
+      finalFileSizeBytes = finalSize is int ? finalSize : null;
       final submittedValue = saveResult['submitted_bytes'];
-      final submittedBytes = submittedValue is num
-          ? submittedValue.toInt()
+      final submittedBytes = submittedValue is int ? submittedValue : null;
+      final writtenValue = saveResult['bytes_written'];
+      bytesWritten = writtenValue is int ? writtenValue : null;
+      destinationSelected = saveResult['destination_selected'] is bool
+          ? saveResult['destination_selected'] as bool
+          : null;
+      uriReturned = saveResult['uri_returned'] is bool
+          ? saveResult['uri_returned'] as bool
+          : null;
+      streamOpened = saveResult['stream_opened'] is bool
+          ? saveResult['stream_opened'] as bool
+          : null;
+      writeCompleted = saveResult['write_completed'] is bool
+          ? saveResult['write_completed'] as bool
+          : null;
+      streamClosed = saveResult['stream_closed'] is bool
+          ? saveResult['stream_closed'] as bool
+          : null;
+      finalSizeAvailable = saveResult['final_size_available'] is bool
+          ? saveResult['final_size_available'] as bool
           : null;
       final rawSaveStage = saveResult['stage'];
       final allowedSaveStages = {
         'saved',
         'cancelled',
+        'uri_missing',
         'output_unavailable',
         'size_mismatch',
         'write_failed',
         'picker_start_failed',
         'activity_destroyed',
       };
-      final saveStage =
+      final nativeSaveStage =
           rawSaveStage is String && allowedSaveStages.contains(rawSaveStage)
           ? rawSaveStage
           : null;
+      saveStage = nativeSaveStage;
       final rawExceptionType = saveResult['exception_type'];
       final nativeExceptionType =
           rawExceptionType is String &&
               RegExp(r'^[A-Za-z0-9_$]{1,64}$').hasMatch(rawExceptionType)
           ? rawExceptionType
           : null;
-      record(saved ? 'save_confirmed' : 'save_${saveStage ?? 'not_confirmed'}');
+      saveExceptionType = nativeExceptionType;
       if (!saved) {
+        if (nativeSaveStage == 'size_mismatch' &&
+            finalSizeAvailable == true &&
+            finalFileSizeBytes != null) {
+          throw ExportFailure(
+            'DOWNLOAD_SAVE_SIZE_MISMATCH',
+            stage: stage,
+            receivedBytes: finalFileSizeBytes,
+            expectedBytes: bytes.length,
+          );
+        }
         throw ExportFailure(
-          saveStage == 'cancelled'
+          nativeSaveStage == 'cancelled'
               ? 'DOWNLOAD_SAVE_NOT_CONFIRMED'
               : 'DOWNLOAD_SAVE_ERROR',
+          stage: stage,
           receivedBytes: bytes.length,
           expectedBytes: expected,
           exceptionType: nativeExceptionType,
         );
       }
-      if (submittedBytes != null && submittedBytes != bytes.length) {
+      if (saveStage != 'saved' ||
+          destinationSelected != true ||
+          uriReturned != true ||
+          streamOpened != true ||
+          writeCompleted != true ||
+          streamClosed != true ||
+          submittedBytes != bytes.length ||
+          bytesWritten != bytes.length ||
+          finalSizeAvailable == null) {
+        throw ExportFailure(
+          'DOWNLOAD_SAVE_ERROR',
+          stage: stage,
+          receivedBytes: bytesWritten,
+          expectedBytes: bytes.length,
+          exceptionType: nativeExceptionType,
+        );
+      }
+      if (finalSizeAvailable == true && finalFileSizeBytes == null) {
+        throw ExportFailure(
+          'DOWNLOAD_SAVE_ERROR',
+          stage: stage,
+          receivedBytes: bytesWritten,
+          expectedBytes: bytes.length,
+          exceptionType: nativeExceptionType,
+        );
+      }
+      if (finalSizeAvailable == false &&
+          saveResult.containsKey('final_size_bytes')) {
+        throw ExportFailure(
+          'DOWNLOAD_SAVE_ERROR',
+          stage: stage,
+          receivedBytes: bytesWritten,
+          expectedBytes: bytes.length,
+          exceptionType: nativeExceptionType,
+        );
+      }
+      if (submittedBytes != bytes.length || bytesWritten != bytes.length) {
         throw ExportFailure(
           'DOWNLOAD_SAVE_SIZE_MISMATCH',
-          receivedBytes: submittedBytes,
+          stage: stage,
+          receivedBytes: bytesWritten,
           expectedBytes: bytes.length,
         );
       }
-      if (finalFileSizeBytes != null && finalFileSizeBytes != bytes.length) {
+      if (finalSizeAvailable == true && finalFileSizeBytes != bytes.length) {
         throw ExportFailure(
           'DOWNLOAD_SAVE_SIZE_MISMATCH',
+          stage: stage,
           receivedBytes: finalFileSizeBytes,
           expectedBytes: bytes.length,
         );
@@ -455,6 +605,15 @@ class ResumeExportService {
         declaredBytes: declaredBytes,
         receivedBytes: bytes.length,
         finalSizeBytes: finalFileSizeBytes,
+        saveResultType: saveResultType,
+        saveStage: saveStage,
+        destinationSelected: destinationSelected,
+        uriReturned: uriReturned,
+        streamOpened: streamOpened,
+        writeCompleted: writeCompleted,
+        streamClosed: streamClosed,
+        bytesWritten: bytesWritten,
+        finalSizeAvailable: finalSizeAvailable,
       );
       return true;
     } catch (error) {
@@ -471,8 +630,18 @@ class ResumeExportService {
         declaredBytes: declaredBytes,
         receivedBytes: failure.receivedBytes ?? receivedBytes,
         finalSizeBytes: finalFileSizeBytes,
+        saveResultType: saveResultType,
+        saveStage: saveStage,
+        destinationSelected: destinationSelected,
+        uriReturned: uriReturned,
+        streamOpened: streamOpened,
+        writeCompleted: writeCompleted,
+        streamClosed: streamClosed,
+        bytesWritten: bytesWritten,
+        finalSizeAvailable: finalSizeAvailable,
         exceptionType:
             failure.exceptionType ??
+            saveExceptionType ??
             (error is ExportFailure ? null : error.runtimeType.toString()),
       );
       throw failure;

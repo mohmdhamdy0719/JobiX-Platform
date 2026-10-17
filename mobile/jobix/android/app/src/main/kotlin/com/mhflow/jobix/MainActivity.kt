@@ -12,6 +12,12 @@ class MainActivity : FlutterActivity() {
     private var saveResult: MethodChannel.Result? = null
     private var pdfBytes: ByteArray? = null
     private val saveRequest = 7341
+    private var destinationSelected = false
+    private var uriReturned = false
+    private var streamOpened = false
+    private var writeCompleted = false
+    private var streamClosed = false
+    private var bytesWritten: Int? = null
 
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
@@ -33,6 +39,12 @@ class MainActivity : FlutterActivity() {
                 }
                 saveResult = result
                 pdfBytes = bytes
+                destinationSelected = false
+                uriReturned = false
+                streamOpened = false
+                writeCompleted = false
+                streamClosed = false
+                bytesWritten = null
                 try {
                     val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
                         .addCategory(Intent.CATEGORY_OPENABLE)
@@ -53,10 +65,15 @@ class MainActivity : FlutterActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != saveRequest) return
         val uri = data?.data
+        uriReturned = uri != null
+        destinationSelected = resultCode == Activity.RESULT_OK && uri != null
         try {
-            if (resultCode == Activity.RESULT_OK && uri != null && pdfBytes != null) {
+            if (resultCode == Activity.RESULT_OK && uri == null) {
+                completeSave(saved = false, stage = "uri_missing")
+            } else if (resultCode == Activity.RESULT_OK && pdfBytes != null) {
                 val bytes = pdfBytes!!
-                val stream = contentResolver.openOutputStream(uri)
+                val selectedUri = uri!!
+                val stream = contentResolver.openOutputStream(selectedUri)
                 if (stream == null) {
                     completeSave(
                         saved = false,
@@ -64,8 +81,14 @@ class MainActivity : FlutterActivity() {
                         submittedBytes = bytes.size
                     )
                 } else {
-                    stream.use { it.write(bytes) }
-                    val finalSize = readDocumentSize(uri)
+                    streamOpened = true
+                    stream.use { output ->
+                        output.write(bytes)
+                        writeCompleted = true
+                        bytesWritten = bytes.size
+                    }
+                    streamClosed = true
+                    val finalSize = readDocumentSize(selectedUri)
                     val sizeMatches = finalSize == null || finalSize == bytes.size.toLong()
                     completeSave(
                         saved = sizeMatches,
@@ -95,7 +118,7 @@ class MainActivity : FlutterActivity() {
             null,
             null
         )?.use { cursor ->
-            if (cursor.moveToFirst()) {
+            if (cursor.moveToFirst() && !cursor.isNull(0)) {
                 cursor.getLong(0).takeIf { it >= 0L }
             } else null
         }
@@ -114,9 +137,16 @@ class MainActivity : FlutterActivity() {
         pdfBytes = null
         val result = mutableMapOf<String, Any?>(
             "saved" to saved,
-            "stage" to stage
+            "stage" to stage,
+            "destination_selected" to destinationSelected,
+            "uri_returned" to uriReturned,
+            "stream_opened" to streamOpened,
+            "write_completed" to writeCompleted,
+            "stream_closed" to streamClosed
         )
+        if (bytesWritten != null) result["bytes_written"] = bytesWritten
         if (submittedBytes != null) result["submitted_bytes"] = submittedBytes
+        result["final_size_available"] = finalSizeBytes != null
         if (finalSizeBytes != null) result["final_size_bytes"] = finalSizeBytes
         if (exceptionType != null) result["exception_type"] = exceptionType
         saveResult?.success(result)
