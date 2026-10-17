@@ -18,10 +18,12 @@ String exportDisplayKey(String actor, String job) =>
 String resumePdfFilename(String? fullName) {
   final normalized = (fullName ?? '')
       .trim()
-      .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), '_')
-      .replaceAll(RegExp(r'^_+|_+$'), '');
-  final bounded = String.fromCharCodes(normalized.runes.take(64));
-  return '${bounded.isEmpty ? 'Resume' : bounded}.pdf';
+      .replaceAll(RegExp(r'[\u0000-\u001f<>:"/\\|?*]+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .replaceAll(RegExp(r'[. ]+$'), '')
+      .trim();
+  final bounded = String.fromCharCodes(normalized.runes.take(64)).trim();
+  return bounded.isEmpty ? 'Resume.pdf' : '$bounded Resume.pdf';
 }
 
 final resumeExportServiceProvider = FutureProvider<ResumeExportService>(

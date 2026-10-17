@@ -30,7 +30,6 @@ class ResumeExportPanel extends ConsumerStatefulWidget {
     this.initialDocument,
     this.experience = false,
     this.historyOnly = false,
-    this.historicalExportId,
     this.onOperation,
   });
   final String profileId;
@@ -38,7 +37,6 @@ class ResumeExportPanel extends ConsumerStatefulWidget {
   final Future<Map<String, dynamic>> Function()? rebuildLocalDocument;
   final Map<String, dynamic>? initialDocument;
   final bool experience, historyOnly;
-  final String? historicalExportId;
   final ValueChanged<String>? onOperation;
   final Future<void> Function(Map<String, dynamic>) showDocument;
   @override
@@ -54,10 +52,9 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   bool historyLoadFailed = false;
   final Set<String> downloadingExportIds = {};
   bool get savingPdf => downloadingExportIds.isNotEmpty;
-  bool reviewRequired = false;
   bool get ar => Localizations.localeOf(context).languageCode == 'ar';
   String t(String en, String arabic) => ar ? arabic : en;
-  bool get creationEnabled => enabled;
+  bool get creationEnabled => enabled && pending == null;
   Future<void> showLocalDocument(Map<String, dynamic> localDocument) async {
     if (!mounted) return;
     setState(() => document = localDocument);
@@ -68,19 +65,17 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     if (mounted) setState(() => document = null);
   }
 
-  /// Returns an authoritative replacement for the SAME open Preview. No new
-  /// intent is allocated until that exact replacement has been reviewed.
+  /// Fetches the current server document and exports only if the saved source
+  /// and configuration still match the version shown in Preview.
   Future<Map<String, dynamic>?> createPdf(
-    Map<String, dynamic> reviewedDocument, [
-    String? historicalId,
-  ]) async {
+    Map<String, dynamic> reviewedDocument,
+  ) async {
     Map<String, dynamic>? replacement;
     await _run(() async {
-      if (!enabled ||
-          pending != null ||
-          (reviewedDocument['issues'] as List? ?? []).isNotEmpty) {
+      if (!enabled || (reviewedDocument['issues'] as List? ?? []).isNotEmpty) {
         return;
       }
+      if (pending != null) throw const ExportFailure('EXPORT_IN_PROGRESS');
       final client = await ref.read(supabaseClientProvider.future);
       final actor = client.auth.currentUser?.id;
       if (actor == null) throw const ExportFailure('AUTH_REQUIRED');
@@ -88,7 +83,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       if (client.auth.currentUser?.id != actor) {
         throw const ExportFailure('AUTH_REQUIRED');
       }
-      if (mounted) setState(() => reviewRequired = false);
       final authoritative = await _call('document', {
         'profile_id': widget.profileId,
       });
@@ -122,10 +116,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       if (!mounted) return;
       setState(() => document = authoritative);
       try {
-        await _submit(
-          historicalId: historicalId ?? widget.historicalExportId,
-          creditsAlreadyVerified: true,
-        );
+        await _submit(creditsAlreadyVerified: true);
       } on ExportFailure catch (error) {
         if (error.code != 'VERSION_CONFLICT') rethrow;
         // Definitive rejection, not an ambiguous timeout. Gateway checks replay
@@ -145,7 +136,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
           setState(() {
             pending = null;
             document = current;
-            reviewRequired = false;
           });
         }
         replacement = current;
@@ -245,10 +235,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               ? error.retryAfterSeconds
               : null;
           final l10n = AppLocalizations.of(context)!;
-          reviewRequired = [
-            'VERSION_CONFLICT',
-            'VALIDATION_FAILED',
-          ].contains(code);
           message = error is ResumePreviewNeedsConfirmation
               ? t(
                   'Presentation was saved, but other edits are still unsaved. Use Preview saved version to review only saved content.',
@@ -295,8 +281,8 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                         : l10n.exportRateLimitedRetry(retryAfter),
                   'EXPORT_IN_PROGRESS' => l10n.exportInProgress,
                   _ => t(
-                    'The request could not be confirmed. Retry uses the same saved request; do not submit another export.',
-                    'تعذّر تأكيد الطلب. إعادة المحاولة تستخدم الطلب المحفوظ نفسه؛ لا ترسل طلب تصدير آخر.',
+                    'The request could not be confirmed. It is preserved to prevent a duplicate export.',
+                    'تعذّر تأكيد الطلب. تم الاحتفاظ به لمنع إنشاء تصدير مكرر.',
                   ),
                 };
         });
@@ -358,7 +344,14 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
               ),
             );
           }
-          if (mounted) setState(() => failureDialogOpen = false);
+          if (mounted) {
+            setState(() {
+              failureDialogOpen = false;
+              // Request errors are shown in the dialog for this action only,
+              // not left as persistent page-level status text.
+              message = null;
+            });
+          }
         }
       }
     } finally {
@@ -366,7 +359,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     }
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool recoverPending = true}) async {
     try {
       final client = await ref.read(supabaseClientProvider.future);
       final user = client.auth.currentUser?.id;
@@ -387,6 +380,17 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
         cursor = history['next_cursor'] as String?;
         historyLoadFailed = false;
       });
+      if (recoverPending && !widget.historyOnly && raw != null) {
+        // A prior explicit request may have reached the server even if its
+        // response was lost. Reuse its frozen idempotency key internally; never
+        // create a second user-facing retry action.
+        try {
+          await _retry(internalRecovery: true);
+        } catch (_) {
+          // Preserve the frozen request. A later Preview entry can reconcile
+          // the same key; do not allocate a new request while it is unresolved.
+        }
+      }
     } catch (_) {
       if (mounted) setState(() => historyLoadFailed = true);
       rethrow;
@@ -400,10 +404,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     await widget.showDocument(result);
   }
 
-  Future<void> _submit({
-    String? historicalId,
-    bool creditsAlreadyVerified = false,
-  }) async {
+  Future<void> _submit({bool creditsAlreadyVerified = false}) async {
     if (!enabled ||
         document == null ||
         pending != null ||
@@ -455,7 +456,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       throw const ExportFailure('VALIDATION_FAILED');
     }
     final packet = {
-      'action': historicalId == null ? 'create' : 'again',
+      'action': 'create',
       'display': {
         'profile_id': widget.profileId,
         'language': exportLanguage,
@@ -472,7 +473,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
           'expected_configuration_version': document!['configuration_version'],
           'expected_document_sha256': document!['document_sha256'],
           'renderer_bundle_version': document!['bundle'],
-          if (historicalId != null) 'historical_export_id': historicalId,
         },
       },
     };
@@ -512,7 +512,7 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     return false;
   }
 
-  Future<void> _retry() async {
+  Future<void> _retry({bool internalRecovery = false}) async {
     final client = await ref.read(supabaseClientProvider.future);
     final user = client.auth.currentUser!.id;
     final packet = jsonDecode(pending!) as Map;
@@ -527,6 +527,10 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
       final db = await ref.read(databaseProvider.future);
       await db.removeSetting(storageKey(user));
       pending = null;
+      if (internalRecovery) {
+        await _load(recoverPending: false);
+        return;
+      }
       if (widget.experience && widget.rebuildLocalDocument != null) {
         if (mounted) setState(() => document = null);
         final local = await widget.rebuildLocalDocument!();
@@ -538,9 +542,32 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     }
     final command = Map<String, dynamic>.from(packet['command'] as Map);
     command['request_id'] = newCommandKey(); // Logical key/payload unchanged.
-    final ack = await _call(packet['action'] as String, command);
-    ref.invalidate(coreSummaryProvider);
     final db = await ref.read(databaseProvider.future);
+    late final Map<String, dynamic> ack;
+    try {
+      ack = await _call(packet['action'] as String, command);
+    } on ExportFailure catch (failure) {
+      // These server outcomes occur before job, Credit reservation, or cost
+      // hold creation. A future export must be a new explicit user action,
+      // rather than a saved request becoming admissible after the rejection.
+      const rejectedBeforeAdmission = {
+        'RATE_LIMITED',
+        'CREDIT_INSUFFICIENT',
+        'EXPORT_IN_PROGRESS',
+        'EXPORT_NOT_READY',
+        'VALIDATION_FAILED',
+      };
+      final frozen = pending;
+      if (rejectedBeforeAdmission.contains(failure.code) &&
+          frozen != null &&
+          await db.setting(storageKey(user)) == frozen &&
+          client.auth.currentUser?.id == user) {
+        await db.removeSetting(storageKey(user));
+        if (mounted) setState(() => pending = null);
+      }
+      rethrow;
+    }
+    ref.invalidate(coreSummaryProvider);
     if (client.auth.currentUser?.id != user) throw StateError('AUTH_REQUIRED');
     if (packet['display'] is Map) {
       final jobId = ack['operation_id'] as String;
@@ -556,12 +583,20 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
     if (!mounted) return;
     setState(() {
       pending = null;
-      final balance = (ack['data'] as Map)['balance'] as Map;
-      message = t(
-        'Server balance: ${balance['available']} available.',
-        'الرصيد المتاح من الخادم: ${balance['available']}.',
-      );
+      if (internalRecovery) {
+        message = null;
+      } else {
+        final balance = (ack['data'] as Map)['balance'] as Map;
+        message = t(
+          'Server balance: ${balance['available']} available.',
+          'الرصيد المتاح من الخادم: ${balance['available']}.',
+        );
+      }
     });
+    if (internalRecovery) {
+      await _load(recoverPending: false);
+      return;
+    }
     final id = ack['operation_id'] as String;
     if (widget.onOperation != null) {
       if (mounted) widget.onOperation!.call(id);
@@ -707,40 +742,16 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
             ),
         ],
         if (pending != null)
-          TextButton(
-            onPressed: busy
-                ? null
-                : () => _run(_retry, showFailureDialog: true),
-            child: Text(
-              t('Retry the saved request', 'إعادة محاولة الطلب المحفوظ'),
-            ),
-          ),
-        if (pending != null && reviewRequired)
-          TextButton(
-            onPressed: busy
-                ? null
-                : () => _run(() async {
-                    final client = await ref.read(
-                      supabaseClientProvider.future,
-                    );
-                    final user = client.auth.currentUser!.id;
-                    final db = await ref.read(databaseProvider.future);
-                    await db.removeSetting(storageKey(user));
-                    if (!mounted || client.auth.currentUser?.id != user) return;
-                    setState(() {
-                      pending = null;
-                      reviewRequired = false;
-                      document = null;
-                    });
-                    await _prepare();
-                  }),
-            child: Text(
-              t(
-                'Review rejected request with current Preview',
-                'مراجعة الطلب المرفوض بالمعاينة الحالية',
+          if (!widget.historyOnly)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                t(
+                  'An earlier PDF request is unresolved. It is preserved so JobiX can check the same request and prevent a duplicate.',
+                  'يوجد طلب PDF سابق لم تُحسم حالته. تم الاحتفاظ به كي يتحقق JobiX من الطلب نفسه ويمنع التكرار.',
+                ),
               ),
             ),
-          ),
         if (widget.historyOnly && historyLoadFailed)
           TextButton(
             onPressed: busy ? null : () => _run(_load),
@@ -779,19 +790,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                         showFailureDialog: true,
                       ),
                 downloading: downloadingExportIds.contains(job['id'] as String),
-                onAgain:
-                    busy ||
-                        !enabled ||
-                        pending != null ||
-                        job['profile_id'] != widget.profileId ||
-                        ![
-                          'COMPLETED',
-                          'FAILED',
-                          'EXPIRED',
-                          'MISSING_OBJECT',
-                        ].contains(job['state'])
-                    ? null
-                    : () => context.go('/resume?again=${job['id']}'),
               ),
             ),
         if (!widget.experience)
@@ -814,24 +812,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                             : () => _run(() => _download(job['id'] as String)),
                         child: Text(t('Download — free', 'تنزيل — مجاني')),
                       ),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(0, 48),
-                      ),
-                      onPressed:
-                          !enabled ||
-                              busy ||
-                              job['profile_id'] != widget.profileId ||
-                              document == null ||
-                              pending != null ||
-                              (document!['issues'] as List).isNotEmpty
-                          ? null
-                          : () => _run(
-                              () => _submit(historicalId: job['id'] as String),
-                              showFailureDialog: true,
-                            ),
-                      child: Text(t('Export Again — 2', 'تصدير جديد — رصيدان')),
-                    ),
                   ],
                 ),
               ],

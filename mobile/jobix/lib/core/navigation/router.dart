@@ -170,12 +170,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
               GoRoute(path: '/home', builder: (_, __) => const HomePage()),
               GoRoute(path: '/career', builder: (_, __) => const CareerPage()),
-              GoRoute(
-                path: '/resume',
-                builder: (_, state) => ResumePage(
-                  historicalExportId: state.uri.queryParameters['again'],
-                ),
-              ),
+              GoRoute(path: '/resume', builder: (_, __) => const ResumePage()),
               GoRoute(
                 path: '/export-history',
                 builder: (_, __) => const CreditsPage(initialTab: 1),

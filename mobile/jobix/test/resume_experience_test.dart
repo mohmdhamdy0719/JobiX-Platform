@@ -271,7 +271,6 @@ void main() {
                 child: ResumeDetailsBody(
                   job: job,
                   onDownload: () => downloaded = true,
-                  onAgain: () {},
                   downloading: true,
                 ),
               ),
@@ -312,7 +311,6 @@ void main() {
               child: ResumeDetailsBody(
                 job: job,
                 onDownload: () => downloaded = true,
-                onAgain: () {},
               ),
             ),
             language: language,

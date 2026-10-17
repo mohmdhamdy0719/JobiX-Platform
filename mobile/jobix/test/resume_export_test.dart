@@ -298,6 +298,7 @@ void main() {
     bool initial = false,
     bool includeCompleted = false,
     bool historyOnly = false,
+    bool experience = false,
     ValueChanged<String>? onOperation,
     GlobalKey<ResumeExportPanelState>? panelKey,
   }) async {
@@ -307,6 +308,7 @@ void main() {
           key: panelKey,
           profileId: profileId,
           canPrepare: true,
+          experience: experience,
           historyOnly: historyOnly,
           initialDocument: initial ? document : null,
           showDocument: (value) async {
@@ -680,7 +682,10 @@ void main() {
         ),
         isNull,
       );
-      expect(find.textContaining('Development PDF service update'), findsWidgets);
+      expect(
+        find.textContaining('Development PDF service update'),
+        findsWidgets,
+      );
       await tester.tap(find.text('Close'));
       await tester.pumpAndSettle();
       expect(await future, isNull);
@@ -739,7 +744,7 @@ void main() {
     },
   );
   testWidgets(
-    'renderer HTML drift refreshes the same Preview and exports its current snapshot without a review button',
+    'renderer-only HTML drift uses the current server document without an extra Preview review',
     (tester) async {
       final panelKey = GlobalKey<ResumeExportPanelState>();
       await mount(tester, panelKey: panelKey);
@@ -747,15 +752,9 @@ void main() {
       prepared = {
         ...document,
         'html': '<html><body>Updated saved document</body></html>',
-        'profile_version': 4,
         'document_sha256': 'b' * 64,
-        'configuration': {'section_visibility': <String, dynamic>{}},
       };
-      final local = {
-        ...document,
-        'document_sha256': null,
-        'profile_version': 4,
-      };
+      final local = {...document, 'document_sha256': null};
 
       await panelKey.currentState!.showLocalDocument(local);
 
@@ -769,29 +768,14 @@ void main() {
       }
 
       expect(commands.map((item) => item['action']), ['document']);
-      expect(panelKey.currentState!.reviewRequired, isFalse);
+      expect(find.text('Create — 2 Credits'), findsOneWidget);
       expect(accepted, 0);
       expect(creditBalanceReads, 1);
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
-      expect(find.byType(AlertDialog), findsNothing);
-      final currentDocument = (await createFuture)!;
-      expect(currentDocument, same(panelKey.currentState!.document));
       expect(find.byKey(const Key('review-updated-preview')), findsNothing);
-      // The open Preview replaces its current snapshot with this result; the
-      // next normal Export tap passes it, not the initially captured local map.
-      final reviewedAgain = panelKey.currentState!.createPdf(currentDocument);
-      for (var frame = 0; frame < 8; frame++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-      await tester.ensureVisible(find.text('Create — 2 Credits'));
-      await tester.tap(find.text('Create — 2 Credits'));
-      await tester.pumpAndSettle();
-      await reviewedAgain;
-      expect(commands.map((item) => item['action']), [
-        'document',
-        'document',
-        'create',
-      ]);
+      await tap(tester, 'Create — 2 Credits');
+      await createFuture;
+      expect(commands.map((item) => item['action']), ['document', 'create']);
       final create = commands.singleWhere((item) => item['action'] == 'create');
       expect(create['command']['expected_profile_version'], 4);
       expect(
@@ -949,10 +933,10 @@ void main() {
     });
     expect(raw, isNot(contains(documentHtml)));
     expect(raw, isNot(contains('url')));
-    // Reopen the controls as after navigation/restart, using the encrypted outbox.
+    // Reopening the final Preview internally replays the frozen request once.
     await tester.pumpWidget(const SizedBox.shrink());
     await mount(tester);
-    await tap(tester, 'Retry the saved request');
+    expect(find.text('Retry the saved request'), findsNothing);
     final attempts = commands
         .where((c) => c['action'] == 'create')
         .map((c) => c['command'] as Map)
@@ -963,7 +947,6 @@ void main() {
     expect(attempts[0]['request_id'], isNot(attempts[1]['request_id']));
     expect(accepted, 1);
     expect(await db.setting('resume:$actor:export:$profileId'), isNull);
-    expect(find.text('Server balance: 3 available.'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink()); // Disposes polling timer.
   });
   testWidgets(
@@ -1123,34 +1106,61 @@ void main() {
     },
   );
   testWidgets(
-    'confirmed conflict requires explicit current Preview before a new intent',
+    'a changed saved version is refreshed and requires a fresh explicit export confirmation',
     (tester) async {
+      final panelKey = GlobalKey<ResumeExportPanelState>();
       rejected = 'VERSION_CONFLICT';
-      await mount(tester, initial: true);
-      await tap(tester, 'Create PDF — 2 Credits');
+      await mount(tester, initial: true, panelKey: panelKey);
+      final first = panelKey.currentState!.createPdf(prepared);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Create — 2 Credits'), findsOneWidget);
+      prepared = {
+        ...prepared,
+        'profile_version': 5,
+        'html': '<html>Current server version</html>',
+        'document_sha256': 'e' * 64,
+      };
       await tap(tester, 'Create — 2 Credits');
-      expect(await db.setting('resume:$actor:export:$profileId'), isNotNull);
-      await tap(tester, 'Close');
-      await tap(tester, 'Review rejected request with current Preview');
+      final refreshed = (await first)!;
+      expect(refreshed['profile_version'], 5);
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
-      expect(observedDocument!['html'], documentHtml);
+      expect(
+        find.text('Review rejected request with current Preview'),
+        findsNothing,
+      );
       expect(accepted, 0);
-    },
-  );
-  testWidgets(
-    'Export Again is a new confirmed logical request for the selected historical PDF',
-    (tester) async {
-      await mount(tester, initial: true);
-      await tap(tester, 'Export Again — 2');
+      rejected = null;
+      final next = panelKey.currentState!.createPdf(refreshed);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       await tap(tester, 'Create — 2 Credits');
-      final request =
-          commands.singleWhere((c) => c['action'] == 'again')['command'] as Map;
-      expect((request['payload'] as Map)['historical_export_id'], jobId);
-      expect((request['payload'] as Map)['expected_document_sha256'], 'a' * 64);
+      await next;
+      final creates = commands.where((c) => c['action'] == 'create').toList();
+      expect(creates, hasLength(2));
+      expect(
+        (creates.first['command'] as Map)['idempotency_key'],
+        isNot((creates.last['command'] as Map)['idempotency_key']),
+      );
       expect(accepted, 1);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  testWidgets('History does not offer a new export for an existing PDF', (
+    tester,
+  ) async {
+    await mount(tester, historyOnly: true, experience: true);
+    expect(find.text('Export Again — 2'), findsNothing);
+    expect(find.text('Create PDF — 2 Credits'), findsNothing);
+    expect(
+      commands.where((c) => ['create', 'again'].contains(c['action'])),
+      isEmpty,
+    );
+    expect(accepted, 0);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   test('presentation fixture returns a valid SDK RPC response', () async {
     final result = await client.rpc(
       'save_resume_presentation',
@@ -1198,7 +1208,7 @@ void main() {
     },
   );
   testWidgets(
-    'insufficient Credits keeps frozen intent for retry without creating another key',
+    'insufficient Credits clears the rejected intent; a later explicit export uses a new key',
     (tester) async {
       rejected = 'CREDIT_INSUFFICIENT';
       creditBalance = 2;
@@ -1209,16 +1219,15 @@ void main() {
       expect(find.text('Not enough Credits'), findsOneWidget);
       expect(find.textContaining('currently have 1'), findsOneWidget);
       await tap(tester, 'Cancel');
-      final initial =
-          jsonDecode((await db.setting('resume:$actor:export:$profileId'))!)
-              as Map;
+      expect(await db.setting('resume:$actor:export:$profileId'), isNull);
       rejected = null;
       creditBalance = 2;
-      await tap(tester, 'Retry the saved request');
+      await tap(tester, 'Create PDF — 2 Credits');
+      await tap(tester, 'Create — 2 Credits');
       final attempts = commands.where((c) => c['action'] == 'create').toList();
       expect(
         (attempts.last['command'] as Map)['idempotency_key'],
-        (initial['command'] as Map)['idempotency_key'],
+        isNot((attempts.first['command'] as Map)['idempotency_key']),
       );
       expect(accepted, 1);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -1226,7 +1235,7 @@ void main() {
   );
   for (final language in ['en', 'ar']) {
     testWidgets(
-      '$language quota response shows retry delay and preserves the exact request',
+      '$language quota response is transient and a later explicit export is a new request',
       (tester) async {
         rejected = 'RATE_LIMITED';
         rejectedRetryAfter = 37;
@@ -1243,16 +1252,28 @@ void main() {
           tester.element(find.byType(ResumeExportPanel)),
         )!;
         expect(find.text(strings.exportRateLimitedRetry(37)), findsOneWidget);
-        final saved =
-            jsonDecode((await db.setting('resume:$actor:export:$profileId'))!)
-                as Map;
-        final attempt = commands.last['command'] as Map;
-        expect(
-          attempt['idempotency_key'],
-          (saved['command'] as Map)['idempotency_key'],
-        );
-        expect(attempt['payload'], (saved['command'] as Map)['payload']);
         expect(accepted, 0);
+        await tap(tester, language == 'en' ? 'Close' : 'إغلاق');
+        expect(find.text(strings.exportRateLimitedRetry(37)), findsNothing);
+        expect(await db.setting('resume:$actor:export:$profileId'), isNull);
+        rejected = null;
+        await tap(
+          tester,
+          language == 'en' ? 'Create PDF — 2 Credits' : 'إنشاء PDF — رصيدان',
+        );
+        await tap(
+          tester,
+          language == 'en' ? 'Create — 2 Credits' : 'إنشاء — رصيدان',
+        );
+        final attempts = commands
+            .where((c) => c['action'] == 'create')
+            .toList();
+        expect(attempts, hasLength(2));
+        expect(
+          (attempts.first['command'] as Map)['idempotency_key'],
+          isNot((attempts.last['command'] as Map)['idempotency_key']),
+        );
+        expect(accepted, 1);
         await tester.pumpWidget(const SizedBox.shrink());
       },
     );

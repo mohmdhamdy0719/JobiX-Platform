@@ -9,14 +9,12 @@ class ResumeDetailsBody extends StatelessWidget {
   const ResumeDetailsBody({
     required this.job,
     this.onDownload,
-    this.onAgain,
     this.downloading = false,
     super.key,
   });
 
   final Map<String, dynamic> job;
   final VoidCallback? onDownload;
-  final VoidCallback? onAgain;
   final bool downloading;
 
   @override
@@ -143,17 +141,6 @@ class ResumeDetailsBody extends StatelessWidget {
                 ),
               ],
             ],
-          ),
-        ],
-        if (state == 'failed' && onAgain != null) ...[
-          const SizedBox(height: TokensV0.space16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: onAgain,
-              icon: const Icon(Icons.refresh),
-              label: Text(copy.tryAgain),
-            ),
           ),
         ],
       ],

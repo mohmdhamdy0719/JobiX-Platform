@@ -22,8 +22,7 @@ import 'resume_layout_repository.dart';
 
 /// Configuration references the Career Profile; it never copies editable data.
 class ResumePage extends ConsumerStatefulWidget {
-  const ResumePage({this.historicalExportId, super.key});
-  final String? historicalExportId;
+  const ResumePage({super.key});
   @override
   ConsumerState<ResumePage> createState() => _ResumePageState();
 }
@@ -325,7 +324,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
   ) async {
     final panel = exportKey.currentState;
     if (panel == null) return null;
-    return panel.createPdf(reviewedDocument, widget.historicalExportId);
+    return panel.createPdf(reviewedDocument);
   }
 
   Future<void> editLayout() async {
@@ -628,7 +627,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                         : 'معاينة وتصدير',
                   ),
                   busy: busy,
-                   onPressed: language == null ? null : showPreview,
+                  onPressed: language == null ? null : showPreview,
                 ),
                 if (configurationConflict)
                   TextButton(
@@ -662,7 +661,6 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                   key: exportKey,
                   profileId: profile!.id,
                   experience: true,
-                  historicalExportId: widget.historicalExportId,
                   onOperation: (id) => context.push('/resume-status/$id'),
                   canPrepare: !pending && !busy,
                   rebuildLocalDocument: () async =>

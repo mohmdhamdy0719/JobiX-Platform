@@ -327,14 +327,22 @@ List<String> reviewedResumeDifferences(
   Map<String, dynamic> authoritative,
 ) {
   final differences = <String>[];
+  // HTML is a renderer output, not saved resume identity. The export panel
+  // fetches the current server canonical document and submits its hash; saved
+  // source hash, profile/configuration versions, and bundle remain strict
+  // comparisons.
   for (final key in [
+    'source_sha256',
     'profile_version',
     'configuration_version',
     'language',
     'bundle',
-    'html',
     'issues',
   ]) {
+    // The local Preview deliberately has no server-only source hash. Saved
+    // profile/configuration versions still guard its content; compare the
+    // hash when a reviewed snapshot actually carries one.
+    if (key == 'source_sha256' && reviewed[key] == null) continue;
     if (_canonicalJson(reviewed[key]) != _canonicalJson(authoritative[key])) {
       differences.add(key);
     }

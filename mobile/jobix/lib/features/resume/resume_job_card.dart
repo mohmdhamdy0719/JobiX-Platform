@@ -10,7 +10,6 @@ class ResumeJobCard extends StatelessWidget {
     required this.onDetails,
     this.onDownload,
     this.downloading = false,
-    this.onAgain,
     super.key,
   });
 
@@ -18,7 +17,6 @@ class ResumeJobCard extends StatelessWidget {
   final VoidCallback onDetails;
   final VoidCallback? onDownload;
   final bool downloading;
-  final VoidCallback? onAgain;
 
   @override
   Widget build(BuildContext context) {
@@ -145,12 +143,6 @@ class ResumeJobCard extends StatelessWidget {
                         ? Icons.hourglass_top
                         : Icons.download_outlined,
                     onPressed: downloading ? null : onDownload,
-                  ),
-                if (state == 'failed' && onAgain != null)
-                  ResumeCompactAction(
-                    label: copy.tryAgain,
-                    icon: Icons.refresh,
-                    onPressed: onAgain!,
                   ),
               ],
             ),

@@ -439,10 +439,11 @@ void main() {
     },
   );
 
-  test('export review only matches the same server-authoritative snapshot', () {
+  test('export review compares saved identity but not renderer HTML bytes', () {
     final reviewed = {
       'profile_version': 7,
       'configuration_version': 4,
+      'source_sha256': 'c' * 64,
       'language': 'en',
       'bundle': ResumeDocument.bundle,
       'html': '<html>reviewed</html>',
@@ -452,6 +453,9 @@ void main() {
     final authoritative = {...reviewed, 'document_sha256': 'a' * 64};
 
     expect(sameReviewedResume(reviewed, authoritative), isTrue);
+    final localWithoutServerHash = Map<String, dynamic>.from(reviewed)
+      ..remove('source_sha256');
+    expect(sameReviewedResume(localWithoutServerHash, authoritative), isTrue);
     expect(
       sameReviewedResume(reviewed, {...authoritative, 'profile_version': 8}),
       isFalse,
@@ -459,9 +463,16 @@ void main() {
     expect(
       sameReviewedResume(reviewed, {
         ...authoritative,
-        'html': '<html>new</html>',
+        'source_sha256': 'd' * 64,
       }),
       isFalse,
+    );
+    expect(
+      sameReviewedResume(reviewed, {
+        ...authoritative,
+        'html': '<html>new</html>',
+      }),
+      isTrue,
     );
     expect(
       sameReviewedResume(reviewed, {

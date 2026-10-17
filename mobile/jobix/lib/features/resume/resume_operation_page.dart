@@ -251,9 +251,6 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
     final downloadable =
         job != null && resumeIsDownloadAvailable(job!, resumeJobState(job!));
     final active = job != null && !terminal.contains(job!['state']);
-    final profile = ref.watch(firstProfileProvider).valueOrNull;
-    final canAgain =
-        job != null && !active && job!['profile_id'] == profile?.id;
     return PopScope<Object?>(
       canPop: Navigator.of(context).canPop(),
       onPopInvokedWithResult: (didPop, _) {
@@ -312,11 +309,6 @@ class _ResumeOperationPageState extends ConsumerState<ResumeOperationPage>
                           job: job!,
                           onDownload: downloadable ? download : null,
                           downloading: saving,
-                          onAgain: canAgain && !busy
-                              ? () => context.go(
-                                  '/resume?again=${widget.exportId}',
-                                )
-                              : null,
                         ),
                       ),
               ),

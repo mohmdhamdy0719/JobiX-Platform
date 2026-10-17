@@ -73,8 +73,8 @@ class ResumeCopy {
       ? 'تم استلام طلبك. سيظهر التحديث عند اكتمال المعالجة.'
       : 'Your request is queued. This view will update when processing finishes.';
   String get runningDescription => isArabic
-      ? 'جارٍ إعداد ملفك. حالة المعالجة غير محددة.'
-      : 'Your file is being prepared. Processing time is not estimated.';
+      ? 'يجري إنهاء سيرتك الذاتية. سيظهر التنزيل هنا عند اكتماله.'
+      : 'Your resume is being finalized. The download will be available here when it is ready.';
   String get completedTitle =>
       isArabic ? 'اكتمل تصدير سيرتك الذاتية' : 'Your resume export is complete';
   String get completedDescription =>
