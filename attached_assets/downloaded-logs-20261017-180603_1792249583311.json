@@ -1,0 +1,817 @@
+[
+  {
+    "insertId": "6ad38dae0000f1e4fb7bd518",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "requestSize": "1332",
+      "status": 200,
+      "responseSize": "173",
+      "userAgent": "Google-Cloud-Scheduler",
+      "remoteIp": "34.98.141.3",
+      "serverIp": "34.143.75.2",
+      "latency": "1.365503996s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "revision_name": "jobix-dev-pdf-export-00018-754",
+        "service_name": "jobix-dev-pdf-export",
+        "configuration_name": "jobix-dev-pdf-export"
+      }
+    },
+    "timestamp": "2026-10-17T15:01:00.684515Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/44cf28ddbd3048f3017c30745f094e08",
+    "receiveTimestamp": "2026-10-17T15:01:02.065272467Z",
+    "spanId": "35ca23d279535e09",
+    "traceSampled": true
+  },
+  {
+    "insertId": "1anad2sffdhd35",
+    "jsonPayload": {
+      "debugInfo": "URL_CRAWLED. Original HTTP response code number = 200",
+      "targetType": "HTTP",
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptFinished"
+    },
+    "httpRequest": {
+      "status": 200
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "job_id": "jobix-dev-pdf-export-recovery"
+      }
+    },
+    "timestamp": "2026-10-17T15:01:02.577996743Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:01:02.577996743Z"
+  },
+  {
+    "insertId": "ftehjjf6dgq50",
+    "jsonPayload": {
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptStarted",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "scheduledTime": "2026-10-17T15:01:00.580823Z",
+      "targetType": "HTTP"
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "job_id": "jobix-dev-pdf-export-recovery",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix"
+      }
+    },
+    "timestamp": "2026-10-17T15:01:02.597941507Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:01:02.597941507Z"
+  },
+  {
+    "insertId": "6ad38de9000d75535df9738f",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "requestSize": "1332",
+      "status": 200,
+      "responseSize": "173",
+      "userAgent": "Google-Cloud-Scheduler",
+      "remoteIp": "34.98.141.5",
+      "serverIp": "34.143.78.2",
+      "latency": "1.204311250s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "configuration_name": "jobix-dev-pdf-export",
+        "service_name": "jobix-dev-pdf-export",
+        "revision_name": "jobix-dev-pdf-export-00018-754"
+      }
+    },
+    "timestamp": "2026-10-17T15:02:00.661428Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/bf60aba864eba86caea6d9f6a6f83c59",
+    "receiveTimestamp": "2026-10-17T15:02:01.885480903Z",
+    "spanId": "20bcc95a4415632b",
+    "traceSampled": true
+  },
+  {
+    "insertId": "172hkvyfooij9e",
+    "jsonPayload": {
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptStarted",
+      "targetType": "HTTP",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "scheduledTime": "2026-10-17T15:02:00.560799Z",
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover"
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "project_id": "mhflow-jobix",
+        "location": "me-central1",
+        "job_id": "jobix-dev-pdf-export-recovery"
+      }
+    },
+    "timestamp": "2026-10-17T15:02:04.322997747Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:02:04.322997747Z"
+  },
+  {
+    "insertId": "kjkn7wfnj7z0f",
+    "jsonPayload": {
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "debugInfo": "URL_CRAWLED. Original HTTP response code number = 200",
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptFinished",
+      "targetType": "HTTP"
+    },
+    "httpRequest": {
+      "status": 200
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "location": "me-central1",
+        "job_id": "jobix-dev-pdf-export-recovery",
+        "project_id": "mhflow-jobix"
+      }
+    },
+    "timestamp": "2026-10-17T15:02:04.340791908Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:02:04.340791908Z"
+  },
+  {
+    "insertId": "6ad38e26000657f135a8b926",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "requestSize": "1332",
+      "status": 200,
+      "responseSize": "173",
+      "userAgent": "Google-Cloud-Scheduler",
+      "remoteIp": "34.98.141.34",
+      "serverIp": "34.143.73.2",
+      "latency": "1.737442370s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "jobix-dev-pdf-export",
+        "revision_name": "jobix-dev-pdf-export-00018-754",
+        "configuration_name": "jobix-dev-pdf-export",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:00.665741Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/a21318dd32056515491743cc03a707e6",
+    "receiveTimestamp": "2026-10-17T15:03:02.421630309Z",
+    "spanId": "891db49e4abe46ce",
+    "traceSampled": true
+  },
+  {
+    "insertId": "9plzq7fg0nsyh",
+    "jsonPayload": {
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptFinished",
+      "debugInfo": "URL_CRAWLED. Original HTTP response code number = 200",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "targetType": "HTTP"
+    },
+    "httpRequest": {
+      "status": 200
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "project_id": "mhflow-jobix",
+        "location": "me-central1",
+        "job_id": "jobix-dev-pdf-export-recovery"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:02.979687423Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:03:02.979687423Z"
+  },
+  {
+    "insertId": "1h1mzzyf4rgm1c",
+    "jsonPayload": {
+      "scheduledTime": "2026-10-17T15:03:00.564729Z",
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptStarted",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "targetType": "HTTP"
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "project_id": "mhflow-jobix",
+        "job_id": "jobix-dev-pdf-export-recovery",
+        "location": "me-central1"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:02.986665223Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:03:02.986665223Z"
+  },
+  {
+    "insertId": "6ad38e4a00047b3a9a88114f",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-export-gateway-mnvzhiynwa-ww.a.run.app/resume-export",
+      "requestSize": "1421",
+      "status": 200,
+      "responseSize": "1192",
+      "userAgent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=lmouxhbjhtqdtiqijcee)",
+      "remoteIp": "2a05:d019:eed:3008:b623:d2c:9126:4cb",
+      "serverIp": "2600:1900:4244:200::",
+      "latency": "6.993365799s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "jobix-dev-export-gateway",
+        "revision_name": "jobix-dev-export-gateway-00018-w86",
+        "location": "me-central1",
+        "configuration_name": "jobix-dev-export-gateway",
+        "project_id": "mhflow-jobix"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:31.174202Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd8607cae85d1d1750d9d3d5eb53786cf62d03adb03b56527e7a4834e62680b5917f935e088b402fffb134f814d2b0434274dd724709233b21b30277ca9b9093176ae39fa72cfe48df586a46780196ca3b41caaceec6"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/01a14a63b48c72ada4cd167f56c68b1d",
+    "receiveTimestamp": "2026-10-17T15:03:38.298207123Z",
+    "spanId": "9e8188d7537c4424",
+    "traceSampled": true
+  },
+  {
+    "textPayload": "Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.",
+    "insertId": "6ad38e430002f9fdcb354946",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "jobix-dev-export-gateway",
+        "configuration_name": "jobix-dev-export-gateway",
+        "project_id": "mhflow-jobix",
+        "location": "me-central1",
+        "revision_name": "jobix-dev-export-gateway-00018-w86"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:31.195069Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd8607cae85d1d1750d9d3d5eb53786cf62d03adb03b56527e7a4834e62680b5917f935e088b402fffb134f814d2b0434274dd724709233b21b30277ca9b9093176ae39fa72cfe48df586a46780196ca3b41caaceec6",
+      "scaling_reason": "AUTOSCALING"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Fvarlog%2Fsystem",
+    "receiveTimestamp": "2026-10-17T15:03:31.198071414Z"
+  },
+  {
+    "insertId": "6ad38e44000de7d2a2400005",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/command",
+      "requestSize": "1308",
+      "status": 503,
+      "responseSize": "196",
+      "userAgent": "node",
+      "remoteIp": "2600:1900:0:3303::200",
+      "serverIp": "2600:1900:4243:200::",
+      "latency": "0.809424331s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "jobix-dev-pdf-export",
+        "location": "me-central1",
+        "revision_name": "jobix-dev-pdf-export-00018-754",
+        "project_id": "mhflow-jobix",
+        "configuration_name": "jobix-dev-pdf-export"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:32.084792Z",
+    "severity": "ERROR",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/c082c8c6e2eb1513528f82a8eaba71a8",
+    "receiveTimestamp": "2026-10-17T15:03:32.917724902Z",
+    "spanId": "e82552309641d2ea",
+    "traceSampled": true
+  },
+  {
+    "insertId": "6ad38e4500004f03407c793e",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "requestSize": "1229",
+      "status": 403,
+      "responseSize": "189",
+      "userAgent": "node",
+      "remoteIp": "2600:1900:0:3303::200",
+      "serverIp": "2600:1900:4242:200::",
+      "latency": "0.002206955s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "jobix-dev-pdf-export-00018-754",
+        "configuration_name": "jobix-dev-pdf-export",
+        "project_id": "mhflow-jobix",
+        "service_name": "jobix-dev-pdf-export",
+        "location": "me-central1"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:33.016226Z",
+    "severity": "WARNING",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/31d64016a14abb6941cd7b406669eb8c",
+    "receiveTimestamp": "2026-10-17T15:03:33.248309095Z",
+    "spanId": "9f09bbf56ef55152"
+  },
+  {
+    "insertId": "6ad38e4500007957003877c3",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/dispatch",
+      "requestSize": "1230",
+      "status": 403,
+      "responseSize": "189",
+      "userAgent": "node",
+      "remoteIp": "2600:1900:0:3303::200",
+      "serverIp": "2600:1900:4243:200::",
+      "latency": "0.001794498s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "jobix-dev-pdf-export",
+        "configuration_name": "jobix-dev-pdf-export",
+        "project_id": "mhflow-jobix",
+        "location": "me-central1",
+        "revision_name": "jobix-dev-pdf-export-00018-754"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:33.027434Z",
+    "severity": "WARNING",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/7075d9171298f5cd528f82a8eaba7fb6",
+    "receiveTimestamp": "2026-10-17T15:03:33.248309095Z",
+    "spanId": "2508a769d64b04b0"
+  },
+  {
+    "textPayload": "DEVELOPMENT_EXPORT_GATEWAY_READY_FLAGS_CLOSED",
+    "insertId": "6ad38e450000897ac791ef1e",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "mhflow-jobix",
+        "configuration_name": "jobix-dev-export-gateway",
+        "service_name": "jobix-dev-export-gateway",
+        "location": "me-central1",
+        "revision_name": "jobix-dev-export-gateway-00018-w86"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:33.035194Z",
+    "labels": {
+      "instanceId": "0010dd8607cae85d1d1750d9d3d5eb53786cf62d03adb03b56527e7a4834e62680b5917f935e088b402fffb134f814d2b0434274dd724709233b21b30277ca9b9093176ae39fa72cfe48df586a46780196ca3b41caaceec6"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2026-10-17T15:03:33.038988137Z"
+  },
+  {
+    "textPayload": "STARTUP HTTP probe succeeded after 2 attempts for container \"export-gateway-1\" on port 8080 path \"/ready\".",
+    "insertId": "6ad38e4800053a596b3c24fe",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "jobix-dev-export-gateway-00018-w86",
+        "service_name": "jobix-dev-export-gateway",
+        "project_id": "mhflow-jobix",
+        "configuration_name": "jobix-dev-export-gateway",
+        "location": "me-central1"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:36.342617Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd8607cae85d1d1750d9d3d5eb53786cf62d03adb03b56527e7a4834e62680b5917f935e088b402fffb134f814d2b0434274dd724709233b21b30277ca9b9093176ae39fa72cfe48df586a46780196ca3b41caaceec6"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Fvarlog%2Fsystem",
+    "receiveTimestamp": "2026-10-17T15:03:36.526872954Z"
+  },
+  {
+    "insertId": "6ad38e4a000450f7516777f8",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/command",
+      "requestSize": "1361",
+      "status": 200,
+      "responseSize": "1186",
+      "userAgent": "node",
+      "remoteIp": "2600:1900:0:3303::200",
+      "serverIp": "2600:1900:4243:200::",
+      "latency": "1.419018445s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "jobix-dev-pdf-export-00018-754",
+        "configuration_name": "jobix-dev-pdf-export",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "service_name": "jobix-dev-pdf-export"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:36.862224Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/ac96b856cf5d9d03528f82a8eaba7309",
+    "receiveTimestamp": "2026-10-17T15:03:38.575244495Z",
+    "spanId": "dfe5a1ec11534478"
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {},
+      "authenticationInfo": {
+        "principalEmail": "jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com",
+        "loggableShortLivedCredential": {
+          "@type": "type.googleapis.com/identity_cloudgaia.AuditLoggableShortLivedCredential",
+          "signedBlob": {
+            "issuer": "",
+            "scope": "",
+            "subject": ""
+          }
+        }
+      },
+      "requestMetadata": {
+        "callerIp": "2600:1900:0:3300::d01",
+        "callerSuppliedUserAgent": "node,gzip(gfe)"
+      },
+      "serviceName": "iamcredentials.googleapis.com",
+      "methodName": "SignBlob",
+      "authorizationInfo": [
+        {
+          "resource": "projects/-/serviceAccounts/110714744392830935259",
+          "permission": "iam.serviceAccounts.getAccessToken",
+          "granted": true,
+          "permissionType": "DATA_READ"
+        }
+      ],
+      "resourceName": "projects/-/serviceAccounts/110714744392830935259",
+      "request": {
+        "payload": "R09PRzQtUlNBLVNIQTI1NgoyMDI2MTAxN1QxNTAzMzdaCjIwMjYxMDE3L2F1dG8vc3RvcmFnZS9nb29nNF9yZXF1ZXN0CmFjMjNhN2E4NmZkNmQ3YzFlNGZmODdjZTM5ZWQ4OTc1YTVkMTliZjFjMjFkNzEyNDQ3MDQ1ZjhhM2Q3ZTNhMzk=",
+        "@type": "type.googleapis.com/google.iam.credentials.v1.SignBlobRequest",
+        "name": "projects/-/serviceAccounts/jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com"
+      }
+    },
+    "insertId": "1r0w55jf1sd6xm",
+    "resource": {
+      "type": "service_account",
+      "labels": {
+        "unique_id": "110714744392830935259",
+        "email_id": "jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com",
+        "project_id": "mhflow-jobix"
+      }
+    },
+    "timestamp": "2026-10-17T15:03:38.233360063Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2026-10-17T15:03:39.524902339Z"
+  },
+  {
+    "insertId": "6ad38e62000456fc932c8c46",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "requestSize": "1331",
+      "status": 200,
+      "responseSize": "173",
+      "userAgent": "Google-Cloud-Scheduler",
+      "remoteIp": "34.98.141.34",
+      "serverIp": "34.143.75.2",
+      "latency": "1.208318896s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "jobix-dev-pdf-export",
+        "project_id": "mhflow-jobix",
+        "configuration_name": "jobix-dev-pdf-export",
+        "revision_name": "jobix-dev-pdf-export-00018-754",
+        "location": "me-central1"
+      }
+    },
+    "timestamp": "2026-10-17T15:04:01.065056Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/a98ace8b63f369661d6a13c03ecc3bbf",
+    "receiveTimestamp": "2026-10-17T15:04:02.287527485Z",
+    "spanId": "ff8e61827cbec31a",
+    "traceSampled": true
+  },
+  {
+    "insertId": "1vqqrj1fnhnath",
+    "jsonPayload": {
+      "targetType": "HTTP",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptStarted",
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "scheduledTime": "2026-10-17T15:04:00.959611Z"
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "job_id": "jobix-dev-pdf-export-recovery",
+        "project_id": "mhflow-jobix",
+        "location": "me-central1"
+      }
+    },
+    "timestamp": "2026-10-17T15:04:03.218811814Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:04:03.218811814Z"
+  },
+  {
+    "insertId": "4rm553f36i4mv",
+    "jsonPayload": {
+      "debugInfo": "URL_CRAWLED. Original HTTP response code number = 200",
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptFinished",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "targetType": "HTTP",
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover"
+    },
+    "httpRequest": {
+      "status": 200
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "job_id": "jobix-dev-pdf-export-recovery",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix"
+      }
+    },
+    "timestamp": "2026-10-17T15:04:03.230134074Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:04:03.230134074Z"
+  },
+  {
+    "insertId": "6ad38e9e0000af583124a8cf",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "requestSize": "1357",
+      "status": 200,
+      "responseSize": "173",
+      "userAgent": "Google-Cloud-Scheduler",
+      "remoteIp": "34.98.141.164",
+      "serverIp": "34.143.72.2",
+      "latency": "1.367325789s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "jobix-dev-pdf-export",
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "revision_name": "jobix-dev-pdf-export-00018-754",
+        "configuration_name": "jobix-dev-pdf-export"
+      }
+    },
+    "timestamp": "2026-10-17T15:05:00.665874Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/b81bbdcf000543670042511d6fce11b3",
+    "receiveTimestamp": "2026-10-17T15:05:02.048326491Z",
+    "spanId": "9c65b202c7200c8f",
+    "traceSampled": true
+  },
+  {
+    "insertId": "1yja309fpdiek0",
+    "jsonPayload": {
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "scheduledTime": "2026-10-17T15:05:00.56427Z",
+      "targetType": "HTTP",
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptStarted",
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery"
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "location": "me-central1",
+        "project_id": "mhflow-jobix",
+        "job_id": "jobix-dev-pdf-export-recovery"
+      }
+    },
+    "timestamp": "2026-10-17T15:05:04.388977296Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:05:04.388977296Z"
+  },
+  {
+    "insertId": "172hkvyfooqbkc",
+    "jsonPayload": {
+      "jobName": "projects/mhflow-jobix/locations/me-central1/jobs/jobix-dev-pdf-export-recovery",
+      "url": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/recover",
+      "debugInfo": "URL_CRAWLED. Original HTTP response code number = 200",
+      "@type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptFinished",
+      "targetType": "HTTP"
+    },
+    "httpRequest": {
+      "status": 200
+    },
+    "resource": {
+      "type": "cloud_scheduler_job",
+      "labels": {
+        "project_id": "mhflow-jobix",
+        "location": "me-central1",
+        "job_id": "jobix-dev-pdf-export-recovery"
+      }
+    },
+    "timestamp": "2026-10-17T15:05:04.404865325Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudscheduler.googleapis.com%2Fexecutions",
+    "receiveTimestamp": "2026-10-17T15:05:04.404865325Z"
+  },
+  {
+    "insertId": "6ad38ec400003d3e29de88fa",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-export-gateway-mnvzhiynwa-ww.a.run.app/resume-export",
+      "requestSize": "1420",
+      "status": 200,
+      "responseSize": "1192",
+      "userAgent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=lmouxhbjhtqdtiqijcee)",
+      "remoteIp": "2a05:d019:eed:3008:c36d:5005:c259:854",
+      "serverIp": "2600:1900:4242:200::",
+      "latency": "2.042991s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "jobix-dev-export-gateway-00018-w86",
+        "project_id": "mhflow-jobix",
+        "service_name": "jobix-dev-export-gateway",
+        "location": "me-central1",
+        "configuration_name": "jobix-dev-export-gateway"
+      }
+    },
+    "timestamp": "2026-10-17T15:05:37.966017Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd8607cae85d1d1750d9d3d5eb53786cf62d03adb03b56527e7a4834e62680b5917f935e088b402fffb134f814d2b0434274dd724709233b21b30277ca9b9093176ae39fa72cfe48df586a46780196ca3b41caaceec6"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/01a14a65a36f77fda71c206cc30e5870",
+    "receiveTimestamp": "2026-10-17T15:05:40.021940519Z",
+    "spanId": "35798c60bc30c6b6",
+    "traceSampled": true
+  },
+  {
+    "insertId": "6ad38ec400002c25b7e7e100",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://jobix-dev-pdf-export-mnvzhiynwa-ww.a.run.app/command",
+      "requestSize": "1361",
+      "status": 200,
+      "responseSize": "1186",
+      "userAgent": "node",
+      "remoteIp": "2600:1900:0:3303::200",
+      "serverIp": "2600:1901:81d5:200::",
+      "latency": "1.383059586s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "jobix-dev-pdf-export",
+        "project_id": "mhflow-jobix",
+        "location": "me-central1",
+        "configuration_name": "jobix-dev-pdf-export",
+        "revision_name": "jobix-dev-pdf-export-00018-754"
+      }
+    },
+    "timestamp": "2026-10-17T15:05:38.613002Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "0010dd86079c1727caa8522d438b8b055f04aa2977a6ac69bb6bb3a9f2d1bd91f23df7a15f60fd7c3ce7ebbcd88f06330637fe4d6889f7f5512f67cf4bc854be6ddcc62298213b25bbdcebafb534b08277afc4711f9ec7"
+    },
+    "logName": "projects/mhflow-jobix/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/mhflow-jobix/traces/b98f48acb38dbf370deca5945ade8f1c",
+    "receiveTimestamp": "2026-10-17T15:05:40.014602283Z",
+    "spanId": "a02e0b876820ef61",
+    "traceSampled": true
+  },
+  {
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "status": {},
+      "authenticationInfo": {
+        "principalEmail": "jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com",
+        "loggableShortLivedCredential": {
+          "signedBlob": {
+            "scope": "",
+            "issuer": "",
+            "subject": ""
+          },
+          "@type": "type.googleapis.com/identity_cloudgaia.AuditLoggableShortLivedCredential"
+        }
+      },
+      "requestMetadata": {
+        "callerIp": "2600:1900:0:3300::d01",
+        "callerSuppliedUserAgent": "node,gzip(gfe)"
+      },
+      "serviceName": "iamcredentials.googleapis.com",
+      "methodName": "SignBlob",
+      "authorizationInfo": [
+        {
+          "resource": "projects/-/serviceAccounts/110714744392830935259",
+          "permission": "iam.serviceAccounts.getAccessToken",
+          "granted": true,
+          "permissionType": "DATA_READ"
+        }
+      ],
+      "resourceName": "projects/-/serviceAccounts/110714744392830935259",
+      "request": {
+        "payload": "R09PRzQtUlNBLVNIQTI1NgoyMDI2MTAxN1QxNTA1MzlaCjIwMjYxMDE3L2F1dG8vc3RvcmFnZS9nb29nNF9yZXF1ZXN0CmFhNDI3ZGJlODE5YzQ2ZTAxYzhlZmUzNWI2YzJmYTRjNmIzMzIwYTYxZTI4NGM3YmVhM2Q4MDFiYTQ0N2JiYmE=",
+        "name": "projects/-/serviceAccounts/jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com",
+        "@type": "type.googleapis.com/google.iam.credentials.v1.SignBlobRequest"
+      }
+    },
+    "insertId": "1dq39i7f28lfut",
+    "resource": {
+      "type": "service_account",
+      "labels": {
+        "project_id": "mhflow-jobix",
+        "unique_id": "110714744392830935259",
+        "email_id": "jobix-backend-dev@mhflow-jobix.iam.gserviceaccount.com"
+      }
+    },
+    "timestamp": "2026-10-17T15:05:39.959641490Z",
+    "severity": "INFO",
+    "logName": "projects/mhflow-jobix/logs/cloudaudit.googleapis.com%2Fdata_access",
+    "receiveTimestamp": "2026-10-17T15:05:40.848612780Z"
+  }
+]
