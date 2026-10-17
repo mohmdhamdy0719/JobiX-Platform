@@ -18,7 +18,7 @@ class ResumePreviewPage extends ConsumerStatefulWidget {
     super.key,
   });
   final Map<String, dynamic> document;
-  final Future<void> Function() onExport;
+  final Future<Map<String, dynamic>?> Function(Map<String, dynamic>) onExport;
   final bool exportEnabled;
   final String ownerId;
   final VoidCallback onEditProfile;
@@ -31,6 +31,8 @@ class ResumePreviewPage extends ConsumerStatefulWidget {
 class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
     with WidgetsBindingObserver {
   late final WebViewController controller;
+  late Map<String, dynamic> reviewedDocument;
+  String? snapshotNotice;
   int page = 0, pages = 0;
   bool busy = false, failed = false;
   bool ownerInvalidated = false;
@@ -40,6 +42,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    reviewedDocument = Map<String, dynamic>.from(widget.document);
     controller = WebViewController()
       // Only app-injected pagination runs. Canonical HTML has a restrictive
       // script-denying CSP and escaped profile content; all navigation is denied.
@@ -69,7 +72,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
           },
         ),
       );
-    controller.loadHtmlString(widget.document['html'] as String);
+    controller.loadHtmlString(reviewedDocument['html'] as String);
     ref.listenManual(
       authSessionProvider.select((s) => s.valueOrNull?.user.id),
       (previous, next) {
@@ -138,8 +141,8 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
   Future<void> turn(int next) async {
     if (ownerInvalidated || next < 0 || next >= pages) return;
     final rtl =
-        widget.document['language'] == 'ar' ||
-        (widget.document['configuration'] as Map?)?['language'] == 'ar';
+        reviewedDocument['language'] == 'ar' ||
+        (reviewedDocument['configuration'] as Map?)?['language'] == 'ar';
     await controller.runJavaScript(
       "document.getElementById('jobix-pages').style.transform="
       "${jsonEncode('translateX(${(rtl ? 1 : -1) * next * 210}mm)')};",
@@ -153,9 +156,9 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
     final balanceState = ref.watch(coreSummaryProvider);
     final availableCredits = balanceState.valueOrNull?.balance.available;
     final language =
-        widget.document['language'] ??
-        (widget.document['configuration'] as Map?)?['language'];
-    final valid = (widget.document['issues'] as List? ?? []).isEmpty;
+        reviewedDocument['language'] ??
+        (reviewedDocument['configuration'] as Map?)?['language'];
+    final valid = (reviewedDocument['issues'] as List? ?? []).isEmpty;
     return ResumePreviewLayout(
       language: language,
       page: page,
@@ -164,6 +167,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
       exportEnabled: widget.exportEnabled,
       valid: valid,
       availableCredits: availableCredits,
+      notice: snapshotNotice,
       paper: failed
           ? Center(
               child: Text(
@@ -180,12 +184,31 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
           : null,
       onEditProfile: busy || ownerInvalidated ? null : widget.onEditProfile,
       onExport:
-          busy || !valid || !widget.exportEnabled || failed || ownerInvalidated
+          busy ||
+              pages == 0 ||
+              !valid ||
+              !widget.exportEnabled ||
+              failed ||
+              ownerInvalidated
           ? null
           : () async {
               setState(() => busy = true);
               try {
-                await widget.onExport();
+                final replacement = await widget.onExport(reviewedDocument);
+                if (replacement != null && mounted && !ownerInvalidated) {
+                  setState(() {
+                    reviewedDocument = Map<String, dynamic>.from(replacement);
+                    page = 0;
+                    pages = 0;
+                    snapshotNotice = t(
+                      'Preview now shows the current server PDF snapshot. Check it, then tap Export PDF. No PDF was created.',
+                      'تعرض المعاينة الآن نسخة PDF الحالية من الخادم. راجعها ثم اضغط تصدير PDF. لم يتم إنشاء ملف.',
+                    );
+                  });
+                  await controller.loadHtmlString(
+                    reviewedDocument['html'] as String,
+                  );
+                }
               } finally {
                 if (mounted) setState(() => busy = false);
               }

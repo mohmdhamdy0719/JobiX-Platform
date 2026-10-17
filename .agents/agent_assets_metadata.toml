@@ -392,3 +392,31 @@ mtime_ms = 1792193391484
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/5e2dcd70-46b0-4754-aa63-5c6f266bb1a2/87c06c4a-8256-4e34-89ff-382b9468a50b"
 storage_version_token = "1792193399031260"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "oazotDXCOVyOWn2ov1-Zu"
+uri = "file://mobile/jobix/build/app/outputs/flutter-apk/JobiX-development-arm64-debug.zip"
+type = "unspecified"
+title = "JobiX Development APK — ARM64 debug"
+description = "Verified standard com.mhflow.jobix build. Download and extract the APK. No installation or live export was performed."
+logical_id = "19d11227-151b-4354-a53e-418fd489dbac"
+content_hash = "sha256:94dd9f3be443e42708e164794911486d5ef3ae23f0e5ccbb5e62d1e9a8f5ac73"
+size = 57029811
+mtime_ms = 1792218268822
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/19d11227-151b-4354-a53e-418fd489dbac/54cbffc1-e467-4868-8fe3-a602850e66a5"
+storage_version_token = "1792218322951793"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "NYrJgEpG0fspjrrXc8KMf"
+uri = "file://mobile/jobix/build/native-checks/implementation-report.txt"
+type = "text"
+title = "Implementation, tests, and APK verification report"
+description = "Exact changed files, executed checks, corrected test setup failures, APK metadata, and remaining Development rollout boundaries."
+logical_id = "4cd7bb0c-b548-4b6f-95ef-fa85c2f529a8"
+content_hash = "sha256:c8dc3fe77cb1ae1f3b1496c87e8f926f7a63402d9851ebd130ded4f974125688"
+size = 11301
+mtime_ms = 1792218309321
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/4cd7bb0c-b548-4b6f-95ef-fa85c2f529a8/25767280-ef6a-4c9c-8406-4bd238531793"
+storage_version_token = "1792218323464364"
+content_type = "text/plain"

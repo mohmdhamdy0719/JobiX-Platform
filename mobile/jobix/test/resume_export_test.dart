@@ -655,7 +655,91 @@ void main() {
     },
   );
   testWidgets(
-    'stale Preview review preserves the authoritative document and exports only after a fresh review',
+    'new layout fails closed against an old canonicalizer before creating a request',
+    (tester) async {
+      final key = GlobalKey<ResumeExportPanelState>();
+      await mount(tester, panelKey: key);
+      commands.clear();
+      final local = {
+        ...prepared,
+        'configuration': {
+          ...prepared['configuration'] as Map,
+          'render_config_version': 'export-layout-v1',
+          'template_version': 3,
+        },
+      };
+      final future = key.currentState!.createPdf(local);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(commands.map((c) => c['action']), ['document']);
+      expect(accepted, 0);
+      expect(
+        await db.setting(
+          key.currentState!.storageKey(client.auth.currentUser!.id),
+        ),
+        isNull,
+      );
+      expect(find.textContaining('Development PDF service update'), findsWidgets);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(await future, isNull);
+    },
+  );
+  testWidgets(
+    'definitive create version rejection refreshes in place and clears only its rejected intent',
+    (tester) async {
+      final key = GlobalKey<ResumeExportPanelState>();
+      await mount(tester, panelKey: key);
+      commands.clear();
+      final reviewed = Map<String, dynamic>.from(prepared);
+      rejected = 'VERSION_CONFLICT';
+      final future = key.currentState!.createPdf(reviewed);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Create — 2 Credits'), findsOneWidget);
+      prepared = {
+        ...prepared,
+        'profile_version': 5,
+        'html': '<html>Saved after review</html>',
+        'document_sha256': 'e' * 64,
+      };
+      await tester.tap(find.text('Create — 2 Credits'));
+      await tester.pumpAndSettle();
+      final refreshed = (await future)!;
+      expect(refreshed['profile_version'], 5);
+      expect(commands.map((c) => c['action']), [
+        'document',
+        'create',
+        'document',
+      ]);
+      expect(key.currentState!.pending, isNull);
+      expect(accepted, 0);
+      expect(find.byType(AlertDialog), findsNothing);
+      rejected = null;
+      final again = key.currentState!.createPdf(refreshed);
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.tap(find.text('Create — 2 Credits'));
+      await tester.pumpAndSettle();
+      await again;
+      final creates = commands.where((c) => c['action'] == 'create').toList();
+      expect(creates, hasLength(2));
+      expect(
+        creates.first['command']['idempotency_key'],
+        isNot(creates.last['command']['idempotency_key']),
+      );
+      expect(
+        creates.last['command']['payload']['expected_document_sha256'],
+        'e' * 64,
+      );
+      expect(accepted, 1);
+    },
+  );
+  testWidgets(
+    'renderer HTML drift refreshes the same Preview and exports its current snapshot without a review button',
     (tester) async {
       final panelKey = GlobalKey<ResumeExportPanelState>();
       await mount(tester, panelKey: panelKey);
@@ -663,7 +747,7 @@ void main() {
       prepared = {
         ...document,
         'html': '<html><body>Updated saved document</body></html>',
-        'profile_version': 5,
+        'profile_version': 4,
         'document_sha256': 'b' * 64,
         'configuration': {'section_visibility': <String, dynamic>{}},
       };
@@ -685,29 +769,17 @@ void main() {
       }
 
       expect(commands.map((item) => item['action']), ['document']);
-      expect(panelKey.currentState!.reviewRequired, isTrue);
+      expect(panelKey.currentState!.reviewRequired, isFalse);
       expect(accepted, 0);
       expect(creditBalanceReads, 1);
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
-      expect(find.byType(AlertDialog), findsOneWidget);
-      await tester.tap(find.text('Close'));
-      await tester.pumpAndSettle();
-      await createFuture;
-
-      final currentDocument = panelKey.currentState!.document!;
-      expect(find.byKey(const Key('review-updated-preview')), findsOneWidget);
-      // ResumePage calls this during Preview-route cleanup. The conflict
-      // recovery document must survive that exact cleanup path.
-      panelKey.currentState!.clearLocalDocument();
-      expect(panelKey.currentState!.document, same(currentDocument));
-      await tester.ensureVisible(
-        find.byKey(const Key('review-updated-preview')),
-      );
-      await tester.tap(find.byKey(const Key('review-updated-preview')));
-      await tester.pumpAndSettle();
-      expect(observedDocument, same(currentDocument));
-
-      final reviewedAgain = panelKey.currentState!.createPdf(observedDocument!);
+      expect(find.byType(AlertDialog), findsNothing);
+      final currentDocument = (await createFuture)!;
+      expect(currentDocument, same(panelKey.currentState!.document));
+      expect(find.byKey(const Key('review-updated-preview')), findsNothing);
+      // The open Preview replaces its current snapshot with this result; the
+      // next normal Export tap passes it, not the initially captured local map.
+      final reviewedAgain = panelKey.currentState!.createPdf(currentDocument);
       for (var frame = 0; frame < 8; frame++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
@@ -721,7 +793,7 @@ void main() {
         'create',
       ]);
       final create = commands.singleWhere((item) => item['action'] == 'create');
-      expect(create['command']['expected_profile_version'], 5);
+      expect(create['command']['expected_profile_version'], 4);
       expect(
         create['command']['payload']['expected_document_sha256'],
         'b' * 64,

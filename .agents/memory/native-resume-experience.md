@@ -89,3 +89,23 @@ background refreshes and obscured which export was downloading.
 
 **How to apply:** Keep quiet polling free of full-screen progress, stop it for
 terminal jobs, and give each in-flight download its own visible progress state.
+
+## Independently shipped renderer parity
+
+Keep exact reviewed HTML/hash validation even when renderer and template version
+labels match. On a definitive snapshot difference, show the authoritative
+document in the same Preview and require review before the next normal Export
+tap. Do not silently submit changed content or add a separate updated-Preview
+button to the normal flow.
+
+**Why:** Independently shipped client/server renderers can share version labels
+while emitting different bytes. Retaining the original reviewed snapshot after
+refresh creates a repeated rejection loop; comparing versions alone would hide
+the discrepancy rather than resolve it.
+
+**How to apply:** Test real standalone canonicalizer parity as well as the native
+route's next-tap snapshot. Keep shared render dependencies usable without Flutter.
+Distinguish definitive rejected intents from ambiguous outcomes: only the former
+can be discarded for a refreshed review; ambiguous requests retain their original
+idempotency key. Diagnostic output should name differing fields, not document
+contents, signed URLs, or raw errors.

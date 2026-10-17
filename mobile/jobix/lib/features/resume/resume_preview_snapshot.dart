@@ -8,6 +8,7 @@ import '../career_profile/profile_sections.dart';
 import '../career_profile/text_section_repository.dart';
 import '../personal_information/profile_extras_repository.dart';
 import 'resume_document.dart';
+import 'resume_layout.dart';
 
 const resumePreviewSectionOrder = [
   'summary',
@@ -173,6 +174,17 @@ class ResumePreviewSnapshotLoader {
 
     final visibility = configuration['section_visibility'];
     final order = configuration['section_order'];
+    final layoutV1 =
+        configuration['render_config_version'] == ResumeLayout.renderVersion &&
+        configuration['template_version'] == ResumeLayout.templateVersion;
+    final supportedOrder =
+        order is List &&
+        (layoutV1
+            ? order.length == ResumeLayout.sectionKeys.length &&
+                  order.toSet().length == ResumeLayout.sectionKeys.length &&
+                  order.every(ResumeLayout.sectionKeys.contains)
+            : _canonicalJson(order) ==
+                  _canonicalJson(resumePreviewSectionOrder));
     const supportedFields = {
       'profile_id',
       'language',
@@ -196,10 +208,10 @@ class ResumePreviewSnapshotLoader {
               key is! String || !ResumePresentation.sectionKeys.contains(key),
         ) ||
         visibility.values.any((value) => value is! bool) ||
-        order is! List ||
-        _canonicalJson(order) != _canonicalJson(resumePreviewSectionOrder) ||
-        configuration['render_config_version'] != 'export-v1' ||
-        configuration['template_version'] != 2) {
+        !supportedOrder ||
+        (!layoutV1 &&
+            (configuration['render_config_version'] != 'export-v1' ||
+                configuration['template_version'] != 2))) {
       throw const ResumePreviewBlocked('UNSUPPORTED_SAVED_CONFIGURATION');
     }
     configuration['version'] = (configuration['version'] as num).toInt();
@@ -267,6 +279,7 @@ Future<ResumePreviewDraftState> inspectResumePreviewDrafts({
   for (final key in [
     'resume:$user:${profile.id}',
     'resume:$user:export:${profile.id}',
+    'resume:$user:layout:${profile.id}',
   ]) {
     final raw = await database.setting(key);
     if (raw != null) {
@@ -308,16 +321,25 @@ Future<(String latin, String arabic)> _readResumePreviewFonts() async {
 bool sameReviewedResume(
   Map<String, dynamic> reviewed,
   Map<String, dynamic> authoritative,
+) => reviewedResumeDifferences(reviewed, authoritative).isEmpty;
+
+/// Allowlisted field names only, never content, hashes, IDs, or versions.
+List<String> reviewedResumeDifferences(
+  Map<String, dynamic> reviewed,
+  Map<String, dynamic> authoritative,
 ) {
-  if (reviewed['profile_version'] != authoritative['profile_version'] ||
-      reviewed['configuration_version'] !=
-          authoritative['configuration_version'] ||
-      reviewed['language'] != authoritative['language'] ||
-      reviewed['bundle'] != authoritative['bundle'] ||
-      reviewed['html'] != authoritative['html'] ||
-      _canonicalJson(reviewed['issues']) !=
-          _canonicalJson(authoritative['issues'])) {
-    return false;
+  final differences = <String>[];
+  for (final key in [
+    'profile_version',
+    'configuration_version',
+    'language',
+    'bundle',
+    'html',
+    'issues',
+  ]) {
+    if (_canonicalJson(reviewed[key]) != _canonicalJson(authoritative[key])) {
+      differences.add(key);
+    }
   }
   final reviewedConfig = Map<String, dynamic>.from(
     reviewed['configuration'] as Map? ?? const {},
@@ -341,9 +363,11 @@ bool sameReviewedResume(
     final right =
         authoritativeConfig[key] ??
         (key == 'section_order' ? resumePreviewSectionOrder : null);
-    if (_canonicalJson(left) != _canonicalJson(right)) return false;
+    if (_canonicalJson(left) != _canonicalJson(right)) {
+      differences.add('configuration.$key');
+    }
   }
-  return true;
+  return List.unmodifiable(differences);
 }
 
 String _linksJson(List<CustomProfileLink> links) => _canonicalJson([

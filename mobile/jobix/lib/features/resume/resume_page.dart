@@ -16,6 +16,9 @@ import 'resume_preview_page.dart';
 import 'resume_preview_snapshot.dart';
 import 'resume_experience_widgets.dart';
 import '../builder/profile_overview.dart';
+import 'resume_layout.dart';
+import 'resume_layout_page.dart';
+import 'resume_layout_repository.dart';
 
 /// Configuration references the Career Profile; it never copies editable data.
 class ResumePage extends ConsumerStatefulWidget {
@@ -35,6 +38,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
   String? message;
   Map<String, dynamic>? preparedDocument;
   bool configurationConflict = false;
+  bool layoutPending = false;
   String? confirmedDraftFingerprint;
   bool get languageDirty => language != null && language != savedLanguage;
   String key(String user, String id) => 'resume:$user:$id';
@@ -58,6 +62,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
           .timeout(const Duration(seconds: 15));
       final db = await ref.read(databaseProvider.future);
       final raw = await db.setting(key(actor, p.id));
+      layoutPending = await db.setting('resume:$actor:layout:${p.id}') != null;
       if (!mounted) return;
       if (client.auth.currentUser?.id != actor) {
         throw StateError('AUTH_REQUIRED');
@@ -221,7 +226,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
   }
 
   Future<void> selectLanguage(String selectedLanguage) async {
-    if (busy || pending) return;
+    if (busy || pending || layoutPending) return;
     if (selectedLanguage == savedLanguage && languageDirty) {
       setState(() {
         language = savedLanguage;
@@ -315,15 +320,110 @@ class _ResumePageState extends ConsumerState<ResumePage> {
     }
   }
 
-  Future<void> _exportReviewedDocument(
+  Future<Map<String, dynamic>?> _exportReviewedDocument(
     Map<String, dynamic> reviewedDocument,
   ) async {
     final panel = exportKey.currentState;
-    if (panel == null) return;
-    await panel.createPdf(reviewedDocument, widget.historicalExportId);
-    if (panel.reviewRequired && mounted) {
-      Navigator.of(context).pop();
+    if (panel == null) return null;
+    return panel.createPdf(reviewedDocument, widget.historicalExportId);
+  }
+
+  Future<void> editLayout() async {
+    if (busy || pending || profile == null) return;
+    setState(() => busy = true);
+    try {
+      final client = await ref.read(supabaseClientProvider.future);
+      final actor = client.auth.currentUser?.id;
+      if (actor == null || actor != ownerId) throw StateError('AUTH_REQUIRED');
+      final db = await ref.read(databaseProvider.future);
+      final store = ResumeLayoutRepository(
+        database: db,
+        user: actor,
+        profileId: profile!.id,
+        isCurrentUser: () => client.auth.currentUser?.id == actor,
+        saveRemote: (request) async => Map<String, dynamic>.from(
+          await client
+                  .rpc('save_resume_layout', params: request)
+                  .timeout(const Duration(seconds: 20))
+              as Map,
+        ),
+      );
+      final frozen = await store.pending();
+      Map<String, dynamic> configuration;
+      if (frozen != null) {
+        configuration = {
+          'section_order': frozen['section_order'],
+          'section_visibility': {
+            for (final section in frozen['hidden_sections'] as List)
+              section: false,
+          },
+        };
+      } else {
+        final snapshot = await _loadLocalSnapshotForLayout();
+        configuration = snapshot.configuration;
+      }
+      if (!mounted || client.auth.currentUser?.id != actor) return;
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => ResumeLayoutPage(
+            initial: ResumeLayout.fromConfiguration(configuration),
+            pending: frozen != null,
+            hasPending: () async => await store.pending() != null,
+            onReload: () async => ResumeLayout.fromConfiguration(
+              (await _loadLocalSnapshotForLayout()).configuration,
+            ),
+            onSave: (layout) async {
+              await store.save(
+                layout: layout,
+                profileVersion: profile!.version,
+                configurationVersion: version,
+                language: savedLanguage!,
+              );
+              if (client.auth.currentUser?.id != actor) {
+                throw StateError('AUTH_REQUIRED');
+              }
+            },
+          ),
+        ),
+      );
+      if (mounted) await load();
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => message = t(
+            'The saved layout could not be loaded safely. Check your connection and retry.',
+            'تعذّر تحميل التصميم المحفوظ بأمان. تحقق من الاتصال وأعد المحاولة.',
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
     }
+  }
+
+  // Layout editing may inspect saved data even when other local edits exist.
+  // It never previews, saves, or discards those profile edits.
+  Future<({CareerProfile profile, Map<String, dynamic> configuration})>
+  _loadLocalSnapshotForLayout() async {
+    final repository = await ref.read(draftRepositoryProvider.future);
+    final p = await repository.load(freshOnly: true);
+    final client = await ref.read(supabaseClientProvider.future);
+    if (client.auth.currentUser?.id != ownerId) {
+      throw StateError('AUTH_REQUIRED');
+    }
+    final result = await client
+        .rpc('read_resume_configuration', params: {'requested_profile': p.id})
+        .timeout(const Duration(seconds: 15));
+    if (client.auth.currentUser?.id != ownerId || p.id != profile?.id) {
+      throw StateError('AUTH_REQUIRED');
+    }
+    final config = result == null
+        ? <String, dynamic>{'version': 0, 'language': p.resumeLanguage ?? 'en'}
+        : Map<String, dynamic>.from(result as Map);
+    profile = p;
+    version = config['version'] as int;
+    savedLanguage = config['language'] as String;
+    return (profile: p, configuration: config);
   }
 
   @override
@@ -367,16 +467,14 @@ class _ResumePageState extends ConsumerState<ResumePage> {
               children: [
                 Text(
                   t(
-                    'Choose an ATS-friendly layout for your saved Career Profile.',
-                    'اختر تصميمًا متوافقًا مع ATS لملفك المهني المحفوظ.',
+                    'Customize your resume layout and choose what to include.',
+                    'خصّص تصميم سيرتك الذاتية واختر ما تريد تضمينه.',
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: busy ? null : () => context.push('/career'),
+                  onPressed: busy || pending ? null : editLayout,
                   icon: const Icon(Icons.edit_outlined),
-                  label: Text(
-                    t('Edit profile content', 'تعديل محتوى الملف المهني'),
-                  ),
+                  label: Text(t('Edit resume layout', 'تعديل تصميم السيرة')),
                 ),
                 const SizedBox(height: 20),
                 Row(
@@ -399,7 +497,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                               ),
                             ),
                             selected: language == code,
-                            onSelected: busy || pending
+                            onSelected: busy || pending || layoutPending
                                 ? null
                                 : (_) => selectLanguage(code),
                           ),
@@ -426,6 +524,16 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                     onPressed: busy ? null : saveLanguage,
                     child: Text(
                       t('Retry saving this language', 'إعادة محاولة حفظ اللغة'),
+                    ),
+                  ),
+                if (layoutPending)
+                  TextButton(
+                    onPressed: busy ? null : editLayout,
+                    child: Text(
+                      t(
+                        'Resolve pending layout save',
+                        'تسوية حفظ التصميم المعلّق',
+                      ),
                     ),
                   ),
                 const SizedBox(height: 24),
@@ -519,7 +627,9 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                         : 'معاينة وتصدير',
                   ),
                   busy: busy,
-                  onPressed: language == null || pending ? null : showPreview,
+                  onPressed: language == null || pending || layoutPending
+                      ? null
+                      : showPreview,
                 ),
                 if (configurationConflict)
                   TextButton(
@@ -573,17 +683,29 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                             },
                             exportEnabled:
                                 exportKey.currentState?.creationEnabled == true,
-                            onExport: () => _exportReviewedDocument(document),
+                            onExport: _exportReviewedDocument,
                           ),
                         ),
                       );
                     }
                   },
                 ),
-                Text(
-                  t(
-                    'Preview is free. A successful new PDF export costs 2 Credits. Valid downloads are free for 7 days after the file is created.',
-                    'المعاينة مجانية. يكلف تصدير PDF جديد ناجح رصيدين. يتاح تنزيل الملف الصالح مجانًا لمدة ٧ أيام بعد إنشائه.',
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+                  decoration: BoxDecoration(
+                    color: TokensV0.primary.withValues(alpha: .05),
+                    border: BorderDirectional(
+                      start: BorderSide(color: TokensV0.primary, width: 2),
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    t(
+                      'Preview is free. A successful new PDF export costs 2 Credits. Valid downloads are free for 7 days after the file is created.',
+                      'المعاينة مجانية. يكلف تصدير PDF جديد ناجح رصيدين. يتاح تنزيل الملف الصالح مجانًا لمدة ٧ أيام بعد إنشائه.',
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
               ],

@@ -2,6 +2,7 @@ import 'dart:convert';
 import '../career_profile/career_profile.dart';
 import '../career_profile/profile_sections.dart';
 import 'resume_render.dart';
+import 'resume_layout.dart';
 
 /// Presentation only; source facts and completeness remain untouched.
 class ResumePresentation {
@@ -9,6 +10,7 @@ class ResumePresentation {
     required this.language,
     this.version = 0,
     Set<String> hidden = const {},
+    this.order,
   }) : hidden = Set.unmodifiable(hidden) {
     if (!['en', 'ar'].contains(language) ||
         !hidden.every(sectionKeys.contains)) {
@@ -30,6 +32,7 @@ class ResumePresentation {
   final String language;
   final int version;
   final Set<String> hidden;
+  final List<String>? order;
   factory ResumePresentation.fromJson(Map<String, dynamic> json) {
     final visibility = Map<String, dynamic>.from(
       json['section_visibility'] as Map? ?? {},
@@ -41,6 +44,9 @@ class ResumePresentation {
         for (final key in visibility.keys)
           if (visibility[key] == false) key,
       },
+      order: json['render_config_version'] == ResumeLayout.renderVersion
+          ? ResumeLayout.fromConfiguration(json).order
+          : null,
     );
   }
 }
@@ -165,6 +171,7 @@ class ResumeDocument {
           arabicFontBase64: arabicFont,
           additionalLinks: links,
           hiddenSections: config.hidden,
+          sectionOrder: config.order,
         ),
     };
   }

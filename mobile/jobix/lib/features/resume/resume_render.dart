@@ -1,7 +1,8 @@
 import 'dart:convert';
 import '../career_profile/career_profile.dart';
 import '../career_profile/profile_sections.dart';
-import '../builder/entity_labels.dart' show degreeLabel;
+import '../career_profile/degree_labels.dart' show degreeLabel;
+import 'resume_layout.dart';
 
 /// Immutable render-package contract. Preview and the future Chromium worker
 /// consume this same HTML, not a second PDF-specific layout or screenshot.
@@ -15,7 +16,11 @@ class ResumeRender {
     required String arabicFontBase64,
     List<Map<String, dynamic>> additionalLinks = const [],
     Set<String> hiddenSections = const {},
+    List<String>? sectionOrder,
   }) {
+    if (sectionOrder != null) {
+      ResumeLayout(order: sectionOrder, hidden: hiddenSections);
+    }
     if (!['en', 'ar'].contains(language)) {
       throw ArgumentError('Unsupported language');
     }
@@ -60,9 +65,16 @@ class ResumeRender {
 
     final sections = <String>[];
     final finalSections = <String>[];
-    void section(String title, String body, {bool keepAtEnd = false}) {
+    final byKey = <String, String>{};
+    void section(
+      String title,
+      String body, {
+      required String key,
+      bool keepAtEnd = false,
+    }) {
       if (body.trim().isNotEmpty) {
         final markup = '<section><h2>${e(title)}</h2>$body</section>';
+        byKey[key] = markup;
         (keepAtEnd ? finalSections : sections).add(markup);
       }
     }
@@ -72,7 +84,15 @@ class ResumeRender {
       hiddenSections.contains('summary') || profile.summary.trim().isEmpty
           ? ''
           : lines(profile.summary),
+      key: 'summary',
     );
+    if (sectionOrder != null) {
+      section(
+        label('Target Role', 'الوظيفة المستهدفة'),
+        hiddenSections.contains('target_role') ? '' : lines(profile.targetRole),
+        key: 'target_role',
+      );
+    }
     final labels = {
       EntitySection.experience: label('Work Experience', 'الخبرة المهنية'),
       EntitySection.volunteer: label(
@@ -95,6 +115,7 @@ class ResumeRender {
               ? ''
               : '<p class="skills">${profile.of(type).map((i) => bi(i.text('name'))).join(' · ')}</p>',
           keepAtEnd: true,
+          key: type.key,
         );
         continue;
       }
@@ -181,13 +202,19 @@ class ResumeRender {
         labels[type]!,
         content.toString(),
         keepAtEnd: type == EntitySection.language,
+        key: type.key,
       );
     }
-    final renderedSections = [
-      ...sections,
-      if (finalSections.isNotEmpty)
-        '<div class="resume-final-sections">${finalSections.join('\n')}</div>',
-    ].join('\n');
+    final renderedSections = sectionOrder != null
+        ? [
+            for (final key in sectionOrder)
+              if (byKey[key] != null) byKey[key]!,
+          ].join('\n')
+        : [
+            ...sections,
+            if (finalSections.isNotEmpty)
+              '<div class="resume-final-sections">${finalSections.join('\n')}</div>',
+          ].join('\n');
     final contacts = <String>[];
     for (final key in [
       'email',
@@ -223,7 +250,8 @@ class ResumeRender {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:">
 <meta name="jobix-render-version" content="$modelVersion">
-<meta name="jobix-template-revision" content="$templateVersion">
+<meta name="jobix-template-revision" content="${sectionOrder == null ? templateVersion : ResumeLayout.templateVersion}">
+${sectionOrder == null ? '' : '<meta name="jobix-layout-version" content="1">'}
 <meta name="jobix-template" content="resume_ats_${language}_v1">
 <meta name="jobix-profile-version" content="${profile.version}">
 <style>
@@ -253,7 +281,7 @@ li{list-style-position:outside;break-inside:avoid;page-break-inside:avoid}
 p,li{orphans:3;widows:3}h1,h2,h3,article header{break-after:avoid}}
 </style></head><body>
 <header class="personal-header"><h1>${bi(profile.personal['full_name'])}</h1><div class="contact">${contacts.join(' · ')}</div>
-${hiddenSections.contains('target_role') || profile.targetRole.trim().isEmpty ? '' : '<p>${bi(profile.targetRole)}</p>'}
+${sectionOrder != null || hiddenSections.contains('target_role') || profile.targetRole.trim().isEmpty ? '' : '<p>${bi(profile.targetRole)}</p>'}
 </header>$renderedSections</body></html>''';
   }
 }

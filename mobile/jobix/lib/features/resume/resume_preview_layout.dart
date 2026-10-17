@@ -12,6 +12,7 @@ class ResumePreviewLayout extends StatelessWidget {
     required this.exportEnabled,
     required this.valid,
     this.availableCredits,
+    this.notice,
     required this.onExport,
     required this.onEditProfile,
     required this.onPrevious,
@@ -23,6 +24,7 @@ class ResumePreviewLayout extends StatelessWidget {
   final int page, pages;
   final bool busy, exportEnabled, valid;
   final int? availableCredits;
+  final String? notice;
   final VoidCallback? onExport, onEditProfile, onPrevious, onNext;
 
   @override
@@ -37,12 +39,23 @@ class ResumePreviewLayout extends StatelessWidget {
     final exportReady = exportEnabled && valid && !busy;
     return Scaffold(
       appBar: AppBar(title: Text(t('Preview', 'المعاينة'))),
-      body: SafeArea(
-        bottom: false,
-        child: SizedBox.expand(
-          key: const ValueKey('resume-document'),
-          child: ClipRect(child: paper),
-        ),
+      body: Column(
+        children: [
+          if (notice != null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Semantics(liveRegion: true, child: Text(notice!)),
+            ),
+          Expanded(
+            child: SafeArea(
+              bottom: false,
+              child: SizedBox.expand(
+                key: const ValueKey('resume-document'),
+                child: ClipRect(child: paper),
+              ),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Material(
         color: Theme.of(context).colorScheme.surface,

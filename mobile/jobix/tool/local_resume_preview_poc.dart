@@ -272,7 +272,7 @@ class _LocalPreviewPickerState extends State<_LocalPreviewPicker> {
         MaterialPageRoute(
           builder: (_) => ResumePreviewPage(
             document: document,
-            onExport: () async {},
+            onExport: (_) async => null,
             exportEnabled: false,
             ownerId: 'local-preview-poc',
             onEditProfile: () {},

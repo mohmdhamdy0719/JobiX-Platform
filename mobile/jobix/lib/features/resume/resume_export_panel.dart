@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'resume_experience_widgets.dart';
 import 'resume_export_service.dart';
 import 'resume_preview_snapshot.dart';
 import 'resume_credit_dialog.dart';
+import 'resume_layout.dart';
 export 'resume_export_service.dart' show ExportFailure;
 
 /// Rollout is closed by default; this widget never grants/debits Credits.
@@ -63,48 +65,100 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
   }
 
   void clearLocalDocument() {
-    // A VERSION_CONFLICT replaces the local Preview with the server's current
-    // document and offers a deliberate second review. Keep that one
-    // authoritative document when the original Preview route closes; clearing
-    // it here made every retry return to the same stale document.
-    if (mounted && !(reviewRequired && document != null)) {
-      setState(() => document = null);
-    }
+    if (mounted) setState(() => document = null);
   }
 
-  Future<void> createPdf(
+  /// Returns an authoritative replacement for the SAME open Preview. No new
+  /// intent is allocated until that exact replacement has been reviewed.
+  Future<Map<String, dynamic>?> createPdf(
     Map<String, dynamic> reviewedDocument, [
     String? historicalId,
-  ]) => _run(() async {
-    if (!enabled ||
-        pending != null ||
-        (reviewedDocument['issues'] as List? ?? []).isNotEmpty) {
-      return;
-    }
-    if (!await _ensureCurrentCredits()) return;
-    if (mounted) setState(() => reviewRequired = false);
-    final authoritative = await _call('document', {
-      'profile_id': widget.profileId,
-    });
-    if (!sameReviewedResume(reviewedDocument, authoritative)) {
-      // The saved source changed after the local Preview was built. Preserve
-      // the server's current document, require another user review, and never
-      // submit the stale document or its version/hash.
-      if (mounted) {
-        setState(() {
-          document = authoritative;
-          reviewRequired = true;
-        });
+  ]) async {
+    Map<String, dynamic>? replacement;
+    await _run(() async {
+      if (!enabled ||
+          pending != null ||
+          (reviewedDocument['issues'] as List? ?? []).isNotEmpty) {
+        return;
       }
-      throw const ExportFailure('VERSION_CONFLICT');
-    }
-    if (!mounted) return;
-    setState(() => document = authoritative);
-    await _submit(
-      historicalId: historicalId ?? widget.historicalExportId,
-      creditsAlreadyVerified: true,
-    );
-  }, showFailureDialog: true);
+      final client = await ref.read(supabaseClientProvider.future);
+      final actor = client.auth.currentUser?.id;
+      if (actor == null) throw const ExportFailure('AUTH_REQUIRED');
+      if (!await _ensureCurrentCredits()) return;
+      if (client.auth.currentUser?.id != actor) {
+        throw const ExportFailure('AUTH_REQUIRED');
+      }
+      if (mounted) setState(() => reviewRequired = false);
+      final authoritative = await _call('document', {
+        'profile_id': widget.profileId,
+      });
+      if (client.auth.currentUser?.id != actor) {
+        throw const ExportFailure('AUTH_REQUIRED');
+      }
+      final layout =
+          (reviewedDocument['configuration'] as Map?)?['render_config_version'];
+      // Older deployed canonicalizers silently ignore section_order. Never offer
+      // their HTML as a valid rendering of a layout they cannot implement.
+      if (layout == ResumeLayout.renderVersion &&
+          !(authoritative['html'] as String? ?? '').contains(
+            '<meta name="jobix-layout-version" content="1">',
+          )) {
+        throw const ExportFailure('RENDERER_UPDATE_REQUIRED');
+      }
+      final differences = reviewedResumeDifferences(
+        reviewedDocument,
+        authoritative,
+      );
+      if (differences.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            'JOBIX_EXPORT_SNAPSHOT stage=before_submit fields=${differences.join(",")}',
+          );
+        }
+        if (mounted) setState(() => document = authoritative);
+        replacement = authoritative;
+        return;
+      }
+      if (!mounted) return;
+      setState(() => document = authoritative);
+      try {
+        await _submit(
+          historicalId: historicalId ?? widget.historicalExportId,
+          creditsAlreadyVerified: true,
+        );
+      } on ExportFailure catch (error) {
+        if (error.code != 'VERSION_CONFLICT') rethrow;
+        // Definitive rejection, not an ambiguous timeout. Gateway checks replay
+        // first, so an already accepted same-key request returns its ACK instead.
+        final current = await _call('document', {
+          'profile_id': widget.profileId,
+        });
+        if (client.auth.currentUser?.id != actor) {
+          throw const ExportFailure('AUTH_REQUIRED');
+        }
+        final db = await ref.read(databaseProvider.future);
+        if (await db.setting(storageKey(actor)) != pending) {
+          throw const ExportFailure('SERVICE_UNAVAILABLE');
+        }
+        await db.removeSetting(storageKey(actor));
+        if (mounted) {
+          setState(() {
+            pending = null;
+            document = current;
+            reviewRequired = false;
+          });
+        }
+        replacement = current;
+        if (kDebugMode) {
+          debugPrint(
+            'JOBIX_EXPORT_SNAPSHOT stage=create_rejected code=VERSION_CONFLICT',
+          );
+        }
+      }
+    }, showFailureDialog: true);
+    return replacement;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -207,8 +261,12 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                 )
               : switch (code) {
                   'VERSION_CONFLICT' => t(
-                    'The saved document changed. Review the current Preview before creating a new export.',
-                    'تغيّر المستند المحفوظ. راجع المعاينة الحالية قبل إنشاء تصدير جديد.',
+                    'The saved Resume changed elsewhere. Open Preview to see the current saved version. No new PDF was accepted.',
+                    'تغيّرت السيرة المحفوظة من مكان آخر. افتح المعاينة للاطلاع على النسخة الحالية. لم يتم قبول ملف PDF جديد.',
+                  ),
+                  'RENDERER_UPDATE_REQUIRED' => t(
+                    'This layout needs the Development PDF service update. No export was created or charged.',
+                    'يتطلب هذا التصميم تحديث خدمة PDF للتطوير. لم يتم إنشاء تصدير أو خصم رصيد.',
                   ),
                   'VALIDATION_FAILED' => t(
                     'Fix or explicitly hide invalid saved content, then review Preview.',
@@ -612,20 +670,22 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
             ),
           ),
         if (document != null && !widget.historyOnly) ...[
-          for (final section in ResumePresentation.sectionKeys)
-            CheckboxListTile(
-              title: Text(sectionLabel(section)),
-              value:
-                  (document!['configuration'] as Map)['section_visibility']
-                      is Map
-                  ? ((document!['configuration'] as Map)['section_visibility']
-                            as Map)[section] !=
-                        false
-                  : true,
-              onChanged: busy || pending != null
-                  ? null
-                  : (value) => _run(() => _visibility(section, value == true)),
-            ),
+          if (!widget.experience)
+            for (final section in ResumePresentation.sectionKeys)
+              CheckboxListTile(
+                title: Text(sectionLabel(section)),
+                value:
+                    (document!['configuration'] as Map)['section_visibility']
+                        is Map
+                    ? ((document!['configuration'] as Map)['section_visibility']
+                              as Map)[section] !=
+                          false
+                    : true,
+                onChanged: busy || pending != null
+                    ? null
+                    : (value) =>
+                          _run(() => _visibility(section, value == true)),
+              ),
           for (final issue in document!['issues'] as List)
             if (!widget.historyOnly)
               Text(
@@ -679,16 +739,6 @@ class ResumeExportPanelState extends ConsumerState<ResumeExportPanel> {
                 'Review rejected request with current Preview',
                 'مراجعة الطلب المرفوض بالمعاينة الحالية',
               ),
-            ),
-          ),
-        if (pending == null && reviewRequired && document != null)
-          TextButton(
-            key: const Key('review-updated-preview'),
-            onPressed: busy
-                ? null
-                : () => _run(() => widget.showDocument(document!)),
-            child: Text(
-              t('Review updated Preview', 'مراجعة المعاينة المحدّثة'),
             ),
           ),
         if (widget.historyOnly && historyLoadFailed)

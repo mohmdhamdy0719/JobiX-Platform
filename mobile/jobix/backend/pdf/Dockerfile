@@ -2,7 +2,7 @@
 FROM dart:3.8.0-sdk AS canonical
 WORKDIR /source
 COPY lib/features/career_profile/ lib/features/career_profile/
-COPY lib/features/resume/resume_render.dart lib/features/resume/resume_document.dart lib/features/resume/
+COPY lib/features/resume/resume_render.dart lib/features/resume/resume_document.dart lib/features/resume/resume_layout.dart lib/features/resume/
 COPY tool/prepare_resume_document.dart tool/
 RUN dart compile exe tool/prepare_resume_document.dart -o /canonical
 

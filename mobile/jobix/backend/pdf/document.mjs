@@ -76,6 +76,12 @@ export class Canonicalizer {
     }
     const fonts=fontChecksums(document.html);
     if(fonts.length!==2)throw new ExportError('VALIDATION_FAILED');
+    const config=input.source.configuration;
+    const layoutV1=config.render_config_version==='export-layout-v1';
+    if(layoutV1 && (config.template_version!==3 ||
+      !document.html.includes('<meta name="jobix-layout-version" content="1">'))) {
+      throw new ExportError('APP_UPDATE_REQUIRED');
+    }
     const licenses=await Promise.all(['OFL.txt','OFL-IBMPlexSansArabic.txt']
       .map(name=>readFile(resolve(this.root,'assets/fonts',name),'utf8')));
     return {
@@ -87,8 +93,8 @@ export class Canonicalizer {
       configuration:input.source.configuration,
       // The hash covers exact HTML including immutable embedded font bytes.
       font_sha256:fonts,
-      asset_manifest:{bundle,font_checksums:fonts,model_version:2,template_version:2,
-        render_config_version:'export-v1',
+      asset_manifest:{bundle,font_checksums:fonts,model_version:2,template_version:layoutV1?3:2,
+        render_config_version:layoutV1?'export-layout-v1':'export-v1',
         licenses:licenses.map((text,index)=>({font:index===0?'Inter':'IBM Plex Sans Arabic',
           sha256:sha256(text),text}))},
     };
