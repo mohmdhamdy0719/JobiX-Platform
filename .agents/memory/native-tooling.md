@@ -252,3 +252,15 @@ the `localPreviewDebug` artifact while the standard debug APK stayed stale.
 **How to apply:** Verify the actual flavor, package ID, and output metadata after
 every build; never substitute a Local Preview APK for the standard app or alter
 flavor configuration without explicit approval.
+
+Android PDF save failures can come from a mismatch between the Dart-generated
+suggested filename and the Kotlin platform-channel validator, even after the
+HTTP download completed successfully.
+
+**Why:** On 2026-10-19, the owner confirmed that aligning the native validator
+with sanitized profile filenames fixed PDF saving on the physical device.
+
+**How to apply:** Keep both filename contracts aligned for spaces, Unicode,
+sanitized punctuation and the final suffix length. Test the actual generated
+filename through the save channel; a successful HTTP 200 alone does not prove
+that Android accepted or wrote the document.
