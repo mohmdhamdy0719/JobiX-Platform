@@ -1,0 +1,490 @@
+# JobiX — Comprehensive Project Handover, Technical Audit & Production Readiness Documentation
+
+## 1. Mission
+
+Prepare a complete, evidence-based technical handover for JobiX .
+
+I am preparing to continue development using Google Antigravity, and I may return to Replit later. I need the next development environment to understand the actual state of the project without repeating previous work, losing decisions, overlooking unresolved bugs, or assuming unfinished features are complete.
+
+Your task is to inspect the current repository, existing project documentation, implementation, tests, configuration, and available deployment evidence. Then create or update a structured documentation package that accurately records:
+
+- Everything implemented and the latest changes.
+- Everything partially implemented or missing.
+- Known bugs and unresolved incidents.
+- Features and screens requiring review.
+- Security vulnerabilities and areas requiring a security audit.
+- Backend, database, AI, PDF export/download, billing, Credits, ads, and deployment status.
+- Production-readiness requirements and a prioritized execution plan.
+- Exact instructions for continuing development in another AI coding environment.
+
+**This is a documentation and audit task, not an implementation task. Do not begin fixing application code during this task.**
+
+## 2. Strict rules
+
+1. Inspect the actual current repository and relevant Git history before writing the handover. Do not rely exclusively on previous chat messages or old reports.
+2. Preserve existing architecture decisions and product requirements unless you explicitly document an unresolved concern.
+3. Never mark a feature as complete merely because source code exists.
+4. Distinguish automated tests, mocked tests, manual device tests, Development deployment evidence, and Production verification.
+5. Do not invent test results, deployment states, database migration status, security findings, or successful end-to-end behavior.
+6. If something cannot be verified, label it `UNVERIFIED` and state the exact evidence or access needed.
+7. Do not run a new PDF export, download a user's file, charge or modify Credits, modify user data, or perform destructive operations.
+8. Do not deploy, publish, apply migrations, change cloud infrastructure, modify IAM, rotate credentials, or change Production settings.
+9. Never put passwords, access tokens, private keys, service-role keys, signed URLs, or other secrets in documentation. Record configuration variable NAMES and safe setup instructions only.
+10. Do not modify application source code, business logic, database schemas, migrations, cloud resources, or deployment configuration.
+11. Do not delete existing documentation. Correct outdated documentation only where justified by the actual code and evidence, preserving important historical decisions and explaining discrepancies.
+12. Avoid copying huge amounts of source code into documentation. Reference exact repository paths, function names, tests, and relevant Git commits instead.
+13. Do not create a new APK unless explicitly requested. APK build details should be documented from available evidence.
+14. Do not claim that JobiX is secure, production-ready, or ready for Google Play until the relevant verification has actually occurred.
+
+## 3. Inspect the complete project
+
+Inspect the repository structure and identify the actual implementation of:
+
+- Flutter application, routes, screens, shared widgets, state management, and navigation.
+- Authentication, user sessions, onboarding, profile management, and account settings.
+- Resume creation, editing, preview, layout customization, templates, PDF export, download, and export history.
+- Credits, reservations, deductions, refunds, idempotency, usage limits, and transaction history.
+- Supabase database, migrations, Row Level Security policies, functions, triggers, Edge Functions, Storage, and authentication configuration.
+- Google Cloud services, Gateway, Worker, Storage, IAM, logging, monitoring, and PDF rendering.
+- AI providers, prompts, model configuration, server-side AI calls, rate limits, quotas, error handling, and cost controls.
+- Advertising integration and any planned monetization.
+- Localization, Arabic RTL, English LTR, accessibility, loading states, empty states, and error handling.
+- Unit, widget, integration, backend, and security tests.
+- Development, Local Preview, and Production configurations, including package identifiers and build variants.
+- Google Play configuration, signing, privacy disclosures, subscriptions or purchases if present, and release workflows.
+- Existing product specifications, architecture decisions, implementation plans, bug reports, and previous handover documents.
+
+Use actual repository paths and available evidence. If external cloud resources cannot be accessed, document the limitation instead of assuming their state.
+
+## 4. Required documentation files
+
+Create a dedicated folder:
+
+`docs/handover/`
+
+Create the following files. If an equivalent file already exists, update it where appropriate and link to it rather than creating unnecessary duplicates.
+
+### A. `docs/handover/README.md`
+
+The main entry point.
+
+Include:
+
+- Project purpose and high-level architecture.
+- Current development status.
+- Most important known blocker.
+- The order in which the other documents should be read.
+- The safest first steps for a developer taking over.
+- A prominent warning that Production readiness has not been established unless evidence proves otherwise.
+
+### B. `docs/handover/PROJECT_STATE.md`
+
+A feature-by-feature implementation inventory.
+
+For each feature, include:
+
+- Feature name and user-facing purpose.
+- Current implementation status.
+- Relevant source files and backend components.
+- Existing automated tests and their actual results, if known.
+- Whether the feature has been manually tested on a device.
+- Known defects and missing behavior.
+- External dependencies.
+- Exact remaining work.
+- Evidence and confidence level.
+
+Use these statuses consistently:
+
+- `VERIFIED` — tested successfully in the relevant environment, with evidence.
+- `IMPLEMENTED_UNVERIFIED` — code exists, but real behavior has not been verified.
+- `PARTIAL` — some required behavior is missing.
+- `BROKEN` — a reproducible failure has been established.
+- `NOT_IMPLEMENTED` — required implementation is absent.
+- `UNKNOWN` — insufficient evidence to classify.
+
+Do not use `VERIFIED` for a mocked test when real backend or device behavior is required.
+
+### C. `docs/handover/ARCHITECTURE.md`
+
+Document the actual system architecture.
+
+Include:
+
+- Mobile application structure.
+- Backend components and responsibilities.
+- Data flow between Flutter, Supabase, Google Cloud, and AI providers.
+- Authentication and authorization boundaries.
+- Where Credits and export job state are authoritative.
+- Where PDFs are generated, stored, and downloaded.
+- How AI requests are executed and protected.
+- Environment separation and configuration flow.
+- External services and critical dependencies.
+- Architecture concerns, coupling, single points of failure, and missing observability.
+
+Include Mermaid diagrams where useful, but ensure they represent the real implementation rather than a proposed architecture.
+
+### D. `docs/handover/EXPORT_DOWNLOAD_INCIDENT.md`
+
+This is a critical document. Record the complete history of the unresolved PDF export/download issue.
+
+Include:
+
+- The expected user flow from Export through PDF generation, Storage upload, job completion, signed URL retrieval, direct download, Android save, and opening the saved PDF.
+- The actual implementation path and exact relevant source files/functions.
+- Confirmed observations versus hypotheses.
+- Previous failures and error messages.
+- Diagnostic changes made to Flutter and Android code.
+- Existing automated test coverage and its limitations.
+- Existing APK build results, paths, variants, timestamps, sizes, and checksums when available.
+- Backend and Storage evidence already inspected.
+- What is still unknown.
+- The exact next test required to establish the root cause.
+- A safe procedure for capturing `JOBIX_PDF_DOWNLOAD` diagnostics.
+- A clear prohibition against logging signed URLs, tokens, PDF contents, or personal information.
+- Required regression tests for HTTP errors, timeouts, body interruption, invalid/truncated PDFs, local saving, repeated downloads, and Credit integrity.
+
+Preserve this distinction:
+
+A completed export job does not independently prove that a user successfully downloaded and saved the PDF.
+
+A successful mocked test does not independently prove that the physical Android device can save and open the PDF.
+
+Do not claim that the issue is fixed unless successful end-to-end device verification is documented.
+
+### E. `docs/handover/DATABASE_BACKEND.md`
+
+Document the actual backend and database state.
+
+Include:
+
+- Database tables and relationships.
+- Important columns, constraints, indexes, and foreign keys.
+- Applied versus pending migrations, based only on verifiable evidence.
+- RLS policies and their intended access boundaries.
+- Functions, triggers, RPCs, Edge Functions, Gateway, and Worker responsibilities.
+- Authentication and ownership checks.
+- Credit accounting and idempotency behavior.
+- Export job lifecycle and failure recovery.
+- Storage access and signed URL generation.
+- Development/Production differences.
+- Required backend checks before launch.
+
+Do not expose real user records, credentials, or sensitive database contents.
+
+If the deployed schema cannot be inspected, distinguish repository migration history from actual deployed database state.
+
+### F. `docs/handover/SECURITY_AUDIT.md`
+
+Create a structured security review of the application.
+
+Inspect, at minimum:
+
+**Authentication and account isolation**
+
+- Can users access or modify another user's profile, resume, files, exports, history, or account data?
+- Are ownership checks enforced server-side?
+- Are authorization checks consistent across database queries, RPCs, Edge Functions, Workers, and Storage?
+- Can object identifiers or request parameters be manipulated to access another user's resources?
+
+**Credits and business logic**
+
+- Can clients forge balances or transaction records?
+- Can users bypass server-side checks, reuse requests, manipulate prices, or trigger duplicate deductions/refunds?
+- Are Credit operations atomic and idempotent?
+- Are retries, concurrency, timeouts, and uncertain outcomes handled safely?
+- Can downloading an existing PDF accidentally initiate a new export or charge Credits?
+
+**API and cloud security**
+
+- Are privileged secrets kept server-side?
+- Are public endpoints appropriately authenticated and rate-limited?
+- Are signed URLs restricted in scope and lifetime?
+- Are Storage permissions and IAM roles least-privilege?
+- Can untrusted input trigger arbitrary file access, unsafe rendering, injection, or resource exhaustion?
+- Are AI prompts and generated content handled safely?
+
+**Privacy and abuse prevention**
+
+- Are personal data and resume contents logged unnecessarily?
+- Can users abuse AI usage, export generation, file storage, or advertising flows?
+- Are account deletion, retention, and data access flows implemented as required?
+- Are error messages leaking internal details?
+
+For each finding, record:
+
+- Severity: Critical, High, Medium, Low, or Informational.
+- Status: Confirmed, Suspected, or Not Yet Tested.
+- Evidence and affected source paths.
+- Realistic impact.
+- Recommended remediation.
+- Regression test needed.
+
+Do not claim a vulnerability is confirmed without evidence. Do not attempt destructive exploitation or access real users' private data. Do not perform unauthorized penetration testing against Production.
+
+Explicitly list the checks that cannot be completed without a controlled test environment, authorized cloud access, or expert review.
+
+### G. `docs/handover/UI_UX_AUDIT.md`
+
+Create a screen-by-screen audit checklist.
+
+Inspect every registered route and relevant screen implementation.
+
+For each screen, document:
+
+- Route and source file.
+- Purpose and navigation entry/exit paths.
+- Loading, empty, success, validation, and error states.
+- Form validation and save/discard behavior.
+- Data source and persistence behavior.
+- Arabic RTL and English LTR behavior.
+- Responsiveness, keyboard handling, accessibility, and overflow risks.
+- Loading indicators and duplicate-submit prevention.
+- Inconsistent labels, navigation, dialogs, or design components.
+- Existing tests and manual verification status.
+- Defects found and recommended corrections.
+
+Include the complete route inventory so another developer can verify that no screen was silently omitted.
+
+Review at least:
+
+- Authentication and onboarding.
+- Home and navigation.
+- Profile and career information.
+- Resume creation, editing, layout, templates, and preview.
+- Export, download, export history, and Credit history.
+- Settings, account management, and language.
+- All other implemented routes discovered in the repository.
+
+Do not label a screen visually verified unless it was actually inspected in a running application or captured device evidence.
+
+### H. `docs/handover/AI_FEATURES.md`
+
+Inventory all AI-powered and AI-planned functionality.
+
+For each feature, record:
+
+- Current implementation state.
+- Model/provider and call location, if verifiable.
+- Prompt/template location.
+- Input/output schemas and validation.
+- Authentication, quotas, rate limits, and abuse prevention.
+- Timeout, retry, fallback, and error behavior.
+- Cost exposure and usage tracking.
+- Data privacy and prompt-injection risks.
+- Existing tests and remaining work.
+
+Explicitly assess the current status of:
+
+- Resume assistance and improvement.
+- Professional email generation.
+- Cover letter generation.
+- Multiple career/profile support.
+- Any other AI features present or planned.
+
+Do not invent features or assume that a UI placeholder is a working AI integration.
+
+### I. `docs/handover/MONETIZATION_ADS.md`
+
+Document the actual state of monetization.
+
+Include:
+
+- Credit packages, costs, deductions, refunds, and accounting rules.
+- Paid and free functionality.
+- Advertising SDK and integration status, if present.
+- Ad placements, frequency controls, consent, privacy disclosures, and test mode.
+- Ad-related configuration and dependencies.
+- Any in-app purchase or subscription integration, if present.
+- Required validation before monetization is enabled for real users.
+
+Separate implemented functionality from planned monetization. Never enable live ads or billing during this task.
+
+### J. `docs/handover/PRODUCTION_READINESS.md`
+
+Create a release gate checklist covering:
+
+**Functional correctness**
+
+- Authentication and account recovery.
+- Profile persistence.
+- Resume creation/editing/preview.
+- PDF generation, download, local saving, and opening.
+- Credits and transaction history.
+- AI feature correctness and error handling.
+- Navigation, localization, and major UI states.
+
+**Reliability**
+
+- Network loss, retries, timeouts, duplicate requests, and interrupted operations.
+- Backend errors and rate limits.
+- Storage failures and expired signed URLs.
+- Consistent job, file, and Credit states.
+- Crash reporting, logs, alerts, and rollback strategy.
+
+**Security and privacy**
+
+- RLS and ownership isolation.
+- Server-side Credit enforcement.
+- Secret management and least-privilege permissions.
+- Secure Storage access.
+- Data deletion and privacy disclosures.
+- Controlled security testing and regression tests.
+
+**Google Play release**
+
+- Application ID and release signing.
+- Version code/version name strategy.
+- Android App Bundle (AAB) build and verification.
+- Play Console app setup and internal/closed testing.
+- Test participant requirements and testing-period requirements as confirmed against current official Google Play policy.
+- Data safety form, privacy policy, content rating, ads declaration, target API requirements, and any other applicable declarations.
+- Review of third-party SDKs and permissions.
+- Crash/ANR monitoring and staged rollout.
+- Rollback and incident response plan.
+
+Do not invent the current Google Play policy or claim that the 14-day closed-testing requirement applies to this particular account without verifying the account-specific requirements. Mark account-dependent items for manual confirmation in Play Console.
+
+Use explicit release gates: Production remains blocked until all mandatory functional, security, and operational checks have passed and the owner explicitly approves release.
+
+### K. `docs/handover/KNOWN_ISSUES.md`
+
+Create a prioritized issue register.
+
+For each issue, include:
+
+- ID.
+- Short description.
+- Severity and priority.
+- Affected feature.
+- Reproduction steps, if known.
+- Expected versus actual behavior.
+- Evidence.
+- Current status.
+- Likely owner/component.
+- Next diagnostic or fix.
+- Regression test needed.
+- Dependencies and release impact.
+
+Separate confirmed bugs from hypotheses and incomplete features. Include all known export/download incidents and other unresolved issues discovered during the audit.
+
+### L. `docs/handover/NEXT_STEPS.md`
+
+Create a phased execution plan in dependency order:
+
+Phase 0: Preserve the current project state and establish a reproducible baseline.
+
+Phase 1: Diagnose and fix the existing Export/Download flow, including real-device verification and Credit integrity.
+
+Phase 2: Audit authentication, account isolation, database policies, backend authorization, and Credit security.
+
+Phase 3: Review all screens, routes, persistence flows, navigation, and localization.
+
+Phase 4: Complete planned AI features and their validation, privacy, cost, and abuse controls.
+
+Phase 5: Validate monetization and advertising integrations.
+
+Phase 6: Complete integration, regression, device, reliability, and security testing.
+
+Phase 7: Complete Google Play readiness and the appropriate closed-testing/release process.
+
+For each phase, specify:
+
+- Entry requirements.
+- Concrete tasks.
+- Dependencies.
+- Acceptance criteria.
+- Tests and evidence required.
+- Explicit exit criteria.
+
+Do not assign arbitrary completion dates or claim that this sequence is fully feasible until dependencies are reviewed.
+
+### M. `docs/handover/ANTIGRAVITY_START_HERE.md`
+
+Write an explicit handover prompt for Google Antigravity.
+
+The prompt must instruct the next coding agent to:
+
+1. Read every relevant file in `docs/handover/` before changing code.
+2. Inspect the repository and verify that the handover still matches the current source.
+3. Preserve the current implementation and established product requirements.
+4. Work in small, reviewable changes.
+5. Diagnose issues before modifying code.
+6. Run focused tests and relevant regression tests after each fix.
+7. Keep Development and Production isolated.
+8. Never change Production, deploy, apply migrations, alter IAM, or modify live user data without explicit owner approval.
+9. Treat Credits, authorization, ownership, idempotency, and account isolation as security-critical.
+10. Never mark a feature complete without the required verification evidence.
+11. Update the handover documents as implementation changes.
+12. Report changed files, evidence, test results, residual risks, and exact next steps.
+
+Include the unresolved PDF download issue prominently so it cannot be overlooked.
+
+## 5. Latest changes and historical context
+
+Review existing Git history, repository diffs, implementation notes, and previous documentation for the most recent changes.
+
+At minimum, investigate the recent changes concerning:
+
+- PDF preview and export behavior.
+- Existing completed-PDF download action.
+- Android `MainActivity.kt` save-result handling.
+- Flutter `resume_export_service.dart` diagnostics and validation.
+- `resume_export_panel.dart` and `resume_operation_page.dart` download state/error handling.
+- `resume_export_test.dart` regression coverage.
+- Resume layout editing and persistence.
+- Any pending database migration or Worker rollout required by the current implementation.
+- Existing export idempotency, Credit reservation/settlement, and retry behavior.
+
+Record exact commit hashes and dates where available. Distinguish checked-in changes from deployed changes. Do not assume that a local migration has been applied or that a Worker update has been deployed.
+
+## 6. Environment and handover safety
+
+Document how to set up the project in a new development environment without copying secrets into Git or handover files.
+
+Include:
+
+- Required SDKs and toolchain versions, based on project configuration.
+- Dependency installation commands.
+- Environment/configuration file names and safe setup instructions.
+- Development build and test commands.
+- Existing application IDs and flavor distinctions.
+- Backend setup and migration verification steps.
+- How to verify the intended Supabase project before running tests.
+- How to confirm the active Git branch and clean/dirty working-tree state.
+- How to preserve uncommitted work and avoid overwriting newer changes.
+- How to build a Development APK or AAB when appropriate.
+
+Never include secret values. Do not assume that a developer has access to any particular cloud account.
+
+## 7. Final quality checks
+
+After creating the documentation:
+
+1. Check every referenced path exists or mark it as missing.
+2. Verify that status claims match the available evidence.
+3. Cross-reference the known issues, project state, production checklist, and next steps.
+4. Identify contradictions between old documents and current code.
+5. Flag unresolved contradictions instead of silently choosing an unsupported answer.
+6. Ensure the documentation is usable by a new developer with no prior chat history.
+7. Ensure no secrets or private user data were introduced.
+8. Run `git diff --check`.
+9. Report the exact files created or updated and summarize the most important findings.
+
+## 8. Final response required
+
+When finished, report:
+
+- The documentation files created or updated.
+- The actual project status and most critical blockers.
+- The three highest-priority risks.
+- Features that are implemented but not verified.
+- Features that remain incomplete.
+- Security checks completed versus checks still required.
+- The exact unresolved Export/Download state.
+- Pending migrations, deployments, or environment dependencies that require verification.
+- Any access limitations that prevented an accurate assessment.
+- The recommended first task for Google Antigravity.
+
+Confirm explicitly that no application code, database, cloud configuration, Production environment, user data, Credits, or deployment was changed.
+
+**Begin with repository inspection and evidence collection. Complete the documentation package before proposing implementation changes.**
