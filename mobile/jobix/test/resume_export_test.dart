@@ -225,6 +225,119 @@ void main() {
     expect(html, isNot(contains('Research publication: https://')));
   });
   test(
+    'copyable Android-save diagnostic correlates with safe per-attempt logs',
+    () async {
+      final diagnosticLines = <String>[];
+      final previousDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) {
+        if (message?.startsWith('JOBIX_PDF_DOWNLOAD ') == true) {
+          diagnosticLines.add(message!);
+        }
+      };
+      addTearDown(() => debugPrint = previousDebugPrint);
+
+      final client = SupabaseClient(
+        'https://synthetic.example.invalid',
+        'synthetic-publishable',
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+        httpClient: MockClient((request) async {
+          final body = jsonDecode(request.body) as Map;
+          expect(body['action'], 'download');
+          expect((body['command'] as Map)['export_id'], jobId);
+          return http.Response(
+            jsonEncode({
+              'data': {
+                'url':
+                    'https://storage.googleapis.com/synthetic.pdf?generation=7&token=synthetic-only',
+              },
+              'error': null,
+            }),
+            200,
+            request: request,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+      addTearDown(client.dispose);
+
+      String segment(Map<String, Object> payload) => base64Url
+          .encode(utf8.encode(jsonEncode(payload)))
+          .replaceAll('=', '');
+      final expiry = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
+      final accessToken =
+          '${segment({'alg': 'HS256', 'typ': 'JWT'})}.'
+          '${segment({'sub': actor, 'exp': expiry, 'role': 'authenticated'})}.synthetic-signature';
+      await client.auth.recoverSession(
+        jsonEncode({
+          'access_token': accessToken,
+          'refresh_token': 'synthetic-only',
+          'expires_in': 3600,
+          'expires_at': expiry,
+          'token_type': 'bearer',
+          'user': {
+            'id': actor,
+            'aud': 'authenticated',
+            'role': 'authenticated',
+            'email': 'fixture@example.invalid',
+            'created_at': '2026-10-01T00:00:00Z',
+          },
+        }),
+      );
+
+      final messenger =
+          TestWidgetsFlutterBinding.ensureInitialized().defaultBinaryMessenger;
+      const saveChannel = MethodChannel('jobix/pdf_save');
+      messenger.setMockMethodCallHandler(
+        saveChannel,
+        (call) async => {
+          'saved': false,
+          'stage': 'write_failed',
+          'destination_selected': true,
+          'uri_returned': true,
+          'stream_opened': true,
+          'write_completed': false,
+          'stream_closed': false,
+          'submitted_bytes': _syntheticPdfBytes.length,
+          'final_size_available': false,
+          'exception_type': 'IOException',
+        },
+      );
+      addTearDown(() => messenger.setMockMethodCallHandler(saveChannel, null));
+
+      final fixture = _PdfOverrides();
+      ExportFailure? failure;
+      await HttpOverrides.runWithHttpOverrides(() async {
+        try {
+          await ResumeExportService(
+            client,
+          ).download(jobId, expectedBytes: _syntheticPdfBytes.length);
+        } on ExportFailure catch (error) {
+          failure = error;
+        }
+      }, fixture);
+
+      expect(failure?.code, 'DOWNLOAD_SAVE_ERROR');
+      expect(failure?.saveDiagnosticJson, isNotNull);
+      final copied = jsonDecode(failure!.saveDiagnosticJson!) as Map;
+      final attemptId = copied['attempt_id'];
+      expect(attemptId, matches(RegExp(r'^[0-9a-f]{32}$')));
+      final loggedEvents = diagnosticLines
+          .map(
+            (line) =>
+                jsonDecode(line.substring('JOBIX_PDF_DOWNLOAD '.length)) as Map,
+          )
+          .toList();
+      expect(loggedEvents, isNotEmpty);
+      expect(loggedEvents, everyElement(containsPair('attempt_id', attemptId)));
+      final diagnosticText = failure!.saveDiagnosticJson!;
+      expect(diagnosticText, isNot(contains('storage.googleapis.com')));
+      expect(diagnosticText, isNot(contains('synthetic-only')));
+      expect(diagnosticText, isNot(contains(jobId)));
+      expect(diagnosticText, isNot(contains('%PDF-synthetic fixture')));
+      expect(fixture.closed, isTrue);
+    },
+  );
+  test(
     'hiding invalid Volunteer is explicit and cannot silently leave empty evidence',
     () {
       final bad = CareerProfile.fromJson({
@@ -1059,6 +1172,7 @@ void main() {
             .toSet();
         expect(attemptIds, hasLength(2));
         expect(attemptIds, everyElement(isA<String>()));
+        expect(attemptIds, everyElement(matches(RegExp(r'^[0-9a-f]{32}$'))));
         expect(diagnosticText, contains('"stage":"storage_response"'));
         expect(diagnosticText, contains('"stage":"storage_body"'));
         expect(diagnosticText, contains('"stage":"android_save"'));
@@ -2030,6 +2144,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         expect(clipboardText, isNotNull);
         final diagnostic = jsonDecode(clipboardText!) as Map<String, dynamic>;
+        expect(diagnostic['attempt_id'], matches(RegExp(r'^[0-9a-f]{32}$')));
         expect(diagnostic['download_stage'], 'android_save');
         expect(diagnostic['method_result_type'], 'map');
         expect(diagnostic['save_stage'], 'write_failed');

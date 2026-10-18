@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -105,6 +106,12 @@ class _DownloadDiagnostic {
 }
 
 int _nextDownloadAttempt = 0;
+
+String _newDownloadCorrelationId() {
+  final random = math.Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+}
 
 String exportDisplayKey(String actor, String job) =>
     'resume:$actor:job:$job:display';
@@ -273,7 +280,7 @@ class ResumeExportService {
   }) async {
     final actor = client.auth.currentUser?.id;
     final attempt = ++_nextDownloadAttempt;
-    final attemptId = '${DateTime.now().microsecondsSinceEpoch}-$attempt';
+    final attemptId = _newDownloadCorrelationId();
     final overall = Stopwatch()..start();
     var stage = 'download_link';
     var stageClock = Stopwatch()..start();
@@ -336,6 +343,7 @@ class ResumeExportService {
           : null;
       return jsonEncode({
         'version': 1,
+        'attempt_id': attemptId,
         'download_stage': 'android_save',
         'outcome': outcome,
         'method_result_type': saveResultType ?? 'unavailable',

@@ -1,0 +1,148 @@
+# JobiX — Definitive Investigation and Fix of Android PDF Download/Save Failure
+
+## Objective
+
+Continue from the CURRENT repository state. Do not restart the investigation from scratch and do not repeat fixes already implemented without checking their current status.
+
+The Android Development APK has repeatedly failed to download/save an existing completed PDF. The user previously received:
+
+`PDF download failed`
+`Android could not confirm a complete PDF save. check device storage and retry. Your existing export and Credits are unchanged`
+
+A previous investigation found that this message can represent multiple conditions, including:
+
+- A genuine Android write/close failure.
+- A missing or malformed Flutter method-channel result.
+- A reported file-size mismatch.
+- An unavailable final file size reported by the Android document provider.
+
+A plausible source defect involving SQL `NULL` from `OpenableColumns.SIZE` was corrected by checking `Cursor.isNull()` before reading the size. However, the user's actual failure was not proven to be caused by that defect, and the latest diagnostic APK still failed on the user's device.
+
+The immediate goal is to determine the exact failure branch, obtain sufficient evidence to establish the root cause, and implement the smallest reliable fix.
+
+## Critical constraints
+
+1. Work on the current repository and preserve all existing changes, including the `docs/handover/` documentation.
+2. Do not reset, clean, overwrite, or discard uncommitted work.
+3. Do not trigger a new PDF export.
+4. Do not charge, reserve, refund, or otherwise modify Credits.
+5. Do not alter the existing completed PDF or user data.
+6. Do not deploy, change Production, apply migrations, modify IAM, or change cloud infrastructure.
+7. Do not log signed URLs, query parameters, access tokens, credentials, personal data, PDF contents, or raw response bodies.
+8. Do not claim the root cause is proven solely because a suspected code defect was corrected.
+9. Do not build repeated APKs without a specific evidence-based code change.
+10. Do not claim a physical-device issue is resolved based only on mocked tests or a successful APK build.
+
+## Phase 1 — Inspect current source and history
+
+Inspect the current versions of:
+
+- `mobile/jobix/android/app/src/main/kotlin/com/mhflow/jobix/MainActivity.kt`
+- `mobile/jobix/lib/features/resume/resume_export_service.dart`
+- `mobile/jobix/lib/features/resume/resume_export_panel.dart`
+- `mobile/jobix/lib/features/resume/resume_operation_page.dart`
+- `mobile/jobix/test/resume_export_test.dart`
+
+Also inspect relevant Git history and existing diagnostics to determine which changes are already present.
+
+Trace the exact conditions that can produce the reported Android-save error. Identify the corresponding method-channel method, result schema, native return branches, and Dart validation branches.
+
+Check whether the latest implementation can incorrectly report failure in any of these situations:
+
+- The user selected a valid destination.
+- The Android stream successfully wrote and closed all bytes.
+- The final size is unavailable or cannot be queried.
+- The Android method-channel result contains nullable fields.
+- A document provider returns an unexpected type or omits a field.
+- Android saved the complete PDF but the confirmation response is incomplete.
+- The write actually failed or fewer bytes were written than expected.
+
+Do not assume the SQL NULL issue explains the observed failure.
+
+## Phase 2 — Diagnose the precise failure path
+
+Use existing diagnostic output if available. Determine what evidence is missing and how to collect it safely.
+
+Inspect the current `JOBIX_PDF_DOWNLOAD` diagnostic events and ensure they distinguish the following stages:
+
+1. Download URL/action retrieval succeeded or failed.
+2. Direct HTTP request succeeded or failed.
+3. Response body completed or was interrupted.
+4. Received byte count and PDF validation.
+5. Android destination selection.
+6. Destination URI availability, recorded only as a boolean.
+7. Output stream opened successfully.
+8. Bytes written.
+9. Stream flush and close completed.
+10. Final-size availability, distinct from an actual zero-byte size.
+11. Final-size comparison, when a trustworthy size exists.
+12. Native method-channel result type and safe result fields.
+13. Final Flutter success/failure classification.
+
+Use a per-attempt random correlation ID that contains no personal or account information.
+
+Do not log the URI, filename, signed URL, query parameters, exception messages, credentials, PDF contents, or raw response body.
+
+If the existing diagnostic output is insufficient, add only the minimal additional instrumentation required to identify the failing branch.
+
+Do not perform a live export/download yourself. If a fresh user-device attempt is necessary to obtain evidence, stop and provide exact instructions for the user to run the test and retrieve the sanitized logs.
+
+## Phase 3 — Correctness requirements
+
+The implementation must preserve PDF integrity and must not weaken validation to make the error disappear.
+
+- A real write failure must remain a failure.
+- A stream that fails to close successfully must not be reported as successful.
+- A genuinely known final size that differs from the written size must be handled safely.
+- An unavailable final size must be represented as unavailable, not silently converted into an actual size of zero.
+- If final size is unavailable, success may be accepted only when the destination was selected, the stream opened, all expected bytes were written, the stream closed successfully, and the available PDF integrity checks passed.
+- A missing or malformed method-channel result must not produce a false success.
+- A successfully saved PDF must not be reported as failed merely because a legitimate document provider does not expose a final size.
+- Cancellation must remain distinct from a write failure.
+- A failed download must never initiate a new export.
+- Downloading an existing completed PDF must never charge Credits.
+- Existing ownership checks, authorization, idempotency, and server-side Credit accounting must remain unchanged.
+
+Only implement the smallest fix justified by the evidence. Do not rewrite unrelated export or backend architecture.
+
+## Phase 4 — Tests
+
+Add or update focused tests for:
+
+1. Successful save with a known matching final size.
+2. Successful save when final size is unavailable.
+3. Actual final-size mismatch.
+4. Stream write failure.
+5. Stream close/flush failure where testable.
+6. User cancellation.
+7. Missing or malformed method-channel results.
+8. Incomplete or truncated PDF.
+9. Correct classification of each save-stage failure.
+10. Repeated download without creating another export or charging Credits.
+
+Inspect the test setup before running commands. Use existing local dependencies and configuration where possible.
+
+Run the focused tests, relevant analyzer checks, formatting checks, and `git diff --check`. Report actual command exit codes and results. Do not fabricate results.
+
+If Android-native behavior is not covered by a test, explicitly state that limitation.
+
+## Phase 5 — Final report and stop
+
+Report:
+
+- The exact branch that produced the user's error, if it can be established.
+- Whether the root cause is proven, probable, or still unknown.
+- The concrete evidence supporting the conclusion.
+- The files changed and why.
+- Test results and their limitations.
+- Whether the Android Kotlin code was compiled.
+- Whether a new Development APK is necessary.
+- If necessary, the exact APK path and SHA-256.
+- The precise device test required to confirm the fix.
+- Confirmation that no export, Credit operation, deployment, or Production/cloud change occurred.
+
+If the user's actual failing branch cannot be established without device logs, do not invent a root cause. Complete the safe source-level investigation, identify the exact missing evidence, and provide the shortest possible procedure for collecting it.
+
+After delivering the report, stop and wait for the user's device-test result before proposing further changes.
+
+**Begin by inspecting the current source and existing diagnostics. Diagnose first; make only evidence-based changes.**
