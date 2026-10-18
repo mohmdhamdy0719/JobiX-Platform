@@ -259,6 +259,7 @@ void main() {
         }),
       );
       addTearDown(client.dispose);
+      String? submittedFilename;
 
       String segment(Map<String, Object> payload) => base64Url
           .encode(utf8.encode(jsonEncode(payload)))
@@ -287,30 +288,23 @@ void main() {
       final messenger =
           TestWidgetsFlutterBinding.ensureInitialized().defaultBinaryMessenger;
       const saveChannel = MethodChannel('jobix/pdf_save');
-      messenger.setMockMethodCallHandler(
-        saveChannel,
-        (call) async => {
-          'saved': false,
-          'stage': 'write_failed',
-          'destination_selected': true,
-          'uri_returned': true,
-          'stream_opened': true,
-          'write_completed': false,
-          'stream_closed': false,
-          'submitted_bytes': _syntheticPdfBytes.length,
-          'final_size_available': false,
-          'exception_type': 'IOException',
-        },
-      );
+      messenger.setMockMethodCallHandler(saveChannel, (call) async {
+        expect(call.method, 'save');
+        final arguments = call.arguments as Map;
+        submittedFilename = arguments['name'] as String;
+        throw PlatformException(code: 'INVALID_STATE');
+      });
       addTearDown(() => messenger.setMockMethodCallHandler(saveChannel, null));
 
       final fixture = _PdfOverrides();
       ExportFailure? failure;
       await HttpOverrides.runWithHttpOverrides(() async {
         try {
-          await ResumeExportService(
-            client,
-          ).download(jobId, expectedBytes: _syntheticPdfBytes.length);
+          await ResumeExportService(client).download(
+            jobId,
+            suggestedName: 'Hamdy Hassan',
+            expectedBytes: _syntheticPdfBytes.length,
+          );
         } on ExportFailure catch (error) {
           failure = error;
         }
@@ -318,9 +312,13 @@ void main() {
 
       expect(failure?.code, 'DOWNLOAD_SAVE_ERROR');
       expect(failure?.saveDiagnosticJson, isNotNull);
+      expect(submittedFilename, 'Hamdy Hassan Resume.pdf');
       final copied = jsonDecode(failure!.saveDiagnosticJson!) as Map;
       final attemptId = copied['attempt_id'];
       expect(attemptId, matches(RegExp(r'^[0-9a-f]{32}$')));
+      expect(copied['method_result_type'], 'unavailable');
+      expect(copied['save_stage'], 'unknown');
+      expect(copied['exception_type'], 'PlatformException');
       final loggedEvents = diagnosticLines
           .map(
             (line) =>
