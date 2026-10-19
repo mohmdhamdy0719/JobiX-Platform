@@ -200,13 +200,6 @@ class HomePage extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    if (ref
-                            .watch(unfinishedDraftProvider(value.id))
-                            .valueOrNull ==
-                        true) ...[
-                      const SizedBox(height: TokensV0.space12),
-                      Text(copy.draftAvailable),
-                    ],
                     const SizedBox(height: TokensV0.space16),
                     InactiveSlot(
                       label: copy.aiAuditSoon,

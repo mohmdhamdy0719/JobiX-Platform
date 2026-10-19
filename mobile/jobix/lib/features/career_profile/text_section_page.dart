@@ -354,21 +354,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
               if (failed) TextButton(onPressed: load, child: Text(copy.retry)),
             ] else ...[
               SectionHeading(title: textSectionTitle(context, widget.section)),
-              if (profile != null &&
-                  draft!.text !=
-                      (widget.section == 'summary'
-                          ? profile!.summary
-                          : profile!.targetRole)) ...[
-                const SizedBox(height: TokensV0.space12),
-                SliceCard(
-                  child: Text(
-                    say(
-                      'These changes are not saved to your account until you choose Save.',
-                      'لم تُحفظ هذه التغييرات في حسابك حتى تختار حفظ.',
-                    ),
-                  ),
-                ),
-              ],
               if (hasPendingSave) ...[
                 const SizedBox(height: TokensV0.space12),
                 SliceCard(

@@ -24,6 +24,7 @@ import 'save_feedback.dart';
 import 'month_input_formatter.dart';
 import 'section_writing_guidance.dart';
 import 'jobix_improvement.dart';
+import 'education_catalog.dart';
 
 String editorReturn(EntitySection section, EditorOrigin origin) =>
     switch (origin) {
@@ -418,6 +419,34 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   Widget _field(AppLocalizations copy, SectionField field) {
     final label = fieldLabel(copy, widget.section, field.name);
     final key = Key('field-${field.name}');
+    final isEducationSuggestion =
+        widget.section == EntitySection.education &&
+        (field.name == 'institution' || field.name == 'field_of_study');
+    if (isEducationSuggestion) {
+      final catalog =
+          ref.watch(educationCatalogProvider).valueOrNull ??
+          EducationCatalogData.fallback;
+      final institutions = field.name == 'institution';
+      final fromServer = institutions
+          ? catalog.institutionsFromServer
+          : catalog.studyFieldsFromServer;
+      return EducationAutocompleteField(
+        key: ValueKey('education-autocomplete-${field.name}'),
+        fieldKey: key,
+        controller: controllers[field.name]!,
+        label: field.required ? '$label *' : label,
+        hint: institutions
+            ? copy.institutionAutocompleteHint
+            : copy.studyFieldAutocompleteHint,
+        language: copy.localeName.startsWith('ar') ? 'ar' : 'en',
+        suggestions: institutions ? catalog.institutions : catalog.studyFields,
+        helperText: fromServer ? null : copy.educationSuggestionsFallback,
+        errorText: _error(copy, field),
+        clearLabel: copy.clearField,
+        enabled: !busy && !savePending,
+        onChanged: (value) => edit(field.name, value),
+      );
+    }
     if (field.kind == FieldKind.toggle) {
       return SwitchListTile.adaptive(
         key: key,
@@ -528,7 +557,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           ? TextDirection.ltr
           : null,
       decoration: InputDecoration(
-        labelText: field.required || (field.name == 'end_month' && !disabledEnd)
+        labelText: field.name == 'description'
+            ? null
+            : field.required || (field.name == 'end_month' && !disabledEnd)
             ? '$label *'
             : label,
         hintText: field.kind == FieldKind.month
@@ -562,6 +593,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             : value,
       ),
     );
+    if (field.name == 'description') {
+      return Semantics(label: label, child: input);
+    }
     if (!multiline) return input;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -588,6 +622,10 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       arabic
           ? 'صِف ما حققته، ولماذا كان مهمًا، وأي نتيجة قابلة للقياس.'
           : 'Describe what you achieved, why it mattered, and any measurable result.',
+    EntitySection.certification =>
+      arabic
+          ? 'أضف المهارات أو المعرفة التي أثبتتها هذه الشهادة.'
+          : 'Describe the skills or knowledge demonstrated by this certification.',
     EntitySection.volunteer =>
       arabic
           ? 'صِف القضية التي دعمتها ودورك وكيف أسهمت.'

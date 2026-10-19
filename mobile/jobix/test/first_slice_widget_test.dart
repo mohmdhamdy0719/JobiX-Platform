@@ -30,6 +30,7 @@ import 'package:jobix/features/career_profile/entity_repository.dart';
 import 'package:jobix/features/career_profile/profile_sections.dart';
 import 'package:jobix/features/builder/ai_allowance.dart';
 import 'package:jobix/features/builder/jobix_improvement.dart';
+import 'package:jobix/features/builder/education_catalog.dart';
 import 'support/entity_fakes.dart';
 import 'support/slice_fakes.dart';
 import 'support/production_fonts.dart';
@@ -203,6 +204,9 @@ void main() {
         entityRepositoryProvider.overrideWith(
           (_) async =>
               entityOverride ?? EntityRepository(repository, entities.send),
+        ),
+        educationCatalogProvider.overrideWith(
+          (_) async => EducationCatalogData.fallback,
         ),
         firstEntryProvider.overrideWith((_) async => newEntry),
         contextMergeProvider.overrideWith((_) async {}),
@@ -523,6 +527,20 @@ void main() {
           _ => throw StateError('Uncovered section prompt'),
         };
         expect(field.decoration.hintText, expected);
+        expect(field.decoration.labelText, isNull);
+        final descriptionLabel = locale == 'ar' ? 'الوصف' : 'Description';
+        expect(find.text(descriptionLabel), findsNothing);
+        expect(
+          find.ancestor(
+            of: find.byKey(const Key('field-description')),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == descriptionLabel,
+            ),
+          ),
+          findsOneWidget,
+        );
         final improvement = find.byType(JobixImprovement);
         expect(improvement, findsWidgets);
         expect(
@@ -2768,6 +2786,50 @@ void main() {
       expect(currentPath(), '/career');
       expect(find.byKey(const Key('career-review')), findsNothing);
       expect(currentPath(), '/career');
+    },
+  );
+
+  testWidgets(
+    'education suggestions remain editable and do not save before explicit Save',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(tester, '/career/edit/education/new?origin=career');
+      final institution = find.byKey(const Key('field-institution'));
+      await tester.ensureVisible(institution);
+      await tester.enterText(institution, 'cairo');
+      await tester.pumpAndSettle();
+      expect(find.text('Cairo University'), findsOneWidget);
+      await tester.tap(find.text('Cairo University'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TextField>(institution).controller!.text,
+        'Cairo University',
+      );
+      expect(entities.requests, isEmpty);
+      expect(api.server.of(EntitySection.education), isEmpty);
+
+      final studyField = find.byKey(const Key('field-field_of_study'));
+      await tester.ensureVisible(studyField);
+      await tester.enterText(studyField, 'A custom programme');
+      await tester.pump();
+      expect(
+        tester.widget<TextField>(studyField).controller!.text,
+        'A custom programme',
+      );
+      expect(entities.requests, isEmpty);
+
+      await tester.tap(find.byKey(const Key('editor-back')));
+      await tester.pumpAndSettle();
+      expect(currentPath(), '/career');
+      expect(api.server.of(EntitySection.education), isEmpty);
+      expect(entities.requests, isEmpty);
+      await route(tester, '/career/edit/education/new?origin=career');
+      expect(tester.widget<TextField>(institution).controller!.text, isEmpty);
+      expect(entities.requests, isEmpty);
     },
   );
 }

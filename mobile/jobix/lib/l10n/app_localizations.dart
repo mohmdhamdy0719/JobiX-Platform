@@ -122,12 +122,6 @@ abstract class AppLocalizations {
   /// **'Currently volunteering'**
   String get currentVolunteer;
 
-  /// No description provided for @volunteerEvidenceHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Volunteer roles are separate unpaid career evidence and appear in your Resume. They do not change Profile Completeness.'**
-  String get volunteerEvidenceHint;
-
   /// No description provided for @exitTitle.
   ///
   /// In en, this message translates to:
@@ -631,12 +625,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other Career steps are not available in this slice yet.'**
   String get moreStepsLater;
-
-  /// No description provided for @draftAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'You have unfinished work saved on this device.'**
-  String get draftAvailable;
 
   /// No description provided for @contextPending.
   ///
@@ -1466,11 +1454,35 @@ abstract class AppLocalizations {
   /// **'Institution'**
   String get fieldInstitution;
 
+  /// No description provided for @institutionAutocompleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type an institution name or enter your own.'**
+  String get institutionAutocompleteHint;
+
   /// No description provided for @fieldStudy.
   ///
   /// In en, this message translates to:
   /// **'Field of study'**
   String get fieldStudy;
+
+  /// No description provided for @studyFieldAutocompleteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search or enter your own field of study.'**
+  String get studyFieldAutocompleteHint;
+
+  /// No description provided for @educationSuggestionsFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Common suggestions only; you can still enter any value.'**
+  String get educationSuggestionsFallback;
+
+  /// No description provided for @clearField.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear field'**
+  String get clearField;
 
   /// No description provided for @fieldName.
   ///

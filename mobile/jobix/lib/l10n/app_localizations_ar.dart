@@ -21,10 +21,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get currentVolunteer => 'أتطوع حاليًا';
 
   @override
-  String get volunteerEvidenceHint =>
-      'الأدوار التطوعية خبرات غير مدفوعة ومستقلة تظهر في سيرتك الذاتية، ولا تغيّر نسبة اكتمال الملف المهني.';
-
-  @override
   String get exitTitle => 'الخروج من Jobix؟';
 
   @override
@@ -291,9 +287,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get moreStepsLater =>
       'الخطوات المهنية الأخرى غير متاحة في هذه المرحلة بعد.';
-
-  @override
-  String get draftAvailable => 'لديك عمل غير مكتمل محفوظ على هذا الجهاز.';
 
   @override
   String get contextPending =>
@@ -743,7 +736,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldInstitution => 'المؤسسة التعليمية';
 
   @override
+  String get institutionAutocompleteHint =>
+      'اكتب اسم المؤسسة أو أدخل اسمًا من اختيارك.';
+
+  @override
   String get fieldStudy => 'التخصص';
+
+  @override
+  String get studyFieldAutocompleteHint =>
+      'ابحث عن تخصص أو أدخل تخصصًا من اختيارك.';
+
+  @override
+  String get educationSuggestionsFallback =>
+      'تظهر اقتراحات شائعة فقط؛ يمكنك إدخال أي قيمة.';
+
+  @override
+  String get clearField => 'مسح الحقل';
 
   @override
   String get fieldName => 'الاسم';

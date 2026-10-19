@@ -21,10 +21,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get currentVolunteer => 'Currently volunteering';
 
   @override
-  String get volunteerEvidenceHint =>
-      'Volunteer roles are separate unpaid career evidence and appear in your Resume. They do not change Profile Completeness.';
-
-  @override
   String get exitTitle => 'Exit Jobix?';
 
   @override
@@ -298,9 +294,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get moreStepsLater =>
       'Other Career steps are not available in this slice yet.';
-
-  @override
-  String get draftAvailable => 'You have unfinished work saved on this device.';
 
   @override
   String get contextPending =>
@@ -755,7 +748,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldInstitution => 'Institution';
 
   @override
+  String get institutionAutocompleteHint =>
+      'Type an institution name or enter your own.';
+
+  @override
   String get fieldStudy => 'Field of study';
+
+  @override
+  String get studyFieldAutocompleteHint =>
+      'Search or enter your own field of study.';
+
+  @override
+  String get educationSuggestionsFallback =>
+      'Common suggestions only; you can still enter any value.';
+
+  @override
+  String get clearField => 'Clear field';
 
   @override
   String get fieldName => 'Name';

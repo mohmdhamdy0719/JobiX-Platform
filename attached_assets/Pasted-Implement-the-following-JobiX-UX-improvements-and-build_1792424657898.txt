@@ -1,0 +1,73 @@
+Implement the following JobiX UX improvements and build a fresh Development Debug ARM64 APK.
+
+First inspect the current working tree and relevant screens. Preserve all existing changes, especially the verified PDF download fix, Migration 022 integration, and the app-wide editing/discard behavior.
+
+### A. Remove specifically approved unnecessary copy
+
+Remove these exact messages:
+1. `These changes are not saved to your account until you choose Save.`
+2. `You have unfinished work saved on this device.`
+3. `Volunteer roles are separate unpaid career evidence and appear in your Resume. They do not change Profile Completeness.`
+
+Also remove the visible `Description` label from the relevant data-entry pages, retaining the useful field hint/placeholder and accessibility semantics.
+
+Before removing any OTHER save-, draft-, discard-, or unsaved-work-related messages, provide an inventory containing each exact message, screen/location, purpose, and consequence of removal. Do not remove any additional messages without my approval.
+
+Do not change the actual save, discard, navigation, cloud persistence, or uncertain-request reconciliation behavior merely to remove explanatory copy.
+
+### B. Education Institution autocomplete dataset
+
+Implement an editable free-text Institution field with useful live suggestions.
+
+Create a maintainable, versioned SQL seed/migration for a curated, broad, evidence-based Egyptian higher-education institution dataset, including public, private, national/non-profit, technological universities, higher institutes, academies, and other relevant officially recognized institutions where reliable data is available.
+
+Requirements:
+- Prefer official Egyptian higher-education sources and institution websites.
+- Preserve each institution's official Arabic and English names where available.
+- Record institution type and source/provenance in the dataset or accompanying documentation.
+- Avoid inventing names, duplicating aliases as separate institutions, or claiming exhaustive coverage without evidence.
+- Support Arabic and English search/aliases where practical.
+- Keep the field free-text: suggestions must never prevent a user from entering an institution not present in the dataset.
+- Follow existing project architecture, security, RLS, and migration conventions. Do not create an unauthenticated public write path.
+
+### C. Field of study autocomplete
+
+Add a maintainable dataset of common study fields/programs, with Arabic and English names and useful aliases where feasible. Cover broad academic disciplines and commonly used specializations, not just computer-related fields.
+
+The user must remain free to type a custom field of study. Suggestions should filter as the user types, be useful on mobile, support RTL/LTR appropriately, and avoid requiring an exact match.
+
+Reuse the established Skills autocomplete interaction patterns where appropriate without coupling education data to the Skills dataset.
+
+### D. Review other messages before removing them
+
+Audit the app for additional user-facing save/draft/discard/unfinished-work messages. Do not remove any beyond section A yet.
+
+In your report, show the exact copy, location, purpose, and recommended action for each additional candidate. Wait for approval before making those extra copy changes.
+
+### E. Tests and build
+
+- Add tests for institution and field-of-study suggestions, free-text values, Arabic/English search, selection, and existing edit/save/discard behavior.
+- Add tests for the specific removed messages/labels where practical.
+- Run focused Flutter tests, relevant repository tests, Dart analysis, formatting checks, and `git diff --check`.
+- Build a fresh standard Development Debug ARM64 APK using the existing configuration, package ID `com.mhflow.jobix`, and current PDF-export Development setting.
+- Preserve all existing work and inspect the final diff.
+
+### Safety constraints
+
+- Do not apply any new database migration remotely or change Development/Production settings without separate explicit approval.
+- Do not deploy Production or alter IAM.
+- Do not generate/export a PDF or spend Credits.
+- Do not claim that a dataset is exhaustive without source evidence.
+- If the SQL dataset requires a new migration, implement and test it locally, document its contents and prerequisites, but do not apply it remotely.
+- Do not remove additional save-related messages beyond the three exact messages listed above and the `Description` label.
+
+### Final report
+
+Return:
+1. Exact UI changes.
+2. The inventory of additional save-related messages awaiting approval.
+3. Dataset coverage, source provenance, and known gaps.
+4. SQL migration/seed path and whether it still requires approval/application.
+5. Tests and results.
+6. APK path, SHA-256, size, and build status.
+7. Manual test steps for the new autocomplete and the existing save/discard flows.

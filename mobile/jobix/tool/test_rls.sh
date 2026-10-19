@@ -3,8 +3,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mode="${1:-full}"
 if [[ $# -gt 1 || ( "$mode" != "full" && "$mode" != "--resume-export-only" &&
-  "$mode" != "--resume-export-cost-unit-only" && "$mode" != "--resume-layout-only" ) ]]; then
-  echo "Usage: $0 [--resume-export-only|--resume-export-cost-unit-only|--resume-layout-only]" >&2
+  "$mode" != "--resume-export-cost-unit-only" && "$mode" != "--resume-layout-only" &&
+  "$mode" != "--education-catalog-only" ) ]]; then
+  echo "Usage: $0 [--resume-export-only|--resume-export-cost-unit-only|--resume-layout-only|--education-catalog-only]" >&2
   exit 2
 fi
 work="$(mktemp -d /tmp/jobix-rls.XXXXXX)"
@@ -92,6 +93,20 @@ if [[ "$mode" != "full" ]]; then
       -f supabase/migrations/202610170022_resume_layout.sql \
       -f supabase/tests/resume_layout.sql
     echo "PASS: migrations 017–022 and layout RLS/version/idempotency/isolation tests"
+    exit 0
+  fi
+
+  if [[ "$mode" == "--education-catalog-only" ]]; then
+    "${local_psql[@]}" \
+      -f supabase/migrations/202610080017_resume_export_deletion.sql \
+      -f supabase/migrations/202610080018_resume_export_admission.sql \
+      -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
+      -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
+      -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql \
+      -f supabase/migrations/202610170022_resume_layout.sql \
+      -f supabase/migrations/202610190023_education_catalog.sql \
+      -f supabase/tests/education_catalog.sql
+    echo "PASS: migrations 017–023 and education catalog RLS/provenance tests"
     exit 0
   fi
 

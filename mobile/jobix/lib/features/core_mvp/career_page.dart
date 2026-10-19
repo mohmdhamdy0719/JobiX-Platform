@@ -262,12 +262,6 @@ class _CareerBody extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               lines(EntitySection.volunteer),
-              Text(
-                copy.volunteerEvidenceHint,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: TokensV0.textSecondary,
-                ),
-              ),
             ],
           ),
         ),
