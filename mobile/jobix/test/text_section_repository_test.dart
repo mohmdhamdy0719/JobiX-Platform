@@ -34,7 +34,7 @@ void main() {
     text: text,
   );
   test(
-    'encrypted section drafts remain independent and account wipe removes them',
+    'unsubmitted text is not persisted and account wipe remains owner-scoped',
     () async {
       final repo = TextSectionRepository(
         parent,
@@ -44,10 +44,10 @@ void main() {
       await repo.retain(draft('target_role', 'target draft'));
       await db.saveDraft('one', profile.id, 'personal draft');
       await db.retainSection('two', profile.id, 'summary', 'other account');
-      expect((await repo.load(profile, 'summary'))!.text, 'summary draft');
-      expect((await repo.load(profile, 'target_role'))!.text, 'target draft');
+      expect(await repo.load(profile, 'summary'), isNull);
+      expect(await repo.load(profile, 'target_role'), isNull);
+      expect(await db.sectionDraft('one', profile.id, 'summary'), isNull);
       expect(await db.draftFor('one', profile.id), 'personal draft');
-      expect(await db.hasAnySectionDrafts('one'), true);
       await db.clearAccount('one');
       expect(await db.hasSectionDrafts('one', profile.id), false);
       expect(
@@ -57,10 +57,10 @@ void main() {
     },
   );
   test(
-    'unknown outcome reuses identity/source and preserves subsequent edits',
+    'unknown outcome survives restart and reuses the exact submitted request',
     () async {
       final requests = <TextSectionDraft>[];
-      final repo = TextSectionRepository(parent, (request) async {
+      var repo = TextSectionRepository(parent, (request) async {
         requests.add(request);
         if (requests.length == 1) throw const SocketException('unknown');
         return CareerProfile(
@@ -74,19 +74,27 @@ void main() {
         throwsA(isA<SocketException>()),
       );
       await expectLater(repo.discard(profile, 'summary'), throwsStateError);
+      await db.close();
+      db = AppDatabase(encryptedDatabase(File('${directory.path}/db'), key));
+      parent = DraftRepository(db, FakeProfileApi(), 'one', () => true);
+      repo = TextSectionRepository(parent, (request) async {
+        requests.add(request);
+        return CareerProfile(
+          id: profile.id,
+          version: 2,
+          summary: request.request!['text'] as String,
+        );
+      });
       final pending = (await repo.load(profile, 'summary'))!;
       await repo.retain(pending.edit('new edit'));
       await repo.save(pending.edit('new edit'));
       expect(requests[0].key, requests[1].key);
       expect(requests[1].request!['text'], 'original');
-      final retained = (await repo.load(profile, 'summary'))!;
-      expect(retained.text, 'new edit');
-      expect(retained.version, 2);
-      expect(retained.request, isNull);
+      expect(await repo.load(profile, 'summary'), isNull);
     },
   );
   test(
-    'known conflict retains content but releases uncommitted request',
+    'known conflict releases the request and leaves no persisted edit',
     () async {
       final repo = TextSectionRepository(parent, (_) async {
         throw const PostgrestException(
@@ -98,10 +106,7 @@ void main() {
         repo.save(draft('target_role', 'Engineer')),
         throwsA(isA<PostgrestException>()),
       );
-      final retained = (await repo.load(profile, 'target_role'))!;
-      expect(retained.text, 'Engineer');
-      expect(retained.request, isNull);
-      expect(retained.key, isNull);
+      expect(await repo.load(profile, 'target_role'), isNull);
     },
   );
   test('v2 upgrade preserves existing personal drafts and settings', () async {

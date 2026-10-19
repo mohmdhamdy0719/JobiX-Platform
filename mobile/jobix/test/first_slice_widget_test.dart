@@ -2043,41 +2043,63 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Back preserves an unknown Save command but never retries it', (
-    tester,
-  ) async {
-    seedProfile();
-    await pump(
-      tester,
-      state: StartupState.signedIn,
-      size: const Size(402, 1100),
-    );
-    await route(tester, '/career/edit/experience/$experienceId?origin=builder');
-    await tester.enterText(
-      find.byKey(const Key('field-company')),
-      'Saved but response lost',
-    );
-    entities.loseNextResponse = true;
-    await tester.tap(find.byKey(const Key('editor-save')));
-    await tester.pumpAndSettle();
-    final repo = EntityRepository(repository, entities.send);
-    final pending = (await repo.pending(api.server.id))!;
-    await tester.tap(find.byKey(const Key('editor-back')));
-    await tester.pumpAndSettle();
-    final copy = AppLocalizations.of(
-      tester.element(find.byType(Scaffold).first),
-    )!;
-    expect(find.text(copy.pendingBackWarning), findsOneWidget);
-    await tester.tap(find.byKey(const Key('discard-entity')));
-    await tester.pumpAndSettle();
-    expect(currentPath(), '/builder/3');
-    expect((await repo.pending(api.server.id))!.key, pending.key);
-    expect(entities.requests, hasLength(1));
-    expect(
-      api.server.of(EntitySection.experience).single.text('company'),
-      'Saved but response lost',
-    );
-  });
+  testWidgets(
+    'Back preserves an unknown Save and reopen retries the same key',
+    (tester) async {
+      seedProfile();
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(
+        tester,
+        '/career/edit/experience/$experienceId?origin=builder',
+      );
+      await tester.enterText(
+        find.byKey(const Key('field-company')),
+        'Saved but response lost',
+      );
+      entities.loseNextResponse = true;
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      final repo = EntityRepository(repository, entities.send);
+      final pending = (await repo.pending(api.server.id))!;
+      await tester.tap(find.byKey(const Key('editor-back')));
+      await tester.pumpAndSettle();
+      final copy = AppLocalizations.of(
+        tester.element(find.byType(Scaffold).first),
+      )!;
+      expect(find.text(copy.pendingBackWarning), findsOneWidget);
+      await tester.tap(find.byKey(const Key('discard-entity')));
+      await tester.pumpAndSettle();
+      expect(currentPath(), '/builder/3');
+      expect((await repo.pending(api.server.id))!.key, pending.key);
+      expect(entities.requests, hasLength(1));
+      expect(
+        api.server.of(EntitySection.experience).single.text('company'),
+        'Saved but response lost',
+      );
+      await route(
+        tester,
+        '/career/edit/experience/$experienceId?origin=builder',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(copy.retrySave), findsOneWidget);
+      await tester.tap(find.text(copy.retrySave));
+      await tester.pumpAndSettle();
+      expect(currentPath(), '/builder/3');
+      expect(await repo.pending(api.server.id), isNull);
+      expect(entities.requests.map((request) => request.key).toSet(), {
+        pending.key,
+      });
+      expect(entities.requests, hasLength(2));
+      expect(
+        api.server.of(EntitySection.experience).single.text('company'),
+        'Saved but response lost',
+      );
+    },
+  );
 
   testWidgets(
     'optional descriptions and short Summary remain free of quality warnings',

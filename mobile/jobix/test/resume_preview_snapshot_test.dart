@@ -316,7 +316,7 @@ void main() {
   });
 
   test(
-    'draft inspection sees local edits and unresolved saves across repositories',
+    'draft inspection sees legacy edits and unresolved saves but not new local drafts',
     () async {
       configureSqlCipher(
         testLibrary: Platform.environment['JOBIX_SQLCIPHER_LIBRARY']!,
@@ -423,7 +423,8 @@ void main() {
           ),
         ),
       );
-      expect((await inspect()).hasUnsentEdits, isTrue);
+      expect(await extrasRepository.local(profile.id), isNull);
+      expect((await inspect()).hasUnsentEdits, isFalse);
 
       await database.setSetting(
         'resume:${repository.user}:${profile.id}',

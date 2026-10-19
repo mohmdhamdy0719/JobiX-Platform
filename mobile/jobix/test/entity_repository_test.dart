@@ -102,7 +102,8 @@ void main() {
       await repository.retainDraft(api.server.id, item);
       expect(
         await repository.unsavedNew(api.server, EntitySection.volunteer),
-        hasLength(1),
+        isEmpty,
+        reason: 'Unsubmitted item fields are held by the open screen only.',
       );
       expect(api.server.count(EntitySection.volunteer), 0);
       server.loseNextResponse = true;
@@ -163,23 +164,26 @@ void main() {
     expect(await repository.pending(api.server.id), isNull);
   });
 
-  test('a known rejection releases the command but keeps the draft', () async {
-    await repository.retainDraft(api.server.id, experience);
-    server.rejectNext = 'VALIDATION_FAILED';
-    await expectLater(
-      repository.upsert(api.server, experience),
-      throwsA(isA<PostgrestException>()),
-    );
-    expect(await repository.pending(api.server.id), isNull);
-    expect(
-      (await repository.draft(
-        api.server.id,
-        EntitySection.experience,
-        experience.id,
-      ))!.text('company'),
-      'Example Co',
-    );
-  });
+  test(
+    'a known rejection releases the command without persisting the draft',
+    () async {
+      await repository.retainDraft(api.server.id, experience);
+      server.rejectNext = 'VALIDATION_FAILED';
+      await expectLater(
+        repository.upsert(api.server, experience),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(await repository.pending(api.server.id), isNull);
+      expect(
+        await repository.draft(
+          api.server.id,
+          EntitySection.experience,
+          experience.id,
+        ),
+        isNull,
+      );
+    },
+  );
 
   test(
     'a stale version surfaces VERSION_CONFLICT and never overwrites',
@@ -207,7 +211,7 @@ void main() {
     },
   );
 
-  test('edits made after the request froze survive acknowledgement', () async {
+  test('only the exact submitted entity survives an uncertain retry', () async {
     await repository.retainDraft(api.server.id, experience);
     server.loseNextResponse = true;
     await expectLater(
@@ -216,19 +220,26 @@ void main() {
     );
     final edited = experience.copyWith('company', 'Edited later');
     await repository.retainDraft(api.server.id, edited);
-    await repository.resume(api.server.id);
-    final kept = (await repository.draft(
-      api.server.id,
-      EntitySection.experience,
-      experience.id,
-    ))!;
-    expect(kept.text('company'), 'Edited later');
-    // Later edits build on this device's own acknowledged write, so they
-    // are not reported as changed elsewhere.
-    expect(kept.version, 1);
     expect(
-      draftConflict(kept, api.server.of(EntitySection.experience).single),
-      DraftConflict.none,
+      await db.sectionDraft(
+        'user-one',
+        api.server.id,
+        'entity:experience:${experience.id}',
+      ),
+      isNull,
+    );
+    await repository.resume(api.server.id);
+    expect(
+      api.server.of(EntitySection.experience).single.text('company'),
+      'Example Co',
+    );
+    expect(
+      await repository.draft(
+        api.server.id,
+        EntitySection.experience,
+        experience.id,
+      ),
+      isNull,
     );
   });
 
@@ -247,21 +258,21 @@ void main() {
     );
   });
 
-  test('unsaved new items are listed until the server knows them', () async {
-    await repository.retainDraft(api.server.id, experience);
-    expect(
-      (await repository.unsavedNew(
-        api.server,
-        EntitySection.experience,
-      )).single.id,
-      experience.id,
-    );
-    final saved = await repository.upsert(api.server, experience);
-    expect(
-      await repository.unsavedNew(saved, EntitySection.experience),
-      isEmpty,
-    );
-  });
+  test(
+    'unsubmitted new items are not persisted as restartable drafts',
+    () async {
+      await repository.retainDraft(api.server.id, experience);
+      expect(
+        await repository.unsavedNew(api.server, EntitySection.experience),
+        isEmpty,
+      );
+      final saved = await repository.upsert(api.server, experience);
+      expect(
+        await repository.unsavedNew(saved, EntitySection.experience),
+        isEmpty,
+      );
+    },
+  );
 
   test('a signed-out repository cannot write or leave drafts', () async {
     active = false;

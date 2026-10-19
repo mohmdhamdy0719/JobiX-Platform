@@ -87,6 +87,8 @@ void main() {
       );
       final frozen = await one.pending();
       expect(frozen, isNotNull);
+      expect(frozen!['section_order'], layout.order);
+      expect(frozen['hidden_sections'], layout.hidden.toList()..sort());
       actor = 'two';
       expect(await store('two').pending(), isNull);
       await expectLater(one.pending(), throwsA(isA<ResumeLayoutSaveFailure>()));
@@ -110,7 +112,7 @@ void main() {
   );
 
   test(
-    'missing RPC and definite conflicts do not leave an unrecoverable save',
+    'fresh missing-RPC and definite-conflict requests are released',
     () async {
       configureSqlCipher(
         testLibrary: Platform.environment['JOBIX_SQLCIPHER_LIBRARY']!,
@@ -120,13 +122,10 @@ void main() {
       for (final (failure, keepRequest) in <(PostgrestException, bool)>[
         (
           const PostgrestException(message: 'RPC absent', code: 'PGRST202'),
-          true,
+          false,
         ),
         (
-          const PostgrestException(
-            message: 'VERSION_CONFLICT',
-            code: 'P0001',
-          ),
+          const PostgrestException(message: 'VERSION_CONFLICT', code: 'P0001'),
           false,
         ),
       ]) {
@@ -148,6 +147,47 @@ void main() {
         );
         expect(await store.pending() != null, keepRequest);
       }
+    },
+  );
+  test(
+    'an uncertain layout save remains frozen when reconciliation sees a missing RPC',
+    () async {
+      configureSqlCipher(
+        testLibrary: Platform.environment['JOBIX_SQLCIPHER_LIBRARY']!,
+      );
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      var attempts = 0;
+      final store = ResumeLayoutRepository(
+        database: db,
+        user: 'one',
+        profileId: 'profile',
+        isCurrentUser: () => true,
+        saveRemote: (_) async {
+          attempts++;
+          if (attempts == 1) throw const SocketException('unknown result');
+          throw const PostgrestException(
+            message: 'RPC absent',
+            code: 'PGRST202',
+          );
+        },
+      );
+      await expectLater(
+        store.save(
+          layout: ResumeLayout().toggle('summary', false),
+          profileVersion: 1,
+          configurationVersion: 0,
+          language: 'en',
+        ),
+        throwsA(isA<SocketException>()),
+      );
+      final original = await store.pending();
+      expect(original, isNotNull);
+      await expectLater(
+        store.retryPending(),
+        throwsA(isA<ResumeLayoutSaveFailure>()),
+      );
+      expect(await store.pending(), original);
     },
   );
 

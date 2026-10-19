@@ -201,7 +201,14 @@ class ProfileExtrasRepository {
     check();
     final raw = await parent.database.setting(key(profile));
     check();
-    return raw == null ? null : ExtrasDraft.decode(raw);
+    if (raw == null) return null;
+    final saved = ExtrasDraft.decode(raw);
+    if (saved.pending != null) return saved;
+    // Older versions retained every unsaved edit locally. Drop that
+    // non-authoritative input when this editor is opened again.
+    await parent.database.removeSetting(key(profile));
+    check();
+    return null;
   }
 
   Future<ExtrasDraft> open(CareerProfile profile) async {
@@ -209,26 +216,33 @@ class ProfileExtrasRepository {
     if (saved != null) return saved;
     final value = await api.read(profile.id);
     check();
-    final draft = ExtrasDraft(
+    return ExtrasDraft(
       profileId: profile.id,
       version: profile.version,
       value: value,
     );
-    await retain(draft);
-    return draft;
   }
 
   Future<void> retain(ExtrasDraft draft) async {
     check();
-    await parent.database.transaction(() async {
+    if (draft.pending == null) {
       final current = await local(draft.profileId);
-      final next = ExtrasDraft(
-        profileId: draft.profileId,
-        version: draft.version,
-        value: draft.value,
-        pending: current?.pending ?? draft.pending,
-      );
-      await parent.database.setSetting(key(draft.profileId), next.encode());
+      if (current?.pending == null) {
+        await parent.database.removeSetting(key(draft.profileId));
+      }
+      check();
+      return;
+    }
+    await parent.database.transaction(() async {
+      final current = await parent.database.setting(key(draft.profileId));
+      if (current != null) {
+        final prior = ExtrasDraft.decode(current);
+        if (prior.pending != null &&
+            prior.pending?['command_key'] != draft.pending?['command_key']) {
+          throw StateError('EXTRAS_BASELINE_CHANGED');
+        }
+      }
+      await parent.database.setSetting(key(draft.profileId), draft.encode());
       check();
     });
   }
@@ -256,6 +270,11 @@ class ProfileExtrasRepository {
 
   Future<ExtrasSaveResult> save(ExtrasDraft input) async {
     check();
+    // Remove pre-release keystroke drafts before checking the saved baseline;
+    // a frozen profile request remains available and still blocks this save.
+    await parent.draft(
+      CareerProfile(id: input.profileId, version: input.version),
+    );
     late Map<String, dynamic> request;
     await parent.database.transaction(() async {
       final stored = await local(input.profileId) ?? input;
@@ -308,14 +327,7 @@ class ProfileExtrasRepository {
         await parent.database.transaction(() async {
           final current = await local(input.profileId);
           if (current?.pending?['command_key'] == request['command_key']) {
-            await parent.database.setSetting(
-              key(input.profileId),
-              ExtrasDraft(
-                profileId: current!.profileId,
-                version: current.version,
-                value: current.value,
-              ).encode(),
-            );
+            await parent.database.removeSetting(key(input.profileId));
           }
         });
       }
@@ -358,10 +370,7 @@ class ProfileExtrasRepository {
         version: acknowledged.version,
         value: current.value,
       );
-      await parent.database.setSetting(
-        key(input.profileId),
-        resulting.encode(),
-      );
+      await parent.database.removeSetting(key(input.profileId));
       final cache = await parent.database.firstCachedProfile(parent.user);
       final cacheVersion = cache == null
           ? -1
@@ -398,7 +407,6 @@ class ProfileExtrasRepository {
         version: latest.version,
         value: draft.value,
       );
-      await parent.database.setSetting(key(draft.profileId), result.encode());
       check();
       return result;
     });

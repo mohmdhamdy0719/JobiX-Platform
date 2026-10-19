@@ -112,6 +112,12 @@ class EntityRepository {
     String id,
   ) async {
     _check();
+    final unresolved = await pending(profile);
+    if (unresolved?.type == 'upsert_item' &&
+        unresolved?.section == section.key &&
+        unresolved?.itemId == id) {
+      return ProfileItem.fromJson(section, unresolved!.value);
+    }
     final raw = await parent.database.sectionDraft(
       parent.user,
       profile,
@@ -119,35 +125,52 @@ class EntityRepository {
     );
     _check();
     if (raw == null) return null;
-    return ProfileItem.fromJson(section, jsonDecode(raw) as Map);
+    // Legacy entity edits were persisted on each keystroke. They are not
+    // server-confirmed and must not be restored in a newly opened editor.
+    await parent.database.discardSection(
+      parent.user,
+      profile,
+      _draftKey(section, id),
+    );
+    _check();
+    return null;
   }
 
-  /// Unsaved new items (drafts whose id is not on the server yet).
+  /// An unresolved explicit save is recoverable; ordinary unsaved items are
+  /// intentionally held only in the editor's in-memory state.
   Future<List<ProfileItem>> unsavedNew(
     CareerProfile profile,
     EntitySection section,
   ) async {
+    final unresolved = await pending(profile.id);
+    if (unresolved?.type == 'upsert_item' &&
+        unresolved?.section == section.key &&
+        !profile.of(section).any((item) => item.id == unresolved!.itemId)) {
+      return [ProfileItem.fromJson(section, unresolved!.value)];
+    }
     final keys = await parent.database.sectionDraftKeys(
       parent.user,
       profile.id,
       'entity:${section.key}:',
     );
-    final known = profile.of(section).map((i) => i.id).toSet();
-    return [
-      for (final key in keys)
-        if (!known.contains(key.split(':').last))
-          (await draft(profile.id, section, key.split(':').last))!,
-    ];
+    for (final key in keys) {
+      await parent.database.discardSection(parent.user, profile.id, key);
+    }
+    _check();
+    return const [];
   }
 
   Future<void> retainDraft(String profile, ProfileItem item) async {
     _check();
-    await parent.database.retainSection(
-      parent.user,
-      profile,
-      _draftKey(item.section, item.id),
-      jsonEncode(item.toJson()),
-    );
+    // An unresolved request is immutable and must not be replaced by later
+    // keystrokes. Otherwise there is no durable unsaved draft to retain.
+    if (await pending(profile) == null) {
+      await parent.database.discardSection(
+        parent.user,
+        profile,
+        _draftKey(item.section, item.id),
+      );
+    }
     await _guard();
   }
 
@@ -220,11 +243,13 @@ class EntityRepository {
       result = await send(request);
     } catch (error) {
       if (rejectionCode(error) != null) {
-        // Not applied; the editor draft (if any) stays for the user.
+        // Not applied; the editor keeps its current value in memory only.
+        await _guard();
         await parent.database.discardPendingMutation(
           parent.user,
           request.profileId,
         );
+        await _guard();
       }
       rethrow;
     }
@@ -236,29 +261,9 @@ class EntityRepository {
     await parent.database.cacheProfile(parent.user, result.id, result.encode());
     await _guard();
     final section = EntitySection.parse(request.section);
-    if (request.type == 'delete_item') {
-      await discardDraft(request.profileId, section, request.itemId);
-    } else {
-      final local = await draft(request.profileId, section, request.itemId);
-      if (local != null && _same(local.payload(), request.value)) {
-        await discardDraft(request.profileId, section, request.itemId);
-      } else if (local != null) {
-        // Edits made after this request froze build on this device's own
-        // acknowledged write, so they move to its item version.
-        final acked = result
-            .of(section)
-            .where((i) => i.id == request.itemId)
-            .firstOrNull;
-        if (acked != null && acked.version != local.version) {
-          await retainDraft(request.profileId, local.rebased(acked.version));
-        }
-      }
-    }
+    await discardDraft(request.profileId, section, request.itemId);
     return result;
   }
-
-  bool _same(Map<String, Object?> a, Map<String, Object?> b) =>
-      jsonEncode(a) == jsonEncode(b);
 }
 
 final entityRepositoryProvider = FutureProvider<EntityRepository>((ref) async {

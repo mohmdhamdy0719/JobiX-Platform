@@ -47,7 +47,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   TextSectionRepository? repository;
   CareerProfile? profile;
   TextSectionDraft? draft;
-  Future<void> writes = Future.value();
   bool busy = false, failed = false, dirty = false, allowPop = false;
   String? notice;
   bool get ar => AppLocalizations.of(context)!.localeName.startsWith('ar');
@@ -55,6 +54,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   int get maximum => widget.section == 'summary' ? 1000 : 200;
   bool get fromReview => widget.origin == 'review';
   bool get fromPersonal => widget.origin == 'personal';
+  bool get hasPendingSave => draft?.request != null;
   String get backRoute => fromReview
       ? '/builder/6'
       : fromPersonal
@@ -94,7 +94,8 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       final repo = await ref.read(textSectionRepositoryProvider.future);
       // Fresh acknowledged content if online; an encrypted acknowledged cache only
       // for real connectivity failures, matching the existing Profile repository.
-      final value = await repo.parent.load();
+      final value = await repo.parent.load(freshOnly: true);
+      await repo.parent.draft(value);
       final local = await repo.load(value, widget.section);
       if (!mounted) return;
       repository = repo;
@@ -120,32 +121,13 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   }
 
   void edit(String value) {
+    if (hasPendingSave) return;
     final next = draft!.edit(value);
     setState(() {
       draft = next;
       dirty = true;
       notice = null;
     });
-    writes = writes.then((_) => repository!.retain(next)).catchError((
-      Object _,
-    ) {
-      if (mounted) {
-        setState(() => notice = AppLocalizations.of(context)!.localWriteError);
-      }
-    });
-  }
-
-  Future<bool> persist() async {
-    try {
-      await writes;
-      await repository!.retain(draft!);
-      return true;
-    } catch (_) {
-      if (mounted) {
-        setState(() => notice = AppLocalizations.of(context)!.localWriteError);
-      }
-      return false;
-    }
   }
 
   Future<void> save() async {
@@ -155,12 +137,11 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       notice = null;
     });
     try {
-      if (!await persist()) return;
       if (draft!.text.trim().runes.length > maximum) {
         setState(
           () => notice = say(
-            'The hard limit is $maximum characters. Your local draft is retained.',
-            'الحد الأقصى $maximum حرفًا. تم الاحتفاظ بالمسودة على جهازك.',
+            'The hard limit is $maximum characters. Nothing was saved.',
+            'الحد الأقصى $maximum حرفًا. لم يتم حفظ أي تغيير.',
           ),
         );
         return;
@@ -202,11 +183,33 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
           }
         }
       } else {
-        setState(() => notice = AppLocalizations.of(context)!.saveFailed);
+        final unresolved = await repository!.load(profile!, widget.section);
+        if (!mounted) return;
+        if (unresolved?.request != null) {
+          draft = unresolved;
+          controller.text = unresolved!.text;
+          dirty = true;
+        }
+        setState(
+          () => notice = hasPendingSave
+              ? AppLocalizations.of(context)!.outcomeUnknown
+              : AppLocalizations.of(context)!.saveFailed,
+        );
       }
     } catch (_) {
       if (mounted) {
-        setState(() => notice = AppLocalizations.of(context)!.saveFailed);
+        final unresolved = await repository!.load(profile!, widget.section);
+        if (!mounted) return;
+        if (unresolved?.request != null) {
+          draft = unresolved;
+          controller.text = unresolved!.text;
+          dirty = true;
+        }
+        setState(
+          () => notice = hasPendingSave
+              ? AppLocalizations.of(context)!.outcomeUnknown
+              : AppLocalizations.of(context)!.saveFailed,
+        );
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -247,7 +250,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
           : latest.targetRole,
     );
     if (choice) {
-      await repository!.retain(draft!);
+      // Reapply is held only in this editor until the next explicit Save.
     } else {
       await repository!.parent.database.discardSection(
         repository!.parent.user,
@@ -259,13 +262,43 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
     setState(() {
       controller.text = draft!.text;
       dirty = choice;
-      notice = choice ? copy.savedDevice : copy.savedServer;
+      notice = choice
+          ? (copy.localeName.startsWith('ar')
+                ? 'تغييراتك غير محفوظة. اختر حفظ لتطبيقها.'
+                : 'Your changes are not saved. Choose Save to apply them.')
+          : copy.savedServer;
     });
   }
 
   Future<void> leave() async {
     if (busy) return;
     final copy = AppLocalizations.of(context)!;
+    if (hasPendingSave) {
+      final retry = await showDialog<bool>(
+        context: context,
+        builder: (context) => JobixAlertDialog(
+          title: Text(copy.outcomeUnknown),
+          content: Text(
+            say(
+              'The original save must be confirmed before discarding these changes. Retry the same request or stay here.',
+              'يجب تأكيد الحفظ الأصلي قبل تجاهل هذه التغييرات. أعد الطلب نفسه أو ابق هنا.',
+            ),
+          ),
+          actions: [
+            JobixDialogAction.secondary(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(copy.stayAction),
+            ),
+            JobixDialogAction.primary(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(say('Retry Save', 'إعادة الحفظ')),
+            ),
+          ],
+        ),
+      );
+      if (retry == true && mounted) await save();
+      return;
+    }
     if (dirty) {
       final choice = await showDialog<String>(
         context: context,
@@ -287,7 +320,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       if (choice == null || choice == 'stay' || !mounted) return;
       setState(() => busy = true);
       try {
-        await writes;
         await repository!.discard(profile!, widget.section);
       } catch (_) {
         if (mounted) setState(() => notice = copy.outcomeUnknown);
@@ -337,6 +369,17 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                   ),
                 ),
               ],
+              if (hasPendingSave) ...[
+                const SizedBox(height: TokensV0.space12),
+                SliceCard(
+                  child: Text(
+                    say(
+                      'This save is not confirmed. The original request is preserved; retry Save to reconcile it. Editing is locked until then.',
+                      'لم يتم تأكيد هذا الحفظ. الطلب الأصلي محفوظ؛ أعد الحفظ لتسويته. التعديل متوقف حتى ذلك الحين.',
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: TokensV0.space20),
               SliceCard(
                 child: Column(
@@ -345,7 +388,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                     TextField(
                       key: Key('editor-${widget.section}'),
                       controller: controller,
-                      readOnly: busy,
+                      readOnly: busy || hasPendingSave,
                       onChanged: edit,
                       minLines: widget.section == 'summary' ? 6 : 1,
                       maxLines: widget.section == 'summary' ? 12 : 3,
@@ -428,7 +471,11 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
           Expanded(
             child: PrimaryAction(
               key: Key('save-${widget.section}'),
-              label: copy.saveAction,
+              label: hasPendingSave
+                  ? (copy.localeName.startsWith('ar')
+                        ? 'إعادة الحفظ'
+                        : 'Retry Save')
+                  : copy.saveAction,
               busy: busy,
               onPressed: fromReview ? advance : save,
             ),

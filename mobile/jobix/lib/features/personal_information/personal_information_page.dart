@@ -46,13 +46,7 @@ class _PersonalInformationPageState
   PersonalDraft? draft;
   TextSectionRepository? textRepository;
   TextSectionDraft? targetRoleDraft;
-  Future<void> writes = Future.value();
-  Future<void> targetRoleWrites = Future.value();
-  bool busy = false,
-      failed = false,
-      dirty = false,
-      storageFailed = false,
-      allowPop = false;
+  bool busy = false, failed = false, dirty = false, allowPop = false;
   String? notice;
   List<String> cityHistory = [];
 
@@ -62,6 +56,8 @@ class _PersonalInformationPageState
           targetRoleDraft != null &&
           (targetRoleDraft!.text != profile!.targetRole ||
               targetRoleDraft!.request != null));
+  bool get hasPendingSave =>
+      draft?.frozen != null || targetRoleDraft?.request != null;
   @override
   void initState() {
     super.initState();
@@ -71,7 +67,7 @@ class _PersonalInformationPageState
   Future<void> load() async {
     try {
       final repo = await ref.read(draftRepositoryProvider.future);
-      final value = await ref.read(firstProfileProvider.future);
+      final value = await repo.load(freshOnly: true);
       final local = await repo.draft(value);
       final textRepo = await ref.read(textSectionRepositoryProvider.future);
       final localRole = await textRepo.load(value, 'target_role');
@@ -140,52 +136,22 @@ class _PersonalInformationPageState
   }
 
   void retain(PersonalDraft value) {
+    if (hasPendingSave) return;
     setState(() {
       draft = value;
       dirty = true;
       notice = null;
     });
-    writes = writes
-        .then((_) => repository!.retain(value))
-        .then((_) {
-          if (mounted) setState(() => storageFailed = false);
-        })
-        .catchError((Object _) {
-          if (mounted) setState(() => storageFailed = true);
-        });
   }
 
   void retainTargetRole(String value) {
+    if (hasPendingSave) return;
     final current = targetRoleDraft!;
     final next = current.edit(value);
     setState(() {
       targetRoleDraft = next;
       notice = null;
     });
-    targetRoleWrites = targetRoleWrites
-        .then((_) => textRepository!.retain(next))
-        .catchError((Object _) {
-          if (mounted) setState(() => storageFailed = true);
-        });
-  }
-
-  Future<bool> persistNow() async {
-    try {
-      await writes;
-      await targetRoleWrites;
-      await repository!.retain(draft!);
-      if (hasUnsavedChanges) await textRepository!.retain(targetRoleDraft!);
-      if (mounted) setState(() => storageFailed = false);
-      return true;
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          storageFailed = true;
-          notice = AppLocalizations.of(context)!.localWriteError;
-        });
-      }
-      return false;
-    }
   }
 
   Future<void> save() async {
@@ -196,10 +162,6 @@ class _PersonalInformationPageState
       errors.clear();
       notice = null;
     });
-    if (!await persistNow()) {
-      if (mounted) setState(() => busy = false);
-      return;
-    }
     for (final field in personalFields) {
       if (validatePersonalField(field, draft!.personal[field] ?? '') != null) {
         errors.add(field);
@@ -209,20 +171,19 @@ class _PersonalInformationPageState
       if (mounted) {
         setState(() {
           busy = false;
-          notice = copy.savedDevice;
+          notice = copy.saveFailed;
         });
         showJobixFeedback(
           context,
           copy.localeName.startsWith('ar')
-              ? 'راجع الحقول المحددة. احتفظنا بتغييراتك على هذا الجهاز.'
-              : 'Check the highlighted fields. Your changes are retained on this device.',
+              ? 'راجع الحقول المحددة. لم يتم حفظ أي تغيير في حسابك.'
+              : 'Check the highlighted fields. No changes were saved to your account.',
           kind: JobixFeedbackKind.warning,
         );
       }
       return;
     }
     try {
-      await targetRoleWrites;
       // Resolve a durable, ambiguous role-save request before sending another
       // mutation against its old profile version.
       if (targetRoleDraft!.request != null) {
@@ -243,10 +204,15 @@ class _PersonalInformationPageState
             personal: draft!.personal,
             resumeLanguage: draft!.resumeLanguage,
           );
-          await repository!.retain(draft!);
         }
       }
-      final saved = await repository!.save(draft!);
+      final personalChanged =
+          draft!.frozen != null ||
+          personalFields.any(
+            (field) => draft!.personal[field] != profile!.personal[field],
+          ) ||
+          draft!.resumeLanguage != profile!.resumeLanguage;
+      final saved = personalChanged ? await repository!.save(draft!) : profile!;
       if (!mounted) return;
       profile = saved;
       final retained = await repository!.draft(saved);
@@ -284,7 +250,6 @@ class _PersonalInformationPageState
           text: targetRoleController.text,
         );
         if (targetRoleController.text.trim() != saved.targetRole.trim()) {
-          await textRepository!.retain(targetRoleDraft!);
           profile = await textRepository!.save(targetRoleDraft!);
           targetRoleDraft =
               await textRepository!.load(profile!, 'target_role') ??
@@ -303,7 +268,7 @@ class _PersonalInformationPageState
         setState(() {
           notice = retained == null && !hasUnsavedChanges
               ? copy.savedServer
-              : copy.savedDevice;
+              : copy.saveFailed;
         });
         if (retained == null && !hasUnsavedChanges) {
           showJobixFeedback(
@@ -316,7 +281,11 @@ class _PersonalInformationPageState
       }
     } catch (error) {
       if (!mounted) return;
-      draft = await repository!.draft(profile!) ?? draft;
+      try {
+        draft = await repository!.draft(profile!) ?? draft;
+      } catch (_) {
+        // Keep the open editor value; report that the save is not confirmed.
+      }
       if (!mounted) return;
       if (error is PostgrestException &&
           error.message.contains('VERSION_CONFLICT')) {
@@ -326,10 +295,12 @@ class _PersonalInformationPageState
           await conflict();
         }
       } else {
-        setState(() => notice = copy.saveFailed);
+        setState(
+          () => notice = hasPendingSave ? copy.outcomeUnknown : copy.saveFailed,
+        );
         showJobixFeedback(
           context,
-          copy.saveFailed,
+          hasPendingSave ? copy.outcomeUnknown : copy.saveFailed,
           kind: JobixFeedbackKind.error,
         );
       }
@@ -369,8 +340,11 @@ class _PersonalInformationPageState
           version: latest.version,
           text: targetRoleController.text,
         );
-        await textRepository!.retain(targetRoleDraft!);
-        setState(() => notice = copy.savedDevice);
+        setState(
+          () => notice = copy.localeName.startsWith('ar')
+              ? 'تغييراتك غير محفوظة. اختر حفظ لتطبيقها.'
+              : 'Your changes are not saved. Choose Save to apply them.',
+        );
       } else {
         await repository!.database.discardSection(
           repository!.user,
@@ -423,7 +397,6 @@ class _PersonalInformationPageState
           personal: draft!.personal,
           resumeLanguage: draft!.resumeLanguage,
         );
-        await repository!.retain(draft!);
       } else {
         await repository!.database.discardDraft(repository!.user, latest.id);
         draft = PersonalDraft(
@@ -438,7 +411,13 @@ class _PersonalInformationPageState
         }
       }
       if (mounted) {
-        setState(() => notice = choice ? copy.savedDevice : copy.savedServer);
+        setState(
+          () => notice = choice
+              ? (copy.localeName.startsWith('ar')
+                    ? 'تغييراتك غير محفوظة. اختر حفظ لتطبيقها.'
+                    : 'Your changes are not saved. Choose Save to apply them.')
+              : copy.savedServer,
+        );
       }
     } catch (_) {
       if (mounted) setState(() => notice = copy.saveFailed);
@@ -447,6 +426,34 @@ class _PersonalInformationPageState
 
   Future<void> leave() async {
     if (busy) return;
+    if (hasPendingSave) {
+      final copy = AppLocalizations.of(context)!;
+      final retry = await showDialog<bool>(
+        context: context,
+        builder: (context) => JobixAlertDialog(
+          title: Text(copy.outcomeUnknown),
+          content: Text(
+            copy.localeName.startsWith('ar')
+                ? 'يجب تسوية الحفظ الأصلي قبل تجاهل التغييرات. أعد الطلب نفسه أو ابق هنا.'
+                : 'The original save must be reconciled before these changes can be discarded. Retry the same request or stay here.',
+          ),
+          actions: [
+            JobixDialogAction.secondary(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(copy.stayAction),
+            ),
+            JobixDialogAction.primary(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                copy.localeName.startsWith('ar') ? 'إعادة الحفظ' : 'Retry Save',
+              ),
+            ),
+          ],
+        ),
+      );
+      if (retry == true && mounted) await save();
+      return;
+    }
     if (!hasUnsavedChanges || draft == null) {
       exit();
       return;
@@ -473,8 +480,6 @@ class _PersonalInformationPageState
     if (!mounted || choice == null || choice == 'stay') return;
     setState(() => busy = true);
     try {
-      await writes;
-      await targetRoleWrites;
       if (draft!.frozen != null || targetRoleDraft?.request != null) {
         if (mounted) setState(() => notice = copy.outcomeUnknown);
         return;
@@ -593,7 +598,11 @@ class _PersonalInformationPageState
                   Expanded(
                     child: PrimaryAction(
                       key: const Key('save-personal'),
-                      label: copy.saveAction,
+                      label: hasPendingSave
+                          ? (copy.localeName.startsWith('ar')
+                                ? 'إعادة الحفظ'
+                                : 'Retry Save')
+                          : copy.saveAction,
                       busy: busy,
                       onPressed: fromReview ? advance : save,
                     ),
@@ -615,17 +624,23 @@ class _PersonalInformationPageState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(copy.personalIntro),
-        if (profile != null &&
-            draft != null &&
-            (draft!.resumeLanguage != profile!.resumeLanguage ||
-                targetRoleController.text != profile!.targetRole ||
-                personalFields.any(
-                  (field) => draft!.personal[field] != profile!.personal[field],
-                ))) ...[
+        if (hasPendingSave ||
+            profile != null &&
+                draft != null &&
+                (draft!.resumeLanguage != profile!.resumeLanguage ||
+                    targetRoleController.text != profile!.targetRole ||
+                    personalFields.any(
+                      (field) =>
+                          draft!.personal[field] != profile!.personal[field],
+                    ))) ...[
           const SizedBox(height: TokensV0.space12),
           SliceCard(
             child: Text(
-              copy.localeName.startsWith('ar')
+              hasPendingSave
+                  ? (copy.localeName.startsWith('ar')
+                        ? 'لم يتم تأكيد الحفظ. أعد الحفظ لتسوية الطلب الأصلي؛ التعديل متوقف حتى ذلك الحين.'
+                        : 'This save is not confirmed. Retry Save to reconcile the original request; editing is locked until then.')
+                  : copy.localeName.startsWith('ar')
                   ? 'هذه التغييرات غير محفوظة في حسابك. اختر حفظ لتحديث ملفك.'
                   : 'These changes are not saved to your account. Choose Save to update your profile.',
             ),
@@ -662,7 +677,7 @@ class _PersonalInformationPageState
                         selectedColor: TokensV0.primary,
                         backgroundColor: TokensV0.secondarySurface,
                         selected: language == 'en',
-                        onSelected: busy
+                        onSelected: busy || hasPendingSave
                             ? null
                             : (_) => retain(draft!.language('en')),
                       ),
@@ -681,7 +696,7 @@ class _PersonalInformationPageState
                         selectedColor: TokensV0.primary,
                         backgroundColor: TokensV0.secondarySurface,
                         selected: language == 'ar',
-                        onSelected: busy
+                        onSelected: busy || hasPendingSave
                             ? null
                             : (_) => retain(draft!.language('ar')),
                       ),
@@ -700,11 +715,9 @@ class _PersonalInformationPageState
             child: Text(copy.retry),
           ),
         ],
-        if (notice != null || storageFailed) ...[
+        if (notice != null) ...[
           const SizedBox(height: TokensV0.space16),
-          SliceCard(
-            child: Text(storageFailed ? copy.localWriteError : notice!),
-          ),
+          SliceCard(child: Text(notice!)),
         ],
         const SizedBox(height: TokensV0.space24),
         if (language == null)
@@ -716,7 +729,7 @@ class _PersonalInformationPageState
             language: language,
             controllers: controllers,
             errors: errors,
-            enabled: !busy,
+            enabled: !busy && !hasPendingSave,
             regionEgypt:
                 WidgetsBinding.instance.platformDispatcher.locale.countryCode ==
                 'EG',
@@ -757,7 +770,19 @@ class _PersonalInformationPageState
                 onPressed: busy
                     ? null
                     : () async {
-                        if (!await persistNow() || !mounted) return;
+                        if (hasUnsavedChanges) {
+                          showJobixFeedback(
+                            context,
+                            hasPendingSave
+                                ? copy.outcomeUnknown
+                                : copy.localeName.startsWith('ar')
+                                ? 'احفظ تغييرات المعلومات الشخصية أو تجاهلها قبل فتح الصورة والروابط.'
+                                : 'Save or discard Personal Information changes before opening photo and links.',
+                            kind: JobixFeedbackKind.warning,
+                          );
+                          return;
+                        }
+                        if (!mounted) return;
                         final origin = fromReview
                             ? 'review'
                             : widget.builder

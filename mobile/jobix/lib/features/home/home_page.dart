@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,8 +19,37 @@ final unfinishedDraftProvider = FutureProvider.family<bool, String>((
   profile,
 ) async {
   final repository = await ref.watch(draftRepositoryProvider.future);
-  return await repository.database.draftFor(repository.user, profile) != null ||
-      await repository.database.hasSectionDrafts(repository.user, profile);
+  final database = repository.database;
+  final personal = await database.draftFor(repository.user, profile);
+  if (personal != null) {
+    try {
+      if ((jsonDecode(personal) as Map)['frozen'] != null) return true;
+    } catch (_) {
+      return true;
+    }
+  }
+  if (await database.pendingMutation(repository.user, profile) != null) {
+    return true;
+  }
+  for (final section in const ['summary', 'target_role']) {
+    final raw = await database.sectionDraft(repository.user, profile, section);
+    if (raw == null) continue;
+    try {
+      if ((jsonDecode(raw) as Map)['request'] != null) return true;
+    } catch (_) {
+      return true;
+    }
+  }
+  final extras = await database.setting('extras:${repository.user}:$profile');
+  if (extras != null) {
+    try {
+      if ((jsonDecode(extras) as Map)['pending'] != null) return true;
+    } catch (_) {
+      return true;
+    }
+  }
+  return await database.setting('resume:${repository.user}:layout:$profile') !=
+      null;
 });
 
 class HomePage extends ConsumerWidget {

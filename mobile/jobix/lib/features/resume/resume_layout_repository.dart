@@ -46,6 +46,7 @@ class ResumeLayoutRepository {
   }) async {
     _authorize();
     final existing = await pending();
+    final hadPending = existing != null;
     final request =
         existing ??
         {
@@ -78,11 +79,11 @@ class ResumeLayoutRepository {
           ? 'VERSION_CONFLICT'
           : null;
       if (code == null) rethrow;
-      // A missing RPC is a rollout gap. Keep the exact frozen request locally
-      // so the user's layout can be retried after the Development backend is
-      // updated. A version conflict is a definite rejection of this baseline
-      // and may be discarded only after the UI offers reload/reapply.
-      if (code != 'BACKEND_UPDATE_REQUIRED') {
+      // A newly created request rejected because the RPC is absent was never
+      // applied, so it is safe to discard on exit. An older unresolved request
+      // may have succeeded before the backend became unavailable; retain that
+      // exact identity until the same request can be reconciled.
+      if (code != 'BACKEND_UPDATE_REQUIRED' || !hadPending) {
         await database.removeSetting(key);
       }
       throw ResumeLayoutSaveFailure(code);
@@ -101,5 +102,24 @@ class ResumeLayoutRepository {
     }
     await database.removeSetting(key);
     return result;
+  }
+
+  Future<Map<String, dynamic>> retryPending() async {
+    _authorize();
+    final request = await pending();
+    if (request == null) {
+      throw const ResumeLayoutSaveFailure('NO_PENDING_SAVE');
+    }
+    final layout = ResumeLayout(
+      order: List<String>.from(request['section_order'] as List),
+      hidden: Set<String>.from(request['hidden_sections'] as List),
+    );
+    return save(
+      layout: layout,
+      profileVersion: (request['expected_profile_version'] as num).toInt(),
+      configurationVersion: (request['expected_configuration_version'] as num)
+          .toInt(),
+      language: request['language'] as String,
+    );
   }
 }

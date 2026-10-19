@@ -55,8 +55,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   Map<String, FieldProblem> problems = {};
   bool busy = false, failed = false;
   SaveIssue? issue;
-  Future<void> writes = Future.value();
   bool leaving = false, saveAttempted = false;
+  bool get savePending => issue == SaveIssue.unknown;
   bool get dirty =>
       item != null &&
       (serverItem == null ||
@@ -84,9 +84,11 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
 
   Future<void> load() async {
     try {
-      final value = await ref.read(firstProfileProvider.future);
-      if (!mounted) return;
       final repository = await ref.read(entityRepositoryProvider.future);
+      final value = await repository.parent.load(freshOnly: true);
+      if (!mounted) return;
+      await repository.parent.draft(value);
+      final unresolved = await repository.pending(value.id);
       final recovered = widget.itemId == 'new'
           ? (await repository.unsavedNew(value, widget.section)).firstOrNull
           : null;
@@ -106,7 +108,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         profile = value;
         item = current;
         serverItem = saved;
-        conflict = local == null
+        issue = unresolved == null ? null : SaveIssue.unknown;
+        conflict = unresolved != null || local == null
             ? DraftConflict.none
             : draftConflict(local, saved);
       });
@@ -115,8 +118,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     }
   }
 
-  Future<void> edit(String field, Object? value) async {
-    if (busy || leaving || item == null) return;
+  void edit(String field, Object? value) {
+    if (busy || leaving || savePending || item == null) return;
     final next = item!.copyWith(field, value);
     setState(() {
       item = next;
@@ -124,17 +127,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       issue = null;
       saveAttempted = false;
     });
-    final repositoryFuture = ref.read(entityRepositoryProvider.future);
-    final profileId = profile!.id;
-    writes = writes
-        .then((_) async {
-          final repository = await repositoryFuture;
-          await repository.retainDraft(profileId, next);
-        })
-        .catchError((Object error) {
-          if (mounted) setState(() => issue = saveIssue(error));
-        });
-    await writes;
   }
 
   void close() => context.go(editorReturn(widget.section, widget.origin));
@@ -150,7 +142,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           ? null
           : await repository.pending(profile!.id);
       if (!mounted) return;
-      final pendingItem = pending?.itemId == item?.id && pending != null;
+      final pendingItem = pending != null;
       if (item != null && (pendingItem || serverItem != null && dirty)) {
         final copy = AppLocalizations.of(context)!;
         final discard = await showDialog<bool>(
@@ -175,9 +167,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         );
         if (discard != true || !mounted) return;
       }
-      // Drain every queued local edit before deleting its scoped draft.
-      // The frozen pending command is intentionally a separate outbox entry.
-      await writes;
       if (!mounted) return;
       if (profile != null && item != null) {
         await repository!.discardDraft(profile!.id, widget.section, item!.id);
@@ -212,7 +201,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   /// Discards local edits in favour of the server copy (or leaves when the
   /// item was removed elsewhere).
   Future<void> keepServer() async {
-    await writes;
     if (!mounted) return;
     final repository = await ref.read(entityRepositoryProvider.future);
     await repository.discardDraft(profile!.id, widget.section, item!.id);
@@ -233,11 +221,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
 
   /// Keeps local edits on top of the latest server baseline, by choice.
   Future<void> reapplyLocal() async {
-    await writes;
     if (!mounted) return;
     final next = item!.rebased(serverItem?.version ?? 0);
-    final repository = await ref.read(entityRepositoryProvider.future);
-    await repository.retainDraft(profile!.id, next);
     if (mounted) {
       setState(() {
         item = next;
@@ -247,7 +232,11 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   }
 
   Future<void> save() async {
-    if (busy || leaving || item == null || conflict != DraftConflict.none) {
+    if (busy ||
+        leaving ||
+        savePending ||
+        item == null ||
+        conflict != DraftConflict.none) {
       return;
     }
     final copy = item!;
@@ -259,10 +248,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     }
     setState(() => busy = true);
     try {
-      await writes;
-      if (!mounted) return;
       final repository = await ref.read(entityRepositoryProvider.future);
-      await repository.retainDraft(profile!.id, copy);
       await repository.upsert(profile!, copy);
       ref.invalidate(firstProfileProvider);
       if (mounted) {
@@ -290,9 +276,16 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     try {
       final repository = await ref.read(entityRepositoryProvider.future);
       final result = await repository.resume(profile!.id);
-      ref.invalidate(firstProfileProvider);
-      if (result != null) profile = result;
-      if (mounted) setState(() => issue = null);
+      if (result != null) {
+        ref.invalidate(firstProfileProvider);
+        profile = result;
+        if (mounted) {
+          showJobixFeedback(context, AppLocalizations.of(context)!.savedServer);
+          close();
+        }
+      } else if (mounted) {
+        setState(() => issue = null);
+      }
     } catch (error) {
       if (mounted) setState(() => issue = saveIssue(error));
     } finally {
@@ -302,7 +295,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
 
   Future<void> reload() async {
     ref.invalidate(firstProfileProvider);
-    final value = await ref.read(firstProfileProvider.future);
+    final repository = await ref.read(entityRepositoryProvider.future);
+    final value = await repository.parent.load(freshOnly: true);
     final server = value
         .of(widget.section)
         .where((i) => i.id == item!.id)
@@ -430,7 +424,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         contentPadding: EdgeInsets.zero,
         title: Text(label),
         value: item!.flag(field.name),
-        onChanged: busy ? null : (v) => edit(field.name, v),
+        onChanged: busy || savePending ? null : (v) => edit(field.name, v),
       );
     }
     if (field.name == 'proficiency') {
@@ -447,7 +441,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           for (final p in proficiencies)
             DropdownMenuItem(value: p, child: Text(proficiencyLabel(copy, p))),
         ],
-        onChanged: busy ? null : (v) => edit(field.name, v),
+        onChanged: busy || savePending ? null : (v) => edit(field.name, v),
       );
     }
     if (widget.section == EntitySection.education && field.name == 'degree') {
@@ -470,7 +464,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
                   child: Text(degreeChoiceLabel(option, ar ? 'ar' : 'en')),
                 ),
             ],
-            onChanged: busy
+            onChanged: busy || savePending
                 ? null
                 : (value) {
                     if (value == null) return;
@@ -490,7 +484,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             const SizedBox(height: TokensV0.space8),
             TextField(
               key: const Key('field-degree-other'),
-              enabled: !busy,
+              enabled: !busy && !savePending,
               controller: degreeOtherController,
               inputFormatters: [LengthLimitingTextInputFormatter(194)],
               decoration: InputDecoration(
@@ -517,7 +511,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     final input = TextField(
       key: key,
       controller: controller,
-      enabled: !busy && !disabledEnd,
+      enabled: !busy && !savePending && !disabledEnd,
       minLines: multiline ? 4 : 1,
       maxLines: multiline ? 8 : 1,
       keyboardType: switch (field.kind) {
@@ -550,7 +544,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
                     ? 'مسح الحقل'
                     : 'Clear field',
                 icon: const Icon(Icons.clear, size: 18),
-                onPressed: busy || disabledEnd
+                onPressed: busy || savePending || disabledEnd
                     ? null
                     : () {
                         controller.clear();

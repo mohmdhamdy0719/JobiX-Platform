@@ -72,13 +72,39 @@ class TextSectionRepository {
       section,
     );
     check();
-    return raw == null ? null : TextSectionDraft.decode(raw);
+    if (raw == null) return null;
+    final saved = TextSectionDraft.decode(raw);
+    if (saved.request != null) return saved;
+
+    // Discard legacy keystroke drafts. The editable value is now held only by
+    // the open screen; only an exact submitted request survives a restart.
+    await parent.database.discardSection(parent.user, profile.id, section);
+    check();
+    return null;
   }
 
   Future<void> retain(TextSectionDraft draft) async {
     check();
     if (!textSections.contains(draft.section)) {
       throw ArgumentError('Unknown section');
+    }
+    if (draft.request == null) {
+      final existing = await parent.database.sectionDraft(
+        parent.user,
+        draft.profileId,
+        draft.section,
+      );
+      if (existing != null &&
+          TextSectionDraft.decode(existing).request != null) {
+        return;
+      }
+      await parent.database.discardSection(
+        parent.user,
+        draft.profileId,
+        draft.section,
+      );
+      check();
+      return;
     }
     await parent.database.retainSection(
       parent.user,
@@ -127,14 +153,15 @@ class TextSectionRepository {
         'FORBIDDEN',
         'AUTH_REQUIRED',
       ].contains(e.message)) {
-        await retain(
-          TextSectionDraft(
-            profileId: request.profileId,
-            section: request.section,
-            version: request.version,
-            text: request.text,
-          ),
+        // A confirmed rejection did not apply. Keep the current text in the
+        // open editor only; reopening will load the authoritative profile.
+        check();
+        await parent.database.discardSection(
+          parent.user,
+          request.profileId,
+          request.section,
         );
+        check();
       }
       rethrow;
     }
@@ -150,36 +177,13 @@ class TextSectionRepository {
       draft.section,
     );
     if (latest == request.encode()) {
-      final accepted = draft.section == 'summary'
-          ? result.summary
-          : result.targetRole;
-      if (draft.text.trim() == accepted) {
-        await parent.database.discardSection(
-          parent.user,
-          draft.profileId,
-          draft.section,
-        );
-      } else {
-        await retain(
-          TextSectionDraft(
-            profileId: draft.profileId,
-            section: draft.section,
-            version: result.version,
-            text: draft.text,
-          ),
-        );
-      }
-    } else if (latest != null) {
-      // Preserve edits made during an in-flight request, but release its acknowledged key.
-      final edited = TextSectionDraft.decode(latest);
-      await retain(
-        TextSectionDraft(
-          profileId: edited.profileId,
-          section: edited.section,
-          version: result.version,
-          text: edited.text,
-        ),
+      check();
+      await parent.database.discardSection(
+        parent.user,
+        draft.profileId,
+        draft.section,
       );
+      check();
     }
     check();
     return result;

@@ -73,29 +73,25 @@ void main() {
   });
 
   test(
-    'ack rebases only original unchanged personal input; UUID and normalized URL survive',
+    'acknowledged extras save leaves no local editable profile or extras draft',
     () async {
       final result = await repository.save(input);
       expect(result.personalSafe, true);
       expect(result.hasUnsentEdits, false);
-      final rebased = await parent.draft(profile);
-      expect(rebased!.baseVersion, 2);
-      expect(rebased.personal, personal.personal);
-      expect(rebased.resumeLanguage, 'en');
-      expect(rebased.frozen, isNull);
+      expect(await parent.draft(profile), isNull);
       final extras = api.requests.single['extras'] as Map;
       expect((extras['links'] as List).single['id'], link.id);
       expect(
         (extras['links'] as List).single['url'],
         'https://example.com/publication',
       );
-      expect((await repository.local(profile.id))!.pending, isNull);
+      expect(await repository.local(profile.id), isNull);
       expect(await database.pendingMutation('one', profile.id), isNull);
     },
   );
 
   test(
-    'unknown outcome survives encrypted reopen and replays exact key/source with newer input retained',
+    'unknown outcome survives encrypted reopen and replays exact request without persisting edits',
     () async {
       api.onSave = (_) async {
         if (api.requests.length == 1) throw TimeoutException('unknown');
@@ -123,12 +119,13 @@ void main() {
       expect(api.requests[1], api.requests[0]);
       expect(result.hasUnsentEdits, true);
       expect(result.draft.value.links.single.label, 'New title');
-      expect((await parent.draft(profile))!.baseVersion, 2);
+      expect(await repository.local(profile.id), isNull);
+      expect(await parent.draft(profile), isNull);
     },
   );
 
   test(
-    'personal edits during request are not overwritten or silently rebased',
+    'unsubmitted personal edits do not become persistent during extras save',
     () async {
       api.onSave = (_) async {
         await parent.retain(
@@ -137,35 +134,44 @@ void main() {
         return const CareerProfile(id: 'profile-1', version: 2);
       };
       final result = await repository.save(input);
-      expect(result.personalSafe, false);
-      final retained = (await parent.draft(profile))!;
-      expect(retained.personal['full_name'], 'Changed during request');
-      expect(retained.baseVersion, 1);
+      expect(result.personalSafe, true);
+      expect(await parent.draft(profile), isNull);
     },
   );
 
-  test('stale or frozen personal baseline blocks new extras request', () async {
-    await parent.retain(
-      const PersonalDraft(
-        profileId: 'profile-1',
-        baseVersion: 0,
-        personal: {'full_name': 'Still retained'},
-      ),
-    );
-    await expectLater(repository.save(input), throwsStateError);
-    expect(api.requests, isEmpty);
-    await parent.retain(
-      PersonalDraft(
-        profileId: profile.id,
-        baseVersion: 1,
-        personal: personal.personal,
-        commandKey: newCommandKey(),
-        frozen: {'version': 1, 'personal': personal.personal, 'language': 'en'},
-      ),
-    );
-    await expectLater(repository.save(input), throwsStateError);
-    expect(api.requests, isEmpty);
-  });
+  test(
+    'legacy personal drafts are discarded; frozen requests still block extras',
+    () async {
+      await database.saveDraft(
+        'one',
+        profile.id,
+        const PersonalDraft(
+          profileId: 'profile-1',
+          baseVersion: 0,
+          personal: {'full_name': 'Still retained'},
+        ).encode(),
+      );
+      final saved = await repository.save(input);
+      expect(saved.personalSafe, true);
+      expect(await database.draftFor('one', profile.id), isNull);
+      expect(api.requests, hasLength(1));
+      await parent.retain(
+        PersonalDraft(
+          profileId: profile.id,
+          baseVersion: 1,
+          personal: personal.personal,
+          commandKey: newCommandKey(),
+          frozen: {
+            'version': 1,
+            'personal': personal.personal,
+            'language': 'en',
+          },
+        ),
+      );
+      await expectLater(repository.save(input), throwsStateError);
+      expect(api.requests, hasLength(1));
+    },
+  );
 
   test('entity outbox is never consumed or replaced by extras', () async {
     await database.retainPendingMutation(
@@ -201,7 +207,7 @@ void main() {
   });
 
   test(
-    'known rejection releases frozen request, retains input, and requires explicit guarded reapply',
+    'known rejection releases request and allows explicit in-memory reapply',
     () async {
       api.onSave = (_) async =>
           throw const PostgrestException(message: 'VERSION_CONFLICT');
@@ -209,23 +215,12 @@ void main() {
         repository.save(input),
         throwsA(isA<PostgrestException>()),
       );
-      final retained = (await repository.local(profile.id))!;
-      expect(retained.value.links.single.id, link.id);
-      expect(retained.pending, isNull);
+      expect(await repository.local(profile.id), isNull);
       const latest = CareerProfile(id: 'profile-1', version: 3);
-      await expectLater(repository.reapply(retained, latest), throwsStateError);
-      await parent.retain(
-        PersonalDraft(
-          profileId: profile.id,
-          baseVersion: 3,
-          personal: personal.personal,
-          resumeLanguage: 'en',
-        ),
-      );
-      final chosen = await repository.reapply(retained, latest);
+      final chosen = await repository.reapply(input, latest);
       expect(chosen.version, 3);
       expect(chosen.value.links.single.id, link.id);
-      expect((await parent.draft(profile))!.baseVersion, 3);
+      expect(await repository.local(profile.id), isNull);
     },
   );
 
@@ -253,16 +248,13 @@ void main() {
   });
 
   test(
-    'draft inputs are owner-scoped SQLCipher settings, including invalid partial links',
+    'unsubmitted inputs are not persisted; invalid partial links do not send a request',
     () async {
       final incomplete = input.edit(
         input.value.withLinks([link.edit(label: '', url: 'not done')]),
       );
       await repository.retain(incomplete);
-      expect(
-        (await repository.local(profile.id))!.value.links.single.url,
-        'not done',
-      );
+      expect(await repository.local(profile.id), isNull);
       final other = ProfileExtrasRepository(
         DraftRepository(database, FakeProfileApi(), 'two', () => true),
         api,

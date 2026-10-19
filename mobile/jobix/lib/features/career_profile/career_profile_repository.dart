@@ -129,30 +129,48 @@ class DraftRepository {
     await _check();
     final raw = await database.draftFor(user, profile.id);
     await _check();
-    return raw == null ? null : PersonalDraft.decode(raw);
+    if (raw == null) return null;
+    final saved = PersonalDraft.decode(raw);
+    if (saved.frozen != null) return saved;
+
+    // Older app versions stored every keystroke as a local draft. Those
+    // values are not authoritative and must not reappear when an editor opens.
+    await database.discardDraft(user, profile.id);
+    await _check();
+    return null;
   }
 
   Future<void> retain(PersonalDraft draft) async {
     await _check();
+    if (draft.frozen == null) {
+      final existing = await database.draftFor(user, draft.profileId);
+      if (existing != null && PersonalDraft.decode(existing).frozen != null) {
+        // Never replace an unresolved, exact request with editable input.
+        return;
+      }
+      await database.discardDraft(user, draft.profileId);
+      await _check();
+      return;
+    }
+    final existing = await database.draftFor(user, draft.profileId);
+    if (existing != null && PersonalDraft.decode(existing).frozen != null) {
+      // The original complete request wins. Never rewrite even its editable
+      // wrapper fields while reconciling an uncertain outcome.
+      return;
+    }
     await database.saveDraft(user, draft.profileId, draft.encode());
-    if (!isCurrentUser()) await database.clearAccount(user);
+    if (!isCurrentUser()) {
+      await database.clearAccount(user);
+      throw StateError('AUTH_REQUIRED');
+    }
   }
 
   Future<CareerProfile> save(PersonalDraft draft) async {
     await _check();
     final pending = await database.draftFor(user, draft.profileId);
-    if (pending != null &&
-        PersonalDraft.decode(pending).frozen != null &&
-        draft.frozen == null) {
+    if (pending != null && PersonalDraft.decode(pending).frozen != null) {
       final previous = PersonalDraft.decode(pending);
-      draft = PersonalDraft(
-        profileId: draft.profileId,
-        baseVersion: draft.baseVersion,
-        personal: draft.personal,
-        resumeLanguage: draft.resumeLanguage,
-        commandKey: previous.commandKey,
-        frozen: previous.frozen,
-      );
+      draft = previous;
     }
     final request = draft.frozen == null
         ? PersonalDraft(
@@ -183,14 +201,11 @@ class DraftRepository {
         'AUTH_REQUIRED',
       ].any(error.message.contains)) {
         // These transactional rejections are known not to have applied.
-        await retain(
-          PersonalDraft(
-            profileId: request.profileId,
-            baseVersion: request.baseVersion,
-            personal: request.personal,
-            resumeLanguage: request.resumeLanguage,
-          ),
-        );
+        // Keep the user's edits only in the open editor; a later open must
+        // start from the current server version.
+        await _check();
+        await database.discardDraft(user, request.profileId);
+        await _check();
       }
       rethrow;
     }
@@ -202,26 +217,7 @@ class DraftRepository {
     }
     final latest = await database.draftFor(user, draft.profileId);
     if (latest == request.encode()) {
-      // User may have edited while an unknown-outcome request was pending.
-      final same =
-          personalFields.every(
-            (key) =>
-                (request.personal[key] ?? '').trim() ==
-                (profile.personal[key] ?? ''),
-          ) &&
-          request.resumeLanguage == profile.resumeLanguage;
-      if (same) {
-        await database.discardDraft(user, draft.profileId);
-      } else {
-        await retain(
-          PersonalDraft(
-            profileId: profile.id,
-            baseVersion: profile.version,
-            personal: request.personal,
-            resumeLanguage: request.resumeLanguage,
-          ),
-        );
-      }
+      await database.discardDraft(user, draft.profileId);
     }
     return profile;
   }

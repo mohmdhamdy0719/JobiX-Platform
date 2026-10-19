@@ -348,19 +348,10 @@ class _ResumePageState extends ConsumerState<ResumePage> {
         ),
       );
       final frozen = await store.pending();
-      Map<String, dynamic> configuration;
-      if (frozen != null) {
-        configuration = {
-          'section_order': frozen['section_order'],
-          'section_visibility': {
-            for (final section in frozen['hidden_sections'] as List)
-              section: false,
-          },
-        };
-      } else {
-        final snapshot = await _loadLocalSnapshotForLayout();
-        configuration = snapshot.configuration;
-      }
+      // Always display the latest server-confirmed configuration. A frozen
+      // save is reconciled separately with its original command key.
+      final snapshot = await _loadLocalSnapshotForLayout();
+      final configuration = snapshot.configuration;
       if (!mounted || client.auth.currentUser?.id != actor) return;
       await Navigator.of(context).push<bool>(
         MaterialPageRoute(
@@ -368,6 +359,11 @@ class _ResumePageState extends ConsumerState<ResumePage> {
             initial: ResumeLayout.fromConfiguration(configuration),
             pending: frozen != null,
             hasPending: () async => await store.pending() != null,
+            onRetryPending: () async {
+              await store.retryPending();
+              final latest = await _loadLocalSnapshotForLayout();
+              return ResumeLayout.fromConfiguration(latest.configuration);
+            },
             onReload: () async => ResumeLayout.fromConfiguration(
               (await _loadLocalSnapshotForLayout()).configuration,
             ),

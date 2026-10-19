@@ -395,7 +395,7 @@ void main() {
     },
   );
   test(
-    'incomplete draft survives encrypted restart and is isolated by owner',
+    'unsubmitted edits are not persisted across encrypted restart',
     () async {
       await repository.retain(
         const PersonalDraft(
@@ -405,16 +405,14 @@ void main() {
           resumeLanguage: 'ar',
         ),
       );
+      expect(await db.draftFor('user-one', 'profile-one'), isNull);
       await db.close();
       db = AppDatabase(
         encryptedDatabase(File('${directory.path}/store.db'), key),
       );
-      expect(
-        PersonalDraft.decode(
-          (await db.draftFor('user-one', 'profile-one'))!,
-        ).personal['full_name'],
-        'Unfinished العربية',
-      );
+      repository = DraftRepository(db, api, 'user-one', () => active);
+      final loaded = await repository.load(freshOnly: true);
+      expect(loaded.personal['full_name'], isNot('Unfinished العربية'));
       expect(await db.draftFor('other-user', 'profile-one'), isNull);
     },
   );
@@ -449,6 +447,7 @@ void main() {
       );
       expect(result.version, 2);
       expect(result.personal['email'], '');
+      expect(result.resumeLanguage, 'ar');
       expect(await repository.draft(result), isNull);
     },
   );
@@ -475,7 +474,7 @@ void main() {
     },
   );
   test(
-    'lost response retry never duplicates server save, even after later edits',
+    'uncertain save retry reuses the frozen request and drops no cloud write',
     () async {
       api.loseNextResponse = true;
       const draft = PersonalDraft(
@@ -491,18 +490,19 @@ void main() {
       final command = pending.commandKey;
       pending = pending.edit('full_name', 'Edited after uncertainty');
       await repository.retain(pending);
+      final frozenRequest = (await repository.draft(api.server))!;
+      expect(frozenRequest.personal['full_name'], 'Original');
+      expect(frozenRequest.frozen!['personal']['full_name'], 'Original');
       final saved = await repository.save(pending);
       expect(saved.version, 2);
-      final retained = (await repository.draft(saved))!;
-      expect(retained.personal['full_name'], 'Edited after uncertainty');
-      expect(retained.baseVersion, 2);
-      expect(retained.frozen, isNull);
+      expect(saved.personal['full_name'], 'Original');
+      expect(await repository.draft(saved), isNull);
       expect(api.requests.last.commandKey, command);
-      expect((await repository.save(retained)).version, 3);
+      expect(api.requests.last.personal['full_name'], 'Original');
     },
   );
   test(
-    'a known version conflict preserves editable draft without overwriting server',
+    'a known version conflict discards unsaved local state without overwriting server',
     () async {
       api.server = const CareerProfile(
         id: 'profile-one',
@@ -519,9 +519,8 @@ void main() {
         ),
         throwsA(isA<PostgrestException>()),
       );
-      final retained = (await repository.draft(api.server))!;
-      expect(retained.personal['full_name'], 'My work');
-      expect(retained.frozen, isNull);
+      expect(await repository.draft(api.server), isNull);
+      expect(await db.draftFor('user-one', api.server.id), isNull);
       expect(api.server.personal['full_name'], 'Other device');
     },
   );

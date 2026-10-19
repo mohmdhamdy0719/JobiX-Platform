@@ -10,6 +10,7 @@ class ResumeLayoutPage extends StatefulWidget {
     required this.onSave,
     required this.onReload,
     required this.hasPending,
+    this.onRetryPending,
     this.pending = false,
     super.key,
   });
@@ -18,6 +19,7 @@ class ResumeLayoutPage extends StatefulWidget {
   final Future<void> Function(ResumeLayout) onSave;
   final Future<ResumeLayout> Function() onReload;
   final Future<bool> Function() hasPending;
+  final Future<ResumeLayout> Function()? onRetryPending;
   @override
   State<ResumeLayoutPage> createState() => _ResumeLayoutPageState();
 }
@@ -100,6 +102,18 @@ class _ResumeLayoutPageState extends State<ResumeLayoutPage> {
       error = null;
     });
     try {
+      if (pending && widget.onRetryPending != null) {
+        final confirmed = await widget.onRetryPending!();
+        if (mounted) {
+          setState(() {
+            saved = layout = confirmed;
+            allowPop = true;
+            pending = false;
+          });
+          Navigator.pop(context, true);
+        }
+        return;
+      }
       await widget.onSave(layout);
       if (mounted) {
         setState(() {
@@ -132,10 +146,15 @@ class _ResumeLayoutPageState extends State<ResumeLayoutPage> {
         error =
             failure is ResumeLayoutSaveFailure &&
                 failure.code == 'BACKEND_UPDATE_REQUIRED'
-            ? t(
-                'The Development backend needs its layout update. Your requested layout is kept on this device and has not been applied to your account.',
-                'يحتاج خادم التطوير إلى تحديث التصميم. تم الاحتفاظ بتصميمك المطلوب على هذا الجهاز ولم يُطبّق على حسابك.',
-              )
+            ? stillPending
+                  ? t(
+                      'The Development backend cannot resolve an earlier layout save yet. Its exact request remains pending; retry after the backend update.',
+                      'لا يستطيع خادم التطوير تسوية حفظ سابق للتصميم بعد. ما زال الطلب نفسه معلقًا؛ أعد المحاولة بعد تحديث الخادم.',
+                    )
+                  : t(
+                      'The Development backend needs Migration 022 for layout saves. This attempt was not applied; discard it or leave and retry after the backend is updated.',
+                      'يحتاج خادم التطوير إلى الترحيل 022 لحفظ التصميم. لم يُطبّق هذا الطلب؛ تجاهله أو غادر وأعد المحاولة بعد تحديث الخادم.',
+                    )
             : conflict
             ? t(
                 'The saved Resume changed elsewhere. Reload it before applying your layout.',
@@ -200,6 +219,16 @@ class _ResumeLayoutPageState extends State<ResumeLayoutPage> {
                 child: Text(
                   error!,
                   style: const TextStyle(color: TokensV0.error),
+                ),
+              ),
+            ),
+          if (pending)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                t(
+                  'The layout shown is the latest confirmed server version. A previous save is unresolved; Retry uses its original request.',
+                  'التصميم المعروض هو أحدث نسخة مؤكدة من الخادم. يوجد حفظ سابق لم تتم تسويته؛ إعادة المحاولة تستخدم الطلب الأصلي.',
                 ),
               ),
             ),
@@ -316,7 +345,11 @@ class _ResumeLayoutPageState extends State<ResumeLayoutPage> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(t('Done', 'تم')),
+                      : Text(
+                          pending
+                              ? t('Retry save', 'إعادة الحفظ')
+                              : t('Done', 'تم'),
+                        ),
                 ),
               ),
             ],

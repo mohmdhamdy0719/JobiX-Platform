@@ -36,11 +36,9 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
   ProfileExtras? saved;
   CareerProfile? profile;
   final controllers = <String, TextEditingController>{};
-  Future<void> writes = Future.value();
   bool busy = false,
       failed = false,
       validate = false,
-      localFailed = false,
       conflictRecoveryRequired = false;
   String? notice;
   bool get ar => AppLocalizations.of(context)!.localeName.startsWith('ar');
@@ -68,7 +66,8 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
   Future<void> load() async {
     try {
       final repo = await ref.read(profileExtrasRepositoryProvider.future);
-      final current = await repo.parent.load();
+      final current = await repo.parent.load(freshOnly: true);
+      await repo.parent.draft(current);
       final local = await repo.local(current.id);
       final input = local ?? await repo.open(current);
       ProfileExtras? savedValue;
@@ -122,31 +121,12 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
   }
 
   void edit(ProfileExtras value) {
+    if (draft?.pending != null) return;
     final next = draft!.edit(value);
     setState(() {
       draft = next;
       notice = null;
     });
-    writes = writes
-        .then((_) => repository!.retain(next))
-        .then((_) {
-          if (mounted) setState(() => localFailed = false);
-        })
-        .catchError((Object _) {
-          if (mounted) setState(() => localFailed = true);
-        });
-  }
-
-  Future<bool> flush() async {
-    try {
-      await writes;
-      await repository!.retain(draft!);
-      if (mounted) setState(() => localFailed = false);
-      return true;
-    } catch (_) {
-      if (mounted) setState(() => localFailed = true);
-      return false;
-    }
   }
 
   Future<void> leave() async {
@@ -216,12 +196,17 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
     );
     if (discard != true || !mounted) return;
     try {
-      await writes;
-      if (localFailed) return;
       await repository!.discard(draft!);
       if (mounted) context.go(destination);
     } catch (_) {
-      if (mounted) setState(() => localFailed = true);
+      if (mounted) {
+        setState(
+          () => notice = say(
+            'The save could not be safely discarded. Resolve its status before leaving.',
+            'تعذر تجاهل الحفظ بأمان. تحقق من حالته قبل المغادرة.',
+          ),
+        );
+      }
     }
   }
 
@@ -335,22 +320,22 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
     if (reason.contains('VERSION_CONFLICT') ||
         reason.contains('BASELINE_CONFLICT')) {
       return say(
-        'The profile changed. Your photo and links are retained. Reconcile Personal Information first, then review the latest saved version before retrying.',
-        'تغير الملف. احتفظنا بصورتك وروابطك. عالج تعارض المعلومات الشخصية أولًا، ثم راجع أحدث نسخة محفوظة قبل إعادة المحاولة.',
+        'The profile changed. These photo and link edits remain only on this screen. Reconcile Personal Information, then review the latest saved version before retrying.',
+        'تغير الملف. تعديلات الصورة والروابط موجودة في هذه الشاشة فقط. عالج تعارض المعلومات الشخصية ثم راجع أحدث نسخة محفوظة قبل إعادة المحاولة.',
       );
     }
     if (reason.contains('PERSONAL_SAVE_PENDING') ||
         reason.contains('OTHER_SAVE_PENDING')) {
       return say(
-        'Another profile save is awaiting confirmation. Resolve it before saving photo and links. Your input is retained.',
-        'هناك عملية حفظ أخرى تنتظر التأكيد. عالجها قبل حفظ الصورة والروابط. احتفظنا بمدخلاتك.',
+        'Another profile save is awaiting confirmation. Resolve it before saving photo and links. These edits are not saved yet.',
+        'هناك عملية حفظ أخرى تنتظر التأكيد. عالجها قبل حفظ الصورة والروابط. لم تُحفظ هذه التعديلات بعد.',
       );
     }
     if (reason.contains('VALIDATION_FAILED') ||
         reason.contains('EXTRAS_INVALID')) {
       return say(
-        'Check the link labels, HTTPS addresses and photo format. Nothing was discarded.',
-        'راجع عناوين الروابط وروابط HTTPS وصيغة الصورة. لم نحذف أي مدخلات.',
+        'Check the link labels, HTTPS addresses and photo format. These edits remain only on this screen.',
+        'راجع عناوين الروابط وروابط HTTPS وصيغة الصورة. تبقى هذه التعديلات في هذه الشاشة فقط.',
       );
     }
     if (reason.contains('FORBIDDEN') ||
@@ -369,13 +354,26 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
 
   Future<void> save() async {
     if (busy || draft == null) return;
+    if (draft!.pending == null && saved == null) {
+      setState(
+        () => notice = say(
+          'The saved version could not be verified. Retry loading before saving these edits.',
+          'تعذر التحقق من النسخة المحفوظة. أعد التحميل قبل حفظ هذه التعديلات.',
+        ),
+      );
+      return;
+    }
+    if (draft!.pending == null &&
+        jsonEncode(draft!.value.payload()) == jsonEncode(saved!.payload())) {
+      if (mounted) context.go(destination);
+      return;
+    }
     setState(() {
       busy = true;
       validate = true;
       notice = null;
     });
     try {
-      if (!await flush()) return;
       final submitted = draft!.value;
       final result = await repository!.save(draft!);
       if (!mounted) return;
@@ -389,8 +387,8 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
       if (result.hasUnsentEdits) {
         setState(
           () => notice = say(
-            'The original request was confirmed. Your newer photo or link edits are still retained locally. Save again to submit them.',
-            'تأكد حفظ الطلب الأصلي. احتفظنا بتعديلات الصورة أو الروابط الأحدث على جهازك. احفظ مجددًا لإرسالها.',
+            'The original request was confirmed. Any newer edits are still only on this screen; choose Save again to submit them.',
+            'تم تأكيد الطلب الأصلي. أي تعديلات أحدث موجودة في هذه الشاشة فقط؛ اختر حفظ مجددًا لإرسالها.',
           ),
         );
         return;
@@ -398,8 +396,8 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
       if (!result.personalSafe) {
         setState(
           () => notice = say(
-            'Photo and links were saved, but Personal Information changed during the save. Those edits are retained and were not rebased. Return to Personal Information to reconcile them.',
-            'حُفظت الصورة والروابط، لكن المعلومات الشخصية تغيرت أثناء الحفظ. احتفظنا بالتعديلات ولم نغيّر أساس نسختها. عد إلى المعلومات الشخصية لمعالجة التعارض.',
+            'Photo and links were saved, but Personal Information changed during the save. It was not rebased. Return to Personal Information to reconcile the latest saved version.',
+            'حُفظت الصورة والروابط، لكن المعلومات الشخصية تغيرت أثناء الحفظ ولم تُعدّل قاعدتها. عد إلى المعلومات الشخصية لمعالجة أحدث نسخة محفوظة.',
           ),
         );
         return;
@@ -436,7 +434,6 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
     if (busy || draft == null || draft!.pending != null) return;
     setState(() => busy = true);
     try {
-      if (!await flush()) return;
       final latest = await repository!.parent.load(freshOnly: true);
       final extras = await repository!.api.read(latest.id);
       if (!mounted) return;
@@ -581,19 +578,9 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  if (notice != null || localFailed) ...[
+                  if (notice != null) ...[
                     SliceCard(
-                      child: Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          localFailed
-                              ? say(
-                                  'Could not retain this draft on your device. Keep this screen open and retry.',
-                                  'تعذر حفظ المسودة على جهازك. أبقِ هذه الشاشة مفتوحة وأعد المحاولة.',
-                                )
-                              : notice!,
-                        ),
-                      ),
+                      child: Semantics(liveRegion: true, child: Text(notice!)),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -604,12 +591,12 @@ class _ProfileExtrasPageState extends ConsumerState<ProfileExtrasPage> {
                       child: Text(
                         saved == null
                             ? say(
-                                'The saved version could not be checked. These changes are only retained for recovery until Save is confirmed.',
-                                'تعذر التحقق من النسخة المحفوظة. هذه التغييرات محفوظة للاستعادة فقط حتى تأكيد الحفظ.',
+                                'The saved version could not be checked. These edits are only held on this screen until Save is confirmed.',
+                                'تعذر التحقق من النسخة المحفوظة. هذه التعديلات موجودة في هذه الشاشة فقط حتى تأكيد الحفظ.',
                               )
                             : say(
-                                'These recovered changes are not saved to your account. Choose Save & return to update them.',
-                                'هذه التغييرات المستعادة غير محفوظة في حسابك. اختر حفظ والعودة لتحديثها.',
+                                'These changes are not saved to your account. Choose Save & return to update them.',
+                                'هذه التغييرات غير محفوظة في حسابك. اختر حفظ والعودة لتحديثها.',
                               ),
                       ),
                     ),
