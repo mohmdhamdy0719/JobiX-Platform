@@ -1,0 +1,151 @@
+# JobiX V2 — Google Cloud Dependency & Cost Audit (READ-ONLY)
+
+Act as a senior cloud architect and cost-optimization engineer. Audit the existing JobiX V2 repository to identify every dependency on Google Cloud, explain why it exists, determine its actual runtime role, and evaluate cheaper alternatives.
+
+## CRITICAL SAFETY RULES
+
+- This is a READ-ONLY investigation. Do not modify, create, delete, deploy, or migrate anything.
+- Do not change cloud resources, IAM permissions, billing settings, secrets, environment variables, or infrastructure.
+- Do not run PDF exports or trigger any paid operations during the audit.
+- Do not print secrets, API keys, tokens, service-account credentials, or private user data.
+- Do not assume a service is used merely because its SDK or configuration exists. Trace actual code paths and distinguish confirmed usage from suspected or unused configuration.
+- Do not claim access to Google Cloud Billing, Cloud Run logs, or production resources unless access is actually available and verified. If access is unavailable, identify the exact evidence needed from the owner.
+- Preserve the current architecture and functionality. Recommend changes only; do not implement them.
+
+## 1. Map the architecture
+
+Inspect the repository, including relevant source code, configuration files, deployment files, Dockerfiles, CI/CD workflows, environment-variable references, documentation, and Supabase integration.
+
+Create an end-to-end architecture map showing:
+
+- Flutter mobile app.
+- Supabase Auth, database, Storage, Edge Functions, and other Supabase services actually used.
+- Every Google Cloud service referenced or called.
+- Backend APIs, workers, PDF generation, file storage, AI integrations, and external APIs.
+- The data flow from the mobile app to the backend and back.
+
+Clearly distinguish:
+1. Required runtime dependencies.
+2. Build-time/deployment dependencies.
+3. Development/testing-only dependencies.
+4. Optional, obsolete, unused, or unverified components.
+
+## 2. Audit every Google Cloud dependency
+
+At minimum, investigate these services if they appear in the repository or project configuration:
+
+- Cloud Run services, jobs, and worker pools.
+- Cloud Build.
+- Artifact Registry.
+- Cloud Storage / GCS.
+- Vertex AI.
+- Cloud Logging and Cloud Monitoring.
+- Any other Google Cloud APIs, resources, or products discovered.
+
+For every service, report:
+
+- Exact resource/service name, region, and resource type, if verifiable.
+- Relevant source files, functions, configuration keys, and call paths.
+- What the service does in JobiX and why it was introduced.
+- Which features would stop working if it were removed.
+- Whether it is required for the MVP, replaceable, redundant, or not proven to be used.
+- Whether it incurs runtime, request, storage, network, build, or other costs.
+- What evidence supports each conclusion.
+
+Do not infer that Vertex AI is used for user-facing AI functionality simply because the API is enabled. Find actual calls and identify the feature that triggers them.
+
+## 3. Investigate Cloud Run first
+
+Cloud Billing currently shows approximately:
+
+- Cloud Run usage cost: $1.42.
+- Cloud Run savings: approximately $1.41.
+- Cloud Run net subtotal: approximately $0.01.
+- Cloud Run CPU SKU actual cost: $1.28.
+- Cloud Run memory SKU actual cost: $0.13.
+- Artifact Registry storage: approximately $0.04.
+- Vertex AI subtotal: approximately $0.06.
+
+These are owner-provided billing screenshots, not independently verified billing exports.
+
+Determine:
+
+- Which Cloud Run service or resource is generating the CPU and memory usage.
+- Whether it serves the PDF export worker, API/backend, another worker, or something else.
+- Whether it is request-based or instance-based billing.
+- Whether minimum instances, always-allocated CPU, scheduled jobs, background loops, health checks, retries, or repeated requests could explain the usage.
+- Whether local development or automated tests can invoke this Cloud Run service.
+- Whether PDF creation and downloading an already-generated PDF follow different paths.
+- Whether a service is receiving traffic when no one is actively using the app.
+- Which conclusions are confirmed by source code and which require live Cloud Run metrics, logs, or Billing data.
+
+Do not assume that Cloud Run caused the usage on any specific date without supporting evidence.
+
+## 4. Explain every cost and saving
+
+For each Google Cloud service and significant SKU, explain the likely billing mechanism in plain language.
+
+Specifically investigate the approximately $1.41 Cloud Run saving:
+
+- Determine whether it is a free-tier benefit, promotional credit, billing credit, negotiated discount, or another saving.
+- Inspect available Billing reports or credit details only if authorized access exists.
+- If the source cannot be verified from the repository, explicitly state that billing-console evidence is required.
+- Explain whether the saving renews monthly, expires, is limited by usage, or might disappear. Do not assume any of these without evidence.
+- Distinguish gross usage cost, savings, and net payable cost.
+
+Never describe the $1.41 saving as a permanent discount unless the evidence proves that.
+
+## 5. Evaluate cheaper alternatives
+
+For every service, compare realistic options for this specific MVP.
+
+Consider, where appropriate:
+
+- Keeping Cloud Run but optimizing CPU/memory, concurrency, scaling, minimum instances, timeouts, and authentication.
+- Keeping the current PDF architecture versus moving PDF generation to another suitable runtime.
+- Generating PDFs on-device only if the required output quality, security, fonts, layout fidelity, and business rules can be preserved.
+- Supabase Edge Functions or other serverless options, but only after checking execution limits, compatibility, and total cost.
+- Using existing Supabase Storage instead of maintaining duplicate file storage, if the current data flow supports it.
+- Vertex AI versus an existing AI provider already integrated into the project.
+- Reducing build/deployment and Artifact Registry costs.
+- Removing truly unused resources only as a future recommendation requiring explicit owner approval.
+
+For each alternative, explain:
+
+- Expected cost behavior and possible free-tier eligibility.
+- Technical effort and migration complexity.
+- Limitations and hidden costs.
+- Security, reliability, and maintenance trade-offs.
+- Whether it is recommended now, later, or not at all.
+
+Do not invent precise savings estimates. Mark estimates as estimates and list the assumptions.
+
+## 6. Provide a decision-ready report
+
+Deliver the report in this structure:
+
+A. Executive summary: the biggest cost drivers and the most important findings.
+
+B. Architecture diagram: show the actual data flow, preferably using a Mermaid diagram.
+
+C. Dependency inventory: a table with service, purpose, code evidence, runtime usage status, cost source, MVP necessity, and removal risk.
+
+D. Cloud Run deep dive: identify each service, what calls it, its role, and the evidence required to confirm actual usage and billing.
+
+E. Cost and savings explanation: distinguish confirmed facts from hypotheses and unknowns.
+
+F. Alternatives comparison: current solution versus realistic cheaper options.
+
+G. Prioritized recommendations:
+- P0: unexpected spending or security risk.
+- P1: safe optimizations that preserve functionality.
+- P2: changes that require architectural work.
+- P3: optional cleanup.
+
+H. Owner action checklist: list the exact screenshots, resource details, metrics, logs, or Billing exports needed to resolve every remaining uncertainty.
+
+I. Final verdict: what JobiX genuinely needs for the MVP, what is optional, and what should not be removed yet.
+
+Include exact repository paths and relevant line references wherever possible. Finish with a short list of the three highest-value next actions.
+
+Again: investigate and report only. Make no changes.
