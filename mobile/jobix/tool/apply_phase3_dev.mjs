@@ -15,6 +15,169 @@ const resumeExportCostVersions=[
  '202610100020_resume_export_cost_purge_recovery',
 ];
 const resumeExportCostOutputUnitVersion='202610100021_resume_export_cost_output_unit';
+const resumeLayoutVersion='202610170022_resume_layout';
+// Reviewed against the exact checked-in migration source; never derive this
+// expected value from the file at execution time.
+const resumeLayoutExpectedSha256='d34f6dad4d9edcd301486d9d507bed7330c0fde66cfac3630bee087fa8366473';
+const resumeLayoutPrerequisiteVersions=[
+  ...versions,...resumeExportCostVersions,resumeExportCostOutputUnitVersion,
+];
+
+export function verifyResumeLayoutMigrationSource(source) {
+  const actual=createHash('sha256').update(source).digest('hex');
+  if(actual!==resumeLayoutExpectedSha256)throw Error('MIGRATION_SOURCE_CHECKSUM_MISMATCH');
+  return actual;
+}
+
+export async function migrateResumeLayout({
+  caFile,approved=false,poolFactory=options=>new Pool(options),
+}={}) {
+  if(!approved||!caFile)throw Error('EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED');
+  const source=await readFile(resolve(import.meta.dirname,
+    '../supabase/migrations',resumeLayoutVersion+'.sql'),'utf8');
+  const sourceHash=verifyResumeLayoutMigrationSource(source);
+  const rawUrl=process.env.JOBIX_DEV_DATABASE_URL;
+  if(!rawUrl)throw Error('DEV_TARGET_REJECTED');
+  const uri=new URL(rawUrl);
+  if(!['postgres:','postgresql:'].includes(uri.protocol)||
+    !uri.username.endsWith('.'+ref)||
+    !uri.hostname.endsWith('.pooler.supabase.com')||
+    uri.pathname!='/postgres'||uri.port!=='5432')throw Error('DEV_TARGET_REJECTED');
+  for(const key of ['sslmode','sslrootcert','sslcert','sslkey'])uri.searchParams.delete(key);
+  const pool=poolFactory({connectionString:uri.toString(),max:1,
+    connectionTimeoutMillis:15000,ssl:{rejectUnauthorized:true,ca:await readFile(caFile,'utf8')},
+    statement_timeout:30000});
+  let client,transactionOpen=false;
+  try {
+    client=await pool.connect();
+    await client.query('BEGIN');
+    transactionOpen=true;
+    // Share the exact lock key with every existing Development migration mode.
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('jobix_phase3_dev_migrations'))");
+
+    const identity=(await client.query(
+      'SELECT current_database() AS database,current_user AS role')).rows[0];
+    if(identity?.database!=='postgres')throw Error('DEV_TARGET_IDENTITY_MISMATCH');
+
+    const baseline=(await client.query(`SELECT
+      to_regclass('public.jobix_export_migrations') IS NOT NULL AS ledger,
+      to_regclass('public.users') IS NOT NULL AS users,
+      to_regclass('public.career_profiles') IS NOT NULL AS profiles,
+      to_regclass('public.resume_configurations') IS NOT NULL AS configurations,
+      to_regclass('public.idempotency_records') IS NOT NULL AS idempotency,
+      to_regprocedure('public.read_resume_configuration(uuid)') IS NOT NULL AS read_configuration,
+      to_regprocedure('public.save_resume_layout(uuid,uuid,bigint,bigint,text,jsonb,jsonb)') IS NOT NULL AS save_layout,
+      to_regrole('authenticated') IS NOT NULL AS authenticated_role,
+      to_regrole('anon') IS NOT NULL AS anon_role,
+      to_regrole('service_role') IS NOT NULL AS service_role`)).rows[0];
+    if(!baseline||!baseline.ledger||!baseline.users||!baseline.profiles||
+      !baseline.configurations||!baseline.idempotency||!baseline.read_configuration||
+      !baseline.authenticated_role||!baseline.anon_role||!baseline.service_role) {
+      throw Error('LAYOUT_BASELINE_SCHEMA_DRIFT');
+    }
+    if(baseline.save_layout)throw Error('LAYOUT_FUNCTION_ALREADY_EXISTS');
+
+    const missingColumns=(await client.query(`SELECT expected.table_name,expected.column_name
+      FROM (VALUES
+       ('users','id'),('users','status'),
+       ('career_profiles','id'),('career_profiles','user_id'),
+       ('career_profiles','status'),('career_profiles','profile_version'),
+       ('resume_configurations','profile_id'),('resume_configurations','language'),
+       ('resume_configurations','template_id'),('resume_configurations','version'),
+       ('resume_configurations','section_visibility'),('resume_configurations','section_order'),
+       ('resume_configurations','render_config_version'),('resume_configurations','template_version'),
+       ('idempotency_records','user_id'),('idempotency_records','operation_type'),
+       ('idempotency_records','idempotency_key'),('idempotency_records','payload_hash'),
+       ('idempotency_records','response_state')
+      ) AS expected(table_name,column_name)
+      WHERE NOT EXISTS (
+       SELECT FROM information_schema.columns c
+       WHERE c.table_schema='public' AND c.table_name=expected.table_name
+        AND c.column_name=expected.column_name
+      )`)).rows;
+    if(missingColumns.length)throw Error('LAYOUT_BASELINE_SCHEMA_DRIFT');
+
+    const ownerPrivileges=(await client.query(`SELECT
+      current_user AS role,
+      has_schema_privilege(current_user,'public','CREATE') AS schema_create,
+      has_schema_privilege(current_user,'public','USAGE') AS schema_usage,
+      has_table_privilege(current_user,'public.users','SELECT') AS users_select,
+      has_table_privilege(current_user,'public.users','UPDATE') AS users_update,
+      has_table_privilege(current_user,'public.career_profiles','SELECT') AS profiles_select,
+      has_table_privilege(current_user,'public.career_profiles','UPDATE') AS profiles_update,
+      has_table_privilege(current_user,'public.resume_configurations','SELECT') AS configurations_select,
+      has_table_privilege(current_user,'public.resume_configurations','INSERT') AS configurations_insert,
+      has_table_privilege(current_user,'public.resume_configurations','UPDATE') AS configurations_update,
+      has_table_privilege(current_user,'public.idempotency_records','SELECT') AS idempotency_select,
+      has_table_privilege(current_user,'public.idempotency_records','INSERT') AS idempotency_insert,
+      has_function_privilege(current_user,
+        'public.read_resume_configuration(uuid)','EXECUTE') AS read_rpc_execute,
+      (SELECT count(*)=4 AND bool_and(
+        NOT c.relrowsecurity OR r.rolsuper OR r.rolbypassrls OR
+        (c.relowner=r.oid AND (NOT c.relforcerowsecurity OR r.rolsuper OR r.rolbypassrls))
+      )
+       FROM pg_class c CROSS JOIN pg_roles r
+       WHERE r.rolname=current_user AND c.relnamespace='public'::regnamespace
+        AND c.relname=ANY(ARRAY['users','career_profiles','resume_configurations','idempotency_records']))
+        AS rls_owner_access`)).rows[0];
+    if(!ownerPrivileges||Object.entries(ownerPrivileges)
+      .some(([key,value])=>key!=='role'&&value!==true)) {
+      throw Error('LAYOUT_FUNCTION_OWNER_PRIVILEGES_INSUFFICIENT');
+    }
+
+    const ledger=(await client.query(
+      'SELECT version,sha256 FROM public.jobix_export_migrations ORDER BY version')).rows;
+    if(ledger.length!==resumeLayoutPrerequisiteVersions.length||
+      resumeLayoutPrerequisiteVersions.some((version,index)=>
+        ledger[index]?.version!==version)) {
+      throw Error('MIGRATION_LEDGER_STATE_CONFLICT');
+    }
+    for(let index=0;index<resumeLayoutPrerequisiteVersions.length;index++) {
+      const version=resumeLayoutPrerequisiteVersions[index];
+      const priorSource=await readFile(resolve(import.meta.dirname,
+        '../supabase/migrations',version+'.sql'),'utf8');
+      const expected=createHash('sha256').update(priorSource).digest('hex');
+      if(ledger[index].sha256!==expected)throw Error('MIGRATION_CHECKSUM_CONFLICT');
+    }
+
+    const body=source.replace(/^BEGIN;\s*$/m,'').replace(/^COMMIT;\s*$/m,'');
+    await client.query(body);
+    await client.query('INSERT INTO public.jobix_export_migrations(version,sha256) VALUES($1,$2)',
+      [resumeLayoutVersion,sourceHash]);
+
+    const installed=(await client.query(`SELECT
+      p.proowner=(SELECT oid FROM pg_roles WHERE rolname=current_user) AS owner_matches,
+      p.prosecdef AS security_definer,
+      has_function_privilege('authenticated',
+        'public.save_resume_layout(uuid,uuid,bigint,bigint,text,jsonb,jsonb)','EXECUTE') AS authenticated_execute,
+      has_function_privilege('anon',
+        'public.save_resume_layout(uuid,uuid,bigint,bigint,text,jsonb,jsonb)','EXECUTE') AS anon_execute,
+      has_function_privilege('service_role',
+        'public.save_resume_layout(uuid,uuid,bigint,bigint,text,jsonb,jsonb)','EXECUTE') AS service_execute
+      FROM pg_proc p
+      WHERE p.oid=to_regprocedure('public.save_resume_layout(uuid,uuid,bigint,bigint,text,jsonb,jsonb)')
+      AND p.prokind='f'`)).rows[0];
+    const installedLedger=(await client.query(
+      'SELECT sha256 FROM public.jobix_export_migrations WHERE version=$1',
+      [resumeLayoutVersion])).rows[0];
+    if(!installed||installed.owner_matches!==true||installed.security_definer!==true||
+      installed.authenticated_execute!==true||installed.anon_execute!==false||
+      installed.service_execute!==false||installedLedger?.sha256!==sourceHash) {
+      throw Error('LAYOUT_POST_APPLY_ASSERTION_FAILED');
+    }
+
+    await client.query('COMMIT');
+    transactionOpen=false;
+    console.log('DEVELOPMENT_MIGRATION_022_APPLIED_LAYOUT_RPC_ONLY');
+  } catch(error) {
+    if(client&&transactionOpen)await client.query('ROLLBACK').catch(()=>{});
+    throw error;
+  } finally {
+    client?.release();
+    await pool.end();
+  }
+}
+
 export async function migrate({caFile,approved=false}) {
   if(!approved||!caFile)throw Error('EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED');
   const uri=new URL(process.env.JOBIX_DEV_DATABASE_URL);
@@ -293,6 +456,7 @@ if(process.argv[1]===import.meta.filename) {
   const ca=process.argv.indexOf('--ca-file');
   const costMode=process.argv.includes('--apply-development-resume-export-018-020');
   const costOutputUnitMode=process.argv.includes('--apply-development-resume-export-cost-output-unit-021');
+  const resumeLayoutMode=process.argv.includes('--apply-development-resume-layout-022');
   const legacyMode=process.argv.includes('--apply-development');
   const safeCostFailures=new Set([
     'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED','DEV_TARGET_REJECTED',
@@ -302,8 +466,25 @@ if(process.argv[1]===import.meta.filename) {
     'EXPORT_GATES_CHANGED','ACCOUNTING_CONFIGURATION_NOT_READY',
     'COST_OUTPUT_UNIT_PRECONDITION_FAILED',
   ]);
-  if((costMode&&legacyMode)||(costOutputUnitMode&&(costMode||legacyMode))) {
+  if(resumeLayoutMode&&(costMode||costOutputUnitMode||legacyMode)) {
     console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
+  } else if((costMode&&legacyMode)||(costOutputUnitMode&&(costMode||legacyMode))) {
+    console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
+  } else if(resumeLayoutMode) {
+    migrateResumeLayout({caFile:ca>=0?process.argv[ca+1]:undefined,
+      approved:true}).catch(error=>{
+        const safeFailures=new Set([
+          'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED','DEV_TARGET_REJECTED',
+          'DEV_TARGET_IDENTITY_MISMATCH','MIGRATION_SOURCE_CHECKSUM_MISMATCH',
+          'LAYOUT_BASELINE_SCHEMA_DRIFT','LAYOUT_FUNCTION_ALREADY_EXISTS',
+          'LAYOUT_FUNCTION_OWNER_PRIVILEGES_INSUFFICIENT',
+          'MIGRATION_LEDGER_STATE_CONFLICT','MIGRATION_CHECKSUM_CONFLICT',
+          'LAYOUT_POST_APPLY_ASSERTION_FAILED',
+        ]);
+        const reason=safeFailures.has(error?.message)?error.message:'NO_TLS_OR_ADMIN_FALLBACK';
+        console.error(`DEVELOPMENT_RESUME_LAYOUT_MIGRATION_BLOCKED_${reason}`);
+        process.exitCode=1;
+      });
   } else if(costMode) {
     migrateResumeExportCost({caFile:ca>=0?process.argv[ca+1]:undefined,
       approved:true}).catch(error=>{

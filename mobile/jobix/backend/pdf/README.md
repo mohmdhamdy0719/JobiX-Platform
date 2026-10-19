@@ -210,6 +210,32 @@ lock with recorded checksums, rejects partial unmanaged export schemas, and
 never enables rollout or provisions administrator runtime access. A trusted
 public database root certificate is required; verification is never disabled.
 
+### Resume layout Migration 022 — Development only
+
+The runner has an explicit, separately guarded `--apply-development-resume-layout-022`
+mode. It is pinned to Development project `lmouxhbjhtqdtiqijcee`, uses only
+`JOBIX_DEV_DATABASE_URL` plus a verified CA file, and takes the same
+`jobix_phase3_dev_migrations` transaction advisory lock as the other migration
+modes. Before applying anything it verifies ledger versions/checksums 012–021,
+the required layout/profile/idempotency schema and read RPC, absence of the exact
+new function signature, and that the creating role can own and execute the
+security-definer function without violating the referenced tables' RLS boundary.
+Migration 022 and its ledger row are committed atomically. The source checksum is
+pinned to the reviewed value:
+`d34f6dad4d9edcd301486d9d507bed7330c0fde66cfac3630bee087fa8366473`.
+
+Only after separate owner approval, set `JOBIX_DEV_DATABASE_CA_FILE` to the
+verified Development CA file path and run from `mobile/jobix`:
+
+```sh
+node tool/apply_phase3_dev.mjs \
+  --apply-development-resume-layout-022 \
+  --ca-file "$JOBIX_DEV_DATABASE_CA_FILE"
+```
+
+Do not use a Production URL or bypass the project's Development target guard.
+This command was not run as part of local implementation or testing.
+
 Operational tools: `tool/configure_phase3_bucket.mjs` requires explicit scoped
 expiry approval and preserves unrelated rules; `tool/build_phase3_dev.mjs`
 uploads only a fixed source allowlist and submits managed development builds;
