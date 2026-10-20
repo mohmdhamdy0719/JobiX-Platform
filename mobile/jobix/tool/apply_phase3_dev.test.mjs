@@ -8,10 +8,12 @@ import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {
   migrate,
+  migrateEducationCatalog,
   migrateProfileEntryDrafts,
   migrateResumeExportCost,
   migrateResumeLayout,
   verifyProfileEntryDraftMigrationSource,
+  verifyEducationCatalogMigrationSource,
   verifyResumeLayoutMigrationSource,
 } from './apply_phase3_dev.mjs';
 
@@ -713,4 +715,320 @@ test('Migration 024 rejects session-role or database identity mismatch',async()=
       assert.equal(f.state.rolledBack,true);
     });
   }
+});
+
+const educationCatalogVersion='202610190023_education_catalog';
+const educationCatalogHash='462f8ee5bd4e094539996615a8aa2b1433f257fa5cd6161eb3d811814d2d3372';
+const educationCatalogPath=new URL(
+  `../supabase/migrations/${educationCatalogVersion}.sql`,import.meta.url,
+);
+const educationPriorVersions=[...versions,'202610170022_resume_layout'];
+const syntheticEducationCa=
+  '-----BEGIN CERTIFICATE-----\nlocal-test-only\n-----END CERTIFICATE-----\n';
+
+async function educationCatalogFixture({
+  target=null,database='postgres',role='jobix_catalog_migrator',
+  sessionRole=null,unsafeRole=false,adminMembership=false,urlQuery='',
+  missingPrerequisite=false,privilegeFailure=false,ledgerState='prior',
+  schemaConflict=false,lockBusy=false,tableLockBusy=false,failAt=null,
+  postAssertionFailure=false,changedPrerequisite=null,
+}={}) {
+  const dir=await mkdtemp(join(os.tmpdir(),'jobix-migration-023-'));
+  const caFile=join(dir,'development-ca.pem');
+  await writeFile(caFile,syntheticEducationCa);
+  const originalUrl=process.env.JOBIX_DEV_DATABASE_URL;
+  const connectionTarget=target??
+    `${role}.lmouxhbjhtqdtiqijcee@aws-0-me-central1.pooler.supabase.com`;
+  const credentialTarget=connectionTarget.includes('@')&&
+      !connectionTarget.includes(':synthetic-password@')
+    ?connectionTarget.replace('@',':synthetic-password@')
+    :connectionTarget;
+  process.env.JOBIX_DEV_DATABASE_URL=
+    `postgresql://${credentialTarget}:5432/postgres${urlQuery}`;
+  const priorRows=[];
+  for(const version of educationPriorVersions) {
+    const text=await readFile(new URL(`../supabase/migrations/${version}.sql`,import.meta.url),'utf8');
+    priorRows.push({version,sha256:createHash('sha256').update(text).digest('hex')});
+  }
+  const state={
+    queries:[],migrationCount:0,ledgerInsertCount:0,committed:false,
+    rolledBack:false,schemaApplied:ledgerState==='applied'||ledgerState==='applied-plus-024',
+    ledgerRows:priorRows,poolCreated:false,
+  };
+  if(ledgerState==='missing-prior')state.ledgerRows.pop();
+  if(ledgerState==='prior-checksum-mismatch')state.ledgerRows[0].sha256='0'.repeat(64);
+  if(ledgerState==='prior-version-mismatch')state.ledgerRows[0].version='wrong-version';
+  if(['applied','applied-plus-024','applied-checksum-mismatch'].includes(ledgerState)) {
+    state.ledgerRows.push({version:educationCatalogVersion,sha256:
+      ledgerState==='applied-checksum-mismatch'?'0'.repeat(64):educationCatalogHash});
+  }
+  if(ledgerState==='applied-plus-024') {
+    state.ledgerRows.push({version:profileEntryDraftVersion,sha256:reviewedDraftHash});
+  }
+  const poolFactory=options=>{
+    state.poolCreated=true;
+    state.poolOptions=options;
+    return {
+      async connect() {
+        return {
+          async query(sql,params) {
+            state.queries.push({sql,params});
+            if(sql==='BEGIN'||sql.startsWith('SET LOCAL'))return {rows:[]};
+            if(sql.startsWith('LOCK TABLE')) {
+              if(tableLockBusy) {const error=Error('synthetic lock busy');error.code='55P03';throw error;}
+              return {rows:[]};
+            }
+            if(sql.includes('pg_try_advisory_xact_lock')) {
+              return {rows:[{acquired:!lockBusy}]};
+            }
+            if(sql.includes('current_database() AS database')) {
+              return {rows:[{
+                database,role,session_role:sessionRole??role,rolcanlogin:true,
+                rolsuper:unsafeRole,rolbypassrls:false,rolcreaterole:false,
+                rolcreatedb:false,no_admin_membership:!adminMembership,
+              }]};
+            }
+            if(sql.includes("to_regnamespace('public')")) {
+              return {rows:[{
+                public_schema:true,auth_schema:true,migration_ledger:true,
+                auth_uid:!missingPrerequisite,authenticated_role:true,
+                anon_role:true,service_role:true,
+              }]};
+            }
+            if(sql.includes("has_schema_privilege(current_user,'public','USAGE')")) {
+              return {rows:[{
+                public_usage:!privilegeFailure,public_create:!privilegeFailure,
+                auth_usage:!privilegeFailure,auth_uid_execute:!privilegeFailure,
+                ledger_permissions:!privilegeFailure,ledger_owner:!privilegeFailure,
+                ledger_rls:true,
+              }]};
+            }
+            if(sql==='SELECT version,sha256 FROM public.jobix_export_migrations ORDER BY version') {
+              return {rows:state.ledgerRows.map(row=>({...row}))};
+            }
+            if(sql.includes('CREATE TABLE public.education_institution_catalog')) {
+              state.migrationCount++;
+              state.schemaApplied=true;
+              if(failAt==='migration')throw Error('synthetic migration SQL failure');
+              return {rows:[]};
+            }
+            if(sql.includes('AS tables_complete')) {
+              const complete=state.schemaApplied&&!postAssertionFailure;
+              return {rows:[{
+                tables_complete:complete,columns_complete:complete,
+                indexes_complete:complete,constraints_complete:complete,
+                rls_complete:complete,policies_complete:complete,
+                comments_complete:complete,grants_complete:complete,
+                institution_count_complete:complete,institution_seed_complete:complete,
+                field_seed_complete:complete,ledger_matches:complete,
+              }]};
+            }
+            if(sql.includes('c.relname=ANY($1::text[])')) {
+              return {rows:schemaConflict?[{relname:'education_institution_catalog',relkind:'r'}]:[]};
+            }
+            if(sql.startsWith('INSERT INTO public.jobix_export_migrations')) {
+              state.ledgerInsertCount++;
+              if(failAt==='ledger')throw Error('synthetic ledger insertion failure');
+              state.ledgerRows.push({version:params[0],sha256:params[1]});
+              return {rows:[]};
+            }
+            if(sql==='COMMIT') {
+              if(failAt==='commit')throw Error('synthetic connection loss during COMMIT');
+              state.committed=true;
+              return {rows:[]};
+            }
+            if(sql==='ROLLBACK') {
+              state.rolledBack=true;
+              state.schemaApplied=false;
+              state.ledgerRows=priorRows.map(row=>({...row}));
+              return {rows:[]};
+            }
+            throw Error(`Unexpected mocked Migration 023 query: ${sql.slice(0,100)}`);
+          },
+          release(){state.released=true;},
+        };
+      },
+      async end(){state.ended=true;},
+    };
+  };
+  return {
+    caFile,state,poolFactory,
+    readMigrationSource:async version=>{
+      const text=await readFile(new URL(`../supabase/migrations/${version}.sql`,import.meta.url),'utf8');
+      return version===changedPrerequisite?`${text}\n-- test mutation`:text;
+    },
+    restore:async()=>{
+      if(originalUrl===undefined)delete process.env.JOBIX_DEV_DATABASE_URL;
+      else process.env.JOBIX_DEV_DATABASE_URL=originalUrl;
+      await rm(dir,{recursive:true,force:true});
+    },
+  };
+}
+
+async function withEducationFixture(options,fn) {
+  const fixture=await educationCatalogFixture(options);
+  try {await fn(fixture);} finally {await fixture.restore();}
+}
+
+test('Migration 023 source matches the independently pinned SHA-256',async()=>{
+  const source=await readFile(educationCatalogPath,'utf8');
+  assert.equal(verifyEducationCatalogMigrationSource(source),educationCatalogHash);
+  await assert.rejects(async()=>verifyEducationCatalogMigrationSource(`${source}\n-- changed`),{
+    message:'MIGRATION_SOURCE_CHECKSUM_MISMATCH',
+  });
+});
+
+test('Migration 023 rejects a changed 012–022 source before connecting',async()=>{
+  await withEducationFixture({changedPrerequisite:educationPriorVersions[0]},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      readMigrationSource:f.readMigrationSource,
+    }),{message:'PREREQUISITE_SOURCE_CHECKSUM_MISMATCH'});
+    assert.equal(f.state.poolCreated,false);
+  });
+});
+
+test('Migration 023 rejects wrong target, elevated identity, and admin membership',async()=>{
+  await withEducationFixture({
+    target:'postgres.otherproject@aws-0-me-central1.pooler.supabase.com',
+  },async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'DEV_TARGET_REJECTED'});
+    assert.equal(f.state.poolCreated,false);
+  });
+  for(const options of [{role:'postgres'},{unsafeRole:true},{adminMembership:true}]) {
+    await withEducationFixture(options,async f=>{
+      await assert.rejects(migrateEducationCatalog({
+        approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      }),{message:'MIGRATION_IDENTITY_UNSAFE'});
+      assert.equal(f.state.migrationCount,0);
+      assert.equal(f.state.ledgerInsertCount,0);
+    });
+  }
+});
+
+test('Migration 023 fails closed on missing schema prerequisites or privileges',async()=>{
+  for(const [options,error] of [
+    [{missingPrerequisite:true},'MIGRATION_023_PREREQUISITE_SCHEMA_MISSING'],
+    [{privilegeFailure:true},'MIGRATION_023_REQUIRED_PRIVILEGES_MISSING'],
+  ]) await withEducationFixture(options,async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:error});
+    assert.equal(f.state.migrationCount,0);
+    assert.equal(f.state.ledgerInsertCount,0);
+  });
+});
+
+test('Migration 023 rejects missing, reordered, or mismatched prerequisite ledger entries',async()=>{
+  for(const ledgerState of [
+    'missing-prior','prior-version-mismatch','prior-checksum-mismatch',
+  ]) await withEducationFixture({ledgerState},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),ledgerState==='prior-checksum-mismatch'
+      ?{message:'MIGRATION_CHECKSUM_CONFLICT'}
+      :{message:'MIGRATION_LEDGER_STATE_CONFLICT'});
+    assert.equal(f.state.migrationCount,0);
+    assert.equal(f.state.ledgerInsertCount,0);
+  });
+});
+
+test('Migration 023 rejects partial schema and inconsistent later ledger state',async()=>{
+  await withEducationFixture({schemaConflict:true},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_023_SCHEMA_CONFLICT'});
+    assert.equal(f.state.migrationCount,0);
+  });
+  await withEducationFixture({ledgerState:'applied-checksum-mismatch'},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_CHECKSUM_CONFLICT'});
+    assert.equal(f.state.migrationCount,0);
+  });
+});
+
+test('Migration 023 SQL and ledger failures roll back together',async()=>{
+  for(const failAt of ['migration','ledger']) await withEducationFixture({failAt},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),new RegExp(`synthetic ${failAt==='migration'?'migration SQL':'ledger insertion'} failure`));
+    assert.equal(f.state.schemaApplied,false);
+    assert.equal(f.state.ledgerRows.length,educationPriorVersions.length);
+    assert.equal(f.state.committed,false);
+    assert.equal(f.state.rolledBack,true);
+  });
+});
+
+test('Migration 023 lock contention aborts before DDL',async()=>{
+  for(const options of [{lockBusy:true},{tableLockBusy:true}]) {
+    await withEducationFixture(options,async f=>{
+      await assert.rejects(migrateEducationCatalog({
+        approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      }),{message:options.lockBusy?'MIGRATION_LOCK_BUSY':'MIGRATION_LOCK_CONTENTION'});
+      assert.equal(f.state.migrationCount,0);
+      assert.equal(f.state.ledgerInsertCount,0);
+    });
+  }
+});
+
+test('Migration 023 commit uncertainty is never reported as a definite rollback',async()=>{
+  await withEducationFixture({failAt:'commit'},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_COMMIT_OUTCOME_UNKNOWN'});
+    assert.equal(f.state.committed,false);
+  });
+});
+
+test('Migration 023 applies atomically with verified TLS and shared advisory lock',async()=>{
+  await withEducationFixture({},async f=>{
+    assert.equal(await migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),'applied');
+    assert.equal(f.state.poolOptions.ssl.rejectUnauthorized,true);
+    assert.equal(f.state.poolOptions.max,1);
+    assert.equal(f.state.poolOptions.options,'');
+    assert.equal(f.state.migrationCount,1);
+    assert.equal(f.state.ledgerInsertCount,1);
+    assert.equal(f.state.ledgerRows.at(-1).version,educationCatalogVersion);
+    assert.equal(f.state.ledgerRows.at(-1).sha256,educationCatalogHash);
+    assert.equal(f.state.committed,true);
+    assert.equal(f.state.rolledBack,false);
+    assert.ok(f.state.queries.some(query=>query.sql.includes(
+      "pg_try_advisory_xact_lock(hashtext('jobix_phase3_dev_migrations'))")));
+  });
+});
+
+test('Migration 023 exact ledger plus complete schema is verification-only',async()=>{
+  for(const ledgerState of ['applied','applied-plus-024']) {
+    await withEducationFixture({ledgerState},async f=>{
+      assert.equal(await migrateEducationCatalog({
+        approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      }),'already-applied');
+      assert.equal(f.state.migrationCount,0);
+      assert.equal(f.state.ledgerInsertCount,0);
+      assert.equal(f.state.committed,true);
+    });
+  }
+  await withEducationFixture({ledgerState:'applied',postAssertionFailure:true},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_023_POST_ASSERTION_FAILED'});
+    assert.equal(f.state.migrationCount,0);
+    assert.equal(f.state.rolledBack,true);
+  });
+});
+
+test('Migration 023 CLI rejects ambiguous flags before any connection',()=>{
+  const result=spawnSync(process.execPath,[
+    fileURLToPath(new URL('./apply_phase3_dev.mjs',import.meta.url)),
+    '--apply-development-education-catalog-023','--apply-development',
+    '--ca-file','unused',
+  ],{encoding:'utf8',env:{},timeout:10000});
+  assert.equal(result.status,1);
+  assert.match(result.stderr,/BLOCKED_AMBIGUOUS_MODE/);
+  assert.equal(result.stdout,'');
 });

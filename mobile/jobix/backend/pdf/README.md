@@ -236,6 +236,52 @@ node tool/apply_phase3_dev.mjs \
 Do not use a Production URL or bypass the project's Development target guard.
 This command was not run as part of local implementation or testing.
 
+### Education catalog Migration 023 — Development only
+
+The runner has a separate `--apply-development-education-catalog-023` mode,
+pinned to Development project `lmouxhbjhtqdtiqijcee`. It uses the existing
+`JOBIX_DEV_DATABASE_URL` guard, verified CA/TLS, and the same
+`jobix_phase3_dev_migrations` transaction advisory lock. It verifies the exact
+012–022 source and ledger checksums, the pinned Migration 023 SHA-256
+`462f8ee5bd4e094539996615a8aa2b1433f257fa5cd6161eb3d811814d2d3372`, absence
+of conflicting catalog relations/index names, and the required Auth roles and
+`auth.uid()` function before applying the migration.
+
+The execution role must be a non-elevated approved login, own
+`public.jobix_export_migrations` with RLS enabled but not forced, have `USAGE`
+and `CREATE` on `public`, and have `USAGE` on `auth` plus `EXECUTE` on
+`auth.uid()`. The runner does not create roles, grant privileges, alter owners,
+or use the administrator `postgres` identity. If those prerequisites are not
+already satisfied, it stops before DDL. Migration 023 and its ledger row are
+committed in the same transaction; an unknown COMMIT response requires
+read-only reconciliation before any retry.
+
+The disposable test mode is:
+
+```sh
+bash tool/test_rls.sh --education-catalog-runner-only
+```
+
+This mode uses a fresh local PostgreSQL instance over a Unix socket with TCP
+disabled, bootstraps through 022, applies 023 through the guarded runner, and
+runs the existing education-catalog RLS/provenance tests. It does not use a
+remote URL or apply Migration 024.
+
+Only after separate owner approval, confirmed Development backup/recovery
+evidence, and confirmation that an approved execution identity meets the
+prerequisites above, the command would be run from `mobile/jobix`:
+
+```sh
+node tool/apply_phase3_dev.mjs \
+  --apply-development-education-catalog-023 \
+  --ca-file "$JOBIX_DEV_DATABASE_CA_FILE"
+```
+
+Expected post-state is 139 institution rows across 7 types, 62 study-field
+rows, the checked-in indexes/constraints/comments/RLS policies and grants, and
+the exact 023 ledger checksum. The built-in suggestion fallback remains
+unchanged. This command was not run during local implementation or testing.
+
 Operational tools: `tool/configure_phase3_bucket.mjs` requires explicit scoped
 expiry approval and preserves unrelated rules; `tool/build_phase3_dev.mjs`
 uploads only a fixed source allowlist and submits managed development builds;

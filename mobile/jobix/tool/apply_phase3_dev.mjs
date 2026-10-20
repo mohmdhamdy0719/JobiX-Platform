@@ -38,6 +38,46 @@ const profileEntryDraftPrerequisites=[
   ['202610170022_resume_layout','d34f6dad4d9edcd301486d9d507bed7330c0fde66cfac3630bee087fa8366473'],
   ['202610190023_education_catalog','462f8ee5bd4e094539996615a8aa2b1433f257fa5cd6161eb3d811814d2d3372'],
 ];
+const educationCatalogVersion='202610190023_education_catalog';
+// Reviewed independently against the exact checked-in Migration 023 source.
+const educationCatalogExpectedSha256=
+  '462f8ee5bd4e094539996615a8aa2b1433f257fa5cd6161eb3d811814d2d3372';
+const educationCatalogPrerequisites=profileEntryDraftPrerequisites.slice(0,11);
+const educationCatalogRelations=[
+  'education_institution_catalog','study_field_catalog',
+];
+const educationCatalogIndexes=[
+  'education_institution_catalog_pkey',
+  'education_institution_catalog_name_en_uq',
+  'education_institution_catalog_name_ar_uq',
+  'education_institution_catalog_type_idx',
+  'study_field_catalog_pkey',
+  'study_field_catalog_name_en_idx',
+  'study_field_catalog_name_ar_idx',
+];
+const educationCatalogExpectedColumns=[
+  ['education_institution_catalog','institution_key','text'],
+  ['education_institution_catalog','name_en','text'],
+  ['education_institution_catalog','name_ar','text'],
+  ['education_institution_catalog','institution_type','text'],
+  ['education_institution_catalog','aliases_en','ARRAY'],
+  ['education_institution_catalog','aliases_ar','ARRAY'],
+  ['education_institution_catalog','source_name','text'],
+  ['education_institution_catalog','source_url','text'],
+  ['education_institution_catalog','source_note','text'],
+  ['education_institution_catalog','source_checked_on','date'],
+  ['education_institution_catalog','catalog_version','integer'],
+  ['study_field_catalog','field_code','text'],
+  ['study_field_catalog','name_en','text'],
+  ['study_field_catalog','name_ar','text'],
+  ['study_field_catalog','aliases_en','ARRAY'],
+  ['study_field_catalog','aliases_ar','ARRAY'],
+  ['study_field_catalog','source_name','text'],
+  ['study_field_catalog','source_url','text'],
+  ['study_field_catalog','source_note','text'],
+  ['study_field_catalog','source_checked_on','date'],
+  ['study_field_catalog','catalog_version','integer'],
+];
 const profileEntryDraftTables=[
   'profile_experiences','profile_education','profile_certifications',
   'profile_achievements','profile_projects','profile_skills','profile_languages',
@@ -93,6 +133,157 @@ export function verifyProfileEntryDraftMigrationSource(source) {
     throw Error('MIGRATION_SOURCE_CHECKSUM_MISMATCH');
   }
   return actual;
+}
+
+export function verifyEducationCatalogMigrationSource(source) {
+  const actual=createHash('sha256').update(source).digest('hex');
+  if(actual!==educationCatalogExpectedSha256) {
+    throw Error('MIGRATION_SOURCE_CHECKSUM_MISMATCH');
+  }
+  return actual;
+}
+
+function educationCatalogMigrationBody(source) {
+  const beginMatches=[...source.matchAll(/^BEGIN;[ \t]*$/gm)];
+  const commitMatches=[...source.matchAll(/^COMMIT;[ \t]*$/gm)];
+  if(beginMatches.length!==1||commitMatches.length!==1) {
+    throw Error('MIGRATION_023_TRANSACTION_WRAPPER_INVALID');
+  }
+  const begin=beginMatches[0];
+  const commit=commitMatches[0];
+  const prefix=source.slice(0,begin.index);
+  const suffix=source.slice(commit.index+commit[0].length);
+  if(begin.index>=commit.index||
+    prefix.split(/\r?\n/).some(line=>line.trim()&&!line.trimStart().startsWith('--'))||
+    suffix.trim()!=='') {
+    throw Error('MIGRATION_023_TRANSACTION_WRAPPER_INVALID');
+  }
+  return source.slice(0,begin.index)+
+    source.slice(begin.index+begin[0].length,commit.index)+suffix;
+}
+
+function verifyEducationCatalogLedger(rows) {
+  const priorCount=educationCatalogPrerequisites.length;
+  if(rows.length<priorCount||rows.length>priorCount+2) {
+    throw Error('MIGRATION_LEDGER_STATE_CONFLICT');
+  }
+  for(let index=0;index<priorCount;index++) {
+    const [version,sha256]=educationCatalogPrerequisites[index];
+    if(rows[index]?.version!==version)throw Error('MIGRATION_LEDGER_STATE_CONFLICT');
+    if(rows[index]?.sha256!==sha256)throw Error('MIGRATION_CHECKSUM_CONFLICT');
+  }
+  if(rows.length===priorCount)return false;
+  if(rows[priorCount]?.version!==educationCatalogVersion) {
+    throw Error('MIGRATION_LEDGER_STATE_CONFLICT');
+  }
+  if(rows[priorCount]?.sha256!==educationCatalogExpectedSha256) {
+    throw Error('MIGRATION_CHECKSUM_CONFLICT');
+  }
+  if(rows.length===priorCount+2&&
+    (rows[priorCount+1]?.version!==profileEntryDraftVersion||
+     rows[priorCount+1]?.sha256!==profileEntryDraftExpectedSha256)) {
+    throw Error(rows[priorCount+1]?.version===profileEntryDraftVersion
+      ?'MIGRATION_CHECKSUM_CONFLICT':'MIGRATION_LEDGER_STATE_CONFLICT');
+  }
+  return true;
+}
+
+async function assertEducationCatalogPostState(client,sourceHash) {
+  const state=(await client.query(`SELECT
+    (SELECT count(*)=2 FROM pg_class c
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+        AND c.relkind='r') AS tables_complete,
+    (SELECT count(*)=21 FROM information_schema.columns
+      WHERE table_schema='public' AND table_name=ANY($1::text[])
+      AND NOT EXISTS (
+        SELECT 1 FROM unnest($7::text[],$8::text[],$9::text[])
+          AS expected(table_name,column_name,data_type)
+        WHERE NOT EXISTS (
+          SELECT 1 FROM information_schema.columns c
+          WHERE c.table_schema='public' AND c.table_name=expected.table_name
+            AND c.column_name=expected.column_name AND c.data_type=expected.data_type)
+      )) AS columns_complete,
+    (SELECT count(*)=7 AND bool_and(i.indisvalid AND i.indisready)
+      FROM pg_class idx
+      JOIN pg_namespace n ON n.oid=idx.relnamespace
+      JOIN pg_index i ON i.indexrelid=idx.oid
+      WHERE n.nspname='public' AND idx.relname=ANY($2::text[])
+        AND idx.relkind='i') AS indexes_complete,
+    (SELECT count(*)=10 AND count(*) FILTER(WHERE con.contype='p')=2
+        AND count(*) FILTER(WHERE con.contype='c')=8 AND bool_and(con.convalidated)
+      FROM pg_constraint con
+      JOIN pg_class tbl ON tbl.oid=con.conrelid
+      JOIN pg_namespace n ON n.oid=tbl.relnamespace
+      WHERE n.nspname='public' AND tbl.relname=ANY($1::text[])
+        AND con.contype IN ('p','c')) AS constraints_complete,
+    (SELECT count(*)=2 AND bool_and(c.relrowsecurity AND NOT c.relforcerowsecurity)
+      FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+        AND c.relkind='r') AS rls_complete,
+    (SELECT count(*)=2 AND bool_and(p.cmd='SELECT'
+        AND p.roles=ARRAY['authenticated']::name[]
+        AND p.permissive='PERMISSIVE'
+        AND lower(coalesce(p.qual,'')) LIKE '%auth.uid%'
+        AND ((p.tablename='education_institution_catalog'
+             AND p.policyname='education_institution_catalog_authenticated_read')
+          OR (p.tablename='study_field_catalog'
+             AND p.policyname='study_field_catalog_authenticated_read')))
+      FROM pg_policies p
+      WHERE p.schemaname='public'
+        AND p.tablename=ANY($1::text[])) AS policies_complete,
+    (SELECT obj_description('public.education_institution_catalog'::regclass,'pg_class')
+        = $3
+      AND obj_description('public.study_field_catalog'::regclass,'pg_class')=$4)
+        AS comments_complete,
+    has_table_privilege('authenticated',
+      'public.education_institution_catalog','SELECT')
+      AND has_table_privilege('authenticated',
+      'public.study_field_catalog','SELECT')
+      AND NOT has_table_privilege('authenticated',
+      'public.education_institution_catalog',
+      'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+      AND NOT has_table_privilege('authenticated',
+      'public.study_field_catalog',
+      'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+      AND NOT has_table_privilege('anon',
+      'public.education_institution_catalog',
+      'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+      AND NOT has_table_privilege('anon','public.study_field_catalog',
+      'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+      AND NOT has_table_privilege('service_role',
+      'public.education_institution_catalog',
+      'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+      AND NOT has_table_privilege('service_role',
+      'public.study_field_catalog',
+      'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+      AND NOT EXISTS(
+        SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace,
+          LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) acl
+        WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+          AND acl.grantee=0)
+        AS grants_complete,
+    (SELECT count(*)=139 FROM public.education_institution_catalog)
+      AS institution_count_complete,
+    (SELECT count(DISTINCT institution_type)=7
+      AND bool_and(catalog_version=1 AND source_name<>'' AND source_url<>''
+        AND source_note<>'' AND source_checked_on IS NOT NULL)
+      FROM public.education_institution_catalog) AS institution_seed_complete,
+    (SELECT count(*)=62 AND bool_and(catalog_version=1 AND source_name<>''
+        AND source_url<>'' AND source_note<>'' AND source_checked_on IS NOT NULL)
+      FROM public.study_field_catalog) AS field_seed_complete,
+    EXISTS(SELECT 1 FROM public.jobix_export_migrations
+      WHERE version=$5 AND sha256=$6) AS ledger_matches`,
+  [educationCatalogRelations,educationCatalogIndexes,
+    'Versioned, curated suggestions only. Profile institution remains free text; not an exhaustive or accreditation authority.',
+    'Curated common fields mapped to UNESCO ISCED-F 2013; not exhaustive and not a restriction on free-text Profile values.',
+    educationCatalogVersion,sourceHash,
+    educationCatalogExpectedColumns.map(column=>column[0]),
+    educationCatalogExpectedColumns.map(column=>column[1]),
+    educationCatalogExpectedColumns.map(column=>column[2])])).rows[0];
+  if(!state||Object.values(state).some(value=>value!==true)) {
+    throw Error('MIGRATION_023_POST_ASSERTION_FAILED');
+  }
 }
 
 export async function migrateResumeLayout({
@@ -446,6 +637,156 @@ async function assertProfileEntryDraftPostState(client,sourceHash) {
     installed.visible_client_revoked!==true||installed.snapshot_client_revoked!==true||
     installed.trigger_client_revoked!==true||installed.ledger_matches!==true) {
     throw Error('MIGRATION_024_POST_ASSERTION_FAILED');
+  }
+}
+
+export async function migrateEducationCatalog({
+  caFile,approved=false,poolFactory=options=>new Pool(options),
+  readMigrationSource=version=>readFile(resolve(import.meta.dirname,
+    '../supabase/migrations',version+'.sql'),'utf8'),
+}={}) {
+  if(!approved||!caFile)throw Error('EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED');
+  const source=await readMigrationSource(educationCatalogVersion);
+  const sourceHash=verifyEducationCatalogMigrationSource(source);
+  const migrationBody=educationCatalogMigrationBody(source);
+  for(const [version,expectedHash] of educationCatalogPrerequisites) {
+    const priorSource=await readMigrationSource(version);
+    const actualHash=createHash('sha256').update(priorSource).digest('hex');
+    if(actualHash!==expectedHash)throw Error('PREREQUISITE_SOURCE_CHECKSUM_MISMATCH');
+  }
+
+  const rawUrl=process.env.JOBIX_DEV_DATABASE_URL;
+  if(!rawUrl)throw Error('DEV_TARGET_REJECTED');
+  const uri=new URL(rawUrl);
+  if(!['postgres:','postgresql:'].includes(uri.protocol)||
+    !uri.username.endsWith('.'+ref)||
+    uri.username.length<=ref.length+1||!uri.password||
+    !uri.hostname.endsWith('.pooler.supabase.com')||
+    uri.pathname!='/postgres'||uri.port!=='5432'||uri.hash||
+    [...uri.searchParams.keys()].some(key=>
+      !['sslmode','sslrootcert','sslcert','sslkey'].includes(key))) {
+    throw Error('DEV_TARGET_REJECTED');
+  }
+  for(const key of ['sslmode','sslrootcert','sslcert','sslkey'])uri.searchParams.delete(key);
+  const ca=await readFile(caFile,'utf8');
+  if(!ca.trimStart().startsWith('-----BEGIN CERTIFICATE-----')||
+    !ca.includes('-----END CERTIFICATE-----'))throw Error('DEV_CA_FILE_INVALID');
+
+  const configuredRole=uri.username.slice(0,-ref.length-1);
+  const pool=poolFactory({connectionString:uri.toString(),max:1,options:'',
+    connectionTimeoutMillis:15000,
+    ssl:{rejectUnauthorized:true,ca},statement_timeout:30000});
+  let client,transactionOpen=false,commitStarted=false;
+  try {
+    client=await pool.connect();
+    await client.query('BEGIN');
+    transactionOpen=true;
+    await client.query("SET LOCAL lock_timeout='1s'");
+    await client.query('SET LOCAL statement_timeout=30000');
+    await client.query('SET LOCAL row_security=off');
+    const advisory=(await client.query(
+      "SELECT pg_try_advisory_xact_lock(hashtext('jobix_phase3_dev_migrations')) AS acquired",
+    )).rows[0];
+    if(advisory?.acquired!==true)throw Error('MIGRATION_LOCK_BUSY');
+
+    const identity=(await client.query(`SELECT current_database() AS database,
+      current_user AS role,session_user AS session_role,
+      r.rolcanlogin,r.rolsuper,r.rolbypassrls,
+      r.rolcreaterole,r.rolcreatedb,
+      NOT EXISTS(SELECT 1 FROM pg_roles elevated
+        WHERE elevated.oid<>r.oid AND
+          (elevated.rolsuper OR elevated.rolbypassrls OR elevated.rolcreaterole OR
+           elevated.rolcreatedb OR elevated.rolname IN
+            ('postgres','supabase_admin','service_role','authenticator',
+             'supabase_auth_admin','supabase_storage_admin'))
+          AND pg_has_role(r.oid,elevated.oid,'MEMBER')) AS no_admin_membership
+      FROM pg_roles r WHERE r.rolname=current_user`)).rows[0];
+    if(identity?.database!=='postgres'||identity.role!==configuredRole||
+      identity.session_role!==configuredRole)throw Error('DEV_TARGET_IDENTITY_MISMATCH');
+    if(identity.rolcanlogin!==true||identity.rolsuper!==false||
+      identity.rolbypassrls!==false||identity.rolcreaterole!==false||
+      identity.rolcreatedb!==false||identity.no_admin_membership!==true||
+      /^(postgres|anon|authenticated|service_role|authenticator)$/.test(identity.role)||
+      identity.role.startsWith('supabase_')||identity.role.startsWith('jobix_export_')) {
+      throw Error('MIGRATION_IDENTITY_UNSAFE');
+    }
+
+    const prerequisites=(await client.query(`SELECT
+      to_regnamespace('public') IS NOT NULL AS public_schema,
+      to_regnamespace('auth') IS NOT NULL AS auth_schema,
+      to_regclass('public.jobix_export_migrations') IS NOT NULL AS migration_ledger,
+      to_regprocedure('auth.uid()') IS NOT NULL AS auth_uid,
+      to_regrole('authenticated') IS NOT NULL AS authenticated_role,
+      to_regrole('anon') IS NOT NULL AS anon_role,
+      to_regrole('service_role') IS NOT NULL AS service_role`)).rows[0];
+    if(!prerequisites||Object.values(prerequisites).some(value=>value!==true)) {
+      throw Error('MIGRATION_023_PREREQUISITE_SCHEMA_MISSING');
+    }
+
+    const privileges=(await client.query(`SELECT
+      has_schema_privilege(current_user,'public','USAGE') AS public_usage,
+      has_schema_privilege(current_user,'public','CREATE') AS public_create,
+      has_schema_privilege(current_user,'auth','USAGE') AS auth_usage,
+      has_function_privilege(current_user,'auth.uid()','EXECUTE') AS auth_uid_execute,
+      has_table_privilege(current_user,'public.jobix_export_migrations','SELECT')
+        AND has_table_privilege(current_user,'public.jobix_export_migrations','INSERT')
+        AS ledger_permissions,
+      c.relowner=(SELECT oid FROM pg_roles WHERE rolname=current_user)
+        AND NOT c.relforcerowsecurity AS ledger_owner,
+      c.relrowsecurity AS ledger_rls
+      FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname='jobix_export_migrations'`)).rows[0];
+    if(!privileges||privileges.public_usage!==true||
+      privileges.public_create!==true||privileges.auth_usage!==true||
+      privileges.auth_uid_execute!==true||privileges.ledger_permissions!==true||
+      privileges.ledger_owner!==true) {
+      throw Error('MIGRATION_023_REQUIRED_PRIVILEGES_MISSING');
+    }
+    if(privileges.ledger_rls!==true)throw Error('MIGRATION_023_LEDGER_RLS_REQUIRED');
+
+    await client.query(
+      'LOCK TABLE public.jobix_export_migrations IN SHARE ROW EXCLUSIVE MODE NOWAIT',
+    );
+    const ledger=(await client.query(
+      'SELECT version,sha256 FROM public.jobix_export_migrations ORDER BY version',
+    )).rows;
+    const alreadyApplied=verifyEducationCatalogLedger(ledger);
+    if(alreadyApplied) {
+      await assertEducationCatalogPostState(client,sourceHash);
+      commitStarted=true;
+      await client.query('COMMIT');
+      transactionOpen=false;
+      return 'already-applied';
+    }
+
+    const conflicts=(await client.query(`SELECT c.relname,c.relkind
+      FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname=ANY($1::text[])`,
+    [[...educationCatalogRelations,...educationCatalogIndexes]])).rows;
+    if(conflicts.length)throw Error('MIGRATION_023_SCHEMA_CONFLICT');
+
+    // The checked-in file's exact hash was verified above. Only its standalone
+    // transaction wrappers are removed so the ledger insert shares this txn.
+    await client.query(migrationBody);
+    await client.query(
+      'INSERT INTO public.jobix_export_migrations(version,sha256) VALUES($1,$2)',
+      [educationCatalogVersion,sourceHash],
+    );
+    await assertEducationCatalogPostState(client,sourceHash);
+    commitStarted=true;
+    await client.query('COMMIT');
+    transactionOpen=false;
+    return 'applied';
+  } catch(error) {
+    if(client&&transactionOpen)await client.query('ROLLBACK').catch(()=>{});
+    if(commitStarted)throw Error('MIGRATION_COMMIT_OUTCOME_UNKNOWN');
+    if(error?.code==='55P03'||error?.code==='40P01') {
+      throw Error('MIGRATION_LOCK_CONTENTION');
+    }
+    throw error;
+  } finally {
+    try { client?.release(); } catch {}
+    try { await pool.end(); } catch {}
   }
 }
 
@@ -1071,6 +1412,7 @@ if(process.argv[1]===import.meta.filename) {
   const costOutputUnitMode=process.argv.includes('--apply-development-resume-export-cost-output-unit-021');
   const resumeLayoutMode=process.argv.includes('--apply-development-resume-layout-022');
   const profileEntryDraftMode=process.argv.includes('--apply-development-profile-entry-drafts-024');
+  const educationCatalogMode=process.argv.includes('--apply-development-education-catalog-023');
   const legacyMode=process.argv.includes('--apply-development');
   const profileDraftArgs=process.argv.slice(2);
   const safeCostFailures=new Set([
@@ -1081,13 +1423,52 @@ if(process.argv[1]===import.meta.filename) {
     'EXPORT_GATES_CHANGED','ACCOUNTING_CONFIGURATION_NOT_READY',
     'COST_OUTPUT_UNIT_PRECONDITION_FAILED',
   ]);
-  if(profileEntryDraftMode&&
+  if(educationCatalogMode&&
+    (profileEntryDraftMode||resumeLayoutMode||costMode||costOutputUnitMode||legacyMode)) {
+    console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
+  } else if(profileEntryDraftMode&&
     (resumeLayoutMode||costMode||costOutputUnitMode||legacyMode)) {
     console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
   } else if(resumeLayoutMode&&(costMode||costOutputUnitMode||legacyMode)) {
     console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
   } else if((costMode&&legacyMode)||(costOutputUnitMode&&(costMode||legacyMode))) {
     console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
+  } else if(educationCatalogMode) {
+    const modeFlags=profileDraftArgs.filter(argument=>argument.startsWith('--apply-'));
+    const caFlags=profileDraftArgs.filter(argument=>argument==='--ca-file');
+    const caIndex=profileDraftArgs.indexOf('--ca-file');
+    if(profileDraftArgs.length!==3||modeFlags.length!==1||
+      modeFlags[0]!=='--apply-development-education-catalog-023'||
+      caFlags.length!==1||caIndex<0||!profileDraftArgs[caIndex+1]||
+      profileDraftArgs[caIndex+1].startsWith('--')) {
+      console.error('DEVELOPMENT_EDUCATION_CATALOG_023_BLOCKED_AMBIGUOUS_MODE');
+      process.exitCode=1;
+    } else {
+      migrateEducationCatalog({caFile:profileDraftArgs[caIndex+1],approved:true})
+        .then(result=>console.log(result==='applied'
+          ?'DEVELOPMENT_MIGRATION_023_APPLIED_EDUCATION_CATALOG'
+          :'DEVELOPMENT_MIGRATION_023_ALREADY_APPLIED_VERIFIED'))
+        .catch(error=>{
+          const safeFailures=new Set([
+            'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED','DEV_TARGET_REJECTED',
+            'DEV_TARGET_IDENTITY_MISMATCH','DEV_CA_FILE_INVALID',
+            'MIGRATION_SOURCE_CHECKSUM_MISMATCH',
+            'PREREQUISITE_SOURCE_CHECKSUM_MISMATCH',
+            'MIGRATION_IDENTITY_UNSAFE','MIGRATION_LOCK_BUSY',
+            'MIGRATION_LOCK_CONTENTION','MIGRATION_023_PREREQUISITE_SCHEMA_MISSING',
+            'MIGRATION_023_REQUIRED_PRIVILEGES_MISSING',
+            'MIGRATION_023_LEDGER_RLS_REQUIRED','MIGRATION_LEDGER_STATE_CONFLICT',
+            'MIGRATION_CHECKSUM_CONFLICT','MIGRATION_023_SCHEMA_CONFLICT',
+            'MIGRATION_023_TRANSACTION_WRAPPER_INVALID',
+            'MIGRATION_023_POST_ASSERTION_FAILED',
+            'MIGRATION_COMMIT_OUTCOME_UNKNOWN',
+          ]);
+          const reason=safeFailures.has(error?.message)
+            ?error.message:'NO_TLS_OR_ADMIN_FALLBACK';
+          console.error(`DEVELOPMENT_EDUCATION_CATALOG_023_BLOCKED_${reason}`);
+          process.exitCode=1;
+        });
+    }
   } else if(profileEntryDraftMode) {
     const modeFlags=profileDraftArgs.filter(argument=>argument.startsWith('--apply-'));
     const caFlags=profileDraftArgs.filter(argument=>argument==='--ca-file');
