@@ -19,12 +19,40 @@ DECLARE
   response jsonb;
   replay jsonb;
   score_before numeric;
+  section_key text;
+  config_before jsonb;
 BEGIN
   SELECT id,profile_version INTO p_id,version_now
     FROM public.career_profiles
     WHERE user_id='65000000-0000-0000-0000-000000000001'
       AND slot_number=1 AND status='ACTIVE';
   ASSERT p_id IS NOT NULL, 'synthetic profile fixture missing';
+  PERFORM public.save_resume_layout(
+    gen_random_uuid(),p_id,version_now,0,'en','["certification"]',
+    '["skill","summary","target_role","experience","volunteer","education","certification","achievement","project","language"]'
+  );
+  SELECT cp.profile_version INTO version_now FROM public.career_profiles cp
+    WHERE cp.id=p_id;
+  config_before:=public.read_resume_configuration(p_id);
+  ASSERT config_before IS NOT NULL, 'saved Layout fixture missing';
+  FOREACH section_key IN ARRAY ARRAY[
+    'experience','volunteer','education','certification','achievement',
+    'project','skill','language'
+  ] LOOP
+    BEGIN
+      PERFORM public.save_profile_entry(
+        gen_random_uuid(),p_id,version_now,
+        jsonb_build_object('type','upsert_item','section',section_key,
+          'value',jsonb_build_object('id',gen_random_uuid())),
+        false
+      );
+      RAISE EXCEPTION 'assertion: incomplete entry became Complete';
+    EXCEPTION WHEN raise_exception THEN
+      IF SQLERRM<>'VALIDATION_FAILED' THEN RAISE; END IF;
+    END;
+  END LOOP;
+  ASSERT (SELECT cp.profile_version FROM public.career_profiles cp WHERE cp.id=p_id)
+    =version_now, 'rejected incomplete saves changed the profile';
 
   mutation:=jsonb_build_object(
     'type','upsert_item','section','experience',
@@ -142,6 +170,54 @@ BEGIN
   );
   ASSERT jsonb_array_length(response->'data'->'languages')=0;
 
+  FOREACH section_key IN ARRAY ARRAY['education','certification','achievement'] LOOP
+    SELECT cp.profile_version INTO version_now FROM public.career_profiles cp
+      WHERE cp.id=p_id;
+    response:=public.save_profile_entry(
+      gen_random_uuid(),p_id,version_now,
+      jsonb_build_object('type','upsert_item','section',section_key,
+        'value',jsonb_build_object('id',gen_random_uuid())),
+      true
+    );
+  END LOOP;
+  ASSERT jsonb_array_length(response->'data'->'education')=0;
+  ASSERT jsonb_array_length(response->'data'->'certifications')=0;
+  ASSERT jsonb_array_length(response->'data'->'achievements')=0;
+  ASSERT public.read_resume_configuration(p_id)=config_before,
+    'saving Drafts changed saved Resume Layout configuration';
+
+  -- Discard is also status-guarded on the server. A stale Draft card must not
+  -- delete a now-Complete entry even with a freshly loaded profile version.
+  SELECT cp.profile_version INTO version_now FROM public.career_profiles cp
+    WHERE cp.id=p_id;
+  BEGIN
+    PERFORM public.save_profile_entry(
+      gen_random_uuid(),p_id,version_now,
+      jsonb_build_object('type','delete_item','section','experience',
+        'value',jsonb_build_object('id',item_id)),
+      true
+    );
+    RAISE EXCEPTION 'assertion: Draft discard removed a Complete entry';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'VERSION_CONFLICT' THEN RAISE; END IF;
+  END;
+  ASSERT EXISTS(SELECT 1 FROM public.profile_experiences e
+    WHERE e.id=item_id AND NOT e.is_draft);
+  mutation:=jsonb_build_object('type','delete_item','section','project',
+    'value',jsonb_build_object('id','65000000-0000-0000-0000-00000000f001'));
+  response:=public.save_profile_entry(
+    '65000000-0000-0000-0000-000000000109',
+    p_id,version_now,mutation,true
+  );
+  replay:=public.save_profile_entry(
+    '65000000-0000-0000-0000-000000000109',
+    p_id,version_now,mutation,true
+  );
+  ASSERT replay=response, 'Draft discard retry did not replay the same result';
+  ASSERT NOT EXISTS(SELECT 1 FROM public.profile_projects e
+    WHERE e.id='65000000-0000-0000-0000-00000000f001');
+  ASSERT EXISTS(SELECT 1 FROM public.profile_experiences e WHERE e.id=item_id);
+
   -- RLS prevents another account from discovering these persisted Drafts.
   PERFORM set_config(
     'request.jwt.claim.sub',
@@ -165,4 +241,29 @@ BEGIN
 END
 $test$;
 RESET ROLE;
+DO $test$
+DECLARE
+  actor uuid:='65000000-0000-0000-0000-000000000001';
+  p_id uuid;
+  document_source jsonb;
+  array_key text;
+BEGIN
+  SELECT cp.id INTO p_id FROM public.career_profiles cp
+    WHERE cp.user_id=actor AND cp.slot_number=1;
+  -- This is the actual server document-source function, not a Flutter filter.
+  -- It prepares no document, creates no export, and consumes no Credits.
+  document_source:=public.jobix_export_source(actor,p_id)->'source';
+  ASSERT jsonb_array_length(document_source#>'{profile,experiences}')=1;
+  FOREACH array_key IN ARRAY ARRAY[
+    'volunteer_experiences','education','certifications','achievements',
+    'projects','skills','languages'
+  ] LOOP
+    ASSERT jsonb_array_length(document_source->'profile'->array_key)=0,
+      'Draft leaked into server-authoritative PDF source';
+  END LOOP;
+  ASSERT NOT EXISTS(SELECT 1 FROM public.export_jobs e WHERE e.user_id=actor);
+  ASSERT NOT EXISTS(SELECT 1 FROM public.credit_transactions c
+    WHERE c.user_id=actor AND c.delta<0);
+END
+$test$;
 ROLLBACK;

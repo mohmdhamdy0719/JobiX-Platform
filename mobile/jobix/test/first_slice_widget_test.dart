@@ -28,6 +28,7 @@ import 'package:jobix/features/career_profile/text_section_repository.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
 import 'package:jobix/features/career_profile/entity_repository.dart';
 import 'package:jobix/features/career_profile/profile_sections.dart';
+import 'package:jobix/features/career_profile/summary_examples.dart';
 import 'package:jobix/features/builder/ai_allowance.dart';
 import 'package:jobix/features/builder/jobix_improvement.dart';
 import 'package:jobix/features/builder/education_catalog.dart';
@@ -203,7 +204,12 @@ void main() {
         ),
         entityRepositoryProvider.overrideWith(
           (_) async =>
-              entityOverride ?? EntityRepository(repository, entities.send),
+              entityOverride ??
+              EntityRepository(
+                repository,
+                entities.send,
+                loadDraftItems: entities.loadDrafts,
+              ),
         ),
         educationCatalogProvider.overrideWith(
           (_) async => EducationCatalogData.fallback,
@@ -2832,6 +2838,209 @@ void main() {
       expect(entities.requests, isEmpty);
     },
   );
+
+  testWidgets(
+    'persisted entry Draft confirmation, reopening, Back, and completion',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(tester, '/career/edit/experience/new?origin=career');
+      await tester.enterText(
+        find.byKey(const Key('field-job_title')),
+        'Analyst',
+      );
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      expect(find.text('Save as draft?'), findsOneWidget);
+      expect(entities.requests, isEmpty);
+      await tester.tap(
+        find.byKey(const Key('back-from-entry-draft-confirmation')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('field-job_title')))
+            .controller!
+            .text,
+        'Analyst',
+      );
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save as draft'));
+      await tester.pumpAndSettle();
+      final draft = entities.draftItems[EntitySection.experience]!.single;
+      expect(draft.isDraft, isTrue);
+      expect(api.server.of(EntitySection.experience), isEmpty);
+      await route(tester, '/builder/3');
+      expect(find.byKey(Key('draft-experience-${draft.id}')), findsOneWidget);
+      expect(find.text('Draft'), findsOneWidget);
+      await route(tester, '/career/edit/experience/${draft.id}?origin=career');
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('field-job_title')))
+            .controller!
+            .text,
+        'Analyst',
+      );
+      await tester.enterText(
+        find.byKey(const Key('field-company')),
+        'Unsaved company',
+      );
+      await tester.tap(find.byKey(const Key('editor-back')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('discard-entity')));
+      await tester.pumpAndSettle();
+      expect(
+        entities.draftItems[EntitySection.experience]!.single.text('company'),
+        '',
+      );
+      expect(
+        entities.requests,
+        hasLength(1),
+        reason: 'Back discards editing-session changes, not the server Draft.',
+      );
+      await route(tester, '/career/edit/experience/${draft.id}?origin=career');
+      await tester.enterText(
+        find.byKey(const Key('field-company')),
+        'Example Company',
+      );
+      for (final entry in {
+        'start_month': '2022-01',
+        'end_month': '2024-01',
+      }.entries) {
+        final field = find.byKey(Key('field-${entry.key}'));
+        await tester.ensureVisible(field);
+        await tester.enterText(field, entry.value);
+      }
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      expect(api.server.of(EntitySection.experience).single.id, draft.id);
+      expect(entities.draftItems[EntitySection.experience], isEmpty);
+      expect(entities.requests.last.isDraft, isFalse);
+    },
+  );
+
+  testWidgets(
+    'persisted entry Draft offline save is not reported as successful',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(tester, '/career/edit/experience/new?origin=career');
+      await tester.enterText(
+        find.byKey(const Key('field-job_title')),
+        'Analyst',
+      );
+      entities.offline = true;
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save as draft'));
+      await tester.pumpAndSettle();
+      expect(find.text('Draft saved.'), findsNothing);
+      expect(currentPath(), startsWith('/career/edit/experience/'));
+      expect(entities.draftItems, isEmpty);
+      final pending = await EntityRepository(
+        repository,
+        entities.send,
+      ).pending(api.server.id);
+      expect(pending, isNotNull);
+      expect(pending!.isDraft, isTrue);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('field-job_title')))
+            .controller!
+            .text,
+        'Analyst',
+      );
+    },
+  );
+
+  testWidgets('persisted entry Draft discard keeps Complete entries intact', (
+    tester,
+  ) async {
+    final repo = EntityRepository(repository, entities.send);
+    const complete = ProfileItem(
+      id: 'complete-experience',
+      section: EntitySection.experience,
+      values: {
+        'job_title': 'Analyst',
+        'company': 'Example',
+        'start_month': '2022-01',
+        'is_current': true,
+      },
+    );
+    const draft = ProfileItem(
+      id: 'draft-experience',
+      section: EntitySection.experience,
+      values: {'job_title': 'Pending entry'},
+    );
+    await repo.upsert(api.server, complete);
+    await repo.upsert(api.server, draft, isDraft: true);
+    entities.requests.clear();
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/builder/3');
+    Future<void> askToDiscard() async {
+      final menu = find.byKey(const Key('menu-experience-draft-experience'));
+      await tester.ensureVisible(menu);
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Discard draft'));
+      await tester.pumpAndSettle();
+    }
+
+    await askToDiscard();
+    await tester.tap(find.text('Keep draft'));
+    await tester.pumpAndSettle();
+    expect(entities.requests, isEmpty);
+    await askToDiscard();
+    await tester.tap(find.byKey(const Key('confirm-discard-draft')));
+    await tester.pumpAndSettle();
+    expect(entities.requests.single.isDraft, isTrue);
+    expect(entities.requests.single.type, 'delete_item');
+    expect(entities.draftItems[EntitySection.experience], isEmpty);
+    expect(api.server.of(EntitySection.experience).single.id, complete.id);
+  });
+
+  testWidgets('summary example remains unsaved until explicit Save', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/career/summary');
+    final beforeVersion = api.server.version;
+    final button = find.byKey(const Key('explore-summary-examples'));
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('use-summary-example')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('editor-summary')))
+          .controller!
+          .text,
+      summaryExamplesEnglish.first,
+    );
+    expect(api.server.summary, isEmpty);
+    expect(api.server.version, beforeVersion);
+    await tester.ensureVisible(find.byKey(const Key('save-summary')));
+    await tester.tap(find.byKey(const Key('save-summary')));
+    await tester.pumpAndSettle();
+    expect(api.server.summary, summaryExamplesEnglish.first);
+    expect(api.server.version, beforeVersion + 1);
+  });
 }
 
 class _DelayedEntityRepository extends EntityRepository {

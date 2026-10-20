@@ -36,7 +36,6 @@ class SummaryExamplesButton extends StatelessWidget {
   Future<void> _open(BuildContext context) async {
     final ar = Localizations.localeOf(context).languageCode == 'ar';
     final samples = ar ? summaryExamplesArabic : summaryExamplesEnglish;
-    final readOnlyController = TextEditingController(text: samples.first);
     final selected = await showDialog<String>(
       context: context,
       builder: (dialogContext) {
@@ -46,25 +45,23 @@ class SummaryExamplesButton extends StatelessWidget {
             void showSample(int next) {
               setDialogState(() {
                 index = next;
-                readOnlyController.text = samples[index];
-                readOnlyController.selection = const TextSelection.collapsed(
-                  offset: 0,
-                );
               });
             }
 
             return JobixAlertDialog(
               title: Text(
-                ar ? 'أمثلة على الملخص المهني' : 'Professional Summary Examples',
+                ar
+                    ? 'أمثلة على الملخص المهني'
+                    : 'Professional Summary Examples',
               ),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      key: const Key('summary-example-text'),
-                      controller: readOnlyController,
+                    TextFormField(
+                      key: ValueKey('summary-example-$index'),
+                      initialValue: samples[index],
                       readOnly: true,
                       minLines: 6,
                       maxLines: 12,
@@ -79,19 +76,29 @@ class SummaryExamplesButton extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
+                          key: const Key('summary-example-previous'),
                           tooltip: ar ? 'السابق' : 'Previous example',
                           onPressed: index == 0
                               ? null
                               : () => showSample(index - 1),
-                          icon: const Icon(Icons.chevron_left),
+                          icon: Icon(
+                            ar ? Icons.chevron_right : Icons.chevron_left,
+                          ),
                         ),
-                        Text('${index + 1} of ${samples.length}'),
+                        Text(
+                          ar
+                              ? '${index + 1} من ${samples.length}'
+                              : '${index + 1} of ${samples.length}',
+                        ),
                         IconButton(
+                          key: const Key('summary-example-next'),
                           tooltip: ar ? 'التالي' : 'Next example',
                           onPressed: index == samples.length - 1
                               ? null
                               : () => showSample(index + 1),
-                          icon: const Icon(Icons.chevron_right),
+                          icon: Icon(
+                            ar ? Icons.chevron_left : Icons.chevron_right,
+                          ),
                         ),
                       ],
                     ),
@@ -105,8 +112,7 @@ class SummaryExamplesButton extends StatelessWidget {
                 ),
                 JobixDialogAction.primary(
                   key: const Key('use-summary-example'),
-                  onPressed: () =>
-                      Navigator.pop(dialogContext, samples[index]),
+                  onPressed: () => Navigator.pop(dialogContext, samples[index]),
                   child: Text(ar ? 'استخدام هذا الملخص' : 'Use this summary'),
                 ),
               ],
@@ -115,13 +121,14 @@ class SummaryExamplesButton extends StatelessWidget {
         );
       },
     );
-    readOnlyController.dispose();
     if (selected == null || !context.mounted) return;
     if (controller.text.trim().isNotEmpty) {
       final replace = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => JobixAlertDialog(
-          title: Text(ar ? 'استبدال الملخص الحالي؟' : 'Replace the current summary?'),
+          title: Text(
+            ar ? 'استبدال الملخص الحالي؟' : 'Replace the current summary?',
+          ),
           content: Text(
             ar
                 ? 'سيتم استبدال النص الحالي بالمثال. يمكنك تعديله قبل الحفظ.'

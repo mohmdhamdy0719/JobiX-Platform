@@ -30,6 +30,7 @@ void main() {
     (request) {
       return server.send(request);
     },
+    loadDraftItems: server.loadDrafts,
   );
 
   setUp(() {
@@ -298,4 +299,146 @@ void main() {
     expect(draftConflict(base, base), DraftConflict.none);
     expect(draftConflict(base, experience.rebased(3)), DraftConflict.changed);
   });
+
+  test(
+    'server Draft reopens and promotes the same identity after confirmation',
+    () async {
+      final partial = ProfileItem(
+        id: experience.id,
+        section: EntitySection.experience,
+        values: const {'job_title': 'Analyst'},
+      );
+      final acknowledged = await repository.upsert(
+        api.server,
+        partial,
+        isDraft: true,
+      );
+      expect(acknowledged.of(EntitySection.experience), isEmpty);
+      expect(await repository.pending(api.server.id), isNull);
+      repository = open();
+      final draft = (await repository.savedDrafts(
+        api.server.id,
+        EntitySection.experience,
+      )).single;
+      expect(draft.text('job_title'), 'Analyst');
+      expect(draft.isDraft, isTrue);
+      expect(draft.problems(), isNotEmpty);
+      final completed = await repository.upsert(api.server, experience);
+      expect(completed.of(EntitySection.experience).single.id, draft.id);
+      expect(completed.of(EntitySection.experience).single.version, 2);
+      expect(
+        await repository.savedDrafts(api.server.id, EntitySection.experience),
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'uncertain Draft save survives restart and reuses its frozen request',
+    () async {
+      server.loseNextResponse = true;
+      await expectLater(
+        repository.upsert(api.server, experience, isDraft: true),
+        throwsA(isA<SocketException>()),
+      );
+      final commandKey = (await repository.pending(api.server.id))!.key;
+      expect(server.draftItems[EntitySection.experience], hasLength(1));
+      await db.close();
+      db = AppDatabase(encryptedDatabase(File('${directory.path}/db'), key));
+      repository = open();
+      await repository.resume(api.server.id);
+      expect(server.requests.last.key, commandKey);
+      expect(server.requests.last.isDraft, isTrue);
+      expect(server.requests.map((request) => request.key).toSet(), {
+        commandKey,
+      });
+      expect(server.draftItems[EntitySection.experience]!.single.version, 1);
+      expect(await repository.pending(api.server.id), isNull);
+    },
+  );
+
+  test(
+    'Draft discard is explicit, idempotent, and cannot remove a Complete row',
+    () async {
+      await repository.upsert(api.server, experience, isDraft: true);
+      await repository.discardSavedDraft(
+        api.server,
+        EntitySection.experience,
+        experience.id,
+      );
+      expect(
+        await repository.savedDrafts(api.server.id, EntitySection.experience),
+        isEmpty,
+      );
+      await repository.upsert(api.server, experience);
+      await expectLater(
+        repository.discardSavedDraft(
+          api.server,
+          EntitySection.experience,
+          experience.id,
+        ),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(api.server.of(EntitySection.experience), hasLength(1));
+      expect(await repository.pending(api.server.id), isNull);
+    },
+  );
+
+  test(
+    'offline Draft save is unacknowledged and another account cannot load it',
+    () async {
+      server.offline = true;
+      await expectLater(
+        repository.upsert(api.server, experience, isDraft: true),
+        throwsA(isA<SocketException>()),
+      );
+      expect(server.draftItems, isEmpty);
+      expect(await repository.pending(api.server.id), isNotNull);
+      server.offline = false;
+      await repository.resume(api.server.id);
+      active = false;
+      await expectLater(
+        repository.savedDrafts(api.server.id, EntitySection.experience),
+        throwsStateError,
+      );
+    },
+  );
+
+  test('legacy pending commands retain their original RPC protocol', () {
+    final decoded = PendingMutation.decode(
+      jsonEncode({
+        'profile': api.server.id,
+        'key': 'legacy-command',
+        'version': 1,
+        'type': 'upsert_item',
+        'section': 'experience',
+        'value': experience.toJson(),
+      }),
+    );
+    expect(decoded.usesEntrySaveRpc, isFalse);
+    expect(PendingMutation.decode(decoded.encode()).usesEntrySaveRpc, isFalse);
+  });
+
+  test(
+    'canonical client snapshot defensively excludes injected Draft items',
+    () {
+      final profile = CareerProfile(
+        id: api.server.id,
+        version: 1,
+        items: {
+          EntitySection.experience: [
+            experience,
+            ProfileItem(
+              id: 'draft-id',
+              section: EntitySection.experience,
+              isDraft: true,
+              values: experience.values,
+            ),
+          ],
+        },
+      );
+      expect(profile.of(EntitySection.experience), [experience]);
+      expect((profile.toJson()['experiences'] as List), hasLength(1));
+    },
+  );
 }

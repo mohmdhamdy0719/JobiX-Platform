@@ -216,7 +216,8 @@ class _EntityCardState extends State<_EntityCard> {
     final title = itemTitle(item, locale);
     final subtitle = itemSubtitle(copy, item, locale);
     final description = item.text('description');
-    final complete = item.complete;
+    // Percentage qualification is not the persisted Draft/Complete status.
+    final complete = !item.isDraft && item.problems().isEmpty;
     final current = item.section.hasCurrent && item.flag('is_current');
     return Card(
       key: Key('card-${item.section.key}-${item.id}'),
@@ -317,16 +318,16 @@ class _EntityCardState extends State<_EntityCard> {
                         value: 'edit',
                         child: Text(copy.editAction),
                       ),
-                       if (widget.onRemove != null)
+                      if (widget.onRemove != null)
                         PopupMenuItem(
-                         value: 'remove',
-                         child: Text(
-                           item.isDraft
-                               ? (copy.localeName.startsWith('ar')
-                                     ? 'تجاهل المسودة'
-                                     : 'Discard draft')
-                               : copy.removeAction,
-                         ),
+                          value: 'remove',
+                          child: Text(
+                            item.isDraft
+                                ? (copy.localeName.startsWith('ar')
+                                      ? 'تجاهل المسودة'
+                                      : 'Discard draft')
+                                : copy.removeAction,
+                          ),
                         ),
                     ],
                   ),

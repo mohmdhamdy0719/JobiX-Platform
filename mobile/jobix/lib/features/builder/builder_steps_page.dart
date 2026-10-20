@@ -121,12 +121,19 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
   );
 
   Future<void> remove(CareerProfile profile, ProfileItem item) async {
-    final approved = item.isDraft
-        ? await confirmDiscardDraft(context)
-        : await confirmRemove(context);
-    if (!approved) return;
-    await run((r) => r.delete(profile, item.section, item.id));
-    ref.invalidate(entityDraftsProvider(EntityDraftQuery(profile.id, item.section)));
+    final confirmation = item.isDraft
+        ? confirmDiscardDraft(context)
+        : confirmRemove(context);
+    final approved = await confirmation;
+    if (!approved || !mounted) return;
+    await run(
+      (r) => item.isDraft
+          ? r.discardSavedDraft(profile, item.section, item.id)
+          : r.delete(profile, item.section, item.id),
+    );
+    ref.invalidate(
+      entityDraftsProvider(EntityDraftQuery(profile.id, item.section)),
+    );
   }
 
   Future<void> addSkill(CareerProfile profile, String raw) async {
@@ -321,9 +328,8 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                 ),
               ),
               TextButton(
-                onPressed: () => ref.invalidate(
-                  entityDraftsProvider(draftQuery),
-                ),
+                onPressed: () =>
+                    ref.invalidate(entityDraftsProvider(draftQuery)),
                 child: Text(copy.retry),
               ),
             ],

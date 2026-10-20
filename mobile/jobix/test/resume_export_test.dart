@@ -1488,40 +1488,48 @@ void main() {
       expect(accepted, 0);
     }, fixture);
   });
-  testWidgets('Android save cancellation is not reported as a saved PDF', (
-    tester,
-  ) async {
-    expiredDownload = false;
-    final fixture = _PdfOverrides();
-    const channel = MethodChannel('jobix/pdf_save');
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      channel,
-      (call) async => {
-        'saved': false,
-        'stage': 'cancelled',
-        'destination_selected': false,
-        'uri_returned': false,
-        'stream_opened': false,
-        'write_completed': false,
-        'stream_closed': false,
-        'final_size_available': false,
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+  testWidgets(
+    'Android picker cancellation is silent and never creates an export',
+    (tester) async {
+      expiredDownload = false;
+      final fixture = _PdfOverrides();
+      const channel = MethodChannel('jobix/pdf_save');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         channel,
-        null,
-      ),
-    );
-    await HttpOverrides.runWithHttpOverrides(() async {
-      creditBalance = 0;
-      await mount(tester, initial: true);
-      await tap(tester, 'Download — free');
-      expect(find.textContaining('did not confirm saving'), findsOneWidget);
-      expect(find.text('PDF saved. No Credits charged.'), findsNothing);
-      expect(accepted, 0);
-    }, fixture);
-  });
+        (call) async => {
+          'saved': false,
+          'stage': 'cancelled',
+          'destination_selected': false,
+          'uri_returned': false,
+          'stream_opened': false,
+          'write_completed': false,
+          'stream_closed': false,
+          'final_size_available': false,
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          null,
+        ),
+      );
+      await HttpOverrides.runWithHttpOverrides(() async {
+        creditBalance = 0;
+        await mount(tester, initial: true);
+        await tap(tester, 'Download — free');
+        expect(find.textContaining('did not confirm saving'), findsNothing);
+        expect(find.text('PDF download failed'), findsNothing);
+        expect(find.text('PDF saved. No Credits charged.'), findsNothing);
+        expect(accepted, 0);
+        expect(
+          commands.where(
+            (c) => c['action'] == 'create' || c['action'] == 'again',
+          ),
+          isEmpty,
+        );
+      }, fixture);
+    },
+  );
   testWidgets(
     'Android write failure is reported separately from cancellation',
     (tester) async {

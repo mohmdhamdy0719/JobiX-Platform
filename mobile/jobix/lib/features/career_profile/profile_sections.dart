@@ -193,9 +193,12 @@ class ProfileItem {
     values: {
       for (final field in section.fields)
         if (json[field.name] != null)
-          field.name: field.kind == FieldKind.month &&
+          field.name:
+              field.kind == FieldKind.month &&
                   json[field.name] is String &&
-                  (json[field.name] as String).length >= 7
+                  RegExp(
+                    r'^\d{4}-\d{2}-\d{2}$',
+                  ).hasMatch(json[field.name] as String)
               ? (json[field.name] as String).substring(0, 7)
               : json[field.name],
     },

@@ -69,7 +69,9 @@ class MainActivity : FlutterActivity() {
         uriReturned = uri != null
         destinationSelected = resultCode == Activity.RESULT_OK && uri != null
         try {
-            if (resultCode == Activity.RESULT_OK && uri == null) {
+            if (resultCode == Activity.RESULT_CANCELED) {
+                completeSave(saved = false, stage = "cancelled")
+            } else if (resultCode == Activity.RESULT_OK && uri == null) {
                 completeSave(saved = false, stage = "uri_missing")
             } else if (resultCode == Activity.RESULT_OK && pdfBytes != null) {
                 val bytes = pdfBytes!!
@@ -99,7 +101,7 @@ class MainActivity : FlutterActivity() {
                     )
                 }
             } else {
-                completeSave(saved = false, stage = "cancelled")
+                completeSave(saved = false, stage = "picker_result_failed")
             }
         } catch (error: Exception) {
             completeSave(

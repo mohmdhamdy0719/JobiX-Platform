@@ -47,7 +47,8 @@ class CareerProfile {
   final String? summaryState, targetRoleState, algorithm;
   final int slot;
   final Map<EntitySection, List<ProfileItem>> items;
-  List<ProfileItem> of(EntitySection section) => items[section] ?? const [];
+  List<ProfileItem> of(EntitySection section) =>
+      (items[section] ?? const []).where((item) => !item.isDraft).toList();
   int count(EntitySection section) => of(section).length;
   int completeCount(EntitySection section) =>
       of(section).where((i) => i.complete).length;

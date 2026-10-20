@@ -63,6 +63,20 @@ class SectionWritingGuidance extends StatelessWidget {
         'شهادة أو منشور أو صفحة جائزة أو رابط معرض أعمال.',
       ),
     ],
+    EntitySection.certification: [
+      (
+        'Which certification did you receive, and who issued it?',
+        'ما الشهادة التي حصلت عليها ومن أصدرها؟',
+        'Use the certification name and issuing organization shown on your certificate.',
+        'استخدم اسم الشهادة والجهة المانحة كما يظهران في شهادتك.',
+      ),
+      (
+        'Which date or verification details are useful?',
+        'ما التاريخ أو تفاصيل التحقق المفيدة؟',
+        'Include the issue date, and a credential ID or verification link if available.',
+        'أضف تاريخ الإصدار ورقم الاعتماد أو رابط التحقق إن توفرا.',
+      ),
+    ],
     EntitySection.volunteer: [
       (
         'What organization or cause did you support, and what was your role?',
@@ -87,8 +101,8 @@ class SectionWritingGuidance extends StatelessWidget {
       (
         'What tools did you use and what changed as a result?',
         'ما الأدوات التي استخدمتها وما النتيجة؟',
-        'Used SQL and Python to reduce manual data preparation.',
-        'استخدام SQL وPython لتقليل تجهيز البيانات يدويًا.',
+        'Name tools you actually used and describe how they supported your contribution.',
+        'اذكر الأدوات التي استخدمتها بالفعل وكيف ساعدتك في إنجاز مساهمتك.',
       ),
     ],
   };
@@ -103,14 +117,21 @@ class SectionWritingGuidance extends StatelessWidget {
       key: const Key('section-writing-guidance'),
       tilePadding: EdgeInsets.zero,
       title: Text(arabic ? heading.$2 : heading.$1),
-      subtitle: Text(arabic ? 'أسئلة وإجابات اختيارية' : 'Optional questions and examples'),
+      subtitle: Text(
+        arabic ? 'أسئلة وإجابات اختيارية' : 'Optional questions and examples',
+      ),
       children: [
         for (var i = 0; i < prompts.length; i++)
           ExpansionTile(
             key: Key('section-writing-prompt-$i'),
             tilePadding: const EdgeInsetsDirectional.only(start: 12, end: 8),
             title: Text(arabic ? prompts[i].$2 : prompts[i].$1),
-            childrenPadding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 12),
+            childrenPadding: const EdgeInsetsDirectional.fromSTEB(
+              12,
+              0,
+              12,
+              12,
+            ),
             children: [
               Align(
                 alignment: AlignmentDirectional.centerStart,
@@ -160,30 +181,61 @@ class EntryResumeExample extends StatelessWidget {
   Widget build(BuildContext context) {
     final ar = Localizations.localeOf(context).languageCode == 'ar';
     final List<String> example = switch (section) {
-      EntitySection.experience => ar
-          ? ['أخصائي تسويق', 'Jobix Company — الإسكندرية، مصر', 'يوليو ٢٠٢٦ – حتى الآن']
-          : ['Marketing Specialist', 'Jobix Company — Alexandria, Egypt', 'July 2026 – Present'],
-      EntitySection.volunteer => ar
-          ? ['منسق متطوعين', 'مؤسسة مجتمعية — موقعك', 'تاريخ البدء – تاريخ الانتهاء']
-          : ['Volunteer Coordinator', 'Community Organization — Your location', 'Start date – End date'],
-      EntitySection.education => ar
-          ? ['بكالوريوس التجارة', 'جامعة الإسكندرية — إدارة الأعمال', 'سنة التخرج']
-          : ['Bachelor of Commerce', 'Alexandria University — Business Administration', 'Graduation year'],
-      EntitySection.certification => ar
-          ? ['اسم الشهادة', 'الجهة المانحة', 'تاريخ الإصدار']
-          : ['Certification name', 'Issuing organization', 'Issue date'],
-      EntitySection.project => ar
-          ? ['عنوان المشروع', 'دورك في المشروع', 'وصف موجز لمساهمتك']
-          : ['Project title', 'Your role in the project', 'A brief description of your contribution'],
-      EntitySection.achievement => ar
-          ? ['عنوان الإنجاز', 'الجهة أو السياق', 'التاريخ']
-          : ['Achievement title', 'Organization or context', 'Date'],
-      EntitySection.skill => ar
-          ? ['المهارة']
-          : ['Skill'],
-      EntitySection.language => ar
-          ? ['اللغة — المستوى']
-          : ['Language — proficiency'],
+      EntitySection.experience =>
+        ar
+            ? [
+                'أخصائي تسويق',
+                'Jobix Company — الإسكندرية، مصر',
+                'يوليو ٢٠٢٦ – حتى الآن',
+              ]
+            : [
+                'Marketing Specialist',
+                'Jobix Company — Alexandria, Egypt',
+                'July 2026 – Present',
+              ],
+      EntitySection.volunteer =>
+        ar
+            ? [
+                'منسق متطوعين',
+                'مؤسسة مجتمعية — موقعك',
+                'تاريخ البدء – تاريخ الانتهاء',
+              ]
+            : [
+                'Volunteer Coordinator',
+                'Community Organization — Your location',
+                'Start date – End date',
+              ],
+      EntitySection.education =>
+        ar
+            ? [
+                'بكالوريوس التجارة',
+                'جامعة الإسكندرية — إدارة الأعمال',
+                'سنة التخرج',
+              ]
+            : [
+                'Bachelor of Commerce',
+                'Alexandria University — Business Administration',
+                'Graduation year',
+              ],
+      EntitySection.certification =>
+        ar
+            ? ['اسم الشهادة', 'الجهة المانحة', 'تاريخ الإصدار']
+            : ['Certification name', 'Issuing organization', 'Issue date'],
+      EntitySection.project =>
+        ar
+            ? ['عنوان المشروع', 'دورك في المشروع', 'وصف موجز لمساهمتك']
+            : [
+                'Project title',
+                'Your role in the project',
+                'A brief description of your contribution',
+              ],
+      EntitySection.achievement =>
+        ar
+            ? ['عنوان الإنجاز', 'الجهة أو السياق', 'التاريخ']
+            : ['Achievement title', 'Organization or context', 'Date'],
+      EntitySection.skill => ar ? ['المهارة'] : ['Skill'],
+      EntitySection.language =>
+        ar ? ['اللغة — المستوى'] : ['Language — proficiency'],
     };
     return Card(
       key: const Key('entry-resume-example'),
@@ -196,18 +248,15 @@ class EntryResumeExample extends StatelessWidget {
           children: [
             Text(
               ar ? 'مثال على السيرة الذاتية' : 'Example on a Resume',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             for (final line in example)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  line,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                child: Text(line, style: Theme.of(context).textTheme.bodySmall),
               ),
           ],
         ),

@@ -54,10 +54,11 @@ class PendingMutation {
     required this.section,
     required this.value,
     this.isDraft = false,
+    this.usesEntrySaveRpc = true,
   });
   final String profileId, key, type, section;
   final int version;
-  final bool isDraft;
+  final bool isDraft, usesEntrySaveRpc;
   final Map<String, Object?> value;
   String get itemId => value['id'] as String;
   Map<String, Object?> toJson() => {
@@ -68,6 +69,7 @@ class PendingMutation {
     'section': section,
     'value': value,
     'is_draft': isDraft,
+    'entry_save_rpc': usesEntrySaveRpc,
   };
   String encode() => jsonEncode(toJson());
   factory PendingMutation.decode(String raw) {
@@ -80,6 +82,8 @@ class PendingMutation {
       section: v['section'] as String,
       value: Map<String, Object?>.from(v['value'] as Map),
       isDraft: v['is_draft'] == true,
+      // Older unresolved commands must reconcile through their original RPC.
+      usesEntrySaveRpc: v['entry_save_rpc'] == true,
     );
   }
 }
@@ -273,14 +277,19 @@ class EntityRepository {
     String id,
   ) => _start(profile, 'delete_item', section, {'id': id});
 
+  Future<CareerProfile> discardSavedDraft(
+    CareerProfile profile,
+    EntitySection section,
+    String id,
+  ) => _start(profile, 'delete_item', section, {'id': id}, isDraft: true);
+
   Future<CareerProfile> _start(
     CareerProfile profile,
     String type,
     EntitySection section,
     Map<String, Object?> value, {
     bool isDraft = false,
-  }
-  ) async {
+  }) async {
     _check();
     // Never queue behind an unknown outcome: it must be reconciled first.
     if (await pending(profile.id) != null) throw const PendingSaveException();
@@ -291,7 +300,7 @@ class EntityRepository {
       type: type,
       section: section.key,
       value: value,
-      isDraft: type == 'upsert_item' && isDraft,
+      isDraft: isDraft,
     );
     await parent.database.retainPendingMutation(
       parent.user,
@@ -338,9 +347,12 @@ final entityRepositoryProvider = FutureProvider<EntityRepository>((ref) async {
   return EntityRepository(
     parent,
     (request) async {
+      final entrySave =
+          request.usesEntrySaveRpc &&
+          (request.type == 'upsert_item' || request.isDraft);
       final response = await client
           .rpc(
-            'save_profile_entry',
+            entrySave ? 'save_profile_entry' : 'profile_mutate',
             params: {
               'command_key': request.key,
               'requested_profile': request.profileId,
@@ -350,7 +362,7 @@ final entityRepositoryProvider = FutureProvider<EntityRepository>((ref) async {
                 'section': request.section,
                 'value': request.value,
               },
-              'is_draft': request.isDraft,
+              if (entrySave) 'is_draft': request.isDraft,
             },
           )
           .timeout(const Duration(seconds: 15));
@@ -370,7 +382,10 @@ final entityRepositoryProvider = FutureProvider<EntityRepository>((ref) async {
 });
 
 final entityDraftsProvider =
-    FutureProvider.family<List<ProfileItem>, EntityDraftQuery>((ref, query) async {
+    FutureProvider.family<List<ProfileItem>, EntityDraftQuery>((
+      ref,
+      query,
+    ) async {
       final repository = await ref.watch(entityRepositoryProvider.future);
       return repository.savedDrafts(query.profileId, query.section);
     });

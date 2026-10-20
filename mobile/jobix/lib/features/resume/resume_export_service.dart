@@ -586,6 +586,7 @@ class ResumeExportService {
         'size_mismatch',
         'write_failed',
         'picker_start_failed',
+        'picker_result_failed',
         'activity_destroyed',
       };
       final nativeSaveStage =
@@ -600,7 +601,13 @@ class ResumeExportService {
           ? rawExceptionType
           : null;
       saveExceptionType = nativeExceptionType;
-      if (!saved && nativeSaveStage == 'cancelled') {
+      if (!saved &&
+          nativeSaveStage == 'cancelled' &&
+          streamOpened != true &&
+          writeCompleted != true &&
+          streamClosed != true &&
+          (bytesWritten == null || bytesWritten == 0) &&
+          nativeExceptionType == null) {
         _recordDownloadDiagnostic(
           attemptId: attemptId,
           attempt: attempt,

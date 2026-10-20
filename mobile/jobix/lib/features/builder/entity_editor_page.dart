@@ -106,7 +106,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           ? null
           : await repository.savedDraft(value.id, widget.section, id);
       final local = await repository.draft(value.id, widget.section, id);
-      final current = local ??
+      final current =
+          local ??
           persistedDraft ??
           saved ??
           ProfileItem(id: id, section: widget.section);
@@ -259,7 +260,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     final copy = item!;
     setState(() => saveAttempted = true);
     final found = copy.problems();
-    final blocking = found.values.any((problem) => problem != FieldProblem.required);
+    final blocking = found.values.any(
+      (problem) => problem != FieldProblem.required,
+    );
     if (blocking) {
       setState(() => problems = found);
       return;
@@ -278,6 +281,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           ),
           actions: [
             JobixDialogAction.secondary(
+              key: const Key('back-from-entry-draft-confirmation'),
               onPressed: () => Navigator.pop(dialog, false),
               child: Text(ar ? 'رجوع' : 'Back'),
             ),
@@ -357,13 +361,17 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         .of(widget.section)
         .where((i) => i.id == item!.id)
         .firstOrNull;
+    final persistedDraft = server == null
+        ? await repository.savedDraft(value.id, widget.section, item!.id)
+        : null;
     if (mounted) {
       setState(() {
         profile = value;
         serverItem = server;
+        serverDraft = persistedDraft;
         // Unchanged item: retrying on the new profile version is safe.
         // Changed or removed item: the user must choose explicitly.
-        conflict = draftConflict(item!, server);
+        conflict = draftConflict(item!, server ?? persistedDraft);
         issue = null;
       });
     }
@@ -489,9 +497,11 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         fieldKey: key,
         controller: controllers[field.name]!,
         label: field.required ? '$label *' : label,
-        hint: institutions
-            ? copy.institutionAutocompleteHint
-            : copy.studyFieldAutocompleteHint,
+        hint: _fieldHint(
+          widget.section,
+          field.name,
+          copy.localeName.startsWith('ar'),
+        )!,
         language: copy.localeName.startsWith('ar') ? 'ar' : 'en',
         suggestions: institutions ? catalog.institutions : catalog.studyFields,
         errorText: _error(copy, field),
@@ -535,6 +545,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           DropdownButtonFormField<String>(
             key: key,
             value: selected.isEmpty ? null : selected,
+            hint: Text(_fieldHint(widget.section, 'degree', ar)!),
             decoration: InputDecoration(
               labelText: '$label *',
               errorText: _error(copy, field),
@@ -619,7 +630,11 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             ? copy.monthHint
             : field.name == 'description'
             ? _descriptionHint(widget.section, copy.localeName.startsWith('ar'))
-            : _fieldHint(widget.section, field.name, copy.localeName.startsWith('ar')),
+            : _fieldHint(
+                widget.section,
+                field.name,
+                copy.localeName.startsWith('ar'),
+              ),
         errorText: _error(copy, field),
         suffixIcon: controller.text.isEmpty
             ? null
@@ -669,8 +684,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           : 'Write about your responsibilities, contributions, and relevant achievements…',
     EntitySection.education =>
       arabic
-          ? 'أضف المقررات أو المشاريع أو التكريمات أو الإنجازات الأكاديمية ذات الصلة.'
-          : 'Add relevant coursework, projects, honors, or academic achievements.',
+          ? 'اكتب عن المقررات أو المشاريع أو الإنجازات الأكاديمية ذات الصلة…'
+          : 'Write about relevant coursework, projects, or academic achievements…',
     EntitySection.achievement =>
       arabic
           ? 'اكتب عن الإنجاز وأهميته، واذكر نتيجة موثقة إن وجدت.'
@@ -691,6 +706,22 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   };
 
   String? _fieldHint(EntitySection section, String field, bool arabic) {
+    if (field == 'role' && section == EntitySection.project) {
+      return arabic ? 'مثال: منسق المشروع' : 'e.g., Project Coordinator';
+    }
+    if (field == 'name') {
+      return switch (section) {
+        EntitySection.certification =>
+          arabic
+              ? 'اسم الشهادة كما يظهر في وثيقتها'
+              : 'Name shown on your certificate',
+        EntitySection.project =>
+          arabic ? 'مثال: مشروع مجتمعي' : 'e.g., Community project',
+        EntitySection.skill => arabic ? 'مثال: التواصل' : 'e.g., Communication',
+        EntitySection.language => arabic ? 'مثال: العربية' : 'e.g., Arabic',
+        _ => null,
+      };
+    }
     const en = {
       'job_title': 'e.g., Marketing Specialist',
       'company': 'e.g., Jobix Company',
@@ -705,6 +736,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       'title': 'Use a concise title for the achievement',
       'project_month': 'Choose the month the project took place',
       'proficiency': 'Choose the level that best describes your language',
+      'url': 'e.g., https://example.com',
+      'credential_id': 'Enter your credential ID, if available',
+      'technologies': 'List tools you actually used',
     };
     const ar = {
       'job_title': 'مثال: أخصائي تسويق',
@@ -720,6 +754,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       'title': 'اكتب عنوانًا موجزًا للإنجاز',
       'project_month': 'اختر شهر تنفيذ المشروع',
       'proficiency': 'اختر المستوى الذي يصف لغتك بدقة',
+      'url': 'مثال: https://example.com',
+      'credential_id': 'اكتب رقم الاعتماد إن توفر',
+      'technologies': 'اذكر الأدوات التي استخدمتها بالفعل',
     };
     if (field == 'end_month') return null;
     return (arabic ? ar : en)[field];

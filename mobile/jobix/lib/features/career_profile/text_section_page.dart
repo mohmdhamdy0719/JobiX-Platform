@@ -376,9 +376,9 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                     'Tips to help you write a professional summary',
                     'نصائح لكتابة ملخص مهني',
                   ),
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: TokensV0.space4),
                 Text(

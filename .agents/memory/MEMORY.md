@@ -18,3 +18,4 @@
 - [Beta policy proposals](beta-policy-proposals.md) — owner proposes 10 exports per rolling 7 days, not 30; implementation and global budgets remain unapproved.
 - [Native resume experience](native-resume-experience.md) — explicit setup completion, renderer-supported presentation, and the owner’s live-activation boundary.
 - [Resume export widget tests](resume-export-widget-tests.md) — post-accept polling tests must navigate to the real operation screen and use bounded pumps.
+- [Career draft authority](career-draft-authority.md) — intentional saved Drafts differ from abandoned edits; Supabase authority and exclusion from all Resume output are required.

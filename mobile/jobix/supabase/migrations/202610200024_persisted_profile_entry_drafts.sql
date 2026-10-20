@@ -117,6 +117,8 @@ BEGIN
   RETURN NEW;
 END
 $$;
+REVOKE ALL ON FUNCTION public.jobix_profile_entry_draft_state()
+  FROM PUBLIC,anon,authenticated;
 DO $$
 DECLARE table_name text;
 BEGIN
@@ -236,14 +238,16 @@ DECLARE
   role_value text;
   location_value text;
   description_value text;
-  existing_draft boolean:=false;
+  table_name text;
+  persisted_draft boolean;
 BEGIN
   IF uid IS NULL THEN RAISE EXCEPTION 'AUTH_REQUIRED'; END IF;
   IF command_key IS NULL OR requested_profile IS NULL
      OR expected_profile_version IS NULL OR is_draft IS NULL
      OR jsonb_typeof(mutation) IS DISTINCT FROM 'object'
      OR (mutation-ARRAY['type','section','value'])<>'{}'::jsonb
-     OR mutation->>'type' IS DISTINCT FROM 'upsert_item'
+     OR mutation->>'type' IS NULL
+     OR mutation->>'type' NOT IN ('upsert_item','delete_item')
      OR jsonb_typeof(mutation->'value') IS DISTINCT FROM 'object'
   THEN RAISE EXCEPTION 'VALIDATION_FAILED'; END IF;
 
@@ -282,6 +286,35 @@ BEGIN
      OR item->>'id' !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
   THEN RAISE EXCEPTION 'VALIDATION_FAILED'; END IF;
   item_id:=(item->>'id')::uuid;
+
+  IF kind='delete_item' THEN
+    IF NOT is_draft OR (item-'id')<>'{}'::jsonb THEN
+      RAISE EXCEPTION 'VALIDATION_FAILED';
+    END IF;
+    table_name:=CASE section_name
+      WHEN 'experience' THEN 'profile_experiences'
+      WHEN 'volunteer' THEN 'profile_volunteer_experiences'
+      WHEN 'education' THEN 'profile_education'
+      WHEN 'certification' THEN 'profile_certifications'
+      WHEN 'achievement' THEN 'profile_achievements'
+      WHEN 'project' THEN 'profile_projects'
+      WHEN 'skill' THEN 'profile_skills'
+      WHEN 'language' THEN 'profile_languages'
+    END;
+    EXECUTE format(
+      'SELECT entry.is_draft FROM public.%I entry WHERE entry.id=$1 AND entry.profile_id=$2',
+      table_name
+    ) INTO persisted_draft USING item_id,p.id;
+    IF persisted_draft IS NULL THEN RAISE EXCEPTION 'ITEM_NOT_FOUND'; END IF;
+    IF NOT persisted_draft THEN RAISE EXCEPTION 'VERSION_CONFLICT'; END IF;
+    result:=public.profile_mutate(
+      command_key,requested_profile,expected_profile_version,mutation
+    );
+    INSERT INTO public.idempotency_records(
+      user_id,operation_type,idempotency_key,payload_hash,response_state
+    ) VALUES(uid,'profile.entry.save',command_key,payload_hash,result);
+    RETURN result;
+  END IF;
 
   IF NOT is_draft THEN
     IF (section_name='experience' AND (
@@ -323,33 +356,11 @@ BEGIN
   END IF;
 
   IF section_name<>'volunteer' THEN
-    IF section_name='experience' THEN
-      SELECT is_draft INTO existing_draft FROM public.profile_experiences
-       WHERE id=item_id AND profile_id=p.id;
-    ELSIF section_name='education' THEN
-      SELECT is_draft INTO existing_draft FROM public.profile_education
-       WHERE id=item_id AND profile_id=p.id;
-    ELSIF section_name='certification' THEN
-      SELECT is_draft INTO existing_draft FROM public.profile_certifications
-       WHERE id=item_id AND profile_id=p.id;
-    ELSIF section_name='achievement' THEN
-      SELECT is_draft INTO existing_draft FROM public.profile_achievements
-       WHERE id=item_id AND profile_id=p.id;
-    ELSIF section_name='project' THEN
-      SELECT is_draft INTO existing_draft FROM public.profile_projects
-       WHERE id=item_id AND profile_id=p.id;
-    ELSIF section_name='skill' THEN
-      SELECT is_draft INTO existing_draft FROM public.profile_skills
-       WHERE id=item_id AND profile_id=p.id;
-    ELSE
-      SELECT is_draft INTO existing_draft FROM public.profile_languages
-       WHERE id=item_id AND profile_id=p.id;
-    END IF;
-    existing_draft:=coalesce(existing_draft,false);
     -- A nameless Skill or incomplete Language cannot pass the legacy complete
     -- mutation contract. Store those explicit Draft states through this same
     -- atomic command, then retain the old path for promotion to Complete.
     IF is_draft AND section_name IN ('skill','language') THEN
+      BEGIN
       IF section_name='skill' THEN
         name_value:=public.jobix_text_field(item,'name',100);
         IF (item-ARRAY['id','name'])<>'{}'::jsonb THEN
@@ -380,6 +391,9 @@ BEGIN
       END IF;
       GET DIAGNOSTICS affected=ROW_COUNT;
       IF affected=0 THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+      EXCEPTION WHEN unique_violation THEN
+        RAISE EXCEPTION 'DUPLICATE_ITEM';
+      END;
       PERFORM public.jobix_recompute_text_profile(p.id);
       UPDATE public.career_profiles SET profile_version=profile_version+1,
         updated_at=now() WHERE id=p.id;
@@ -400,9 +414,17 @@ BEGIN
     -- The legacy mutation performs all existing field, URL, date, ownership,
     -- duplicate, completeness, and profile-version checks.
       BEGIN
-        result:=public.profile_mutate(
-          command_key,requested_profile,expected_profile_version,mutation
-        );
+        IF is_draft THEN
+          -- Skip only migration 008's complete-entry structural guard.
+          -- The original typed/owner/version/idempotency mutation remains.
+          result:=public.jobix_profile_mutate_base(
+            command_key,requested_profile,expected_profile_version,mutation
+          );
+        ELSE
+          result:=public.profile_mutate(
+            command_key,requested_profile,expected_profile_version,mutation
+          );
+        END IF;
       EXCEPTION WHEN OTHERS THEN
         PERFORM set_config('jobix.entry_is_draft',coalesce(draft_setting,''),true);
         RAISE;

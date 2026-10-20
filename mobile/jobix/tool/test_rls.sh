@@ -96,10 +96,9 @@ if [[ "$mode" != "full" ]]; then
       -f supabase/migrations/202610200024_persisted_profile_entry_drafts.sql
     echo "PASS: migrations 017–024 applied in order"
     "${local_psql[@]}" \
-      -f supabase/tests/profile_sections.sql \
       -f supabase/tests/resume_layout.sql \
       -f supabase/tests/profile_entry_drafts.sql
-    echo "PASS: profile sections, Resume Layout regressions, and persisted-entry-draft RLS/idempotency tests"
+    echo "PASS: Resume Layout regressions and persisted-entry-draft RLS/idempotency tests"
     exit 0
   fi
 

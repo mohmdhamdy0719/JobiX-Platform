@@ -9,6 +9,25 @@ ProfileItem item(EntitySection section, Map<String, Object?> values) =>
     ProfileItem(id: 'id-1', section: section, values: values);
 
 void main() {
+  test(
+    'saved Draft dates normalize SQL dates without repairing malformed input',
+    () {
+      final draft = ProfileItem.fromJson(EntitySection.experience, {
+        'id': 'saved-draft',
+        'is_draft': true,
+        'start_month': '2024-01-01',
+      });
+      expect(draft.isDraft, isTrue);
+      expect(draft.text('start_month'), '2024-01');
+      final malformed = ProfileItem.fromJson(EntitySection.experience, {
+        'id': 'invalid-draft',
+        'start_month': '2024-010',
+      });
+      expect(malformed.text('start_month'), '2024-010');
+      expect(malformed.problems()['start_month'], FieldProblem.invalidMonth);
+    },
+  );
+
   group('URL normalization mirrors the server', () {
     test('https only; bare domains gain https; others are rejected', () {
       expect(normalizeUrl(''), '');

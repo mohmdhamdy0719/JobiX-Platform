@@ -15,14 +15,31 @@ class FakeEntityServer {
   final FakeProfileApi api;
   final List<PendingMutation> requests = [];
   final Map<String, CareerProfile> _byKey = {};
+  final Map<String, String> _payloads = {};
+  final Map<EntitySection, List<ProfileItem>> draftItems = {};
   bool offline = false, loseNextResponse = false;
   String? rejectNext;
+
+  Future<List<ProfileItem>> loadDrafts(
+    String profileId,
+    EntitySection section,
+  ) async {
+    if (offline) throw const SocketException('Offline fixture');
+    return profileId == api.server.id
+        ? List.of(draftItems[section] ?? const [])
+        : const [];
+  }
 
   Future<CareerProfile> send(PendingMutation request) async {
     requests.add(request);
     if (offline) throw const SocketException('Offline fixture');
     final replay = _byKey[request.key];
-    if (replay != null) return replay;
+    if (replay != null) {
+      if (_payloads[request.key] != request.encode()) {
+        throw const PostgrestException(message: 'IDEMPOTENCY_KEY_REUSE');
+      }
+      return replay;
+    }
     if (rejectNext case final String code) {
       rejectNext = null;
       throw PostgrestException(message: code, code: 'P0001');
@@ -36,29 +53,43 @@ class FakeEntityServer {
     final section = EntitySection.parse(request.section);
     final items = [...api.server.of(section)];
     final index = items.indexWhere((i) => i.id == request.itemId);
+    final drafts = List<ProfileItem>.of(draftItems[section] ?? const []);
+    final draftIndex = drafts.indexWhere((i) => i.id == request.itemId);
     if (request.type == 'delete_item') {
-      if (index < 0) {
+      if (request.isDraft && index >= 0) {
+        throw const PostgrestException(message: 'VERSION_CONFLICT');
+      }
+      if (index < 0 && draftIndex < 0) {
         throw const PostgrestException(
           message: 'ITEM_NOT_FOUND',
           code: 'P0001',
         );
       }
-      items.removeAt(index);
+      if (index >= 0) items.removeAt(index);
+      if (draftIndex >= 0) drafts.removeAt(draftIndex);
     } else {
       final draft = ProfileItem.fromJson(section, request.value);
       final saved = ProfileItem(
         id: draft.id,
         section: section,
-        version: index < 0 ? 1 : items[index].version + 1,
-        complete: draft.locallyComplete,
+        version: index >= 0
+            ? items[index].version + 1
+            : draftIndex >= 0
+            ? drafts[draftIndex].version + 1
+            : 1,
+        complete: !request.isDraft && draft.locallyComplete,
+        isDraft: request.isDraft,
         values: draft.values,
       );
-      if (index < 0) {
-        items.add(saved);
+      if (index >= 0) items.removeAt(index);
+      if (draftIndex >= 0) drafts.removeAt(draftIndex);
+      if (request.isDraft) {
+        drafts.add(saved);
       } else {
-        items[index] = saved;
+        items.add(saved);
       }
     }
+    draftItems[section] = drafts;
     final current = api.server;
     api.server = CareerProfile(
       id: current.id,
@@ -75,6 +106,7 @@ class FakeEntityServer {
       items: {...current.items, section: items},
     );
     _byKey[request.key] = api.server;
+    _payloads[request.key] = request.encode();
     if (loseNextResponse) {
       loseNextResponse = false;
       throw const SocketException('Response lost fixture');
