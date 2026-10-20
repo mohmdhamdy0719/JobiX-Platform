@@ -1,0 +1,82 @@
+# JobiX — Read-Only Development Preflight for Migration 024
+
+Perform the read-only preflight for the reviewed Migration 024 and its dedicated runner.
+
+**This task authorizes inspection only. It does not authorize applying any migration or changing any remote state.**
+
+## Target
+
+Intended Supabase Development project reference:
+
+`lmouxhbjhtqdtiqijcee`
+
+Migration path:
+
+`mobile/jobix/supabase/migrations/202610200024_persisted_profile_entry_drafts.sql`
+
+Expected SHA-256:
+
+`f246e45dce62c0d03457fe825ab2db14b687f32a92661572867e2fa1a5a48af6`
+
+## 1. Confirm access safely
+
+- Inspect existing authorized Development connectivity and credentials without printing secrets or connection strings.
+- Do not create, rotate, reveal, or change credentials.
+- Do not change roles, grants, IAM, billing, network configuration, or TLS settings.
+- Do not fall back to Production, an administrative account, or another target.
+- Confirm the target project identity using the existing authorized connection and independent project-reference evidence.
+- If no suitable read-only Development connection is already authorized, stop and report exactly what access is missing. Do not attempt another route.
+
+## 2. Read-only transaction
+
+If authorized access is available, run only metadata and aggregate inspection queries inside:
+
+`BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;`
+
+Commit or roll back the read-only transaction after inspection.
+
+Verify:
+
+1. `current_database()`, `session_user`, and `current_user`, plus project-reference evidence.
+2. Migration ledger versions 012–023 and their checksums against the exact checked-in migration files.
+3. Whether 024 is absent, already applied with the exact checksum, or in a conflicting/partial state.
+4. The required tables, columns, constraints, indexes, triggers, function signatures and definitions, owners, security properties, ACLs, RLS policies, and relevant default privileges.
+5. Whether the actual connected role meets the new runner's documented requirements without elevated or administrative privileges.
+6. Aggregate row counts and structural-invalidity counts for the eight career-entry tables. Do not output user IDs, row contents, profile text, or secrets.
+7. Existing incomplete legacy rows that may be affected by the migration.
+8. Relevant active export/upload work and lock contention using read-only inspection only.
+9. Existing Resume Layout configuration and other required invariants using privacy-preserving comparisons or aggregate checks. Do not modify or recompute anything.
+
+Do not call mutation, recomputation, recovery, layout-write, or export-source functions. Do not create test users or fixtures in the remote database.
+
+## 3. Backup verification
+
+Inspect available evidence of the Development project's backup/recovery status without changing the subscription or creating resources.
+
+Report whether a usable restore point and documented recovery procedure are confirmed. Do not claim that a backup exists merely because the dashboard offers a Backups page.
+
+## 4. Stop conditions
+
+Stop and report without repair if:
+
+- The target identity cannot be independently verified.
+- The migration history or any checksum is missing, mismatched, or ambiguous.
+- The connected role is not an approved least-privilege execution identity.
+- Schema objects, owners, permissions, or existing data differ from the reviewed assumptions.
+- The read-only transaction or any query cannot be guaranteed not to mutate remote state.
+- Suitable recovery coverage cannot be confirmed.
+
+Do not execute the migration runner during this task, even in verification-only mode.
+
+## 5. Final report
+
+Clearly separate:
+- Checks performed and actual evidence.
+- Checks not performed and why.
+- Live Development blockers.
+- Backup/recovery status.
+- Whether a separate execution approval could reasonably be considered next.
+
+Confirm explicitly that no remote state was changed and no migration, APK build, export, AI call, or Credit operation occurred.
+
+Stop after reporting. Do not apply Migration 024.
