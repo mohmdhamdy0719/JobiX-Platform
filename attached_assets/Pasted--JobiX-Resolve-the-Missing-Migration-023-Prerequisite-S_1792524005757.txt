@@ -1,0 +1,30 @@
+## JobiX — Resolve the Missing Migration 023 Prerequisite Safely
+
+Development read-only inspection established:
+
+- Migration ledger entries 012–022 exist with the reported hashes.
+- No ledger entries were returned for Migration 023 or 024.
+- `public.education_institution_catalog` is absent.
+- `public.study_field_catalog` is absent.
+- A search of `public.pg_class` for names matching `%institution%catalog%` or `%study%field%catalog%` returned no rows.
+- Migration 023 is `mobile/jobix/supabase/migrations/202610190023_education_catalog.sql`, with expected SHA-256 `462f8ee5bd4e094539996615a8aa2b1433f257fa5cd6161eb3d811814d2d3372`.
+
+Prepare a plan only.
+
+1. Review the exact Migration 023 source and its dependencies.
+2. Review the current runner and design a dedicated, guarded Development mode for Migration 023, or explain the safest alternative if that is incompatible with the established migration framework.
+3. Require the exact source hash, verified Development target, approved execution identity, verified TLS, ledger checksums 012–022, conflict detection, appropriate locks, and one atomic transaction for schema/data changes plus ledger insertion.
+4. Ensure any failure rolls back both catalog changes and the ledger record. Do not auto-repair history or accept an already-existing divergent schema.
+5. Specify read-only post-migration checks for both catalog tables, their schema, RLS, grants, indexes, constraints, and aggregate seed counts: 139 institutions across 7 types and 62 study fields.
+6. Preserve the existing bundled Education fallback behavior and do not change unrelated app behavior.
+7. List required backup/recovery evidence and role/permission prerequisites before execution approval.
+
+Restrictions:
+- Do not connect to or modify any remote database.
+- Do not apply Migration 023 or 024.
+- Do not insert or repair ledger records manually.
+- Do not change credentials, grants, IAM, billing, configuration, or infrastructure.
+- Do not build an APK, deploy code, run AI calls, export PDFs, or perform Credit operations.
+
+Return the exact files that would need changes, test plan, blockers, and recommended execution sequence. Stop for review; do not execute.
+
