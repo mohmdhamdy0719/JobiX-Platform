@@ -270,6 +270,18 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     var saveAsDraft = false;
     if (found.isNotEmpty) {
       final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
+      if (serverItem != null) {
+        // An incomplete edit must never unpublish the saved Complete row.
+        // Keep these changes in the editor until corrected or abandoned.
+        setState(() => problems = found);
+        showJobixFeedback(
+          context,
+          ar
+              ? 'أكمل الحقول المطلوبة قبل الحفظ. لم يتغير الإدخال المحفوظ.'
+              : 'Complete the required fields before saving. Your saved entry is unchanged.',
+        );
+        return;
+      }
       final saveDraft = await showDialog<bool>(
         context: context,
         builder: (dialog) => JobixAlertDialog(

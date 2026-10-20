@@ -3010,6 +3010,67 @@ void main() {
     expect(api.server.of(EntitySection.experience).single.id, complete.id);
   });
 
+  for (final section in EntitySection.values) {
+    testWidgets('Complete edit stays saved when incomplete: ${section.key}', (
+      tester,
+    ) async {
+      final repo = EntityRepository(repository, entities.send);
+      final entry = ProfileItem(
+        id: 'complete-${section.key}',
+        section: section,
+        values: completeEntryValues[section]!,
+      );
+      await repo.upsert(api.server, entry);
+      final original = api.server.encode();
+      entities.requests.clear();
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(
+        tester,
+        '/career/edit/${section.key}/${entry.id}?origin=career',
+      );
+      // Education's first required value is a dropdown, so clear institution.
+      final field = section == EntitySection.education
+          ? 'institution'
+          : section.fields.first.name;
+      final input = find.byKey(Key('field-$field'));
+      await tester.ensureVisible(input);
+      await tester.enterText(input, '');
+      await tester.ensureVisible(find.byKey(const Key('editor-save')));
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      expect(find.text('Save as draft?'), findsNothing);
+      expect(
+        find.text(
+          'Complete the required fields before saving. Your saved entry is unchanged.',
+        ),
+        findsOneWidget,
+      );
+      expect(entities.requests, isEmpty);
+      expect(api.server.encode(), original);
+      expect(tester.widget<TextField>(input).controller!.text, isEmpty);
+
+      // Back may abandon this edit, but never deletes the authoritative row.
+      await tester.tap(find.byKey(const Key('editor-back')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('discard-entity')));
+      await tester.pumpAndSettle();
+      expect(api.server.encode(), original);
+      expect(entities.requests, isEmpty);
+      await route(
+        tester,
+        '/career/edit/${section.key}/${entry.id}?origin=career',
+      );
+      expect(
+        tester.widget<TextField>(input).controller!.text,
+        entry.text(field),
+      );
+    });
+  }
+
   testWidgets('summary example remains unsaved until explicit Save', (
     tester,
   ) async {

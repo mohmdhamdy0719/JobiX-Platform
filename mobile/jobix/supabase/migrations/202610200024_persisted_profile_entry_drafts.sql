@@ -287,20 +287,31 @@ BEGIN
   THEN RAISE EXCEPTION 'VALIDATION_FAILED'; END IF;
   item_id:=(item->>'id')::uuid;
 
+  table_name:=CASE section_name
+    WHEN 'experience' THEN 'profile_experiences'
+    WHEN 'volunteer' THEN 'profile_volunteer_experiences'
+    WHEN 'education' THEN 'profile_education'
+    WHEN 'certification' THEN 'profile_certifications'
+    WHEN 'achievement' THEN 'profile_achievements'
+    WHEN 'project' THEN 'profile_projects'
+    WHEN 'skill' THEN 'profile_skills'
+    WHEN 'language' THEN 'profile_languages'
+  END;
+  -- The profile lock serializes all supported mutations. A stale client or a
+  -- direct RPC must not turn a saved Complete entry into a hidden Draft.
+  -- Replays above still return the original acknowledged result.
+  IF is_draft AND kind='upsert_item' THEN
+    EXECUTE format(
+      'SELECT entry.is_draft FROM public.%I entry WHERE entry.id=$1 AND entry.profile_id=$2',
+      table_name
+    ) INTO persisted_draft USING item_id,p.id;
+    IF persisted_draft=false THEN RAISE EXCEPTION 'VALIDATION_FAILED'; END IF;
+  END IF;
+
   IF kind='delete_item' THEN
     IF NOT is_draft OR (item-'id')<>'{}'::jsonb THEN
       RAISE EXCEPTION 'VALIDATION_FAILED';
     END IF;
-    table_name:=CASE section_name
-      WHEN 'experience' THEN 'profile_experiences'
-      WHEN 'volunteer' THEN 'profile_volunteer_experiences'
-      WHEN 'education' THEN 'profile_education'
-      WHEN 'certification' THEN 'profile_certifications'
-      WHEN 'achievement' THEN 'profile_achievements'
-      WHEN 'project' THEN 'profile_projects'
-      WHEN 'skill' THEN 'profile_skills'
-      WHEN 'language' THEN 'profile_languages'
-    END;
     EXECUTE format(
       'SELECT entry.is_draft FROM public.%I entry WHERE entry.id=$1 AND entry.profile_id=$2',
       table_name

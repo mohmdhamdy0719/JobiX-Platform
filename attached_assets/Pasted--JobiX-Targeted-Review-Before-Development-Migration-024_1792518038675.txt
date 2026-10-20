@@ -1,0 +1,62 @@
+## JobiX — Targeted Review Before Development Migration 024
+
+Continue from the existing implementation. Do not rebuild the feature or rewrite unrelated code.
+
+### 1. Resolve the completed-entry / draft-edit behavior
+
+Review this exact scenario for all applicable career sections:
+
+1. A user has an existing Complete entry saved on Supabase.
+2. The user edits it and removes or changes a required field, making it incomplete.
+3. The user selects **Save as draft**.
+4. The user later reopens the draft, completes it, or discards it.
+
+Determine whether the current implementation converts the original Complete row into a Draft and consequently removes it from Resume Preview/PDF.
+
+Recommend and implement the safest behavior consistent with JobiX's existing architecture:
+
+- Supabase remains the authoritative source.
+- Do not silently remove an existing Complete entry from the Resume just because an edit is incomplete.
+- Prefer preserving the existing Complete entry while storing the incomplete edit as a separate Draft, if this can be implemented safely without excessive scope.
+- If separate drafts are not compatible with the current architecture, explain the trade-offs and propose the smallest safe alternative before implementing a destructive behavior.
+- A genuinely new incomplete entry should still be savable as a persistent Draft.
+- Completing a Draft should use a stable record ID and become visible only after the authoritative save succeeds.
+- Discarding a Draft must never delete a Complete entry.
+- Preserve idempotency, version-conflict handling, RLS, uncertain-outcome reconciliation, and server-side exclusion of Drafts from Resume Preview/PDF.
+
+### 2. Review migration and tests
+
+Review `supabase/migrations/202610200024_persisted_profile_entry_drafts.sql` and `supabase/tests/profile_entry_drafts.sql` alongside the current implementation.
+
+Check:
+- Complete-entry edits and Draft behavior across all eight sections.
+- Server-side validation and existing profile mutation semantics.
+- Snapshot and PDF-source filtering.
+- RLS and cross-account access.
+- Idempotent retries, version conflicts, same-ID completion, and guarded discard.
+- Resume Layout order/visibility remaining unchanged.
+- Existing completed rows and historical data compatibility.
+
+Add focused regression tests for the exact scenario above. Do not weaken or skip existing assertions to obtain a passing result.
+
+### 3. Verification constraints
+
+Run the relevant SQL and Flutter tests, plus `flutter analyze --no-pub`, formatting checks, and `git diff --check` where applicable. Report any unavailable or unverified checks honestly.
+
+Do not:
+- Apply any migration to Development or Production.
+- Deploy or change infrastructure, IAM, billing, or configuration.
+- Build or publish a new APK yet.
+- Trigger AI calls, PDF exports, or Credit transactions.
+- Modify unrelated features or rewrite the existing implementation.
+
+### 4. Final report
+
+Report:
+1. The chosen behavior for editing existing Complete entries into Drafts and why.
+2. Exact files changed.
+3. Tests run and their results.
+4. Migration changes and any compatibility risks.
+5. Whether the implementation is ready for a separate, explicit decision to apply Migration 024 to Development.
+
+Stop after reporting. Do not apply the migration or build an APK.

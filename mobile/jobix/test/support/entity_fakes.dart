@@ -7,6 +7,46 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'slice_fakes.dart';
 
+/// Structurally valid synthetic fixtures, including non-scoring Volunteer.
+const completeEntryValues = <EntitySection, Map<String, Object?>>{
+  EntitySection.experience: {
+    'job_title': 'Analyst',
+    'company': 'Example',
+    'start_month': '2022-01',
+    'is_current': true,
+  },
+  EntitySection.volunteer: {
+    'organization': 'Community Group',
+    'role': 'Coordinator',
+    'start_month': '2022-01',
+    'is_current': true,
+  },
+  EntitySection.education: {
+    'degree': 'Bachelor',
+    'institution': 'Example University',
+    'field_of_study': 'Commerce',
+    'start_month': '2018-01',
+    'end_month': '2022-01',
+  },
+  EntitySection.certification: {
+    'name': 'Example certification',
+    'issuer': 'Example Institute',
+    'issue_month': '2022-01',
+  },
+  EntitySection.achievement: {
+    'title': 'Example achievement',
+    'issuer': 'Example Institute',
+    'achieved_month': '2022-01',
+  },
+  EntitySection.project: {
+    'name': 'Example project',
+    'role': 'Coordinator',
+    'project_month': '2022-01',
+  },
+  EntitySection.skill: {'name': 'Communication'},
+  EntitySection.language: {'name': 'Arabic', 'proficiency': 'NATIVE'},
+};
+
 /// In-memory stand-in for the `profile_mutate` RPC with the same contract
 /// semantics: optimistic version check, idempotent command keys and typed
 /// rejections. It edits the shared [FakeProfileApi.server] snapshot.
@@ -55,6 +95,9 @@ class FakeEntityServer {
     final index = items.indexWhere((i) => i.id == request.itemId);
     final drafts = List<ProfileItem>.of(draftItems[section] ?? const []);
     final draftIndex = drafts.indexWhere((i) => i.id == request.itemId);
+    if (request.type == 'upsert_item' && request.isDraft && index >= 0) {
+      throw const PostgrestException(message: 'VALIDATION_FAILED');
+    }
     if (request.type == 'delete_item') {
       if (request.isDraft && index >= 0) {
         throw const PostgrestException(message: 'VERSION_CONFLICT');

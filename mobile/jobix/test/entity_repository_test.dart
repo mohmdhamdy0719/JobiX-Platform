@@ -59,6 +59,73 @@ void main() {
     },
   );
 
+  for (final section in EntitySection.values) {
+    test('Complete entry cannot become a Draft: ${section.key}', () async {
+      final complete = ProfileItem(
+        id: 'original-${section.key}',
+        section: section,
+        values: completeEntryValues[section]!,
+      );
+      await repository.upsert(api.server, complete);
+      final original = api.server.encode();
+      final incomplete = complete.copyWith(section.fields.first.name, '');
+      await expectLater(
+        repository.upsert(api.server, incomplete, isDraft: true),
+        throwsA(
+          isA<PostgrestException>().having(
+            (e) => e.message,
+            'message',
+            'VALIDATION_FAILED',
+          ),
+        ),
+      );
+      expect(api.server.encode(), original);
+      expect(await repository.pending(api.server.id), isNull);
+      expect(await repository.savedDrafts(api.server.id, section), isEmpty);
+
+      // A genuine new Draft still reopens and promotes with its same ID.
+      final draft = ProfileItem(id: 'new-${section.key}', section: section);
+      await repository.upsert(api.server, draft, isDraft: true);
+      final reopened = await open().savedDraft(
+        api.server.id,
+        section,
+        draft.id,
+      );
+      expect(reopened!.isDraft, isTrue);
+      expect(api.server.of(section).single.id, complete.id);
+      server.loseNextResponse = true;
+      await expectLater(
+        repository.upsert(
+          api.server,
+          ProfileItem(
+            id: draft.id,
+            section: section,
+            values: {
+              ...completeEntryValues[section]!,
+              if (section == EntitySection.skill ||
+                  section == EntitySection.language)
+                'name': 'Second ${section.key}',
+            },
+          ),
+        ),
+        throwsA(isA<SocketException>()),
+      );
+      final key = (await repository.pending(api.server.id))!.key;
+      await open().resume(api.server.id);
+      expect(server.requests.last.key, key);
+      expect(
+        api.server.of(section).map((i) => i.id),
+        containsAll([complete.id, draft.id]),
+      );
+      expect(await repository.savedDrafts(api.server.id, section), isEmpty);
+      await expectLater(
+        repository.discardSavedDraft(api.server, section, draft.id),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(api.server.of(section).length, 2);
+    });
+  }
+
   test('acknowledged upsert clears the outbox and the editor draft', () async {
     await repository.retainDraft(api.server.id, experience);
     final saved = await repository.upsert(api.server, experience);
