@@ -468,10 +468,11 @@ export async function migrateProfileEntryDrafts({
   const uri=new URL(rawUrl);
   if(!['postgres:','postgresql:'].includes(uri.protocol)||
     !uri.username.endsWith('.'+ref)||
+    uri.username.length<=ref.length+1||!uri.password||
     !uri.hostname.endsWith('.pooler.supabase.com')||
     uri.pathname!='/postgres'||uri.port!=='5432'||uri.hash||
-    ['host','hostaddr','port','dbname','database','user','password','options',
-      'service','servicefile'].some(key=>uri.searchParams.has(key))) {
+    [...uri.searchParams.keys()].some(key=>
+      !['sslmode','sslrootcert','sslcert','sslkey'].includes(key))) {
     throw Error('DEV_TARGET_REJECTED');
   }
   for(const key of ['sslmode','sslrootcert','sslcert','sslkey'])uri.searchParams.delete(key);
@@ -479,7 +480,8 @@ export async function migrateProfileEntryDrafts({
   if(!ca.trimStart().startsWith('-----BEGIN CERTIFICATE-----')||
     !ca.includes('-----END CERTIFICATE-----'))throw Error('DEV_CA_FILE_INVALID');
 
-  const pool=poolFactory({connectionString:uri.toString(),max:1,
+  const configuredRole=uri.username.slice(0,-ref.length-1);
+  const pool=poolFactory({connectionString:uri.toString(),max:1,options:'',
     connectionTimeoutMillis:15000,
     ssl:{rejectUnauthorized:true,ca},statement_timeout:30000});
   let client,transactionOpen=false,commitStarted=false;
@@ -498,7 +500,8 @@ export async function migrateProfileEntryDrafts({
     if(advisory?.acquired!==true)throw Error('MIGRATION_LOCK_BUSY');
 
     const identity=(await client.query(`SELECT current_database() AS database,
-      current_user AS role,r.rolcanlogin,r.rolsuper,r.rolbypassrls,
+      current_user AS role,session_user AS session_role,
+      r.rolcanlogin,r.rolsuper,r.rolbypassrls,
       r.rolcreaterole,r.rolcreatedb,
       NOT EXISTS(SELECT 1 FROM pg_roles elevated
         WHERE elevated.oid<>r.oid AND
@@ -508,12 +511,16 @@ export async function migrateProfileEntryDrafts({
              'supabase_auth_admin','supabase_storage_admin'))
           AND pg_has_role(r.oid,elevated.oid,'MEMBER')) AS no_admin_membership
       FROM pg_roles r WHERE r.rolname=current_user`)).rows[0];
-    if(identity?.database!=='postgres'||identity.role==null) {
+    if(identity?.database!=='postgres'||identity.role!==configuredRole||
+      identity.session_role!==configuredRole) {
       throw Error('DEV_TARGET_IDENTITY_MISMATCH');
     }
     if(identity.rolcanlogin!==true||identity.rolsuper!==false||
       identity.rolbypassrls!==false||identity.rolcreaterole!==false||
-      identity.rolcreatedb!==false||identity.no_admin_membership!==true) {
+      identity.rolcreatedb!==false||identity.no_admin_membership!==true||
+      /^(postgres|anon|authenticated|service_role|authenticator)$/.test(identity.role)||
+      identity.role.startsWith('supabase_')||
+      identity.role.startsWith('jobix_export_')) {
       throw Error('MIGRATION_IDENTITY_UNSAFE');
     }
 
@@ -704,29 +711,38 @@ export async function migrateProfileEntryDrafts({
       throw Error('MIGRATION_024_LEDGER_CHANGED');
     }
 
+    // Match 024's Complete-save structural requirements, not the separate
+    // completeness/scoring thresholds (which also consider description length).
     const incompleteRows=(await client.query(`SELECT
       (SELECT count(*)::bigint FROM public.profile_experiences e
-        WHERE public.jobix_experience_complete(e) IS DISTINCT FROM true) AS experience,
+        WHERE nullif(btrim(e.job_title),'') IS NULL
+          OR nullif(btrim(e.company),'') IS NULL OR e.start_month IS NULL
+          OR (NOT e.is_current AND e.end_month IS NULL)) AS experience,
       (SELECT count(*)::bigint FROM public.profile_education e
-        WHERE public.jobix_education_complete(e) IS DISTINCT FROM true) AS education,
+        WHERE nullif(btrim(e.degree),'') IS NULL
+          OR nullif(btrim(e.institution),'') IS NULL
+          OR nullif(btrim(e.field_of_study),'') IS NULL OR e.start_month IS NULL
+          OR (NOT e.is_current AND e.end_month IS NULL)) AS education,
       (SELECT count(*)::bigint FROM public.profile_certifications e
-        WHERE public.jobix_meaningful(e.name,1) IS DISTINCT FROM true
-          OR public.jobix_meaningful(e.issuer,1) IS DISTINCT FROM true
+        WHERE nullif(btrim(e.name),'') IS NULL
+          OR nullif(btrim(e.issuer),'') IS NULL
           OR e.issue_month IS NULL)
         AS certification,
       (SELECT count(*)::bigint FROM public.profile_achievements e
-        WHERE public.jobix_achievement_complete(e) IS DISTINCT FROM true)
+        WHERE nullif(btrim(e.title),'') IS NULL
+          OR nullif(btrim(e.issuer),'') IS NULL OR e.achieved_month IS NULL)
         AS achievement,
       (SELECT count(*)::bigint FROM public.profile_projects e
-        WHERE public.jobix_project_complete(e) IS DISTINCT FROM true) AS project,
+        WHERE nullif(btrim(e.name),'') IS NULL
+          OR nullif(btrim(e.role),'') IS NULL OR e.project_month IS NULL) AS project,
       (SELECT count(*)::bigint FROM public.profile_skills e
-        WHERE public.jobix_meaningful(e.name,1) IS DISTINCT FROM true) AS skill,
+        WHERE nullif(btrim(e.name),'') IS NULL) AS skill,
       (SELECT count(*)::bigint FROM public.profile_languages e
-        WHERE public.jobix_meaningful(e.name,1) IS DISTINCT FROM true
+        WHERE nullif(btrim(e.name),'') IS NULL
           OR e.proficiency IS NULL) AS language,
       (SELECT count(*)::bigint FROM public.profile_volunteer_experiences e
-        WHERE public.jobix_meaningful(e.organization,1) IS DISTINCT FROM true
-          OR public.jobix_meaningful(e.role,1) IS DISTINCT FROM true
+        WHERE nullif(btrim(e.organization),'') IS NULL
+          OR nullif(btrim(e.role),'') IS NULL
           OR e.start_month IS NULL
           OR (e.is_current AND e.end_month IS NOT NULL)
           OR (NOT e.is_current AND
@@ -769,8 +785,9 @@ export async function migrateProfileEntryDrafts({
     }
     throw error;
   } finally {
-    client?.release();
-    await pool.end();
+    // Cleanup must not replace a failure (especially an unknown COMMIT outcome).
+    try { client?.release(); } catch {}
+    try { await pool.end(); } catch {}
   }
 }
 

@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 import {mkdtemp,readFile,rm,writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
+import {fileURLToPath} from 'node:url';
 import {
   migrate,
   migrateProfileEntryDrafts,
@@ -267,19 +269,26 @@ const draftVersions=[
 const syntheticCa='-----BEGIN CERTIFICATE-----\nlocal-test-only\n-----END CERTIFICATE-----\n';
 
 async function draftFixture({
-  target='postgres.lmouxhbjhtqdtiqijcee@aws-0-me-central1.pooler.supabase.com',
-  database='postgres',unsafeRole=false,adminMembership=false,
+  target=null,
+  database='postgres',role='jobix_migration_owner',sessionRole=null,
+  unsafeRole=false,adminMembership=false,urlQuery='',withoutPassword=false,
   missingRelation=false,missingFunction=false,missingColumn=false,
   schemaState='absent',ownerFailure=false,permissionFailure=false,
   ledgerState='prior',ledgerMismatch=null,legacyIncomplete=false,
-  activeWork=false,lockBusy=false,tableLockBusy=false,failAt=null,
+  activeWork=false,unsettledUpload=false,heldReservation=false,
+  lockBusy=false,tableLockBusy=false,failAt=null,
   postAssertionFailure=false,
 }={}) {
   const dir=await mkdtemp(join(os.tmpdir(),'jobix-migration-024-'));
   const caFile=join(dir,'development-ca.pem');
   await writeFile(caFile,syntheticCa);
   const originalUrl=process.env.JOBIX_DEV_DATABASE_URL;
-  process.env.JOBIX_DEV_DATABASE_URL=`postgresql://${target}:5432/postgres`;
+  const connectionTarget=target??
+    `${role}.lmouxhbjhtqdtiqijcee@aws-0-me-central1.pooler.supabase.com`;
+  const credentialTarget=withoutPassword?connectionTarget:
+    connectionTarget.replace('@',':synthetic-password@');
+  process.env.JOBIX_DEV_DATABASE_URL=
+    `postgresql://${credentialTarget}:5432/postgres${urlQuery}`;
   const state={
     queries:[],migrationCount:0,ledgerInsertCount:0,committed:false,
     rolledBack:false,schema:'absent',ledger024:false,
@@ -302,7 +311,7 @@ async function draftFixture({
             }
             if(sql.includes('current_database() AS database')) {
               return {rows:[{
-                database,role:'jobix_migration_owner',rolcanlogin:true,
+                database,role,session_role:sessionRole??role,rolcanlogin:true,
                 rolsuper:unsafeRole,rolbypassrls:false,rolcreaterole:false,
                 rolcreatedb:false,no_admin_membership:!adminMembership,
               }]};
@@ -390,10 +399,10 @@ async function draftFixture({
               return {rows:[{count:activeWork?'1':'0'}]};
             }
             if(sql.includes('FROM public.export_upload_flights')) {
-              return {rows:[{count:'0'}]};
+              return {rows:[{count:unsettledUpload?'1':'0'}]};
             }
             if(sql.includes('FROM public.export_cost_reservations')) {
-              return {rows:[{count:'0'}]};
+              return {rows:[{count:heldReservation?'1':'0'}]};
             }
             if(sql.includes('CREATE FUNCTION public.save_profile_entry')) {
               state.migrationCount++;
@@ -499,7 +508,8 @@ test('Production and unknown database targets are rejected before pool creation'
 });
 
 test('unsafe execution identities and privileged role memberships are rejected',async()=>{
-  for(const options of [{unsafeRole:true},{adminMembership:true}]) {
+  for(const options of [{unsafeRole:true},{adminMembership:true},
+    {role:'postgres'},{role:'jobix_export_runtime'}]) {
     await withDraftFixture(options,async f=>{
       await assert.rejects(migrateProfileEntryDrafts({
         approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
@@ -574,6 +584,8 @@ test('owner, privilege, legacy-data, active-work, and lock preflights fail close
     [{permissionFailure:true},'MIGRATION_024_REQUIRED_PRIVILEGES_MISSING'],
     [{legacyIncomplete:true},'MIGRATION_024_LEGACY_INCOMPLETE_ROWS_PRESENT'],
       [{activeWork:true},'MIGRATION_024_ACTIVE_WORK_PRESENT'],
+      [{unsettledUpload:true},'MIGRATION_024_ACTIVE_WORK_PRESENT'],
+      [{heldReservation:true},'MIGRATION_024_ACTIVE_WORK_PRESENT'],
       [{lockBusy:true},'MIGRATION_LOCK_BUSY'],
       [{tableLockBusy:true},'MIGRATION_LOCK_CONTENTION'],
   ];
@@ -632,4 +644,73 @@ test('existing runner entry points still reject calls without explicit approval'
   await assert.rejects(migrateResumeLayout({approved:false}),{
     message:'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED',
   });
+});
+
+test('Migration 024 supported path applies once with TLS and atomic ledger',async()=>{
+  await withDraftFixture({},async f=>{
+    assert.equal(await migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),'applied');
+    assert.equal(f.state.poolOptions.ssl.rejectUnauthorized,true);
+    assert.equal(f.state.poolOptions.max,1);
+    assert.equal(f.state.poolOptions.options,'');
+    assert.equal(f.state.migrationCount,1);
+    assert.equal(f.state.ledgerInsertCount,1);
+    assert.equal(f.state.committed,true);
+    assert.equal(f.state.rolledBack,false);
+    assert.ok(f.state.queries.some(q=>q.sql==='SET LOCAL row_security=off'));
+    assert.ok(f.state.queries.some(q=>
+      q.sql.includes("pg_try_advisory_xact_lock(hashtext('jobix_phase3_dev_migrations'))")));
+  });
+});
+
+test('Migration 024 failed postcondition rolls back without claiming success',async()=>{
+  await withDraftFixture({postAssertionFailure:true},async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_024_POST_ASSERTION_FAILED'});
+    assert.equal(f.state.committed,false);
+    assert.equal(f.state.rolledBack,true);
+    assert.equal(f.state.ledger024,false);
+  });
+});
+
+test('Migration 024 CLI rejects mixed or ambiguous arguments without credentials',()=>{
+  for(const args of [
+    ['--apply-development-profile-entry-drafts-024','--apply-development'],
+    ['--apply-development-profile-entry-drafts-024','--ca-file','unused','--extra'],
+    ['--apply-development-profile-entry-drafts-024','--ca-file','--apply-unknown'],
+  ]) {
+    const result=spawnSync(process.execPath,[
+      fileURLToPath(new URL('./apply_phase3_dev.mjs',import.meta.url)),...args,
+    ],{encoding:'utf8',env:{},timeout:10000});
+    assert.equal(result.status,1);
+    assert.match(result.stderr,/BLOCKED_AMBIGUOUS_MODE/);
+    assert.equal(result.stdout,'');
+  }
+});
+
+test('Migration 024 rejects credential fallbacks and URL connection overrides',async()=>{
+  for(const options of [
+    {withoutPassword:true},{urlQuery:'?ssl=false'},
+    {urlQuery:'?ssl=no-verify'},{urlQuery:'?options=-c%20role%3Dpostgres'},
+    {urlQuery:'?host=remote.example.invalid'},
+  ])await withDraftFixture(options,async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'DEV_TARGET_REJECTED'});
+    assert.equal(f.state.poolOptions,undefined);
+  });
+});
+
+test('Migration 024 rejects session-role or database identity mismatch',async()=>{
+  for(const options of [{sessionRole:'other_login'},{database:'other_database'}]) {
+    await withDraftFixture(options,async f=>{
+      await assert.rejects(migrateProfileEntryDrafts({
+        approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      }),{message:'DEV_TARGET_IDENTITY_MISMATCH'});
+      assert.equal(f.state.migrationCount,0);
+      assert.equal(f.state.rolledBack,true);
+    });
+  }
 });

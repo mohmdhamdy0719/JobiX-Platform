@@ -5,8 +5,9 @@ mode="${1:-full}"
 if [[ $# -gt 1 || ( "$mode" != "full" && "$mode" != "--resume-export-only" &&
   "$mode" != "--resume-export-cost-unit-only" && "$mode" != "--resume-layout-only" &&
   "$mode" != "--education-catalog-only" &&
+  "$mode" != "--profile-entry-drafts-runner-only" &&
   "$mode" != "--profile-entry-drafts-only" ) ]]; then
-  echo "Usage: $0 [--resume-export-only|--resume-export-cost-unit-only|--resume-layout-only|--education-catalog-only|--profile-entry-drafts-only]" >&2
+  echo "Usage: $0 [--resume-export-only|--resume-export-cost-unit-only|--resume-layout-only|--education-catalog-only|--profile-entry-drafts-only|--profile-entry-drafts-runner-only]" >&2
   exit 2
 fi
 work="$(mktemp -d /tmp/jobix-rls.XXXXXX)"
@@ -83,6 +84,22 @@ if [[ "$mode" != "full" ]]; then
     -f supabase/migrations/202610080015_resume_export_local_hardening.sql \
     -f supabase/migrations/202610080016_resume_export_cleanup_hooks.sql
   echo "PASS: local Auth fixture and prerequisite migrations 001–016"
+
+  if [[ "$mode" == "--profile-entry-drafts-runner-only" ]]; then
+    "${local_psql[@]}" \
+      -f supabase/migrations/202610080017_resume_export_deletion.sql \
+      -f supabase/migrations/202610080018_resume_export_admission.sql \
+      -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
+      -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
+      -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql \
+      -f supabase/migrations/202610170022_resume_layout.sql \
+      -f supabase/migrations/202610190023_education_catalog.sql
+    JOBIX_DISPOSABLE_PG_SOCKET="$work/socket" \
+      JOBIX_DISPOSABLE_PG_DATA="$work/data" \
+      node tool/apply_phase3_dev.disposable.mjs
+    echo "PASS: Migration 024 guarded runner on disposable PostgreSQL"
+    exit 0
+  fi
 
   if [[ "$mode" == "--profile-entry-drafts-only" ]]; then
     "${local_psql[@]}" \
