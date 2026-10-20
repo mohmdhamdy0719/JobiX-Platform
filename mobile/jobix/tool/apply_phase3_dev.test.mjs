@@ -765,6 +765,9 @@ async function educationCatalogFixture({
   if(ledgerState==='applied-plus-024') {
     state.ledgerRows.push({version:profileEntryDraftVersion,sha256:reviewedDraftHash});
   }
+  if(ledgerState==='024-without-023') {
+    state.ledgerRows.push({version:profileEntryDraftVersion,sha256:reviewedDraftHash});
+  }
   const poolFactory=options=>{
     state.poolCreated=true;
     state.poolOptions=options;
@@ -791,6 +794,7 @@ async function educationCatalogFixture({
             if(sql.includes("to_regnamespace('public')")) {
               return {rows:[{
                 public_schema:true,auth_schema:true,migration_ledger:true,
+                ledger_columns:true,ledger_primary_key:true,
                 auth_uid:!missingPrerequisite,authenticated_role:true,
                 anon_role:true,service_role:true,
               }]};
@@ -888,6 +892,45 @@ test('Migration 023 rejects a changed 012–022 source before connecting',async(
   });
 });
 
+test('Migration 023 rejects its changed source and invalid CA before connecting',async()=>{
+  await withEducationFixture({changedPrerequisite:educationCatalogVersion},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      readMigrationSource:f.readMigrationSource,
+    }),{message:'MIGRATION_SOURCE_CHECKSUM_MISMATCH'});
+    assert.equal(f.state.poolCreated,false);
+  });
+  await withEducationFixture({},async f=>{
+    await writeFile(f.caFile,'not a certificate');
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'DEV_CA_FILE_INVALID'});
+    assert.equal(f.state.poolCreated,false);
+    await assert.rejects(migrateEducationCatalog({approved:false}),{
+      message:'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED',
+    });
+  });
+});
+
+test('Migration 023 rejects connection overrides and actual identity mismatch',async()=>{
+  for(const urlQuery of ['?options=-c%20role%3Dpostgres','?host=remote.invalid','?ssl=no-verify']) {
+    await withEducationFixture({urlQuery},async f=>{
+      await assert.rejects(migrateEducationCatalog({
+        approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      }),{message:'DEV_TARGET_REJECTED'});
+      assert.equal(f.state.poolCreated,false);
+    });
+  }
+  for(const options of [{sessionRole:'another_role'},{database:'another_database'}]) {
+    await withEducationFixture(options,async f=>{
+      await assert.rejects(migrateEducationCatalog({
+        approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      }),{message:'DEV_TARGET_IDENTITY_MISMATCH'});
+      assert.equal(f.state.migrationCount,0);
+    });
+  }
+});
+
 test('Migration 023 rejects wrong target, elevated identity, and admin membership',async()=>{
   await withEducationFixture({
     target:'postgres.otherproject@aws-0-me-central1.pooler.supabase.com',
@@ -946,6 +989,12 @@ test('Migration 023 rejects partial schema and inconsistent later ledger state',
     await assert.rejects(migrateEducationCatalog({
       approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
     }),{message:'MIGRATION_CHECKSUM_CONFLICT'});
+    assert.equal(f.state.migrationCount,0);
+  });
+  await withEducationFixture({ledgerState:'024-without-023'},async f=>{
+    await assert.rejects(migrateEducationCatalog({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_LEDGER_STATE_CONFLICT'});
     assert.equal(f.state.migrationCount,0);
   });
 });
@@ -1023,12 +1072,21 @@ test('Migration 023 exact ledger plus complete schema is verification-only',asyn
 });
 
 test('Migration 023 CLI rejects ambiguous flags before any connection',()=>{
-  const result=spawnSync(process.execPath,[
-    fileURLToPath(new URL('./apply_phase3_dev.mjs',import.meta.url)),
-    '--apply-development-education-catalog-023','--apply-development',
-    '--ca-file','unused',
-  ],{encoding:'utf8',env:{},timeout:10000});
-  assert.equal(result.status,1);
-  assert.match(result.stderr,/BLOCKED_AMBIGUOUS_MODE/);
-  assert.equal(result.stdout,'');
+  const mode='--apply-development-education-catalog-023';
+  for(const args of [
+    [mode,'--apply-development','--ca-file','unused'],
+    [mode,'--apply-development-resume-layout-022','--ca-file','unused'],
+    [mode,'--apply-development-resume-export-018-020','--ca-file','unused'],
+    [mode,'--apply-development-resume-export-cost-output-unit-021','--ca-file','unused'],
+    [mode,'--apply-development-profile-entry-drafts-024','--ca-file','unused'],
+    [mode,'--ca-file','unused','--extra'],
+    [mode,mode,'--ca-file','unused'],
+  ]) {
+    const result=spawnSync(process.execPath,[
+      fileURLToPath(new URL('./apply_phase3_dev.mjs',import.meta.url)),...args,
+    ],{encoding:'utf8',env:{},timeout:10000});
+    assert.equal(result.status,1);
+    assert.match(result.stderr,/BLOCKED_AMBIGUOUS_MODE/);
+    assert.equal(result.stdout,'');
+  }
 });

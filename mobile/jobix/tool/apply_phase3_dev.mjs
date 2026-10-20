@@ -715,6 +715,15 @@ export async function migrateEducationCatalog({
       to_regnamespace('public') IS NOT NULL AS public_schema,
       to_regnamespace('auth') IS NOT NULL AS auth_schema,
       to_regclass('public.jobix_export_migrations') IS NOT NULL AS migration_ledger,
+      (SELECT count(*)=2 AND bool_and(data_type='text' AND is_nullable='NO')
+        FROM information_schema.columns
+        WHERE table_schema='public' AND table_name='jobix_export_migrations'
+          AND column_name IN ('version','sha256')) AS ledger_columns,
+      EXISTS(SELECT 1 FROM pg_constraint con
+        JOIN pg_attribute att ON att.attrelid=con.conrelid AND att.attname='version'
+        WHERE con.conrelid=to_regclass('public.jobix_export_migrations')
+          AND con.contype='p' AND con.conkey=ARRAY[att.attnum]::smallint[]
+          AND con.convalidated) AS ledger_primary_key,
       to_regprocedure('auth.uid()') IS NOT NULL AS auth_uid,
       to_regrole('authenticated') IS NOT NULL AS authenticated_role,
       to_regrole('anon') IS NOT NULL AS anon_role,
@@ -731,7 +740,7 @@ export async function migrateEducationCatalog({
       has_table_privilege(current_user,'public.jobix_export_migrations','SELECT')
         AND has_table_privilege(current_user,'public.jobix_export_migrations','INSERT')
         AS ledger_permissions,
-      c.relowner=(SELECT oid FROM pg_roles WHERE rolname=current_user)
+      c.relkind='r' AND c.relowner=(SELECT oid FROM pg_roles WHERE rolname=current_user)
         AND NOT c.relforcerowsecurity AS ledger_owner,
       c.relrowsecurity AS ledger_rls
       FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
