@@ -29,6 +29,33 @@ Future<bool> confirmRemove(BuildContext context) async {
       false;
 }
 
+Future<bool> confirmDiscardDraft(BuildContext context) async {
+  final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
+  return await showDialog<bool>(
+        context: context,
+        builder: (context) => JobixAlertDialog(
+          title: Text(ar ? 'تجاهل المسودة؟' : 'Discard draft?'),
+          content: Text(
+            ar
+                ? 'ستتم إزالة هذه المسودة نهائيًا. لا يمكن التراجع عن هذا الإجراء.'
+                : 'This draft will be permanently removed. This action cannot be undone.',
+          ),
+          actions: [
+            JobixDialogAction.secondary(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(ar ? 'الاحتفاظ بالمسودة' : 'Keep draft'),
+            ),
+            JobixDialogAction.destructive(
+              key: const Key('confirm-discard-draft'),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(ar ? 'تجاهل المسودة' : 'Discard draft'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+}
+
 /// One reusable list for every repeatable section: cards with status,
 /// present indicator, expand, edit/remove menu, and an add action.
 class EntityCardList extends StatelessWidget {
@@ -40,6 +67,11 @@ class EntityCardList extends StatelessWidget {
     required this.onRemove,
     this.showHeading = true,
     this.enabled = true,
+    this.drafts = const [],
+    this.draftLoadError,
+    this.onEditDraft,
+    this.onDiscardDraft,
+    this.onRetryDrafts,
     super.key,
   });
   final EntitySection section;
@@ -47,6 +79,10 @@ class EntityCardList extends StatelessWidget {
   final VoidCallback onAdd;
   final ValueChanged<ProfileItem> onEdit, onRemove;
   final bool showHeading, enabled;
+  final List<ProfileItem> drafts;
+  final String? draftLoadError;
+  final ValueChanged<ProfileItem>? onEditDraft, onDiscardDraft;
+  final VoidCallback? onRetryDrafts;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +114,18 @@ class EntityCardList extends StatelessWidget {
               ],
             ),
           ),
-        if (items.isEmpty)
+        if (draftLoadError != null)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(bottom: TokensV0.space8),
+            child: Row(
+              children: [
+                Expanded(child: Text(draftLoadError!)),
+                if (onRetryDrafts != null)
+                  TextButton(onPressed: onRetryDrafts, child: Text(copy.retry)),
+              ],
+            ),
+          ),
+        if (items.isEmpty && drafts.isEmpty && draftLoadError == null)
           Padding(
             padding: const EdgeInsetsDirectional.only(bottom: TokensV0.space8),
             child: Text(
@@ -98,6 +145,32 @@ class EntityCardList extends StatelessWidget {
             onEdit: () => onEdit(item),
             onRemove: () => onRemove(item),
           ),
+        if (drafts.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsetsDirectional.only(
+              top: TokensV0.space8,
+              bottom: TokensV0.space8,
+            ),
+            child: Text(
+              copy.localeName.startsWith('ar')
+                  ? 'المسودات (${drafts.length})'
+                  : 'Drafts (${drafts.length})',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          for (final item in drafts)
+            _EntityCard(
+              key: ValueKey('draft-${item.section.key}-${item.id}'),
+              item: item,
+              enabled: enabled,
+              onEdit: () => onEditDraft?.call(item),
+              onRemove: onDiscardDraft == null
+                  ? null
+                  : () => onDiscardDraft!.call(item),
+            ),
+        ],
         const SizedBox(height: TokensV0.space4),
         OutlinedButton.icon(
           key: Key('add-${section.key}'),
@@ -211,12 +284,18 @@ class _EntityCardState extends State<_EntityCard> {
                           ),
                         const SizedBox(height: TokensV0.space4),
                         _Badge(
-                          label: complete
+                          label: item.isDraft
+                              ? (copy.localeName.startsWith('ar')
+                                    ? 'مسودة'
+                                    : 'Draft')
+                              : complete
                               ? copy.itemComplete
                               : item.needsAttention
                               ? copy.itemIncomplete
                               : copy.itemSaved,
-                          color: complete
+                          color: item.isDraft
+                              ? TokensV0.warning
+                              : complete
                               ? TokensV0.success
                               : item.needsAttention
                               ? TokensV0.warning
@@ -238,10 +317,16 @@ class _EntityCardState extends State<_EntityCard> {
                         value: 'edit',
                         child: Text(copy.editAction),
                       ),
-                      if (widget.onRemove != null)
+                       if (widget.onRemove != null)
                         PopupMenuItem(
-                          value: 'remove',
-                          child: Text(copy.removeAction),
+                         value: 'remove',
+                         child: Text(
+                           item.isDraft
+                               ? (copy.localeName.startsWith('ar')
+                                     ? 'تجاهل المسودة'
+                                     : 'Discard draft')
+                               : copy.removeAction,
+                         ),
                         ),
                     ],
                   ),

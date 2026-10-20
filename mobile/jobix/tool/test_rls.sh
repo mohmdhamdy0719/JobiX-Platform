@@ -4,8 +4,9 @@ cd "$(dirname "$0")/.."
 mode="${1:-full}"
 if [[ $# -gt 1 || ( "$mode" != "full" && "$mode" != "--resume-export-only" &&
   "$mode" != "--resume-export-cost-unit-only" && "$mode" != "--resume-layout-only" &&
-  "$mode" != "--education-catalog-only" ) ]]; then
-  echo "Usage: $0 [--resume-export-only|--resume-export-cost-unit-only|--resume-layout-only|--education-catalog-only]" >&2
+  "$mode" != "--education-catalog-only" &&
+  "$mode" != "--profile-entry-drafts-only" ) ]]; then
+  echo "Usage: $0 [--resume-export-only|--resume-export-cost-unit-only|--resume-layout-only|--education-catalog-only|--profile-entry-drafts-only]" >&2
   exit 2
 fi
 work="$(mktemp -d /tmp/jobix-rls.XXXXXX)"
@@ -82,6 +83,25 @@ if [[ "$mode" != "full" ]]; then
     -f supabase/migrations/202610080015_resume_export_local_hardening.sql \
     -f supabase/migrations/202610080016_resume_export_cleanup_hooks.sql
   echo "PASS: local Auth fixture and prerequisite migrations 001–016"
+
+  if [[ "$mode" == "--profile-entry-drafts-only" ]]; then
+    "${local_psql[@]}" \
+      -f supabase/migrations/202610080017_resume_export_deletion.sql \
+      -f supabase/migrations/202610080018_resume_export_admission.sql \
+      -f supabase/migrations/202610100019_resume_export_cost_protection.sql \
+      -f supabase/migrations/202610100020_resume_export_cost_purge_recovery.sql \
+      -f supabase/migrations/202610100021_resume_export_cost_output_unit.sql \
+      -f supabase/migrations/202610170022_resume_layout.sql \
+      -f supabase/migrations/202610190023_education_catalog.sql \
+      -f supabase/migrations/202610200024_persisted_profile_entry_drafts.sql
+    echo "PASS: migrations 017–024 applied in order"
+    "${local_psql[@]}" \
+      -f supabase/tests/profile_sections.sql \
+      -f supabase/tests/resume_layout.sql \
+      -f supabase/tests/profile_entry_drafts.sql
+    echo "PASS: profile sections, Resume Layout regressions, and persisted-entry-draft RLS/idempotency tests"
+    exit 0
+  fi
 
   if [[ "$mode" == "--resume-layout-only" ]]; then
     "${local_psql[@]}" \

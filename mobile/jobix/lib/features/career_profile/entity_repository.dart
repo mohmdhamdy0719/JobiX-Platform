@@ -53,9 +53,11 @@ class PendingMutation {
     required this.type,
     required this.section,
     required this.value,
+    this.isDraft = false,
   });
   final String profileId, key, type, section;
   final int version;
+  final bool isDraft;
   final Map<String, Object?> value;
   String get itemId => value['id'] as String;
   Map<String, Object?> toJson() => {
@@ -65,6 +67,7 @@ class PendingMutation {
     'type': type,
     'section': section,
     'value': value,
+    'is_draft': isDraft,
   };
   String encode() => jsonEncode(toJson());
   factory PendingMutation.decode(String raw) {
@@ -76,11 +79,29 @@ class PendingMutation {
       type: v['type'] as String,
       section: v['section'] as String,
       value: Map<String, Object?>.from(v['value'] as Map),
+      isDraft: v['is_draft'] == true,
     );
   }
 }
 
 typedef MutationSend = Future<CareerProfile> Function(PendingMutation request);
+typedef DraftItemsLoad =
+    Future<List<ProfileItem>> Function(String profile, EntitySection section);
+
+class EntityDraftQuery {
+  const EntityDraftQuery(this.profileId, this.section);
+  final String profileId;
+  final EntitySection section;
+
+  @override
+  bool operator ==(Object other) =>
+      other is EntityDraftQuery &&
+      other.profileId == profileId &&
+      other.section == section;
+
+  @override
+  int get hashCode => Object.hash(profileId, section);
+}
 
 class PendingSaveException implements Exception {
   const PendingSaveException();
@@ -89,9 +110,34 @@ class PendingSaveException implements Exception {
 }
 
 class EntityRepository {
-  EntityRepository(this.parent, this.send);
+  EntityRepository(this.parent, this.send, {this.loadDraftItems});
   final DraftRepository parent;
   final MutationSend send;
+  final DraftItemsLoad? loadDraftItems;
+
+  Future<List<ProfileItem>> savedDrafts(
+    String profile,
+    EntitySection section,
+  ) async {
+    await _guard();
+    final loader = loadDraftItems;
+    if (loader == null) return const [];
+    final items = await loader(profile, section);
+    await _guard();
+    return items.where((item) => item.isDraft).toList(growable: false);
+  }
+
+  Future<ProfileItem?> savedDraft(
+    String profile,
+    EntitySection section,
+    String id,
+  ) async {
+    final drafts = await savedDrafts(profile, section);
+    for (final item in drafts) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
 
   String _draftKey(EntitySection section, String id) =>
       'entity:${section.key}:$id';
@@ -116,7 +162,10 @@ class EntityRepository {
     if (unresolved?.type == 'upsert_item' &&
         unresolved?.section == section.key &&
         unresolved?.itemId == id) {
-      return ProfileItem.fromJson(section, unresolved!.value);
+      return ProfileItem.fromJson(section, {
+        ...unresolved!.value,
+        'is_draft': unresolved.isDraft,
+      });
     }
     final raw = await parent.database.sectionDraft(
       parent.user,
@@ -146,7 +195,12 @@ class EntityRepository {
     if (unresolved?.type == 'upsert_item' &&
         unresolved?.section == section.key &&
         !profile.of(section).any((item) => item.id == unresolved!.itemId)) {
-      return [ProfileItem.fromJson(section, unresolved!.value)];
+      return [
+        ProfileItem.fromJson(section, {
+          ...unresolved!.value,
+          'is_draft': unresolved.isDraft,
+        }),
+      ];
     }
     final keys = await parent.database.sectionDraftKeys(
       parent.user,
@@ -201,8 +255,17 @@ class EntityRepository {
     return _deliver(request);
   }
 
-  Future<CareerProfile> upsert(CareerProfile profile, ProfileItem item) =>
-      _start(profile, 'upsert_item', item.section, item.payload());
+  Future<CareerProfile> upsert(
+    CareerProfile profile,
+    ProfileItem item, {
+    bool isDraft = false,
+  }) => _start(
+    profile,
+    'upsert_item',
+    item.section,
+    item.payload(),
+    isDraft: isDraft,
+  );
 
   Future<CareerProfile> delete(
     CareerProfile profile,
@@ -214,7 +277,9 @@ class EntityRepository {
     CareerProfile profile,
     String type,
     EntitySection section,
-    Map<String, Object?> value,
+    Map<String, Object?> value, {
+    bool isDraft = false,
+  }
   ) async {
     _check();
     // Never queue behind an unknown outcome: it must be reconciled first.
@@ -226,6 +291,7 @@ class EntityRepository {
       type: type,
       section: section.key,
       value: value,
+      isDraft: type == 'upsert_item' && isDraft,
     );
     await parent.database.retainPendingMutation(
       parent.user,
@@ -269,22 +335,42 @@ class EntityRepository {
 final entityRepositoryProvider = FutureProvider<EntityRepository>((ref) async {
   final parent = await ref.watch(draftRepositoryProvider.future);
   final client = await ref.watch(supabaseClientProvider.future);
-  return EntityRepository(parent, (request) async {
-    final response = await client
-        .rpc(
-          'profile_mutate',
-          params: {
-            'command_key': request.key,
-            'requested_profile': request.profileId,
-            'expected_profile_version': request.version,
-            'mutation': {
-              'type': request.type,
-              'section': request.section,
-              'value': request.value,
+  return EntityRepository(
+    parent,
+    (request) async {
+      final response = await client
+          .rpc(
+            'save_profile_entry',
+            params: {
+              'command_key': request.key,
+              'requested_profile': request.profileId,
+              'expected_profile_version': request.version,
+              'mutation': {
+                'type': request.type,
+                'section': request.section,
+                'value': request.value,
+              },
+              'is_draft': request.isDraft,
             },
-          },
-        )
-        .timeout(const Duration(seconds: 15));
-    return acknowledgedProfile(response);
-  });
+          )
+          .timeout(const Duration(seconds: 15));
+      return acknowledgedProfile(response);
+    },
+    loadDraftItems: (profile, section) async {
+      final rows = await client
+          .from(section.tableName)
+          .select()
+          .eq('profile_id', profile)
+          .eq('is_draft', true);
+      return rows
+          .map((row) => ProfileItem.fromJson(section, row))
+          .toList(growable: false);
+    },
+  );
 });
+
+final entityDraftsProvider =
+    FutureProvider.family<List<ProfileItem>, EntityDraftQuery>((ref, query) async {
+      final repository = await ref.watch(entityRepositoryProvider.future);
+      return repository.savedDrafts(query.profileId, query.section);
+    });

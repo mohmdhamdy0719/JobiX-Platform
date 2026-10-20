@@ -148,8 +148,8 @@ class _JobixImprovementState extends State<JobixImprovement> {
           const SizedBox(height: TokensV0.space8),
           Text(
             say(
-              'Your facts. Your decision. Suggestions stay separate until you accept.',
-              'حقائقك وقرارك. تظل الاقتراحات منفصلة حتى تقبلها.',
+              'Write naturally and share as much relevant detail as you can. JobiX can help turn your information into professional, ATS-friendly wording.',
+              'اكتب بطبيعتك وشارك أكبر قدر ممكن من التفاصيل ذات الصلة. يمكن لـ JobiX مساعدتك في صياغة معلوماتك بأسلوب مهني مناسب لأنظمة تتبع المتقدمين.',
             ),
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -212,14 +212,6 @@ class _JobixImprovementState extends State<JobixImprovement> {
               icon: const Icon(Icons.auto_awesome_outlined, size: 18),
               label: Text(say('Improve with Jobix', 'حسّن النص مع Jobix')),
             ),
-            if (widget.onGenerate == null)
-              Text(
-                say(
-                  'AI improvement is not available yet. You can keep writing and save your own text.',
-                  'تحسين النص بالذكاء الاصطناعي غير متاح بعد. يمكنك متابعة الكتابة وحفظ نصك.',
-                ),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
           ],
           if (widget.error != null) ...[
             const SizedBox(height: TokensV0.space8),

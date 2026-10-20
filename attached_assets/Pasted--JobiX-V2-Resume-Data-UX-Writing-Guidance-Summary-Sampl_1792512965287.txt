@@ -1,0 +1,467 @@
+# JobiX V2 — Resume Data UX, Writing Guidance, Summary Samples & Persistent Drafts
+
+Act as a senior Flutter engineer, product designer, and UX writer working on the existing JobiX V2 application.
+
+Implement the following improvements to the existing data-entry screens and Resume Layout experience. The goal is to help users provide stronger career information, understand how their information will appear in a Resume, and safely save incomplete entries without accidentally publishing incomplete information to their Resume.
+
+This is an implementation task, not a proposal-only task. Inspect the existing architecture first, then implement the scoped changes and test them.
+
+## 0. Non-negotiable rules
+
+1. Inspect the existing implementation, models, repositories, Supabase schema, RLS policies, migrations, localization, widgets, and tests before editing.
+2. Reuse the existing architecture and components wherever possible. Do not create duplicate data models, repositories, or competing persistence mechanisms.
+3. Supabase remains the authoritative source for persisted user data. Do not introduce a separate local-only persistent draft system that competes with the server's saved state.
+4. Do not change Production, deploy, apply remote migrations, alter IAM, change billing, or modify infrastructure.
+5. Do not run PDF exports or perform billable operations during tests.
+6. Do not change the Credit system, export pipeline, AI backend, authentication, or unrelated business logic.
+7. Do not claim that AI improvement is functional. The existing “Improve with JobiX” feature remains non-functional until separately implemented.
+8. Preserve Arabic and English localization, RTL/LTR behavior, accessibility, existing saved records, and current Resume Layout behavior.
+9. All user-facing text specified below is product copy approved by the product owner. Use it verbatim in English and provide accurate Arabic localization consistent with the existing localization conventions.
+10. Do not invent success messages. A save is successful only after the authoritative persistence layer confirms it.
+11. If draft persistence requires a schema change, first inspect the existing schema and migration history. Implement the required migration file and tests, but do not apply it to any remote environment. Report the exact migration and deployment requirement.
+12. Keep the changes focused on the requested scope. Do not redesign the entire application.
+
+---
+
+## 1. Fix Android download cancellation
+
+### Current problem
+
+When a user initiates PDF download, Android opens the file-save/location picker. If the user chooses a location and then presses Back or cancels the picker, the application displays an Android-related error message.
+
+### Required behavior
+
+- Treat a user-initiated cancellation as a normal outcome, not as a failure.
+- Dismissing the picker, pressing Back, or cancelling the save operation must not show an error dialog, error snackbar, or alarming failure message.
+- Do not mark the download as failed merely because the user cancelled the destination picker.
+- Do not delete an existing PDF, trigger a second export, or charge Credits because the picker was cancelled.
+- Keep genuine errors visible when an actual download, file write, permission, or storage operation fails.
+- Do not broadly suppress Android exceptions. Distinguish cancellation from genuine failure using the existing native/API contract and the actual exception or result type.
+- Preserve the current successful download behavior, including filename sanitization and file integrity checks.
+
+### Acceptance criteria
+
+1. Successfully saving a PDF still works.
+2. Opening the picker and pressing Back produces no error message.
+3. Explicitly cancelling the picker produces no error message.
+4. A genuine file-write failure still produces a clear, localized error.
+5. Cancelling the picker does not initiate another PDF export or alter Credits.
+6. Add or update tests for the cancellation path and genuine failure path wherever supported.
+
+---
+
+## 2. Improve the Professional Summary screen
+
+### 2.1 Introductory guidance
+
+Replace the current heading immediately before the Professional Summary description field with:
+
+**Write your summary**
+
+Add this guidance text above the writing area:
+
+**Tips to help you write a professional summary**
+
+The guidance should explain briefly that users should describe their professional background, key strengths, relevant experience, and the value they bring. Keep it concise and encouraging.
+
+Do not turn this heading into a long paragraph.
+
+### 2.2 Description field hint
+
+Replace wording such as:
+
+“Tell us about your experience”
+
+with:
+
+“Write about your professional background, strengths, and experience…”
+
+Use this same product-writing principle throughout the app: the user is writing information for their Resume, not applying for a job.
+
+### 2.3 Summary samples dialog
+
+Add a button beneath the Professional Summary description field:
+
+**Explore summary examples**
+
+When pressed, open a polished, compact dialog or panel that works well on mobile.
+
+The dialog must contain:
+
+- A clearly visible title: “Professional Summary Examples”
+- A read-only multiline text box showing one complete sample at a time.
+- A current position indicator, for example “1 of 6”.
+- A previous button/icon and a next button/icon.
+- A primary action: “Use this summary”.
+- A secondary action: “Close”.
+
+Navigation requirements:
+
+- Previous and Next must switch between the six samples.
+- Disable or appropriately handle navigation at both ends; do not wrap around unexpectedly.
+- Preserve text readability and allow scrolling when a sample is longer than the available height.
+- Respect screen insets, keyboard behavior, accessibility, RTL/LTR, and the app's existing design system.
+- The sample text is read-only within the dialog.
+- “Use this summary” copies the selected sample into the editable Professional Summary field, closes the dialog, and leaves the user able to edit the text.
+- Selecting a sample must not save it to the server automatically.
+- Do not overwrite an existing user-written summary without an explicit action. If the current field contains text, ask for confirmation before replacing it.
+
+Use these six generic English samples exactly as the initial sample content:
+
+**Sample 1 — Experienced Professional**
+
+“Results-oriented professional with experience supporting business operations, solving problems, and collaborating across teams. Skilled at organizing priorities, adapting to changing needs, and delivering reliable work. Committed to continuous learning and contributing to team and organizational goals.”
+
+**Sample 2 — Early-Career Professional**
+
+“Motivated professional with a strong foundation in communication, organization, and problem-solving. Eager to apply existing skills, learn new processes, and contribute to meaningful projects. Known for a proactive attitude, attention to detail, and willingness to take on new challenges.”
+
+**Sample 3 — Career Changer**
+
+“Adaptable professional bringing transferable skills in communication, planning, analysis, and collaboration. Experienced in learning new processes, managing competing priorities, and approaching challenges with a practical mindset. Seeking to apply this background in a new professional environment while continuing to grow.”
+
+**Sample 4 — Operations and Coordination**
+
+“Organized professional experienced in coordinating tasks, maintaining accurate information, and supporting efficient day-to-day operations. Strong at prioritization, follow-through, and communicating with different stakeholders. Focused on improving workflows, resolving issues, and helping teams achieve their objectives.”
+
+**Sample 5 — Analytical and Problem-Solving**
+
+“Analytical and detail-oriented professional with strengths in evaluating information, identifying problems, and developing practical solutions. Comfortable learning new tools, working with structured information, and translating findings into clear next steps. Values accuracy, continuous improvement, and collaborative problem-solving.”
+
+**Sample 6 — Communication and Collaboration**
+
+“Collaborative professional with strong communication, relationship-building, and organizational skills. Experienced in coordinating with others, managing responsibilities, and adapting communication to different needs. Committed to dependable execution, constructive teamwork, and continuous professional development.”
+
+These examples must remain generic. Do not invent job titles, employers, years of experience, measurable achievements, qualifications, or technical skills that the user has not provided.
+
+The samples are starting points, not claims about the user's actual background. The user must be able to edit them before saving.
+
+---
+
+## 3. Improve every “Improve with JobiX” box
+
+Apply the copy changes consistently to every occurrence of the Improve with JobiX component across all applicable data-entry screens, not just Professional Summary.
+
+### Remove this message entirely
+
+“AI Improvement is not available yet. You can keep writing and save your own text.”
+
+Remove the visible message and any obsolete layout space that exists only to display it.
+
+This is a copy/UI change only. Do not implement or enable the AI backend as part of this task.
+
+### Replace the existing explanatory copy
+
+Replace:
+
+“Your facts. Your decision. Suggestions stays separate until you accept.”
+
+with this approved copy:
+
+“Write naturally and share as much relevant detail as you can. JobiX can help turn your information into professional, ATS-friendly wording.”
+
+The wording describes the intended product experience; do not imply the AI functionality is already available.
+
+Keep the existing interaction and button behavior unchanged except for the requested copy and layout cleanup.
+
+---
+
+## 4. Improve Work Experience and all other career-data screens
+
+Apply a consistent writing-guidance pattern to Work Experience, Volunteer Experience, Education, Certifications, Projects, and other existing career-information sections where relevant.
+
+Do not blindly apply the same field structure to every section. Adapt examples and hints to each entity type.
+
+### 4.1 Move writing prompts to the bottom
+
+The current Writing Prompts presentation should be replaced with a clean, FAQ-style expandable section near the bottom of the relevant page.
+
+Use this heading pattern:
+
+- Work Experience: “Tips to help you write a professional work experience”
+- Volunteer Experience: “Tips to help you describe your volunteer experience”
+- Education: “Tips to help you present your education”
+- Projects: “Tips to help you describe your projects”
+- Certifications: “Tips to help you present your certifications”
+- Other sections: choose concise, natural copy appropriate to the section.
+
+Under each heading, display relevant questions and example answers as expandable FAQ rows.
+
+Requirements:
+
+- Put the guidance section after the editable fields, near the bottom of the page.
+- Keep it visually compact and consistent with the existing design system.
+- Use accessible expand/collapse behavior and clear visual affordances.
+- Keep examples generic and truthful; do not suggest inventing achievements, metrics, responsibilities, qualifications, or dates.
+- Use concise guidance with practical examples rather than lengthy instructional paragraphs.
+- Preserve existing field validation and save behavior.
+
+### 4.2 Add a compact Resume-style example near the top
+
+At the top of each applicable section, add a small, polished example card that resembles how a completed entry appears on a Resume.
+
+For Work Experience, use this illustrative structure:
+
+Marketing Specialist
+Jobix Company — Alexandria, Egypt
+July 2026 – Present
+
+Add a small label above or beside it:
+
+“Example on a Resume”
+
+This is illustrative placeholder content only. It must not be inserted into the user's actual data or saved automatically.
+
+Adapt the preview for other sections. For example:
+
+- Education: degree, institution, location, graduation year.
+- Volunteer Experience: role, organization, location, dates.
+- Projects: project title, role or technologies where relevant, short description.
+- Certifications: certification name, issuing organization, issue date.
+- Other sections: a representative example of the actual Resume output.
+
+Keep the card small and secondary to the form. Its purpose is to help users understand how their information will appear in the final Resume.
+
+### 4.3 Improve individual field hints
+
+Use concise, field-specific hints. Prefer “e.g.” examples that reflect Resume content.
+
+For Work Experience, use examples such as:
+
+- Job Title: “e.g., Marketing Specialist”
+- Company: “e.g., Jobix Company”
+- Location: “e.g., Alexandria, Egypt”
+- Start Date: an appropriate date hint or existing date picker
+- End Date: an appropriate date hint or existing date picker
+- Description: “Write about your responsibilities, contributions, and relevant achievements…”
+
+Do not replace native date pickers with free-text inputs.
+
+For Education, use examples such as:
+
+- Institution: “e.g., Alexandria University”
+- Degree: “e.g., Bachelor of Commerce”
+- Field of Study: “e.g., Business Administration”
+- Location: “e.g., Alexandria, Egypt”
+- Description: “Write about relevant coursework, projects, or academic achievements…”
+
+Adapt hints to the real fields and data model instead of adding duplicate fields.
+
+For Volunteer Experience, Projects, Certifications, and other sections, use relevant examples with the same style.
+
+### 4.4 Education-specific cleanup
+
+Remove this visible sentence entirely:
+
+“Common suggestions only; you can still enter any value.”
+
+Do not replace it with another redundant disclaimer.
+
+Keep the existing editable autocomplete behavior. Users must remain able to type and save a valid free-text institution or field of study even when it does not appear in the suggestions.
+
+Do not reduce the autocomplete catalog or introduce stricter validation that rejects custom values.
+
+---
+
+## 5. Add persistent Draft support for incomplete career entries
+
+This is a data and persistence feature, not merely a UI change.
+
+Users must be able to start an entry, save it as a draft when required information is missing, return later to complete it, or explicitly discard it.
+
+Apply this to relevant repeatable career entries, including Work Experience, Education, Volunteer Experience, Projects, and Certifications. Inspect the existing data models to determine the appropriate scope for other sections.
+
+### 5.1 Define completion requirements per entity
+
+Before implementing, inspect the current schema, required fields, Resume renderer, and validation logic.
+
+Define explicit minimum completion rules per entity type. Do not assume that every non-empty field is required.
+
+Examples of minimum requirements to evaluate:
+
+- Work Experience: role/title and organization, plus sufficient identifying information according to the existing model.
+- Education: institution and the appropriate degree/qualification or study details according to the existing model.
+- Volunteer Experience: role and organization.
+- Projects: project title and sufficient identifying information.
+- Certifications: certification name and issuing organization where applicable.
+
+Do not invent a universal rule that incorrectly rejects valid records. Dates, descriptions, and optional details should be handled according to the existing product model and the usefulness of the resulting Resume entry.
+
+Document the exact minimum required fields for each entity before finalizing the implementation.
+
+### 5.2 Save behavior for incomplete entries
+
+When the user taps Save:
+
+- If the entry satisfies its minimum completion rules, validate and save it as a complete entry using the existing authoritative persistence flow.
+- If the entry does not satisfy those rules, show a confirmation dialog offering:
+  - “Save as draft”
+  - “Back”
+
+Use this approved English copy:
+
+Title:
+“Save as draft?”
+
+Body:
+“This entry is missing some essential information. You can save it as a draft and complete it later. Drafts do not appear in your Resume.”
+
+Primary action:
+“Save as draft”
+
+Secondary action:
+“Back”
+
+“Back” closes the dialog and returns the user to editing without discarding their input.
+
+“Save as draft” persists the incomplete entry and gives the user a clear confirmation only after the persistence layer confirms success.
+
+If the save fails or the connection is unavailable, do not claim that the draft was saved. Preserve the current editing state and provide a clear retry path.
+
+### 5.3 Draft visibility and management
+
+Drafts must be accessible from the relevant section so users can return to them later.
+
+The interface should distinguish complete entries from drafts with clear labels:
+
+- “Draft”
+- “Complete”
+
+For each draft, provide an action to continue editing and an explicit discard action.
+
+Before deleting a draft, show:
+
+Title:
+“Discard draft?”
+
+Body:
+“This draft will be permanently removed. This action cannot be undone.”
+
+Actions:
+“Discard draft”
+“Keep draft”
+
+Only delete after explicit confirmation.
+
+A draft must not be accidentally deleted by pressing Back while editing. Back should follow the existing discard-unsaved-edits behavior, not silently delete a previously saved draft.
+
+### 5.4 Editing and completing a draft
+
+When the user reopens a draft:
+
+- Restore its saved field values.
+- Keep the draft status until the entry satisfies the required completion rules and is explicitly saved as complete.
+- If the user taps Save while it is still incomplete, show the draft confirmation again.
+- When the user saves a valid complete entry, transition it to Complete only after server confirmation.
+- After completion, show it among the completed entries and include it in the Resume renderer.
+- Preserve the original record identity where the existing model supports status transitions. Do not create duplicate records when completing a draft.
+
+### 5.5 Critical rule: drafts must never appear in the Resume
+
+Draft entries must be excluded from:
+
+- Resume preview.
+- PDF export/rendering.
+- Any canonical Resume section data returned for rendering.
+- Any Resume layout operation that could expose incomplete draft content.
+
+Enforce this in the authoritative data/rendering layer, not only by hiding draft cards in Flutter.
+
+A draft must never become visible in a PDF just because a client-side filter failed or the user manipulated local state.
+
+Complete entries must continue to render as they do today.
+
+### 5.6 Persistence and architecture requirements
+
+- Inspect the existing Supabase tables, RPCs, RLS policies, repositories, and migration history before choosing the implementation.
+- Prefer extending the existing authoritative data model with a persisted status field or another compatible design rather than creating a competing draft store.
+- Ensure that users can access only their own drafts.
+- Ensure server-side operations and the Resume renderer consistently distinguish drafts from completed entries.
+- Keep the current authoritative-save rules, idempotency protections, and retry reconciliation behavior intact.
+- Do not treat an uncertain server response as a confirmed save.
+- Do not add a local-only persistent draft database that can conflict with Supabase.
+- If the existing schema cannot safely support this feature, report the necessary schema/RPC/RLS changes and add a migration file only after establishing a coherent implementation plan.
+- Do not apply remote migrations. Report exactly what must be applied to Development before the feature can be considered functional.
+- Preserve existing completed entries during any schema transition.
+
+### 5.7 Draft acceptance tests
+
+Add tests that verify:
+
+1. An incomplete new entry cannot accidentally be saved as Complete.
+2. The user can choose Save as draft and the persisted status is Draft.
+3. The Back action in the confirmation preserves the entered values.
+4. A persisted draft can be reopened with its values intact.
+5. An incomplete draft remains a draft after reopening.
+6. A valid draft becomes Complete only after a successful authoritative save.
+7. A failed or uncertain save is not falsely reported as successful.
+8. A draft never appears in Resume preview or PDF rendering.
+9. Discard requires explicit confirmation.
+10. Discarding a draft does not delete any completed entry.
+11. Users cannot read or mutate another user's drafts.
+12. Existing complete entries, Resume Layout ordering, section visibility, and PDF export behavior remain intact.
+
+Use appropriate unit, repository, widget, and database/RLS tests. Do not run paid export operations during these tests.
+
+---
+
+## 6. Resume Layout compatibility
+
+The existing Resume Layout editor and its saved section order/visibility behavior must remain intact.
+
+- Do not redesign the layout editor in this task unless a specific compatibility issue requires a minimal change.
+- Confirm that completed entries continue to respect the user's section visibility and ordering.
+- Confirm that drafts are excluded even when their parent section is visible.
+- Confirm that saving a draft does not unexpectedly change Resume Layout or mark an entry complete.
+- Do not change the canonical Resume rendering model without documenting the reason and testing both preview and PDF output.
+
+---
+
+## 7. Product copy and localization
+
+Use the exact approved English copy in this prompt for new or replaced messages.
+
+Review Arabic localization alongside English. Arabic must communicate the same meaning naturally and professionally, with correct RTL layout.
+
+Do not expose raw exception text, technical implementation details, or Android error names to users.
+
+Do not invent additional warnings or redundant disclaimer text. Preserve essential messages that protect user data or explain an unconfirmed server save.
+
+Do not remove an existing user-facing message outside the specifically requested changes without reporting it and explaining why it appears redundant or unsafe.
+
+---
+
+## 8. Execution workflow
+
+Follow this sequence:
+
+1. Inspect the current implementation and identify all affected files/components.
+2. Document the current save flow, Resume rendering filters, and existing validation rules.
+3. Implement the Android cancellation fix and writing-guidance/copy improvements.
+4. Implement the Summary Samples dialog.
+5. Implement the repeatable-entry Draft workflow using the authoritative persistence architecture.
+6. Add or update tests for all affected behavior.
+7. Run formatting, static analysis, and relevant focused tests.
+8. Run broader tests where practical, and clearly distinguish new failures from known or baseline-unknown failures.
+9. Review the diff for unrelated changes, accidental feature enablement, secrets, and unsafe persistence behavior.
+
+Do not stop after merely describing the changes. Implement the scoped work in the repository, subject to the safety restrictions above.
+
+If the Draft feature requires a remote migration before it can function on Development, do not claim it is fully working until that migration is applied and verified by the owner.
+
+## 9. Final report
+
+When finished, provide:
+
+- A concise summary of implemented changes.
+- A list of changed files and why each was changed.
+- The final user-facing English copy added or replaced.
+- The exact minimum completion rules for each entity type.
+- The chosen Draft persistence design and how drafts are excluded from Resume rendering.
+- Any migration required, its path, and whether it has been applied (it must not be applied remotely by you).
+- Tests run and exact pass/fail results.
+- Any remaining known failures or limitations.
+- A manual Development test checklist for the owner.
+- Confirmation that no Production resources, billing settings, remote migrations, or paid export operations were changed or triggered.
+
+Do not claim that any feature works unless the implementation and relevant tests provide evidence.

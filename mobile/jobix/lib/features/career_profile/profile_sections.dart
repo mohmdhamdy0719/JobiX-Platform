@@ -97,6 +97,17 @@ enum EntitySection {
   const EntitySection(this.key, this.listKey, this.fields);
   final String key, listKey;
   final List<SectionField> fields;
+
+  String get tableName => switch (this) {
+    EntitySection.experience => 'profile_experiences',
+    EntitySection.volunteer => 'profile_volunteer_experiences',
+    EntitySection.education => 'profile_education',
+    EntitySection.certification => 'profile_certifications',
+    EntitySection.achievement => 'profile_achievements',
+    EntitySection.project => 'profile_projects',
+    EntitySection.skill => 'profile_skills',
+    EntitySection.language => 'profile_languages',
+  };
   static EntitySection parse(String key) =>
       values.firstWhere((s) => s.key == key);
 
@@ -155,12 +166,13 @@ class ProfileItem {
     required this.section,
     this.version = 0,
     this.complete = false,
+    this.isDraft = false,
     this.values = const {},
   });
   final String id;
   final EntitySection section;
   final int version;
-  final bool complete;
+  final bool complete, isDraft;
   final Map<String, Object?> values;
 
   String text(String field) => (values[field] as String?) ?? '';
@@ -177,15 +189,22 @@ class ProfileItem {
         : section == EntitySection.skill || section == EntitySection.language
         ? true
         : json['complete'] == true,
+    isDraft: json['is_draft'] == true,
     values: {
       for (final field in section.fields)
-        if (json[field.name] != null) field.name: json[field.name],
+        if (json[field.name] != null)
+          field.name: field.kind == FieldKind.month &&
+                  json[field.name] is String &&
+                  (json[field.name] as String).length >= 7
+              ? (json[field.name] as String).substring(0, 7)
+              : json[field.name],
     },
   );
   Map<String, Object?> toJson() => {
     'id': id,
     'version': version,
     'complete': complete,
+    'is_draft': isDraft,
     ...values,
   };
 
@@ -194,6 +213,7 @@ class ProfileItem {
     section: section,
     version: version,
     complete: complete,
+    isDraft: isDraft,
     values: {...values, field: value},
   );
 
@@ -205,6 +225,7 @@ class ProfileItem {
     section: section,
     version: baseVersion,
     complete: complete,
+    isDraft: isDraft,
     values: values,
   );
 

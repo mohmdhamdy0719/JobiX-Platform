@@ -14,10 +14,10 @@ import '../auth/auth_controller.dart';
 import '../builder/builder_scaffold.dart';
 import '../builder/jobix_improvement.dart';
 import '../builder/profile_overview.dart';
+import 'summary_examples.dart';
 import '../home/home_page.dart';
 import 'career_profile.dart';
 import 'text_section_repository.dart';
-import 'summary_writing_hints.dart';
 
 String textSectionTitle(BuildContext context, String section) {
   final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
@@ -353,7 +353,11 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 const FormLoadingState(),
               if (failed) TextButton(onPressed: load, child: Text(copy.retry)),
             ] else ...[
-              SectionHeading(title: textSectionTitle(context, widget.section)),
+              SectionHeading(
+                title: widget.section == 'summary'
+                    ? say('Write your summary', 'اكتب ملخصك')
+                    : textSectionTitle(context, widget.section),
+              ),
               if (hasPendingSave) ...[
                 const SizedBox(height: TokensV0.space12),
                 SliceCard(
@@ -366,6 +370,26 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 ),
               ],
               const SizedBox(height: TokensV0.space20),
+              if (widget.section == 'summary') ...[
+                Text(
+                  say(
+                    'Tips to help you write a professional summary',
+                    'نصائح لكتابة ملخص مهني',
+                  ),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: TokensV0.space4),
+                Text(
+                  say(
+                    'Briefly describe your professional background, key strengths, relevant experience, and the value you bring.',
+                    'صف بإيجاز خلفيتك المهنية ونقاط قوتك وخبراتك ذات الصلة والقيمة التي تضيفها.',
+                  ),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: TokensV0.space12),
+              ],
               SliceCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,8 +404,8 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                       decoration: InputDecoration(
                         hintText: widget.section == 'summary'
                             ? say(
-                                'Tell us about your experience, strengths, and career direction.',
-                                'حدثنا عن خبرتك ونقاط قوتك وتوجهك المهني.',
+                                'Write about your professional background, strengths, and experience…',
+                                'اكتب عن خلفيتك المهنية ونقاط قوتك وخبراتك…',
                               )
                             : say(
                                 'e.g. Senior Frontend Developer',
@@ -408,11 +432,15 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 ),
               ),
               const SizedBox(height: TokensV0.space12),
-              const SizedBox(height: TokensV0.space20),
               if (widget.section == 'summary') ...[
+                SummaryExamplesButton(
+                  controller: controller,
+                  enabled: !busy && !hasPendingSave,
+                  onChanged: edit,
+                ),
+                const SizedBox(height: TokensV0.space12),
                 JobixImprovement(original: controller.text),
                 const SizedBox(height: TokensV0.space12),
-                const SummaryWritingHints(),
               ],
               if (notice != null)
                 Text(notice!, key: const Key('section-notice')),

@@ -58,10 +58,12 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   SaveIssue? issue;
   bool leaving = false, saveAttempted = false;
   bool get savePending => issue == SaveIssue.unknown;
+  ProfileItem? serverDraft;
   bool get dirty =>
       item != null &&
-      (serverItem == null ||
-          jsonEncode(item!.payload()) != jsonEncode(serverItem!.payload()));
+      (serverItem != null || serverDraft != null) &&
+      jsonEncode(item!.payload()) !=
+          jsonEncode((serverItem ?? serverDraft)!.payload());
 
   /// Set while the draft's baseline differs from the server item; Save is
   /// blocked until the user picks a version.
@@ -100,15 +102,21 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           .of(widget.section)
           .where((i) => i.id == id)
           .firstOrNull;
+      final persistedDraft = widget.itemId == 'new' || saved != null
+          ? null
+          : await repository.savedDraft(value.id, widget.section, id);
       final local = await repository.draft(value.id, widget.section, id);
-      final current =
-          local ?? saved ?? ProfileItem(id: id, section: widget.section);
+      final current = local ??
+          persistedDraft ??
+          saved ??
+          ProfileItem(id: id, section: widget.section);
       if (!mounted) return;
       _fill(current);
       setState(() {
         profile = value;
         item = current;
         serverItem = saved;
+        serverDraft = persistedDraft;
         issue = unresolved == null ? null : SaveIssue.unknown;
         conflict = unresolved != null || local == null
             ? DraftConflict.none
@@ -144,14 +152,22 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           : await repository.pending(profile!.id);
       if (!mounted) return;
       final pendingItem = pending != null;
-      if (item != null && (pendingItem || serverItem != null && dirty)) {
+      if (item != null &&
+          (pendingItem ||
+              (serverItem != null || serverDraft != null) && dirty)) {
         final copy = AppLocalizations.of(context)!;
         final discard = await showDialog<bool>(
           context: context,
           builder: (context) => JobixAlertDialog(
             title: Text(copy.leaveTitle),
             content: Text(
-              pendingItem ? copy.pendingBackWarning : copy.discardWarning,
+              pendingItem
+                  ? copy.pendingBackWarning
+                  : serverDraft != null
+                  ? (copy.localeName.startsWith('ar')
+                        ? 'سيتم تجاهل التغييرات غير المحفوظة، وستبقى المسودة المحفوظة كما هي.'
+                        : 'Your unsaved changes will be discarded. The saved draft will remain unchanged.')
+                  : copy.discardWarning,
             ),
             actions: [
               JobixDialogAction.secondary(
@@ -205,7 +221,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     if (!mounted) return;
     final repository = await ref.read(entityRepositoryProvider.future);
     await repository.discardDraft(profile!.id, widget.section, item!.id);
-    final server = serverItem;
+    final server = serverItem ?? serverDraft;
     if (server == null) {
       if (mounted) close();
       return;
@@ -223,7 +239,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   /// Keeps local edits on top of the latest server baseline, by choice.
   Future<void> reapplyLocal() async {
     if (!mounted) return;
-    final next = item!.rebased(serverItem?.version ?? 0);
+    final next = item!.rebased((serverItem ?? serverDraft)?.version ?? 0);
     if (mounted) {
       setState(() {
         item = next;
@@ -243,19 +259,55 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     final copy = item!;
     setState(() => saveAttempted = true);
     final found = copy.problems();
-    if (found.isNotEmpty) {
+    final blocking = found.values.any((problem) => problem != FieldProblem.required);
+    if (blocking) {
       setState(() => problems = found);
       return;
+    }
+    var saveAsDraft = false;
+    if (found.isNotEmpty) {
+      final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
+      final saveDraft = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => JobixAlertDialog(
+          title: Text(ar ? 'حفظ كمسودة؟' : 'Save as draft?'),
+          content: Text(
+            ar
+                ? 'هذا الإدخال ينقصه بعض المعلومات الأساسية. يمكنك حفظه كمسودة وإكماله لاحقًا. لن تظهر المسودات في سيرتك الذاتية.'
+                : 'This entry is missing some essential information. You can save it as a draft and complete it later. Drafts do not appear in your Resume.',
+          ),
+          actions: [
+            JobixDialogAction.secondary(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: Text(ar ? 'رجوع' : 'Back'),
+            ),
+            JobixDialogAction.primary(
+              key: const Key('save-entry-as-draft'),
+              onPressed: () => Navigator.pop(dialog, true),
+              child: Text(ar ? 'حفظ كمسودة' : 'Save as draft'),
+            ),
+          ],
+        ),
+      );
+      if (saveDraft != true || !mounted) return;
+      saveAsDraft = true;
     }
     setState(() => busy = true);
     try {
       final repository = await ref.read(entityRepositoryProvider.future);
-      await repository.upsert(profile!, copy);
+      await repository.upsert(profile!, copy, isDraft: saveAsDraft);
       ref.invalidate(firstProfileProvider);
+      ref.invalidate(
+        entityDraftsProvider(EntityDraftQuery(profile!.id, widget.section)),
+      );
       if (mounted) {
         showJobixFeedback(
           context,
-          copy.section == EntitySection.education
+          saveAsDraft
+              ? (AppLocalizations.of(context)!.localeName.startsWith('ar')
+                    ? 'تم حفظ المسودة.'
+                    : 'Draft saved.')
+              : copy.section == EntitySection.education
               ? (AppLocalizations.of(context)!.localeName.startsWith('ar')
                     ? 'تم حفظ المؤهل.'
                     : 'Education saved.')
@@ -279,6 +331,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       final result = await repository.resume(profile!.id);
       if (result != null) {
         ref.invalidate(firstProfileProvider);
+        ref.invalidate(
+          entityDraftsProvider(EntityDraftQuery(profile!.id, widget.section)),
+        );
         profile = result;
         if (mounted) {
           showJobixFeedback(context, AppLocalizations.of(context)!.savedServer);
@@ -400,7 +455,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               ),
               const SizedBox(height: TokensV0.space16),
             ],
-            SectionWritingGuidance(section: widget.section),
+            EntryResumeExample(section: widget.section),
             const SizedBox(height: TokensV0.space16),
             for (final field in widget.section.fields) ...[
               _field(copy, field),
@@ -410,6 +465,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               ],
               const SizedBox(height: TokensV0.space16),
             ],
+            const SizedBox(height: TokensV0.space8),
+            SectionWritingGuidance(section: widget.section),
           ],
         ),
       ),
@@ -427,9 +484,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           ref.watch(educationCatalogProvider).valueOrNull ??
           EducationCatalogData.fallback;
       final institutions = field.name == 'institution';
-      final fromServer = institutions
-          ? catalog.institutionsFromServer
-          : catalog.studyFieldsFromServer;
       return EducationAutocompleteField(
         key: ValueKey('education-autocomplete-${field.name}'),
         fieldKey: key,
@@ -440,7 +494,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             : copy.studyFieldAutocompleteHint,
         language: copy.localeName.startsWith('ar') ? 'ar' : 'en',
         suggestions: institutions ? catalog.institutions : catalog.studyFields,
-        helperText: fromServer ? null : copy.educationSuggestionsFallback,
         errorText: _error(copy, field),
         clearLabel: copy.clearField,
         enabled: !busy && !savePending,
@@ -566,7 +619,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             ? copy.monthHint
             : field.name == 'description'
             ? _descriptionHint(widget.section, copy.localeName.startsWith('ar'))
-            : null,
+            : _fieldHint(widget.section, field.name, copy.localeName.startsWith('ar')),
         errorText: _error(copy, field),
         suffixIcon: controller.text.isEmpty
             ? null
@@ -612,16 +665,16 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   ) => switch (section) {
     EntitySection.experience =>
       arabic
-          ? 'صِف مسؤولياتك وإسهاماتك الرئيسية والنتائج القابلة للقياس.'
-          : 'Describe your responsibilities, key contributions, and measurable results.',
+          ? 'اكتب عن مسؤولياتك وإسهاماتك والإنجازات ذات الصلة.'
+          : 'Write about your responsibilities, contributions, and relevant achievements…',
     EntitySection.education =>
       arabic
           ? 'أضف المقررات أو المشاريع أو التكريمات أو الإنجازات الأكاديمية ذات الصلة.'
           : 'Add relevant coursework, projects, honors, or academic achievements.',
     EntitySection.achievement =>
       arabic
-          ? 'صِف ما حققته، ولماذا كان مهمًا، وأي نتيجة قابلة للقياس.'
-          : 'Describe what you achieved, why it mattered, and any measurable result.',
+          ? 'اكتب عن الإنجاز وأهميته، واذكر نتيجة موثقة إن وجدت.'
+          : 'Write about the achievement and why it mattered; include a verified result if relevant.',
     EntitySection.certification =>
       arabic
           ? 'أضف المهارات أو المعرفة التي أثبتتها هذه الشهادة.'
@@ -636,6 +689,41 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           : "Describe the project's purpose, your contribution, and its outcome.",
     _ => null,
   };
+
+  String? _fieldHint(EntitySection section, String field, bool arabic) {
+    const en = {
+      'job_title': 'e.g., Marketing Specialist',
+      'company': 'e.g., Jobix Company',
+      'location': 'e.g., Alexandria, Egypt',
+      'degree': 'e.g., Bachelor of Commerce',
+      'institution': 'e.g., Alexandria University',
+      'field_of_study': 'e.g., Business Administration',
+      'organization': 'e.g., a community organization',
+      'role': 'e.g., Volunteer Coordinator',
+      'name': 'Enter the name shown on your Resume',
+      'issuer': 'Enter the issuing organization',
+      'title': 'Use a concise title for the achievement',
+      'project_month': 'Choose the month the project took place',
+      'proficiency': 'Choose the level that best describes your language',
+    };
+    const ar = {
+      'job_title': 'مثال: أخصائي تسويق',
+      'company': 'مثال: Jobix Company',
+      'location': 'مثال: الإسكندرية، مصر',
+      'degree': 'مثال: بكالوريوس التجارة',
+      'institution': 'مثال: جامعة الإسكندرية',
+      'field_of_study': 'مثال: إدارة الأعمال',
+      'organization': 'مثال: مؤسسة مجتمعية',
+      'role': 'مثال: منسق متطوعين',
+      'name': 'اكتب الاسم الذي سيظهر في سيرتك الذاتية',
+      'issuer': 'اكتب اسم الجهة المانحة',
+      'title': 'اكتب عنوانًا موجزًا للإنجاز',
+      'project_month': 'اختر شهر تنفيذ المشروع',
+      'proficiency': 'اختر المستوى الذي يصف لغتك بدقة',
+    };
+    if (field == 'end_month') return null;
+    return (arabic ? ar : en)[field];
+  }
 
   String? _error(AppLocalizations copy, SectionField field) {
     if (widget.section == EntitySection.education &&

@@ -600,6 +600,30 @@ class ResumeExportService {
           ? rawExceptionType
           : null;
       saveExceptionType = nativeExceptionType;
+      if (!saved && nativeSaveStage == 'cancelled') {
+        _recordDownloadDiagnostic(
+          attemptId: attemptId,
+          attempt: attempt,
+          stage: 'android_save',
+          outcome: 'user_cancelled',
+          overall: overall,
+          stageClock: stageClock,
+          httpStatus: httpStatus,
+          expectedBytes: expected,
+          declaredBytes: declaredBytes,
+          receivedBytes: bytes.length,
+          saveResultType: saveResultType,
+          saveStage: nativeSaveStage,
+          destinationSelected: destinationSelected,
+          uriReturned: uriReturned,
+          streamOpened: streamOpened,
+          writeCompleted: writeCompleted,
+          streamClosed: streamClosed,
+          bytesWritten: bytesWritten,
+          finalSizeAvailable: finalSizeAvailable,
+        );
+        return false;
+      }
       if (!saved) {
         if (nativeSaveStage == 'size_mismatch' &&
             finalSizeAvailable == true &&

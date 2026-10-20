@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../career_profile/profile_sections.dart';
 
-/// Optional, fictional prompts. The examples are display-only and never enter
-/// an editor value or a saved profile.
+/// Read-only Resume-format example and optional, truthful writing guidance.
 class SectionWritingGuidance extends StatelessWidget {
   const SectionWritingGuidance({required this.section, super.key});
 
@@ -24,10 +23,10 @@ class SectionWritingGuidance extends StatelessWidget {
         'تحسين آلية إعداد التقارير وتقليل العمل اليدوي المتكرر.',
       ),
       (
-        'What measurable results did you achieve?',
-        'ما النتائج القابلة للقياس التي حققتها؟',
-        'Reduced report preparation time by 30%.',
-        'تقليل وقت إعداد التقارير بنسبة ٣٠٪.',
+        'What changed because of your work?',
+        'ما الذي تحسن نتيجة لعملك؟',
+        'Describe a verified outcome, or focus on the work you contributed.',
+        'اذكر نتيجة موثقة، أو ركّز على العمل الذي أسهمت فيه.',
       ),
     ],
     EntitySection.education: [
@@ -99,21 +98,120 @@ class SectionWritingGuidance extends StatelessWidget {
     final prompts = _prompts[section];
     if (prompts == null) return const SizedBox.shrink();
     final arabic = Localizations.localeOf(context).languageCode == 'ar';
+    final heading = _headings[section]!;
     return ExpansionTile(
       key: const Key('section-writing-guidance'),
       tilePadding: EdgeInsets.zero,
-      title: Text(arabic ? 'أفكار اختيارية للكتابة' : 'Writing prompts'),
+      title: Text(arabic ? heading.$2 : heading.$1),
+      subtitle: Text(arabic ? 'أسئلة وإجابات اختيارية' : 'Optional questions and examples'),
       children: [
         for (var i = 0; i < prompts.length; i++)
-          ListTile(
+          ExpansionTile(
             key: Key('section-writing-prompt-$i'),
-            dense: true,
+            tilePadding: const EdgeInsetsDirectional.only(start: 12, end: 8),
             title: Text(arabic ? prompts[i].$2 : prompts[i].$1),
-            subtitle: Text(
-              '${arabic ? 'مثال:' : 'For example:'} ${arabic ? prompts[i].$4 : prompts[i].$3}',
-            ),
+            childrenPadding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 12),
+            children: [
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  '${arabic ? 'مثال:' : 'Example:'} ${arabic ? prompts[i].$4 : prompts[i].$3}',
+                ),
+              ),
+            ],
           ),
       ],
+    );
+  }
+
+  static const _headings = <EntitySection, (String, String)>{
+    EntitySection.experience: (
+      'Tips to help you write a professional work experience',
+      'نصائح لكتابة خبرتك المهنية',
+    ),
+    EntitySection.volunteer: (
+      'Tips to help you describe your volunteer experience',
+      'نصائح لوصف خبرتك التطوعية',
+    ),
+    EntitySection.education: (
+      'Tips to help you present your education',
+      'نصائح لعرض تعليمك',
+    ),
+    EntitySection.project: (
+      'Tips to help you describe your projects',
+      'نصائح لوصف مشاريعك',
+    ),
+    EntitySection.certification: (
+      'Tips to help you present your certifications',
+      'نصائح لعرض شهاداتك',
+    ),
+    EntitySection.achievement: (
+      'Tips to help you describe your achievements',
+      'نصائح لوصف إنجازاتك',
+    ),
+  };
+}
+
+class EntryResumeExample extends StatelessWidget {
+  const EntryResumeExample({required this.section, super.key});
+  final EntitySection section;
+
+  @override
+  Widget build(BuildContext context) {
+    final ar = Localizations.localeOf(context).languageCode == 'ar';
+    final List<String> example = switch (section) {
+      EntitySection.experience => ar
+          ? ['أخصائي تسويق', 'Jobix Company — الإسكندرية، مصر', 'يوليو ٢٠٢٦ – حتى الآن']
+          : ['Marketing Specialist', 'Jobix Company — Alexandria, Egypt', 'July 2026 – Present'],
+      EntitySection.volunteer => ar
+          ? ['منسق متطوعين', 'مؤسسة مجتمعية — موقعك', 'تاريخ البدء – تاريخ الانتهاء']
+          : ['Volunteer Coordinator', 'Community Organization — Your location', 'Start date – End date'],
+      EntitySection.education => ar
+          ? ['بكالوريوس التجارة', 'جامعة الإسكندرية — إدارة الأعمال', 'سنة التخرج']
+          : ['Bachelor of Commerce', 'Alexandria University — Business Administration', 'Graduation year'],
+      EntitySection.certification => ar
+          ? ['اسم الشهادة', 'الجهة المانحة', 'تاريخ الإصدار']
+          : ['Certification name', 'Issuing organization', 'Issue date'],
+      EntitySection.project => ar
+          ? ['عنوان المشروع', 'دورك في المشروع', 'وصف موجز لمساهمتك']
+          : ['Project title', 'Your role in the project', 'A brief description of your contribution'],
+      EntitySection.achievement => ar
+          ? ['عنوان الإنجاز', 'الجهة أو السياق', 'التاريخ']
+          : ['Achievement title', 'Organization or context', 'Date'],
+      EntitySection.skill => ar
+          ? ['المهارة']
+          : ['Skill'],
+      EntitySection.language => ar
+          ? ['اللغة — المستوى']
+          : ['Language — proficiency'],
+    };
+    return Card(
+      key: const Key('entry-resume-example'),
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              ar ? 'مثال على السيرة الذاتية' : 'Example on a Resume',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final line in example)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  line,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -121,8 +121,12 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
   );
 
   Future<void> remove(CareerProfile profile, ProfileItem item) async {
-    if (!await confirmRemove(context)) return;
+    final approved = item.isDraft
+        ? await confirmDiscardDraft(context)
+        : await confirmRemove(context);
+    if (!approved) return;
     await run((r) => r.delete(profile, item.section, item.id));
+    ref.invalidate(entityDraftsProvider(EntityDraftQuery(profile.id, item.section)));
   }
 
   Future<void> addSkill(CareerProfile profile, String raw) async {
@@ -237,18 +241,39 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                   if (section == EntitySection.skill)
                     _skills(copy, profile)
                   else
-                    EntityCardList(
-                      section: section,
-                      items: profile.of(section),
-                      enabled: !busy,
-                      showHeading: sections.length > 1,
-                      onAdd: section == EntitySection.language
-                          ? () => languageSheet(profile)
-                          : () => openEditor(section, 'new'),
-                      onEdit: (item) => section == EntitySection.language
-                          ? languageSheet(profile, item)
-                          : openEditor(section, item.id),
-                      onRemove: (item) => remove(profile, item),
+                    Builder(
+                      builder: (context) {
+                        final draftQuery = EntityDraftQuery(
+                          profile.id,
+                          section,
+                        );
+                        final draftState = ref.watch(
+                          entityDraftsProvider(draftQuery),
+                        );
+                        return EntityCardList(
+                          section: section,
+                          items: profile.of(section),
+                          drafts: draftState.valueOrNull ?? const [],
+                          draftLoadError: draftState.hasError
+                              ? (copy.localeName.startsWith('ar')
+                                    ? 'تعذر تحميل المسودات المحفوظة.'
+                                    : 'Saved drafts could not be loaded.')
+                              : null,
+                          onRetryDrafts: () =>
+                              ref.invalidate(entityDraftsProvider(draftQuery)),
+                          onEditDraft: (item) => openEditor(section, item.id),
+                          onDiscardDraft: (item) => remove(profile, item),
+                          enabled: !busy,
+                          showHeading: sections.length > 1,
+                          onAdd: section == EntitySection.language
+                              ? () => languageSheet(profile)
+                              : () => openEditor(section, 'new'),
+                          onEdit: (item) => section == EntitySection.language
+                              ? languageSheet(profile, item)
+                              : openEditor(section, item.id),
+                          onRemove: (item) => remove(profile, item),
+                        );
+                      },
                     ),
                   const SizedBox(height: TokensV0.space24),
                 ],
@@ -259,6 +284,8 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
 
   Widget _skills(AppLocalizations copy, CareerProfile profile) {
     final skills = profile.of(EntitySection.skill);
+    final draftQuery = EntityDraftQuery(profile.id, EntitySection.skill);
+    final draftState = ref.watch(entityDraftsProvider(draftQuery));
     final taken = skills.map((s) => nameKey(s.text('name'))).toSet();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -283,6 +310,56 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
               ),
           ],
         ),
+        if (draftState.hasError)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  copy.localeName.startsWith('ar')
+                      ? 'تعذر تحميل المسودات المحفوظة.'
+                      : 'Saved drafts could not be loaded.',
+                ),
+              ),
+              TextButton(
+                onPressed: () => ref.invalidate(
+                  entityDraftsProvider(draftQuery),
+                ),
+                child: Text(copy.retry),
+              ),
+            ],
+          ),
+        for (final draft in draftState.valueOrNull ?? const <ProfileItem>[])
+          Card(
+            key: Key('draft-skill-${draft.id}'),
+            child: ListTile(
+              title: Text(
+                draft.text('name').isEmpty
+                    ? copy.notProvided
+                    : draft.text('name'),
+              ),
+              subtitle: Text(
+                copy.localeName.startsWith('ar') ? 'مسودة' : 'Draft',
+              ),
+              trailing: Wrap(
+                children: [
+                  IconButton(
+                    tooltip: copy.editAction,
+                    onPressed: busy
+                        ? null
+                        : () => openEditor(EntitySection.skill, draft.id),
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  IconButton(
+                    tooltip: copy.localeName.startsWith('ar')
+                        ? 'تجاهل المسودة'
+                        : 'Discard draft',
+                    onPressed: busy ? null : () => remove(profile, draft),
+                    icon: const Icon(Icons.delete_outline),
+                  ),
+                ],
+              ),
+            ),
+          ),
         const SizedBox(height: TokensV0.space8),
         Row(
           children: [
