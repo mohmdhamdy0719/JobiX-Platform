@@ -1,0 +1,83 @@
+# JobiX — Prepare a Guarded Development Migration Plan for Migration 024
+
+Prepare an execution-ready plan to apply the reviewed migration:
+
+`mobile/jobix/supabase/migrations/202610200024_persisted_profile_entry_drafts.sql`
+
+This is a planning and verification task only. **Do not execute the migration or modify any remote environment.**
+
+## 1. Verify the exact migration artifact
+
+- Confirm the migration's current SHA-256 is exactly:
+
+  `f246e45dce62c0d03457fe825ab2db14b687f32a92661572867e2fa1a5a48af6`
+
+- If it differs, stop and report the mismatch. Do not silently substitute another version.
+- Identify the intended Development Supabase project and confirm its identity using read-only evidence where available.
+- Do not connect to Production or change any environment configuration.
+
+## 2. Preflight checks
+
+Prepare explicit read-only checks for:
+
+- Current Development migration history and whether migration 024 is already applied.
+- The actual definitions and signatures of every function, trigger, constraint, and table referenced by migration 024.
+- Compatibility with the preceding migrations and the current `profile_mutate`, `jobix_profile_mutate_base`, snapshot, completeness, idempotency, and export-source implementations.
+- Existing Complete entries, Draft rows, and any data that could violate the migration's assumptions.
+- Existing grants, RLS policies, and schema permissions that must remain unchanged.
+- Whether any partially applied or divergent schema state exists.
+
+Do not expose user profile contents or secrets in the report. Use aggregate counts and structural checks wherever possible.
+
+If any prerequisite is missing, the migration history is ambiguous, or the remote schema differs from the reviewed assumptions, stop and report the blocker instead of attempting an automatic repair.
+
+## 3. Execution plan — describe only
+
+Provide the exact proposed execution sequence, including:
+
+1. Final artifact/hash verification.
+2. Pre-migration schema and data checks.
+3. A safe recovery/backup approach appropriate to the available Supabase capabilities.
+4. The exact migration application method and how transaction boundaries will be handled.
+5. Post-migration schema, function, trigger, grant, and RLS checks.
+6. Read-only checks that Draft rows are excluded from the authoritative Resume snapshot and PDF source.
+7. Checks that existing Complete rows remain Complete and Resume Layout order/visibility remain unchanged.
+8. A stop/abort matrix for failures at each stage.
+
+Do not assume a backup exists. State what is available and what must be arranged before approval.
+
+## 4. Rollback and recovery
+
+Provide a data-aware recovery plan.
+
+- Do not propose simply dropping `is_draft`, disabling filtering, or reverting the migration in a way that could expose incomplete Draft content in Preview/PDF.
+- Explain how to preserve Draft data and prevent accidental publication if recovery is required after users have created drafts.
+- Distinguish recovery before and after real Draft data exists.
+- Do not execute rollback, cleanup, or destructive SQL.
+
+## 5. Explicit restrictions
+
+This task must not:
+
+- Apply Migration 024 or any other remote migration.
+- Change Development or Production schema, data, configuration, policies, grants, or infrastructure.
+- Deploy code or build an APK.
+- Trigger AI calls, PDF exports, or Credit transactions.
+- Create, alter, or delete accounts or user data.
+- Change credentials, IAM, billing, or permissions.
+- Claim live Development compatibility unless read-only evidence actually verifies it.
+
+If live read-only access is unavailable, clearly label the corresponding checks as **not verified** and provide the exact checks that remain pending.
+
+## 6. Final report
+
+Return:
+- Confirmed migration path and SHA-256.
+- Development project identity evidence, without secrets.
+- Preflight checks performed and their actual results.
+- Exact proposed execution steps.
+- Backup/recovery limitations and data-aware rollback plan.
+- Unverified checks and blockers.
+- A clear readiness recommendation.
+
+Stop after producing the plan. Wait for explicit approval before applying anything.
