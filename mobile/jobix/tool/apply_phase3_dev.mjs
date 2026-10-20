@@ -22,10 +22,76 @@ const resumeLayoutExpectedSha256='d34f6dad4d9edcd301486d9d507bed7330c0fde66cfac3
 const resumeLayoutPrerequisiteVersions=[
   ...versions,...resumeExportCostVersions,resumeExportCostOutputUnitVersion,
 ];
+const profileEntryDraftVersion='202610200024_persisted_profile_entry_drafts';
+const profileEntryDraftExpectedSha256='f246e45dce62c0d03457fe825ab2db14b687f32a92661572867e2fa1a5a48af6';
+const profileEntryDraftPrerequisites=[
+  ['202610080012_resume_export_foundation','000e679329170539502fa5f8e672cb93c42652eda2451d3ae3075efdaf624db0'],
+  ['202610080013_resume_export_lifecycle','df807dbecf098306bae74f8afe7a01a9d28a09c91477203179278a00a4a928b9'],
+  ['202610080014_resume_configuration_concurrency','e8eaa30acea373460cd2e43c2a525bf083f30b92d4b2a125de2d9dd4cbf53284'],
+  ['202610080015_resume_export_local_hardening','3cd8af5855fe2976216111ebb4cfee490556881441fb28f46afaccd0290858db'],
+  ['202610080016_resume_export_cleanup_hooks','018becbe1a190797e1dbef907159d579de87a4c25eba24dbb7fa72e97697256c'],
+  ['202610080017_resume_export_deletion','70a04b0ad7e397bbef9ee0cd5a1ce34d60ffc109ea6bb4eab811e2851986fc12'],
+  ['202610080018_resume_export_admission','9b64fa82315dd4469c0842c28568f393eeedbc5a25f1b186af4718cc8c86b76a'],
+  ['202610100019_resume_export_cost_protection','a2801821b915cbabdfbd6bd35aa4e55a61e9da06463a4f7a4a74f79506d301cd'],
+  ['202610100020_resume_export_cost_purge_recovery','cb63d7f31b772b61d4ba719172cac40837d7b0978123795213ae385bd5307cba'],
+  ['202610100021_resume_export_cost_output_unit','147a14c1acb399237a831a994163ebf4006f82d718363e1c370ba937a838fae6'],
+  ['202610170022_resume_layout','d34f6dad4d9edcd301486d9d507bed7330c0fde66cfac3630bee087fa8366473'],
+  ['202610190023_education_catalog','462f8ee5bd4e094539996615a8aa2b1433f257fa5cd6161eb3d811814d2d3372'],
+];
+const profileEntryDraftTables=[
+  'profile_experiences','profile_education','profile_certifications',
+  'profile_achievements','profile_projects','profile_skills','profile_languages',
+  'profile_volunteer_experiences',
+];
+const profileEntryDraftPrerequisiteRelations=[
+  'jobix_export_migrations','users','career_profiles','profile_personal_data',
+  'profile_summaries','idempotency_records','export_jobs','export_upload_flights',
+  'export_cost_reservations',...profileEntryDraftTables,
+];
+const profileEntryDraftPrerequisiteFunctions=[
+  'auth.uid()',
+  'public.jobix_meaningful(text,integer)',
+  'public.jobix_name_key(text)',
+  'public.jobix_text_field(jsonb,text,integer)',
+  'public.jobix_month_field(jsonb,text)',
+  'public.jobix_bool_field(jsonb,text)',
+  'public.jobix_next_order(text,uuid)',
+  'public.profile_mutate(uuid,uuid,bigint,jsonb)',
+  'public.jobix_profile_mutate_base(uuid,uuid,bigint,jsonb)',
+  'public.jobix_experience_complete(public.profile_experiences)',
+  'public.jobix_education_complete(public.profile_education)',
+  'public.jobix_project_complete(public.profile_projects)',
+  'public.jobix_achievement_complete(public.profile_achievements)',
+  'public.jobix_recompute_text_profile(uuid)',
+  'public.jobix_profile_text_snapshot(uuid)',
+  'public.jobix_profile_text_snapshot_pre_volunteer(uuid)',
+  'public.jobix_export_source(uuid,uuid)',
+];
+const profileEntryDraftOwnedFunctions=[
+  'public.jobix_experience_complete(public.profile_experiences)',
+  'public.jobix_education_complete(public.profile_education)',
+  'public.jobix_project_complete(public.profile_projects)',
+  'public.jobix_achievement_complete(public.profile_achievements)',
+  'public.jobix_recompute_text_profile(uuid)',
+  'public.jobix_profile_text_snapshot(uuid)',
+];
+const profileEntryDraftConflictingFunctions=[
+  'public.jobix_profile_entry_draft_state()',
+  'public.jobix_visible_profile_items(uuid,text,jsonb)',
+  'public.save_profile_entry(uuid,uuid,bigint,jsonb,boolean)',
+];
 
 export function verifyResumeLayoutMigrationSource(source) {
   const actual=createHash('sha256').update(source).digest('hex');
   if(actual!==resumeLayoutExpectedSha256)throw Error('MIGRATION_SOURCE_CHECKSUM_MISMATCH');
+  return actual;
+}
+
+export function verifyProfileEntryDraftMigrationSource(source) {
+  const actual=createHash('sha256').update(source).digest('hex');
+  if(actual!==profileEntryDraftExpectedSha256) {
+    throw Error('MIGRATION_SOURCE_CHECKSUM_MISMATCH');
+  }
   return actual;
 }
 
@@ -171,6 +237,536 @@ export async function migrateResumeLayout({
     console.log('DEVELOPMENT_MIGRATION_022_APPLIED_LAYOUT_RPC_ONLY');
   } catch(error) {
     if(client&&transactionOpen)await client.query('ROLLBACK').catch(()=>{});
+    throw error;
+  } finally {
+    client?.release();
+    await pool.end();
+  }
+}
+
+async function readProfileEntryDraftSchemaState(client) {
+  return (await client.query(`SELECT
+    (SELECT count(*)::int FROM pg_attribute a
+      JOIN pg_class c ON c.oid=a.attrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+        AND a.attname='is_draft' AND a.attnum>0 AND NOT a.attisdropped) AS draft_columns,
+    (SELECT count(*)::int FROM pg_attribute a
+      JOIN pg_class c ON c.oid=a.attrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      LEFT JOIN pg_attrdef d ON d.adrelid=c.oid AND d.adnum=a.attnum
+      WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+        AND a.attname='is_draft' AND a.attnum>0 AND NOT a.attisdropped
+        AND a.attnotnull AND pg_get_expr(d.adbin,d.adrelid)='false')
+      AS safe_draft_columns,
+    (SELECT count(*)::int FROM unnest($2::text[]) AS expected(signature)
+      JOIN pg_proc p ON p.oid=to_regprocedure(expected.signature)
+      WHERE p.prokind='f') AS draft_functions,
+    (SELECT count(*)::int FROM pg_trigger t
+      JOIN pg_class c ON c.oid=t.tgrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+        AND t.tgname='jobix_entry_draft_state' AND NOT t.tgisinternal) AS draft_triggers,
+    (SELECT count(*)::int FROM pg_trigger t
+      JOIN pg_class c ON c.oid=t.tgrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+        AND t.tgname='jobix_entry_draft_state' AND NOT t.tgisinternal
+        AND t.tgtype=23
+        AND t.tgfoid=to_regprocedure('public.jobix_profile_entry_draft_state()'))
+      AS correct_draft_triggers,
+    to_regprocedure('public.jobix_profile_text_snapshot_pre_entry_drafts(uuid)') IS NOT NULL
+      AS archived_snapshot,
+    to_regprocedure('public.jobix_profile_text_snapshot_pre_volunteer(uuid)') IS NOT NULL
+      AS pre_volunteer_snapshot,
+    to_regprocedure('public.jobix_profile_text_snapshot(uuid)') IS NOT NULL AS current_snapshot,
+    EXISTS(SELECT 1 FROM pg_constraint c
+      JOIN pg_class t ON t.oid=c.conrelid
+      JOIN pg_namespace n ON n.oid=t.relnamespace
+      WHERE n.nspname='public' AND t.relname='profile_volunteer_experiences'
+        AND c.conname='profile_volunteer_experiences_check') AS old_volunteer_constraint,
+    EXISTS(SELECT 1 FROM pg_constraint c
+      JOIN pg_class t ON t.oid=c.conrelid
+      JOIN pg_namespace n ON n.oid=t.relnamespace
+      WHERE n.nspname='public' AND t.relname='profile_volunteer_experiences'
+        AND c.conname='profile_volunteer_experiences_draft_or_valid')
+      AS draft_volunteer_constraint,
+    coalesce((SELECT c.convalidated FROM pg_constraint c
+      JOIN pg_class t ON t.oid=c.conrelid
+      JOIN pg_namespace n ON n.oid=t.relnamespace
+      WHERE n.nspname='public' AND t.relname='profile_volunteer_experiences'
+        AND c.conname='profile_volunteer_experiences_draft_or_valid'),false)
+      AS draft_volunteer_constraint_validated,
+    (SELECT pg_get_constraintdef(c.oid) FROM pg_constraint c
+      JOIN pg_class t ON t.oid=c.conrelid
+      JOIN pg_namespace n ON n.oid=t.relnamespace
+      WHERE n.nspname='public' AND t.relname='profile_volunteer_experiences'
+        AND c.conname='profile_volunteer_experiences_draft_or_valid')
+      AS draft_volunteer_constraint_definition,
+    (SELECT a.attnotnull FROM pg_attribute a
+      JOIN pg_class c ON c.oid=a.attrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname='profile_skills' AND a.attname='name'
+        AND a.attnum>0 AND NOT a.attisdropped) AS skill_name_not_null,
+    (SELECT a.attnotnull FROM pg_attribute a
+      JOIN pg_class c ON c.oid=a.attrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname='profile_languages' AND a.attname='name'
+        AND a.attnum>0 AND NOT a.attisdropped) AS language_name_not_null,
+    (SELECT a.attnotnull FROM pg_attribute a
+      JOIN pg_class c ON c.oid=a.attrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname='profile_languages'
+        AND a.attname='proficiency' AND a.attnum>0 AND NOT a.attisdropped)
+      AS language_proficiency_not_null
+  `,[profileEntryDraftTables,profileEntryDraftConflictingFunctions])).rows[0];
+}
+
+function isProfileEntryDraftSchemaAbsent(state) {
+  return state?.draft_columns===0&&state.draft_functions===0&&state.draft_triggers===0&&
+    state.safe_draft_columns===0&&state.correct_draft_triggers===0&&
+    state.archived_snapshot===false&&state.pre_volunteer_snapshot===true&&
+    state.current_snapshot===true&&state.old_volunteer_constraint===true&&
+    state.draft_volunteer_constraint===false&&
+    state.draft_volunteer_constraint_validated===false&&
+    state.skill_name_not_null===true&&
+    state.language_name_not_null===true&&state.language_proficiency_not_null===true;
+}
+
+function isProfileEntryDraftSchemaComplete(state) {
+  const constraintDefinition=(state?.draft_volunteer_constraint_definition??'')
+    .toLowerCase().replace(/[\s()"']/g,'');
+  const hasExpectedConstraintTerms=[
+    'is_draft','organizationisnotnull','roleisnotnull','start_monthisnotnull',
+    'is_current','end_month',
+  ].every(term=>constraintDefinition.includes(term));
+  return state?.draft_columns===profileEntryDraftTables.length&&
+    state.safe_draft_columns===profileEntryDraftTables.length&&
+    state.draft_functions===profileEntryDraftConflictingFunctions.length&&
+    state.draft_triggers===profileEntryDraftTables.length&&
+    state.correct_draft_triggers===profileEntryDraftTables.length&&
+    state.archived_snapshot===true&&state.pre_volunteer_snapshot===true&&
+    state.current_snapshot===true&&state.old_volunteer_constraint===false&&
+    state.draft_volunteer_constraint===true&&
+    state.draft_volunteer_constraint_validated===true&&hasExpectedConstraintTerms&&
+    state.skill_name_not_null===false&&
+    state.language_name_not_null===false&&state.language_proficiency_not_null===false;
+}
+
+async function readProfileEntryDraftLedger(client) {
+  return (await client.query(
+    'SELECT version,sha256 FROM public.jobix_export_migrations ORDER BY version',
+  )).rows;
+}
+
+function verifyProfileEntryDraftLedger(rows) {
+  const priorCount=profileEntryDraftPrerequisites.length;
+  const has024=rows.length===priorCount+1;
+  if(rows.length!==priorCount&&!has024) {
+    throw Error('MIGRATION_LEDGER_STATE_CONFLICT');
+  }
+  for(let index=0;index<priorCount;index++) {
+    const [version,sha256]=profileEntryDraftPrerequisites[index];
+    if(rows[index]?.version!==version)throw Error('MIGRATION_LEDGER_STATE_CONFLICT');
+    if(rows[index]?.sha256!==sha256)throw Error('MIGRATION_CHECKSUM_CONFLICT');
+  }
+  if(has024) {
+    if(rows[priorCount]?.version!==profileEntryDraftVersion) {
+      throw Error('MIGRATION_LEDGER_STATE_CONFLICT');
+    }
+    if(rows[priorCount]?.sha256!==profileEntryDraftExpectedSha256) {
+      throw Error('MIGRATION_CHECKSUM_CONFLICT');
+    }
+  }
+  return has024;
+}
+
+async function assertProfileEntryDraftPostState(client,sourceHash) {
+  const schema=await readProfileEntryDraftSchemaState(client);
+  if(!isProfileEntryDraftSchemaComplete(schema)) {
+    throw Error('MIGRATION_024_SCHEMA_NOT_COMPLETE');
+  }
+  const installed=(await client.query(`SELECT
+    save.prokind='f' AS save_is_function,
+    save.prosecdef AS save_security_definer,
+    owner.rolsuper OR owner.rolbypassrls OR owner.rolcreaterole OR owner.rolcreatedb
+      AS unsafe_save_owner,
+    has_function_privilege('authenticated',
+      'public.save_profile_entry(uuid,uuid,bigint,jsonb,boolean)','EXECUTE') AS save_authenticated,
+    has_function_privilege('anon',
+      'public.save_profile_entry(uuid,uuid,bigint,jsonb,boolean)','EXECUTE') AS save_anon,
+    has_function_privilege('service_role',
+      'public.save_profile_entry(uuid,uuid,bigint,jsonb,boolean)','EXECUTE') AS save_service,
+    NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(save.proacl,
+      acldefault('f',save.proowner))) acl
+      WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE') AS save_public_revoked,
+    visible.prokind='f' AND visible.prosecdef AS visible_secdef,
+    snapshot.prokind='f' AND snapshot.prosecdef AS snapshot_secdef,
+    NOT trigger_fn.prosecdef AS trigger_fn_invoker,
+    NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(visible.proacl,
+      acldefault('f',visible.proowner))) acl
+      WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE') AS visible_public_revoked,
+    NOT has_function_privilege('anon',
+      'public.jobix_visible_profile_items(uuid,text,jsonb)','EXECUTE')
+      AND NOT has_function_privilege('authenticated',
+      'public.jobix_visible_profile_items(uuid,text,jsonb)','EXECUTE') AS visible_client_revoked,
+    NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(snapshot.proacl,
+      acldefault('f',snapshot.proowner))) acl
+      WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE')
+      AND NOT has_function_privilege('anon',
+      'public.jobix_profile_text_snapshot(uuid)','EXECUTE')
+      AND NOT has_function_privilege('authenticated',
+      'public.jobix_profile_text_snapshot(uuid)','EXECUTE') AS snapshot_client_revoked,
+    NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(trigger_fn.proacl,
+      acldefault('f',trigger_fn.proowner))) acl
+      WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE')
+      AND NOT has_function_privilege('anon',
+      'public.jobix_profile_entry_draft_state()','EXECUTE')
+      AND NOT has_function_privilege('authenticated',
+      'public.jobix_profile_entry_draft_state()','EXECUTE') AS trigger_client_revoked,
+    EXISTS(SELECT 1 FROM public.jobix_export_migrations m
+      WHERE m.version=$1 AND m.sha256=$2) AS ledger_matches
+    FROM pg_proc save
+    JOIN pg_roles owner ON owner.oid=save.proowner
+    JOIN pg_proc visible
+      ON visible.oid=to_regprocedure('public.jobix_visible_profile_items(uuid,text,jsonb)')
+    JOIN pg_proc snapshot
+      ON snapshot.oid=to_regprocedure('public.jobix_profile_text_snapshot(uuid)')
+    JOIN pg_proc trigger_fn
+      ON trigger_fn.oid=to_regprocedure('public.jobix_profile_entry_draft_state()')
+    WHERE save.oid=to_regprocedure(
+      'public.save_profile_entry(uuid,uuid,bigint,jsonb,boolean)')`,
+  [profileEntryDraftVersion,sourceHash])).rows[0];
+  if(!installed||installed.save_is_function!==true||
+    installed.save_security_definer!==true||installed.unsafe_save_owner!==false||
+    installed.save_authenticated!==true||installed.save_anon!==false||
+    installed.save_service!==false||installed.save_public_revoked!==true||
+    installed.visible_secdef!==true||installed.snapshot_secdef!==true||
+    installed.trigger_fn_invoker!==true||installed.visible_public_revoked!==true||
+    installed.visible_client_revoked!==true||installed.snapshot_client_revoked!==true||
+    installed.trigger_client_revoked!==true||installed.ledger_matches!==true) {
+    throw Error('MIGRATION_024_POST_ASSERTION_FAILED');
+  }
+}
+
+export async function migrateProfileEntryDrafts({
+  caFile,approved=false,poolFactory=options=>new Pool(options),
+  readMigrationSource=version=>readFile(resolve(import.meta.dirname,
+    '../supabase/migrations',version+'.sql'),'utf8'),
+}={}) {
+  if(!approved||!caFile)throw Error('EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED');
+  const source=await readMigrationSource(profileEntryDraftVersion);
+  const sourceHash=verifyProfileEntryDraftMigrationSource(source);
+  for(const [version,expectedHash] of profileEntryDraftPrerequisites) {
+    const priorSource=await readMigrationSource(version);
+    const actualHash=createHash('sha256').update(priorSource).digest('hex');
+    if(actualHash!==expectedHash)throw Error('PREREQUISITE_SOURCE_CHECKSUM_MISMATCH');
+  }
+
+  const rawUrl=process.env.JOBIX_DEV_DATABASE_URL;
+  if(!rawUrl)throw Error('DEV_TARGET_REJECTED');
+  const uri=new URL(rawUrl);
+  if(!['postgres:','postgresql:'].includes(uri.protocol)||
+    !uri.username.endsWith('.'+ref)||
+    !uri.hostname.endsWith('.pooler.supabase.com')||
+    uri.pathname!='/postgres'||uri.port!=='5432'||uri.hash||
+    ['host','hostaddr','port','dbname','database','user','password','options',
+      'service','servicefile'].some(key=>uri.searchParams.has(key))) {
+    throw Error('DEV_TARGET_REJECTED');
+  }
+  for(const key of ['sslmode','sslrootcert','sslcert','sslkey'])uri.searchParams.delete(key);
+  const ca=await readFile(caFile,'utf8');
+  if(!ca.trimStart().startsWith('-----BEGIN CERTIFICATE-----')||
+    !ca.includes('-----END CERTIFICATE-----'))throw Error('DEV_CA_FILE_INVALID');
+
+  const pool=poolFactory({connectionString:uri.toString(),max:1,
+    connectionTimeoutMillis:15000,
+    ssl:{rejectUnauthorized:true,ca},statement_timeout:30000});
+  let client,transactionOpen=false,commitStarted=false;
+  try {
+    client=await pool.connect();
+    await client.query('BEGIN');
+    transactionOpen=true;
+    await client.query("SET LOCAL lock_timeout='1s'");
+    await client.query('SET LOCAL statement_timeout=30000');
+    // This does not bypass RLS. It makes a filtered preflight query fail
+    // instead of silently reporting an incomplete aggregate.
+    await client.query('SET LOCAL row_security=off');
+    const advisory=(await client.query(
+      "SELECT pg_try_advisory_xact_lock(hashtext('jobix_phase3_dev_migrations')) AS acquired",
+    )).rows[0];
+    if(advisory?.acquired!==true)throw Error('MIGRATION_LOCK_BUSY');
+
+    const identity=(await client.query(`SELECT current_database() AS database,
+      current_user AS role,r.rolcanlogin,r.rolsuper,r.rolbypassrls,
+      r.rolcreaterole,r.rolcreatedb,
+      NOT EXISTS(SELECT 1 FROM pg_roles elevated
+        WHERE elevated.oid<>r.oid AND
+          (elevated.rolsuper OR elevated.rolbypassrls OR elevated.rolcreaterole OR
+           elevated.rolcreatedb OR elevated.rolname IN
+            ('postgres','supabase_admin','service_role','authenticator',
+             'supabase_auth_admin','supabase_storage_admin'))
+          AND pg_has_role(r.oid,elevated.oid,'MEMBER')) AS no_admin_membership
+      FROM pg_roles r WHERE r.rolname=current_user`)).rows[0];
+    if(identity?.database!=='postgres'||identity.role==null) {
+      throw Error('DEV_TARGET_IDENTITY_MISMATCH');
+    }
+    if(identity.rolcanlogin!==true||identity.rolsuper!==false||
+      identity.rolbypassrls!==false||identity.rolcreaterole!==false||
+      identity.rolcreatedb!==false||identity.no_admin_membership!==true) {
+      throw Error('MIGRATION_IDENTITY_UNSAFE');
+    }
+
+    const relations=(await client.query(`SELECT
+      ${profileEntryDraftPrerequisiteRelations.map((name,index)=>
+        `to_regclass('public.${name}') IS NOT NULL AS relation_${index}`).join(',\n      ')},
+      to_regrole('authenticated') IS NOT NULL AS authenticated_role,
+      to_regrole('anon') IS NOT NULL AS anon_role,
+      to_regrole('service_role') IS NOT NULL AS service_role`)).rows[0];
+    if(!relations||Object.values(relations).some(value=>value!==true)) {
+      throw Error('MIGRATION_024_PREREQUISITE_SCHEMA_MISSING');
+    }
+
+    const requiredColumns=[
+      ['users','id'],['users','status'],
+      ['career_profiles','id'],['career_profiles','user_id'],
+      ['career_profiles','status'],['career_profiles','profile_version'],
+      ['career_profiles','target_role'],['career_profiles','completeness_percent'],
+      ['career_profiles','completeness_algorithm_version'],['career_profiles','updated_at'],
+      ['profile_personal_data','profile_id'],['profile_personal_data','full_name'],
+      ['profile_personal_data','email'],['profile_personal_data','phone'],
+      ['profile_summaries','profile_id'],['profile_summaries','text'],
+      ['idempotency_records','user_id'],['idempotency_records','operation_type'],
+      ['idempotency_records','idempotency_key'],['idempotency_records','payload_hash'],
+      ['idempotency_records','response_state'],
+      ['profile_experiences','id'],['profile_experiences','profile_id'],
+      ['profile_experiences','job_title'],['profile_experiences','company'],
+      ['profile_experiences','start_month'],['profile_experiences','end_month'],
+      ['profile_experiences','is_current'],['profile_experiences','description'],
+      ['profile_experiences','sort_order'],['profile_experiences','version'],
+      ['profile_experiences','updated_at'],
+      ['profile_education','id'],['profile_education','profile_id'],
+      ['profile_education','degree'],['profile_education','institution'],
+      ['profile_education','field_of_study'],['profile_education','start_month'],
+      ['profile_education','end_month'],['profile_education','is_current'],
+      ['profile_education','description'],['profile_education','sort_order'],
+      ['profile_education','version'],['profile_education','updated_at'],
+      ['profile_certifications','id'],['profile_certifications','profile_id'],
+      ['profile_certifications','name'],['profile_certifications','issuer'],
+      ['profile_certifications','issue_month'],['profile_certifications','sort_order'],
+      ['profile_certifications','version'],['profile_certifications','updated_at'],
+      ['profile_achievements','id'],['profile_achievements','profile_id'],
+      ['profile_achievements','title'],['profile_achievements','issuer'],
+      ['profile_achievements','achieved_month'],['profile_achievements','description'],
+      ['profile_achievements','sort_order'],['profile_achievements','version'],
+      ['profile_achievements','updated_at'],
+      ['profile_projects','id'],['profile_projects','profile_id'],
+      ['profile_projects','name'],['profile_projects','role'],
+      ['profile_projects','project_month'],['profile_projects','description'],
+      ['profile_projects','sort_order'],['profile_projects','version'],
+      ['profile_projects','updated_at'],
+      ['profile_skills','id'],['profile_skills','profile_id'],
+      ['profile_skills','name'],['profile_skills','sort_order'],
+      ['profile_skills','version'],['profile_skills','updated_at'],
+      ['profile_languages','id'],['profile_languages','profile_id'],
+      ['profile_languages','name'],['profile_languages','proficiency'],
+      ['profile_languages','sort_order'],['profile_languages','version'],
+      ['profile_languages','updated_at'],
+      ['profile_volunteer_experiences','id'],['profile_volunteer_experiences','profile_id'],
+      ['profile_volunteer_experiences','organization'],['profile_volunteer_experiences','role'],
+      ['profile_volunteer_experiences','location'],
+      ['profile_volunteer_experiences','start_month'],['profile_volunteer_experiences','end_month'],
+      ['profile_volunteer_experiences','is_current'],
+      ['profile_volunteer_experiences','description'],
+      ['profile_volunteer_experiences','sort_order'],
+      ['profile_volunteer_experiences','version'],
+      ['profile_volunteer_experiences','updated_at'],
+    ];
+    const missingColumns=(await client.query(`SELECT expected.table_name,expected.column_name
+      FROM unnest($1::text[],$2::text[]) AS expected(table_name,column_name)
+      WHERE NOT EXISTS(SELECT 1 FROM information_schema.columns c
+        WHERE c.table_schema='public' AND c.table_name=expected.table_name
+          AND c.column_name=expected.column_name)`,
+    [requiredColumns.map(pair=>pair[0]),requiredColumns.map(pair=>pair[1])])).rows;
+    if(missingColumns.length)throw Error('MIGRATION_024_PREREQUISITE_SCHEMA_MISSING');
+
+    const missingFunctions=(await client.query(`SELECT expected.signature
+      FROM unnest($1::text[]) AS expected(signature)
+      WHERE to_regprocedure(expected.signature) IS NULL`,
+    [profileEntryDraftPrerequisiteFunctions])).rows;
+    if(missingFunctions.length)throw Error('MIGRATION_024_PREREQUISITE_SCHEMA_MISSING');
+
+    const ledger=await readProfileEntryDraftLedger(client);
+    const alreadyApplied=verifyProfileEntryDraftLedger(ledger);
+    if(alreadyApplied) {
+      await assertProfileEntryDraftPostState(client,sourceHash);
+      commitStarted=true;
+      await client.query('COMMIT');
+      transactionOpen=false;
+      return 'already-applied';
+    }
+
+    const initialSchema=await readProfileEntryDraftSchemaState(client);
+    if(!isProfileEntryDraftSchemaAbsent(initialSchema)) {
+      throw Error('MIGRATION_024_SCHEMA_CONFLICT');
+    }
+
+    const permissionState=(await client.query(`SELECT
+      has_schema_privilege(current_user,'public','USAGE') AS schema_usage,
+      has_schema_privilege(current_user,'public','CREATE') AS schema_create,
+      has_table_privilege(current_user,'public.jobix_export_migrations','SELECT')
+        AND has_table_privilege(current_user,'public.jobix_export_migrations','INSERT')
+        AS ledger_permissions,
+      has_table_privilege(current_user,'public.users','SELECT')
+        AND has_table_privilege(current_user,'public.users','UPDATE') AS users_permissions,
+      has_table_privilege(current_user,'public.career_profiles','SELECT')
+        AND has_table_privilege(current_user,'public.career_profiles','UPDATE')
+        AS profile_permissions,
+      has_table_privilege(current_user,'public.profile_personal_data','SELECT')
+        AS personal_data_select,
+      has_table_privilege(current_user,'public.profile_summaries','SELECT')
+        AS summary_select,
+      has_table_privilege(current_user,'public.idempotency_records','SELECT')
+        AND has_table_privilege(current_user,'public.idempotency_records','INSERT')
+        AND has_table_privilege(current_user,'public.idempotency_records','UPDATE')
+        AS idempotency_permissions,
+      has_table_privilege(current_user,'public.export_jobs','SELECT')
+        AND has_table_privilege(current_user,'public.export_upload_flights','SELECT')
+        AND has_table_privilege(current_user,'public.export_cost_reservations','SELECT')
+        AS export_read_permissions,
+      has_table_privilege(current_user,'public.profile_experiences','SELECT')
+        AND has_table_privilege(current_user,'public.profile_experiences','UPDATE')
+        AND has_table_privilege(current_user,'public.profile_education','SELECT')
+        AND has_table_privilege(current_user,'public.profile_education','UPDATE')
+        AND has_table_privilege(current_user,'public.profile_certifications','SELECT')
+        AND has_table_privilege(current_user,'public.profile_certifications','UPDATE')
+        AND has_table_privilege(current_user,'public.profile_achievements','SELECT')
+        AND has_table_privilege(current_user,'public.profile_achievements','UPDATE')
+        AND has_table_privilege(current_user,'public.profile_projects','SELECT')
+        AND has_table_privilege(current_user,'public.profile_projects','UPDATE')
+        AND has_table_privilege(current_user,'public.profile_skills','SELECT')
+        AND has_table_privilege(current_user,'public.profile_skills','INSERT')
+        AND has_table_privilege(current_user,'public.profile_skills','UPDATE')
+        AND has_table_privilege(current_user,'public.profile_languages','SELECT')
+        AND has_table_privilege(current_user,'public.profile_languages','INSERT')
+        AND has_table_privilege(current_user,'public.profile_languages','UPDATE')
+        AND has_table_privilege(current_user,'public.profile_volunteer_experiences','SELECT')
+        AND has_table_privilege(current_user,'public.profile_volunteer_experiences','INSERT')
+        AND has_table_privilege(current_user,'public.profile_volunteer_experiences','UPDATE')
+        AS profile_entry_permissions,
+      has_function_privilege(current_user,'auth.uid()','EXECUTE')
+        AND has_function_privilege(current_user,'public.jobix_meaningful(text,integer)','EXECUTE')
+        AND has_function_privilege(current_user,'public.jobix_text_field(jsonb,text,integer)','EXECUTE')
+        AND has_function_privilege(current_user,'public.jobix_month_field(jsonb,text)','EXECUTE')
+        AND has_function_privilege(current_user,'public.jobix_bool_field(jsonb,text)','EXECUTE')
+        AND has_function_privilege(current_user,'public.jobix_next_order(text,uuid)','EXECUTE')
+        AND has_function_privilege(current_user,'public.profile_mutate(uuid,uuid,bigint,jsonb)','EXECUTE')
+        AND has_function_privilege(current_user,'public.jobix_profile_mutate_base(uuid,uuid,bigint,jsonb)','EXECUTE')
+        AND has_function_privilege(current_user,'public.jobix_recompute_text_profile(uuid)','EXECUTE')
+        AND has_function_privilege(current_user,'public.jobix_profile_text_snapshot(uuid)','EXECUTE')
+        AS required_function_execute,
+      (SELECT count(*)::int FROM pg_class c
+        JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+          AND c.relkind IN ('r','p') AND c.relforcerowsecurity)=0
+        AS definer_rls_compatible`,
+    [['users','career_profiles','profile_personal_data','profile_summaries',
+      'idempotency_records',...profileEntryDraftTables]])).rows[0];
+    if(!permissionState||Object.values(permissionState).some(value=>value!==true)) {
+      throw Error('MIGRATION_024_REQUIRED_PRIVILEGES_MISSING');
+    }
+
+    const ownershipFailures=(await client.query(`SELECT 'table:'||c.relname AS object_name
+      FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname=ANY($1::text[])
+        AND c.relowner<>(SELECT oid FROM pg_roles WHERE rolname=current_user)
+      UNION ALL
+      SELECT 'function:'||expected.signature
+      FROM unnest($2::text[]) AS expected(signature)
+      JOIN pg_proc p ON p.oid=to_regprocedure(expected.signature)
+      WHERE p.proowner<>(SELECT oid FROM pg_roles WHERE rolname=current_user)`,
+    [profileEntryDraftTables,profileEntryDraftOwnedFunctions])).rows;
+    if(ownershipFailures.length)throw Error('MIGRATION_024_OWNERSHIP_MISMATCH');
+
+    await client.query(`LOCK TABLE ${profileEntryDraftTables.map(name=>
+      `public.${name}`).join(', ')} IN ACCESS EXCLUSIVE MODE NOWAIT`);
+    await client.query(`LOCK TABLE public.export_jobs,public.export_upload_flights,
+      public.export_cost_reservations IN SHARE ROW EXCLUSIVE MODE NOWAIT`);
+    await client.query(
+      'LOCK TABLE public.jobix_export_migrations IN SHARE ROW EXCLUSIVE MODE NOWAIT',
+    );
+
+    const lockedSchema=await readProfileEntryDraftSchemaState(client);
+    if(!isProfileEntryDraftSchemaAbsent(lockedSchema)) {
+      throw Error('MIGRATION_024_SCHEMA_CONFLICT');
+    }
+    if(verifyProfileEntryDraftLedger(await readProfileEntryDraftLedger(client))) {
+      throw Error('MIGRATION_024_LEDGER_CHANGED');
+    }
+
+    const incompleteRows=(await client.query(`SELECT
+      (SELECT count(*)::bigint FROM public.profile_experiences e
+        WHERE public.jobix_experience_complete(e) IS DISTINCT FROM true) AS experience,
+      (SELECT count(*)::bigint FROM public.profile_education e
+        WHERE public.jobix_education_complete(e) IS DISTINCT FROM true) AS education,
+      (SELECT count(*)::bigint FROM public.profile_certifications e
+        WHERE public.jobix_meaningful(e.name,1) IS DISTINCT FROM true
+          OR public.jobix_meaningful(e.issuer,1) IS DISTINCT FROM true
+          OR e.issue_month IS NULL)
+        AS certification,
+      (SELECT count(*)::bigint FROM public.profile_achievements e
+        WHERE public.jobix_achievement_complete(e) IS DISTINCT FROM true)
+        AS achievement,
+      (SELECT count(*)::bigint FROM public.profile_projects e
+        WHERE public.jobix_project_complete(e) IS DISTINCT FROM true) AS project,
+      (SELECT count(*)::bigint FROM public.profile_skills e
+        WHERE public.jobix_meaningful(e.name,1) IS DISTINCT FROM true) AS skill,
+      (SELECT count(*)::bigint FROM public.profile_languages e
+        WHERE public.jobix_meaningful(e.name,1) IS DISTINCT FROM true
+          OR e.proficiency IS NULL) AS language,
+      (SELECT count(*)::bigint FROM public.profile_volunteer_experiences e
+        WHERE public.jobix_meaningful(e.organization,1) IS DISTINCT FROM true
+          OR public.jobix_meaningful(e.role,1) IS DISTINCT FROM true
+          OR e.start_month IS NULL
+          OR (e.is_current AND e.end_month IS NOT NULL)
+          OR (NOT e.is_current AND
+            (e.end_month IS NULL OR e.end_month<e.start_month))) AS volunteer
+    `)).rows[0];
+    if(!incompleteRows||Object.values(incompleteRows).some(value=>BigInt(value)>0n)) {
+      throw Error('MIGRATION_024_LEGACY_INCOMPLETE_ROWS_PRESENT');
+    }
+
+    const activeJobs=(await client.query(`SELECT count(*)::bigint AS count
+      FROM public.export_jobs
+      WHERE state=ANY($1::text[])`,
+    [['QUEUED','CLAIMED','GENERATING','UPLOADING','RETRYABLE_FAILURE',
+      'DELETION_PENDING']])).rows[0]?.count;
+    const unsettledUploads=(await client.query(`SELECT count(*)::bigint AS count
+      FROM public.export_upload_flights WHERE state<>'SETTLED'`)).rows[0]?.count;
+    const heldReservations=(await client.query(`SELECT count(*)::bigint AS count
+      FROM public.export_cost_reservations WHERE state='HELD'`)).rows[0]?.count;
+    if(activeJobs==null||unsettledUploads==null||heldReservations==null||
+      BigInt(activeJobs)>0n||BigInt(unsettledUploads)>0n||BigInt(heldReservations)>0n) {
+      throw Error('MIGRATION_024_ACTIVE_WORK_PRESENT');
+    }
+
+    const body=source.replace(/^BEGIN;\s*$/m,'').replace(/^COMMIT;\s*$/m,'');
+    await client.query(body);
+    await client.query(
+      'INSERT INTO public.jobix_export_migrations(version,sha256) VALUES($1,$2)',
+      [profileEntryDraftVersion,sourceHash],
+    );
+    await assertProfileEntryDraftPostState(client,sourceHash);
+    commitStarted=true;
+    await client.query('COMMIT');
+    transactionOpen=false;
+    return 'applied';
+  } catch(error) {
+    if(client&&transactionOpen)await client.query('ROLLBACK').catch(()=>{});
+    if(commitStarted)throw Error('MIGRATION_COMMIT_OUTCOME_UNKNOWN');
+    if(error?.code==='55P03'||error?.code==='40P01') {
+      throw Error('MIGRATION_LOCK_CONTENTION');
+    }
     throw error;
   } finally {
     client?.release();
@@ -457,7 +1053,9 @@ if(process.argv[1]===import.meta.filename) {
   const costMode=process.argv.includes('--apply-development-resume-export-018-020');
   const costOutputUnitMode=process.argv.includes('--apply-development-resume-export-cost-output-unit-021');
   const resumeLayoutMode=process.argv.includes('--apply-development-resume-layout-022');
+  const profileEntryDraftMode=process.argv.includes('--apply-development-profile-entry-drafts-024');
   const legacyMode=process.argv.includes('--apply-development');
+  const profileDraftArgs=process.argv.slice(2);
   const safeCostFailures=new Set([
     'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED','DEV_TARGET_REJECTED',
     'BASELINE_SCHEMA_DRIFT','MIGRATION_LEDGER_STATE_CONFLICT',
@@ -466,10 +1064,51 @@ if(process.argv[1]===import.meta.filename) {
     'EXPORT_GATES_CHANGED','ACCOUNTING_CONFIGURATION_NOT_READY',
     'COST_OUTPUT_UNIT_PRECONDITION_FAILED',
   ]);
-  if(resumeLayoutMode&&(costMode||costOutputUnitMode||legacyMode)) {
+  if(profileEntryDraftMode&&
+    (resumeLayoutMode||costMode||costOutputUnitMode||legacyMode)) {
+    console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
+  } else if(resumeLayoutMode&&(costMode||costOutputUnitMode||legacyMode)) {
     console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
   } else if((costMode&&legacyMode)||(costOutputUnitMode&&(costMode||legacyMode))) {
     console.error('DEVELOPMENT_MIGRATIONS_BLOCKED_AMBIGUOUS_MODE');process.exitCode=1;
+  } else if(profileEntryDraftMode) {
+    const modeFlags=profileDraftArgs.filter(argument=>argument.startsWith('--apply-'));
+    const caFlags=profileDraftArgs.filter(argument=>argument==='--ca-file');
+    const caIndex=profileDraftArgs.indexOf('--ca-file');
+    if(profileDraftArgs.length!==3||modeFlags.length!==1||
+      modeFlags[0]!=='--apply-development-profile-entry-drafts-024'||
+      caFlags.length!==1||caIndex<0||!profileDraftArgs[caIndex+1]||
+      profileDraftArgs[caIndex+1].startsWith('--')) {
+      console.error('DEVELOPMENT_PROFILE_ENTRY_DRAFTS_024_BLOCKED_AMBIGUOUS_MODE');
+      process.exitCode=1;
+    } else {
+      migrateProfileEntryDrafts({caFile:profileDraftArgs[caIndex+1],approved:true})
+        .then(result=>console.log(result==='applied'
+          ?'DEVELOPMENT_MIGRATION_024_APPLIED_PROFILE_ENTRY_DRAFTS'
+          :'DEVELOPMENT_MIGRATION_024_ALREADY_APPLIED_VERIFIED'))
+        .catch(error=>{
+          const safeFailures=new Set([
+            'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED','DEV_TARGET_REJECTED',
+            'DEV_TARGET_IDENTITY_MISMATCH','DEV_CA_FILE_INVALID',
+            'MIGRATION_SOURCE_CHECKSUM_MISMATCH',
+            'PREREQUISITE_SOURCE_CHECKSUM_MISMATCH',
+            'MIGRATION_IDENTITY_UNSAFE','MIGRATION_LOCK_BUSY',
+            'MIGRATION_LOCK_CONTENTION','MIGRATION_024_PREREQUISITE_SCHEMA_MISSING',
+            'MIGRATION_LEDGER_STATE_CONFLICT','MIGRATION_CHECKSUM_CONFLICT',
+            'MIGRATION_024_SCHEMA_CONFLICT','MIGRATION_024_OWNERSHIP_MISMATCH',
+            'MIGRATION_024_REQUIRED_PRIVILEGES_MISSING',
+            'MIGRATION_024_LEGACY_INCOMPLETE_ROWS_PRESENT',
+            'MIGRATION_024_ACTIVE_WORK_PRESENT','MIGRATION_024_LEDGER_CHANGED',
+            'MIGRATION_024_SCHEMA_NOT_COMPLETE',
+            'MIGRATION_024_POST_ASSERTION_FAILED',
+            'MIGRATION_COMMIT_OUTCOME_UNKNOWN',
+          ]);
+          const reason=safeFailures.has(error?.message)
+            ?error.message:'NO_TLS_OR_ADMIN_FALLBACK';
+          console.error(`DEVELOPMENT_PROFILE_ENTRY_DRAFTS_024_BLOCKED_${reason}`);
+          process.exitCode=1;
+        });
+    }
   } else if(resumeLayoutMode) {
     migrateResumeLayout({caFile:ca>=0?process.argv[ca+1]:undefined,
       approved:true}).catch(error=>{

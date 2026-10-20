@@ -5,7 +5,11 @@ import os from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {
+  migrate,
+  migrateProfileEntryDrafts,
+  migrateResumeExportCost,
   migrateResumeLayout,
+  verifyProfileEntryDraftMigrationSource,
   verifyResumeLayoutMigrationSource,
 } from './apply_phase3_dev.mjs';
 
@@ -23,6 +27,8 @@ const versions=[
 ];
 const migrationPath=new URL('../supabase/migrations/202610170022_resume_layout.sql',import.meta.url);
 const reviewedHash='d34f6dad4d9edcd301486d9d507bed7330c0fde66cfac3630bee087fa8366473';
+const profileEntryDraftVersion='202610200024_persisted_profile_entry_drafts';
+const reviewedDraftHash='f246e45dce62c0d03457fe825ab2db14b687f32a92661572867e2fa1a5a48af6';
 
 async function fixture({
   target='postgres.lmouxhbjhtqdtiqijcee@aws-0-me-central1.pooler.supabase.com',
@@ -241,5 +247,389 @@ test('transaction failure rolls back migration and ledger together',async()=>{
     assert.equal(f.state.ledgerInsertCount,1);
     assert.equal(f.state.committed,false);
     assert.equal(f.state.rolledBack,true);
+  });
+});
+
+const draftVersions=[
+  '202610080012_resume_export_foundation',
+  '202610080013_resume_export_lifecycle',
+  '202610080014_resume_configuration_concurrency',
+  '202610080015_resume_export_local_hardening',
+  '202610080016_resume_export_cleanup_hooks',
+  '202610080017_resume_export_deletion',
+  '202610080018_resume_export_admission',
+  '202610100019_resume_export_cost_protection',
+  '202610100020_resume_export_cost_purge_recovery',
+  '202610100021_resume_export_cost_output_unit',
+  '202610170022_resume_layout',
+  '202610190023_education_catalog',
+];
+const syntheticCa='-----BEGIN CERTIFICATE-----\nlocal-test-only\n-----END CERTIFICATE-----\n';
+
+async function draftFixture({
+  target='postgres.lmouxhbjhtqdtiqijcee@aws-0-me-central1.pooler.supabase.com',
+  database='postgres',unsafeRole=false,adminMembership=false,
+  missingRelation=false,missingFunction=false,missingColumn=false,
+  schemaState='absent',ownerFailure=false,permissionFailure=false,
+  ledgerState='prior',ledgerMismatch=null,legacyIncomplete=false,
+  activeWork=false,lockBusy=false,tableLockBusy=false,failAt=null,
+  postAssertionFailure=false,
+}={}) {
+  const dir=await mkdtemp(join(os.tmpdir(),'jobix-migration-024-'));
+  const caFile=join(dir,'development-ca.pem');
+  await writeFile(caFile,syntheticCa);
+  const originalUrl=process.env.JOBIX_DEV_DATABASE_URL;
+  process.env.JOBIX_DEV_DATABASE_URL=`postgresql://${target}:5432/postgres`;
+  const state={
+    queries:[],migrationCount:0,ledgerInsertCount:0,committed:false,
+    rolledBack:false,schema:'absent',ledger024:false,
+  };
+  const poolFactory=options=>{
+    state.poolOptions=options;
+    return {
+      async connect() {
+        return {
+          async query(sql,params) {
+            state.queries.push({sql,params});
+            if(sql==='BEGIN'||sql.startsWith('SET LOCAL')||sql.startsWith('LOCK TABLE')) {
+              if(sql.startsWith('LOCK TABLE')&&tableLockBusy) {
+                const error=Error('synthetic lock busy');error.code='55P03';throw error;
+              }
+              return {rows:[]};
+            }
+            if(sql.includes('pg_try_advisory_xact_lock')) {
+              return {rows:[{acquired:!lockBusy}]};
+            }
+            if(sql.includes('current_database() AS database')) {
+              return {rows:[{
+                database,role:'jobix_migration_owner',rolcanlogin:true,
+                rolsuper:unsafeRole,rolbypassrls:false,rolcreaterole:false,
+                rolcreatedb:false,no_admin_membership:!adminMembership,
+              }]};
+            }
+            if(sql.includes("to_regclass('public.jobix_export_migrations')")) {
+              const result={};
+              for(const match of sql.matchAll(/AS relation_(\d+)/g)) {
+                const index=Number(match[1]);
+                result[`relation_${index}`]=!(missingRelation&&index===1);
+              }
+              Object.assign(result,{
+                authenticated_role:true,anon_role:true,service_role:true,
+              });
+              return {rows:[result]};
+            }
+            if(sql.includes('information_schema.columns')) {
+              return {rows:missingColumn?[{table_name:'profile_skills',column_name:'name'}]:[]};
+            }
+            if(sql.includes('FROM unnest($1::text[]) AS expected(signature)')&&
+              sql.includes('to_regprocedure(expected.signature)')) {
+              return {rows:missingFunction?[{signature:'public.profile_mutate(uuid,uuid,bigint,jsonb)'}]:[]};
+            }
+            if(sql.includes('draft_columns')) {
+              const complete=schemaState==='complete'||state.schema==='complete';
+              const partial=schemaState==='partial';
+              return {rows:[{
+                draft_columns:complete?8:partial?3:0,
+                safe_draft_columns:complete?8:partial?2:0,
+                draft_functions:complete?3:partial?1:0,
+                draft_triggers:complete?8:partial?2:0,
+                correct_draft_triggers:complete?8:partial?1:0,
+                archived_snapshot:complete||partial,
+                pre_volunteer_snapshot:true,current_snapshot:true,
+                old_volunteer_constraint:!complete,
+                draft_volunteer_constraint:complete,
+                draft_volunteer_constraint_validated:complete,
+                draft_volunteer_constraint_definition:complete
+                  ?'CHECK (is_draft OR (organization IS NOT NULL AND role IS NOT NULL '+
+                    'AND start_month IS NOT NULL AND ((is_current AND end_month IS NULL) '+
+                    'OR (NOT is_current AND end_month IS NOT NULL AND end_month >= start_month))))'
+                  :null,
+                skill_name_not_null:!complete,
+                language_name_not_null:!complete,
+                language_proficiency_not_null:!complete,
+              }]};
+            }
+            if(sql.includes('SELECT version,sha256 FROM public.jobix_export_migrations ORDER BY')) {
+              const rows=[];
+              for(const version of draftVersions) {
+                const source=await readFile(new URL(
+                  `../supabase/migrations/${version}.sql`,import.meta.url),'utf8');
+                rows.push({version,sha256:createHash('sha256').update(source).digest('hex')});
+              }
+              if(ledgerMismatch==='prior')rows[rows.length-1].sha256='0'.repeat(64);
+              if(ledgerMismatch==='version')rows[0].version='unexpected-version';
+              if(ledgerState==='applied')rows.push({
+                version:profileEntryDraftVersion,sha256:reviewedDraftHash,
+              });
+              if(ledgerState==='applied-mismatch')rows.push({
+                version:profileEntryDraftVersion,sha256:'0'.repeat(64),
+              });
+              return {rows};
+            }
+            if(sql.includes('schema_usage')) {
+              return {rows:[{
+                schema_usage:!permissionFailure,schema_create:!permissionFailure,
+                ledger_permissions:!permissionFailure,users_permissions:!permissionFailure,
+                profile_permissions:!permissionFailure,personal_data_select:!permissionFailure,
+                summary_select:!permissionFailure,idempotency_permissions:!permissionFailure,
+                export_read_permissions:!permissionFailure,definer_rls_compatible:true,
+                profile_entry_permissions:!permissionFailure,
+                required_function_execute:!permissionFailure,
+              }]};
+            }
+            if(sql.includes("'table:'||c.relname")) {
+              return {rows:ownerFailure?[{object_name:'table:profile_skills'}]:[]};
+            }
+            if(sql.includes('AS experience,')&&sql.includes('AS volunteer')) {
+              return {rows:[{
+                experience:legacyIncomplete?'1':'0',education:'0',certification:'0',
+                achievement:'0',project:'0',skill:'0',language:'0',volunteer:'0',
+              }]};
+            }
+            if(sql.includes('FROM public.export_jobs')) {
+              return {rows:[{count:activeWork?'1':'0'}]};
+            }
+            if(sql.includes('FROM public.export_upload_flights')) {
+              return {rows:[{count:'0'}]};
+            }
+            if(sql.includes('FROM public.export_cost_reservations')) {
+              return {rows:[{count:'0'}]};
+            }
+            if(sql.includes('CREATE FUNCTION public.save_profile_entry')) {
+              state.migrationCount++;
+              if(failAt==='migration')throw Error('synthetic migration SQL failure');
+              state.schema='complete';
+              return {rows:[]};
+            }
+            if(sql.startsWith('INSERT INTO public.jobix_export_migrations')) {
+              state.ledgerInsertCount++;
+              if(failAt==='ledger')throw Error('synthetic ledger insertion failure');
+              state.ledger024=true;
+              return {rows:[]};
+            }
+            if(sql.includes('save_is_function')) {
+              if(postAssertionFailure)return {rows:[{
+                save_is_function:true,save_security_definer:false,
+                unsafe_save_owner:false,save_authenticated:true,save_anon:false,
+                save_service:false,save_public_revoked:true,visible_secdef:true,
+                snapshot_secdef:true,trigger_fn_invoker:true,
+                visible_public_revoked:true,visible_client_revoked:true,
+                snapshot_client_revoked:true,trigger_client_revoked:true,
+                ledger_matches:true,
+              }]};
+              return {rows:[{
+                save_is_function:true,save_security_definer:true,
+                unsafe_save_owner:false,save_authenticated:true,save_anon:false,
+                save_service:false,save_public_revoked:true,visible_secdef:true,
+                snapshot_secdef:true,trigger_fn_invoker:true,
+                visible_public_revoked:true,visible_client_revoked:true,
+                snapshot_client_revoked:true,trigger_client_revoked:true,
+                ledger_matches:true,
+              }]};
+            }
+            if(sql==='COMMIT') {
+              if(failAt==='commit')throw Error('synthetic connection loss during COMMIT');
+              state.committed=true;
+              return {rows:[]};
+            }
+            if(sql==='ROLLBACK') {
+              state.rolledBack=true;
+              state.schema='absent';
+              state.ledger024=false;
+              return {rows:[]};
+            }
+            throw Error(`Unexpected mocked Migration 024 query: ${sql.slice(0,100)}`);
+          },
+          release() { state.released=true; },
+        };
+      },
+      async end() { state.ended=true; },
+    };
+  };
+  return {
+    caFile,state,poolFactory,
+    restore:async()=>{
+      if(originalUrl===undefined)delete process.env.JOBIX_DEV_DATABASE_URL;
+      else process.env.JOBIX_DEV_DATABASE_URL=originalUrl;
+      await rm(dir,{recursive:true,force:true});
+    },
+  };
+}
+
+async function withDraftFixture(options,fn) {
+  const f=await draftFixture(options);
+  try { await fn(f); } finally { await f.restore(); }
+}
+
+test('Migration 024 uses the independently reviewed pinned source checksum',async()=>{
+  const source=await readFile(new URL(
+    '../supabase/migrations/202610200024_persisted_profile_entry_drafts.sql',import.meta.url),
+  'utf8');
+  assert.equal(verifyProfileEntryDraftMigrationSource(source),reviewedDraftHash);
+});
+
+test('Migration 024 hash mismatch fails before creating a connection pool',async()=>{
+  await withDraftFixture({},async f=>{
+    let poolCreated=false;
+    const source=await readFile(new URL(
+      '../supabase/migrations/202610200024_persisted_profile_entry_drafts.sql',import.meta.url),
+    'utf8');
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:()=>{poolCreated=true;},
+      readMigrationSource:async version=>version===profileEntryDraftVersion
+        ?`${source}\n-- synthetic modified source`:
+        readFile(new URL(`../supabase/migrations/${version}.sql`,import.meta.url),'utf8'),
+    }),{message:'MIGRATION_SOURCE_CHECKSUM_MISMATCH'});
+    assert.equal(poolCreated,false);
+  });
+});
+
+test('Production and unknown database targets are rejected before pool creation',async()=>{
+  for(const target of [
+    'postgres.otherproject@aws-0-me-central1.pooler.supabase.com',
+    'postgres.lmouxhbjhtqdtiqijcee@db.example.invalid',
+  ]) await withDraftFixture({target},async f=>{
+    let poolCreated=false;
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,
+      poolFactory:()=>{poolCreated=true;throw Error('pool must not be created');},
+    }),{message:'DEV_TARGET_REJECTED'});
+    assert.equal(poolCreated,false);
+  });
+});
+
+test('unsafe execution identities and privileged role memberships are rejected',async()=>{
+  for(const options of [{unsafeRole:true},{adminMembership:true}]) {
+    await withDraftFixture(options,async f=>{
+      await assert.rejects(migrateProfileEntryDrafts({
+        approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      }),{message:'MIGRATION_IDENTITY_UNSAFE'});
+      assert.equal(f.state.migrationCount,0);
+      assert.equal(f.state.ledgerInsertCount,0);
+      assert.equal(f.state.rolledBack,true);
+    });
+  }
+});
+
+test('missing prerequisite relations, columns, or functions abort before migration',async()=>{
+  for(const options of [
+    {missingRelation:true},{missingColumn:true},{missingFunction:true},
+  ]) await withDraftFixture(options,async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_024_PREREQUISITE_SCHEMA_MISSING'});
+    assert.equal(f.state.migrationCount,0);
+    assert.equal(f.state.ledgerInsertCount,0);
+  });
+});
+
+test('ledger version and checksum conflicts abort without repair',async()=>{
+  for(const ledgerMismatch of ['prior','version']) {
+    await withDraftFixture({ledgerMismatch},async f=>{
+      await assert.rejects(migrateProfileEntryDrafts({
+        approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+      }),ledgerMismatch==='prior'
+        ?{message:'MIGRATION_CHECKSUM_CONFLICT'}
+        :{message:'MIGRATION_LEDGER_STATE_CONFLICT'});
+      assert.equal(f.state.migrationCount,0);
+      assert.equal(f.state.ledgerInsertCount,0);
+      assert.equal(f.state.rolledBack,true);
+    });
+  }
+});
+
+test('matching applied Migration 024 is verification-only and mismatched hash blocks',async()=>{
+  await withDraftFixture({ledgerState:'applied',schemaState:'complete'},async f=>{
+    const result=await migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    });
+    assert.equal(result,'already-applied');
+    assert.equal(f.state.migrationCount,0);
+    assert.equal(f.state.ledgerInsertCount,0);
+    assert.equal(f.state.committed,true);
+  });
+  await withDraftFixture({ledgerState:'applied-mismatch',schemaState:'complete'},async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_CHECKSUM_CONFLICT'});
+    assert.equal(f.state.migrationCount,0);
+    assert.equal(f.state.ledgerInsertCount,0);
+    assert.equal(f.state.rolledBack,true);
+  });
+});
+
+test('conflicting or partially applied schema aborts without repair',async()=>{
+  await withDraftFixture({schemaState:'partial'},async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_024_SCHEMA_CONFLICT'});
+    assert.equal(f.state.migrationCount,0);
+    assert.equal(f.state.ledgerInsertCount,0);
+  });
+});
+
+test('owner, privilege, legacy-data, active-work, and lock preflights fail closed',async()=>{
+  const scenarios=[
+    [{ownerFailure:true},'MIGRATION_024_OWNERSHIP_MISMATCH'],
+    [{permissionFailure:true},'MIGRATION_024_REQUIRED_PRIVILEGES_MISSING'],
+    [{legacyIncomplete:true},'MIGRATION_024_LEGACY_INCOMPLETE_ROWS_PRESENT'],
+      [{activeWork:true},'MIGRATION_024_ACTIVE_WORK_PRESENT'],
+      [{lockBusy:true},'MIGRATION_LOCK_BUSY'],
+      [{tableLockBusy:true},'MIGRATION_LOCK_CONTENTION'],
+  ];
+  for(const [options,error] of scenarios) await withDraftFixture(options,async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:error});
+    assert.equal(f.state.migrationCount,0);
+    assert.equal(f.state.ledgerInsertCount,0);
+    assert.equal(f.state.committed,false);
+  });
+});
+
+test('Migration 024 SQL and ledger failures roll back the transaction',async()=>{
+  await withDraftFixture({failAt:'migration'},async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),/synthetic migration SQL failure/);
+    assert.equal(f.state.migrationCount,1);
+    assert.equal(f.state.ledgerInsertCount,0);
+    assert.equal(f.state.schema,'absent');
+    assert.equal(f.state.ledger024,false);
+    assert.equal(f.state.committed,false);
+    assert.equal(f.state.rolledBack,true);
+  });
+  await withDraftFixture({failAt:'ledger'},async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),/synthetic ledger insertion failure/);
+    assert.equal(f.state.migrationCount,1);
+    assert.equal(f.state.ledgerInsertCount,1);
+    assert.equal(f.state.schema,'absent');
+    assert.equal(f.state.ledger024,false);
+    assert.equal(f.state.committed,false);
+    assert.equal(f.state.rolledBack,true);
+  });
+});
+
+test('Migration 024 commit connection loss is reported as uncertain',async()=>{
+  await withDraftFixture({failAt:'commit'},async f=>{
+    await assert.rejects(migrateProfileEntryDrafts({
+      approved:true,caFile:f.caFile,poolFactory:f.poolFactory,
+    }),{message:'MIGRATION_COMMIT_OUTCOME_UNKNOWN'});
+    assert.equal(f.state.committed,false);
+    assert.equal(f.state.rolledBack,true);
+  });
+});
+
+test('existing runner entry points still reject calls without explicit approval',async()=>{
+  await assert.rejects(migrate({approved:false}),{
+    message:'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED',
+  });
+  await assert.rejects(migrateResumeExportCost({approved:false}),{
+    message:'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED',
+  });
+  await assert.rejects(migrateResumeLayout({approved:false}),{
+    message:'EXPLICIT_DEV_APPROVAL_AND_CA_REQUIRED',
   });
 });

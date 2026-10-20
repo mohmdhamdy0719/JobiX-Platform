@@ -1,0 +1,95 @@
+# JobiX — Implement and Test a Local-Only Migration 024 Runner Mode
+
+Implement a dedicated, guarded runner mode for Migration 024 in the existing file:
+
+`mobile/jobix/tool/apply_phase3_dev.mjs`
+
+Migration path:
+
+`mobile/jobix/supabase/migrations/202610200024_persisted_profile_entry_drafts.sql`
+
+Expected SHA-256:
+
+`f246e45dce62c0d03457fe825ab2db14b687f32a92661572867e2fa1a5a48af6`
+
+## Objective
+
+Prepare the runner for a future, separately approved Development migration. This task authorizes **local code changes and local/disposable test execution only**.
+
+## 1. Preserve existing behavior
+
+- Inspect the current runner and all existing migration modes before editing.
+- Add a new, explicitly named Migration 024 mode.
+- Do not change the behavior, defaults, credentials, or target selection of existing modes.
+- Pin the target to the existing Development project configuration and retain verified TLS/CA checks.
+- Require the exact reviewed migration SHA-256 before any connection attempt.
+- Reject Production targets, implicit credential fallbacks, ambiguous modes, and unsafe execution identities.
+- Do not expose connection strings, credentials, or secrets in logs.
+
+## 2. Guarded migration flow
+
+Implement the new mode with explicit, fail-closed checks for:
+
+- Confirmed Development target identity.
+- Existing migration ledger versions 012–023 and their exact expected checksums.
+- Migration 024 absent versus already applied with the exact checksum.
+- Conflicting or partially applied schema objects.
+- Required table/function/constraint dependencies.
+- Table ownership and required permissions.
+- Active export/upload activity and relevant lock contention.
+- Existing data compatibility, including aggregate checks for incomplete legacy rows.
+
+Do not automatically repair missing migrations, rewrite ledger history, alter permissions, or recover a divergent schema.
+
+Use one transaction for the migration and ledger insertion. Preserve the existing migration advisory-lock convention. Use bounded, fail-fast lock acquisition. If a required assertion fails, roll back the entire transaction.
+
+Before connecting, verify the migration artifact hash and fail immediately on mismatch.
+
+## 3. Local/disposable tests
+
+Create or extend tests so they exercise the new mode without connecting to the real Development or Production database.
+
+Use a disposable local PostgreSQL/Supabase-compatible environment if available. Otherwise, build deterministic mocked-runner tests and clearly identify which database semantics remain unverified.
+
+Test at minimum:
+
+- Hash mismatch fails before connecting.
+- Production or unknown targets are rejected.
+- Missing or mismatched prior ledger entries abort.
+- Migration 024 already applied with the matching hash triggers verification-only behavior, not reapplication.
+- A mismatched 024 checksum aborts.
+- Conflicting/partial schema aborts without repair.
+- Migration SQL failure rolls back both schema changes and the ledger insert.
+- Lock timeout aborts cleanly.
+- Connection loss around commit is treated as an unknown outcome, requiring read-only ledger/schema inspection before retry.
+- Existing runner modes remain behaviorally unchanged.
+
+Do not weaken existing assertions to make tests pass.
+
+## 4. Explicit restrictions
+
+This task must NOT:
+
+- Connect to Development or Production.
+- Apply any remote migration.
+- Modify remote data, schema, permissions, configuration, or infrastructure.
+- Build an APK or deploy code.
+- Run AI calls, PDF exports, or Credit transactions.
+- Change billing, IAM, credentials, or environment configuration.
+
+If the test harness could connect to a remote database, replace that test dependency with a disposable local fixture or deterministic mock.
+
+## 5. Verification and report
+
+Run relevant local tests, `bash -n` for affected shell scripts, and `git diff --check`. Run other applicable static checks.
+
+Report:
+1. Exact files changed.
+2. How the new mode is invoked, clearly marked **not approved for execution yet**.
+3. Tests actually run and their results.
+4. Whether a real disposable PostgreSQL integration test was available.
+5. Any unverified SQL/database semantics.
+6. Confirmation that no remote connection or migration occurred.
+7. Any remaining blockers before a separate approval decision.
+
+Stop after reporting. Do not execute the new mode against any remote environment.
