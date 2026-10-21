@@ -155,8 +155,7 @@ class EntityRepository {
     return null;
   }
 
-  String _draftPrefix(EntitySection section) =>
-      'entry_draft:${section.key}:';
+  String _draftPrefix(EntitySection section) => 'entry_draft:${section.key}:';
   String _draftKey(EntitySection section, String id) =>
       '${_draftPrefix(section)}$id';
   void _check() {
@@ -284,10 +283,7 @@ class EntityRepository {
     return _deliver(request);
   }
 
-  Future<CareerProfile> upsert(
-    CareerProfile profile,
-    ProfileItem item,
-  ) async {
+  Future<CareerProfile> upsert(CareerProfile profile, ProfileItem item) async {
     if (item.problems().isNotEmpty) {
       throw const PostgrestException(message: 'VALIDATION_FAILED');
     }
@@ -328,6 +324,9 @@ class EntityRepository {
       section: section.key,
       value: value,
       isDraft: isDraft,
+      // New complete saves use the established profile_mutate contract.
+      // Old frozen requests retain their recorded protocol on replay.
+      usesEntrySaveRpc: isDraft,
     );
     await parent.database.retainPendingMutation(
       parent.user,
@@ -356,14 +355,17 @@ class EntityRepository {
       rethrow;
     }
     _check();
-    await parent.database.discardPendingMutation(
-      parent.user,
-      request.profileId,
-    );
     await parent.database.cacheProfile(parent.user, result.id, result.encode());
     await _guard();
     final section = EntitySection.parse(request.section);
     await discardDraft(request.profileId, section, request.itemId);
+    // Keep the exact request recoverable until all acknowledgement-side local
+    // work succeeds. A local storage failure must not permit a new command.
+    await parent.database.discardPendingMutation(
+      parent.user,
+      request.profileId,
+    );
+    await _guard();
     return result;
   }
 }
@@ -371,31 +373,28 @@ class EntityRepository {
 final entityRepositoryProvider = FutureProvider<EntityRepository>((ref) async {
   final parent = await ref.watch(draftRepositoryProvider.future);
   final client = await ref.watch(supabaseClientProvider.future);
-  return EntityRepository(
-    parent,
-    (request) async {
-      final entrySave =
-          request.usesEntrySaveRpc &&
-          (request.type == 'upsert_item' || request.isDraft);
-      final response = await client
-          .rpc(
-            entrySave ? 'save_profile_entry' : 'profile_mutate',
-            params: {
-              'command_key': request.key,
-              'requested_profile': request.profileId,
-              'expected_profile_version': request.version,
-              'mutation': {
-                'type': request.type,
-                'section': request.section,
-                'value': request.value,
-              },
-              if (entrySave) 'is_draft': request.isDraft,
+  return EntityRepository(parent, (request) async {
+    final entrySave =
+        request.usesEntrySaveRpc &&
+        (request.type == 'upsert_item' || request.isDraft);
+    final response = await client
+        .rpc(
+          entrySave ? 'save_profile_entry' : 'profile_mutate',
+          params: {
+            'command_key': request.key,
+            'requested_profile': request.profileId,
+            'expected_profile_version': request.version,
+            'mutation': {
+              'type': request.type,
+              'section': request.section,
+              'value': request.value,
             },
-          )
-          .timeout(const Duration(seconds: 15));
-      return acknowledgedProfile(response);
-    },
-  );
+            if (entrySave) 'is_draft': request.isDraft,
+          },
+        )
+        .timeout(const Duration(seconds: 15));
+    return acknowledgedProfile(response);
+  });
 });
 
 final entityDraftsProvider =

@@ -204,12 +204,7 @@ void main() {
         ),
         entityRepositoryProvider.overrideWith(
           (_) async =>
-              entityOverride ??
-              EntityRepository(
-                repository,
-                entities.send,
-                loadDraftItems: entities.loadDrafts,
-              ),
+              entityOverride ?? EntityRepository(repository, entities.send),
         ),
         educationCatalogProvider.overrideWith(
           (_) async => EducationCatalogData.fallback,
@@ -1119,7 +1114,7 @@ void main() {
     },
   );
   testWidgets(
-    'Target Role is inline, locally retained, and saved only by explicit Save',
+    'Target Role is inline, in-memory until explicit Save, and acknowledged by server',
     (tester) async {
       await pump(tester, state: StartupState.signedIn);
       final savedTargetRole = api.server.targetRole;
@@ -1142,10 +1137,7 @@ void main() {
       final roleRepository = await container!.read(
         textSectionRepositoryProvider.future,
       );
-      expect(
-        (await roleRepository.load(api.server, 'target_role'))!.text,
-        'Senior Product Manager',
-      );
+      expect(await roleRepository.load(api.server, 'target_role'), isNull);
       await tester.ensureVisible(find.byKey(const Key('save-personal')));
       await tester.tap(find.byKey(const Key('save-personal')));
       await tester.pumpAndSettle();
@@ -1161,6 +1153,7 @@ void main() {
           profileId: 'profile-one',
           baseVersion: 1,
           personal: {'full_name': 'Local work'},
+          localOnly: true,
         ),
       );
       await pump(tester, state: StartupState.signedIn);
@@ -1303,6 +1296,49 @@ void main() {
       await tester.pumpAndSettle();
       expect(await repository.draft(api.server), isNull);
       expect(api.server.personal['full_name'], 'Local only');
+    },
+  );
+
+  testWidgets(
+    'Personal offline Save is device-only, reopens offline, and needs explicit online Save',
+    (tester) async {
+      api.server = const CareerProfile(
+        id: 'profile-one',
+        version: 1,
+        resumeLanguage: 'en',
+        personal: {'full_name': 'Saved name'},
+      );
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(tester, '/career/personal');
+      final before = api.server.encode();
+      final field = find.byKey(const Key('personal-full_name'));
+      await tester.enterText(field, 'Offline local name');
+      api.offline = true;
+      await tester.ensureVisible(find.byKey(const Key('save-personal')));
+      await tester.tap(find.byKey(const Key('save-personal')));
+      await tester.pumpAndSettle();
+      expect(api.requests, isEmpty);
+      expect(api.server.encode(), before);
+      expect((await repository.draft(api.server))!.localOnly, true);
+      expect(find.textContaining('previous save result'), findsNothing);
+      await route(tester, '/career');
+      await route(tester, '/career/personal');
+      expect(
+        tester.widget<TextFormField>(field).controller!.text,
+        'Offline local name',
+      );
+      api.offline = false;
+      expect(api.requests, isEmpty);
+      await tester.ensureVisible(find.byKey(const Key('save-personal')));
+      await tester.tap(find.byKey(const Key('save-personal')));
+      await tester.pumpAndSettle();
+      expect(api.server.personal['full_name'], 'Offline local name');
+      expect(await repository.draft(api.server), isNull);
+      expect(tester.takeException(), isNull);
     },
   );
   testWidgets(
@@ -2871,7 +2907,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save as draft'));
       await tester.pumpAndSettle();
-      final draft = entities.draftItems[EntitySection.experience]!.single;
+      final localRepo = EntityRepository(repository, entities.send);
+      final draft = (await localRepo.savedDrafts(
+        api.server.id,
+        EntitySection.experience,
+      )).single;
       expect(draft.isDraft, isTrue);
       expect(api.server.of(EntitySection.experience), isEmpty);
       await route(tester, '/builder/3');
@@ -2894,13 +2934,16 @@ void main() {
       await tester.tap(find.byKey(const Key('discard-entity')));
       await tester.pumpAndSettle();
       expect(
-        entities.draftItems[EntitySection.experience]!.single.text('company'),
+        (await localRepo.savedDrafts(
+          api.server.id,
+          EntitySection.experience,
+        )).single.text('company'),
         '',
       );
       expect(
         entities.requests,
-        hasLength(1),
-        reason: 'Back discards editing-session changes, not the server Draft.',
+        isEmpty,
+        reason: 'Back discards editing-session changes, not the device Draft.',
       );
       await route(tester, '/career/edit/experience/${draft.id}?origin=career');
       await tester.enterText(
@@ -2918,13 +2961,16 @@ void main() {
       await tester.tap(find.byKey(const Key('editor-save')));
       await tester.pumpAndSettle();
       expect(api.server.of(EntitySection.experience).single.id, draft.id);
-      expect(entities.draftItems[EntitySection.experience], isEmpty);
+      expect(
+        await localRepo.savedDrafts(api.server.id, draft.section),
+        isEmpty,
+      );
       expect(entities.requests.last.isDraft, isFalse);
     },
   );
 
   testWidgets(
-    'persisted entry Draft offline save is not reported as successful',
+    'persisted entry Draft offline save is device-only and never an uncertain server request',
     (tester) async {
       await pump(
         tester,
@@ -2936,25 +2982,25 @@ void main() {
         find.byKey(const Key('field-job_title')),
         'Analyst',
       );
-      entities.offline = true;
+      api.offline = true;
       await tester.tap(find.byKey(const Key('editor-save')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save as draft'));
       await tester.pumpAndSettle();
       expect(find.text('Draft saved.'), findsNothing);
-      expect(currentPath(), startsWith('/career/edit/experience/'));
+      expect(currentPath(), '/career');
       expect(entities.draftItems, isEmpty);
       final pending = await EntityRepository(
         repository,
         entities.send,
       ).pending(api.server.id);
-      expect(pending, isNotNull);
-      expect(pending!.isDraft, isTrue);
+      expect(pending, isNull);
+      expect(entities.requests, isEmpty);
       expect(
-        tester
-            .widget<TextField>(find.byKey(const Key('field-job_title')))
-            .controller!
-            .text,
+        (await EntityRepository(repository, entities.send).savedDrafts(
+          api.server.id,
+          EntitySection.experience,
+        )).single.text('job_title'),
         'Analyst',
       );
     },
@@ -2980,7 +3026,7 @@ void main() {
       values: {'job_title': 'Pending entry'},
     );
     await repo.upsert(api.server, complete);
-    await repo.upsert(api.server, draft, isDraft: true);
+    await repo.saveLocalDraft(api.server.id, draft);
     entities.requests.clear();
     await pump(
       tester,
@@ -3004,9 +3050,8 @@ void main() {
     await askToDiscard();
     await tester.tap(find.byKey(const Key('confirm-discard-draft')));
     await tester.pumpAndSettle();
-    expect(entities.requests.single.isDraft, isTrue);
-    expect(entities.requests.single.type, 'delete_item');
-    expect(entities.draftItems[EntitySection.experience], isEmpty);
+    expect(entities.requests, isEmpty);
+    expect(await repo.savedDrafts(api.server.id, draft.section), isEmpty);
     expect(api.server.of(EntitySection.experience).single.id, complete.id);
   });
 
@@ -3070,6 +3115,85 @@ void main() {
       );
     });
   }
+
+  testWidgets(
+    'Summary has one bottom guidance block after writing and AI controls',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      await route(tester, '/career/summary?origin=career');
+      final hints = find.byKey(const Key('summary-writing-guidance'));
+      expect(hints, findsOneWidget);
+      expect(
+        find.text(
+          'Briefly describe your professional background, key strengths, relevant experience, and the value you bring.',
+        ),
+        findsNothing,
+      );
+      expect(
+        tester.getTopLeft(hints).dy,
+        greaterThan(
+          tester.getTopLeft(find.byKey(const Key('jobix-generate'))).dy,
+        ),
+      );
+      expect(find.text('Example on a Resume'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Draft list uses local records offline and reports local corruption safely',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        size: const Size(402, 1100),
+      );
+      final repo = EntityRepository(repository, entities.send);
+      const entry = ProfileItem(
+        id: 'device-entry',
+        section: EntitySection.experience,
+        values: {'job_title': 'Local only'},
+      );
+      await repo.saveLocalDraft(api.server.id, entry);
+      api.offline = true;
+      await route(tester, '/builder/3');
+      expect(
+        find.byKey(const Key('draft-experience-device-entry')),
+        findsOneWidget,
+      );
+      expect(find.text('Draft'), findsOneWidget);
+      expect(
+        find.text('Saved drafts could not be loaded (retry)'),
+        findsNothing,
+      );
+      expect(entities.requests, isEmpty);
+      await repo.discardDraft(api.server.id, entry.section, entry.id);
+      final query = EntityDraftQuery(api.server.id, entry.section);
+      container!.invalidate(entityDraftsProvider(query));
+      await tester.pumpAndSettle();
+      expect(find.text('Draft'), findsNothing);
+      final copy = AppLocalizations.of(
+        tester.element(find.byType(Scaffold).first),
+      )!;
+      expect(find.text(copy.localDraftsUnavailable), findsNothing);
+      await repository.database.retainSection(
+        repository.user,
+        api.server.id,
+        'entry_draft:experience:corrupt',
+        '{broken',
+      );
+      container!.invalidate(entityDraftsProvider(query));
+      await tester.pumpAndSettle();
+      expect(find.text(copy.localDraftsUnavailable), findsOneWidget);
+      expect(find.textContaining('{broken'), findsNothing);
+      expect(entities.requests, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('summary example remains unsaved until explicit Save', (
     tester,

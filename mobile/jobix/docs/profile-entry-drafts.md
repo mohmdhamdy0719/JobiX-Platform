@@ -1,14 +1,132 @@
 # Career entry drafts and writing guidance
 
-## Required backend prerequisite
+## Current approved behavior: device-only Drafts
 
-`supabase/migrations/202610200024_persisted_profile_entry_drafts.sql`
-is a new local migration, **not applied to Development or Production**.
-It requires migrations through 023. Review and separately authorize its
-Development application before using this client with real saved entries.
-No Edge/Gateway/Worker deployment or cost/accounting change is required.
-The updated client calls `save_profile_entry`; it must not be released before
-that RPC and the eight `is_draft` columns are available.
+The local-only workflow supersedes the server-Draft proposal documented below.
+It does **not** require Migration 024, new Draft columns, or a server Draft query.
+Migrations 023/024 remain unchanged and are not applied by this work.
+
+- Incomplete new entries are saved explicitly to the existing encrypted local
+  section store, scoped by account, profile and section. They are labelled Draft,
+  excluded from the canonical profile/Resume, and may be lost on uninstall or
+  clearing app data. Merely typing does not persist editing-session changes.
+- Complete entries use the existing `profile_mutate` save. Before starting a new
+  mutation, the existing read-only `first_career_profile` RPC checks reachability.
+  A transport failure at that stage stores a device-only Draft, not a frozen
+  server request. Reconnecting or reading never uploads it; explicit Save does.
+- Personal Information and text sections use the same distinction in their
+  existing encrypted local tables. Previously acknowledged profile data permits
+  offline reopening; a first-ever offline load without that cache cannot invent
+  a profile or claim fresh server data.
+- Once a mutation has started, a lost response retains its exact request,
+  version and idempotency key. Explicit retry reconciles that request; Back cannot
+  erase it or imply undo. Legacy frozen requests preserve their recorded RPC.
+- Complete entries edited incomplete still fail validation without any server
+  mutation. Local Drafts never change server-derived completeness.
+- Explicit local Drafts survive editor Back/reopening. Unsubmitted changes made
+  after opening that Draft are abandoned on discard. Sign-out retains its
+  existing confirmation before clearing account-owned encrypted data.
+- Draft lists read local data directly. Storage/corruption errors show a local
+  read warning rather than a fabricated empty state or a server-Draft error.
+
+No existing remote Drafts are migrated, deleted or uploaded automatically.
+Any older server-Draft sections and historical test results below describe the
+previous proposal, not a newly authorized backend migration.
+
+### Local-only implementation verification
+
+Changed files (relative to `mobile/jobix`, except the two root memory files):
+
+```text
+lib/features/builder/builder_steps_page.dart
+lib/features/builder/entity_editor_page.dart
+lib/features/builder/jobix_improvement.dart
+lib/features/builder/save_feedback.dart
+lib/features/builder/section_writing_guidance.dart
+lib/features/career_profile/career_profile.dart
+lib/features/career_profile/career_profile_repository.dart
+lib/features/career_profile/entity_repository.dart
+lib/features/career_profile/profile_sections.dart
+lib/features/career_profile/summary_examples.dart
+lib/features/career_profile/summary_writing_hints.dart
+lib/features/career_profile/text_section_page.dart
+lib/features/career_profile/text_section_repository.dart
+lib/features/personal_information/personal_information_page.dart
+lib/l10n/app_en.arb
+lib/l10n/app_ar.arb
+lib/l10n/app_localizations.dart
+lib/l10n/app_localizations_en.dart
+lib/l10n/app_localizations_ar.dart
+pubspec.yaml
+pubspec.lock
+test/local_only_drafts_test.dart
+test/entity_repository_test.dart
+test/text_section_repository_test.dart
+test/first_slice_contract_test.dart
+test/first_slice_widget_test.dart
+test/resume_data_ux_test.dart
+test/phase_a_ui_test.dart
+docs/profile-entry-drafts.md
+../../.agents/memory/MEMORY.md
+../../.agents/memory/career-draft-authority.md
+```
+
+Commands below ran in `mobile/jobix`, using fake APIs and disposable encrypted
+local databases. The test environment set:
+
+```sh
+export JOBIX_SQLCIPHER_LIBRARY="$(dirname "$(dirname "$(command -v sqlcipher)")")/lib/libsqlcipher.so"
+```
+
+Final focused tests, **exit 0, 79 passed**:
+
+```sh
+flutter test --no-pub --dart-define=JOBIX_ENABLE_PDF_EXPORT=true --reporter expanded \
+  test/local_only_drafts_test.dart test/entity_repository_test.dart \
+  test/text_section_repository_test.dart test/first_slice_contract_test.dart \
+  test/resume_data_ux_test.dart test/phase_a_ui_test.dart
+```
+
+Final integration widgets, **exit 0, 24 passed**:
+
+```sh
+flutter test --no-pub --dart-define=JOBIX_ENABLE_PDF_EXPORT=true --reporter expanded \
+  test/first_slice_widget_test.dart --name \
+  'persisted entry Draft|Complete edit stays saved when incomplete|Back preserves an unknown Save|offline editor save|Back discards local Personal|Target Role is inline|Summary has one bottom|summary example remains|sign-out warns|Back discards editor-only|existing drafts offer Stay|Personal offline Save|Draft list uses local records'
+```
+
+- `flutter analyze --no-pub`: **exit 0, no issues**.
+- `dart format --output=none --set-exit-if-changed` on the changed Dart files:
+  **exit 0, zero changes**.
+- `git diff --check` and the baseline diff whitespace check: **exit 0**.
+- `flutter gen-l10n` succeeded after repairing package metadata to use the
+  existing workspace cache. Offline locked resolution restored access without
+  package upgrades. The existing locked `http` package was moved from a dev to
+  a runtime declaration for its transport-error type; the lockfile differs only
+  in that classification, with every version/source/hash unchanged.
+
+Earlier runs were **not** all green. The initial eight-file regression batch
+had **136 passing / 5 failing** tests: old server-Draft/offline expectations,
+collapsed guidance-example expectations, and a real text retry-cleanup mismatch.
+The retry now reuses the entire persisted request, not an edited wrapper with
+the same key/payload. The existing `resume_preview_snapshot_test.dart`,
+`resume_layout_test.dart`, and `resume_export_test.dart` reported no failures in
+that initial batch; they were not separately rerun.
+
+New test development also caught and corrected cache-key/decoder assumptions,
+a local helper declaration-order error, and an incorrect widget type in the
+offline Personal test. No assertions were skipped or relaxed. An initial
+localization/analysis attempt was blocked by missing home-cache lint files;
+offline resolution using the existing workspace cache fixed it. A lock-check
+helper initially lacked Python YAML support and was replaced with a successful
+standard-library exact-content comparison, without installing anything.
+
+No APK, physical-device test, remote read/write, migrations, PDF generation,
+paid AI/Credit operation, deployment or infrastructure change was performed.
+Encrypted database close/reopen is tested; actual Android process death,
+connectivity transitions and cross-device behavior still need device testing.
+
+## Historical server-Draft proposal (superseded for new local Drafts)
 
 ## Existing flow and extension
 

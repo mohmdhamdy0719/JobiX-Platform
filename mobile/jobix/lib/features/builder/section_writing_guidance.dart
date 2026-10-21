@@ -117,9 +117,6 @@ class SectionWritingGuidance extends StatelessWidget {
       key: const Key('section-writing-guidance'),
       tilePadding: EdgeInsets.zero,
       title: Text(arabic ? heading.$2 : heading.$1),
-      subtitle: Text(
-        arabic ? 'أسئلة وإجابات اختيارية' : 'Optional questions and examples',
-      ),
       children: [
         for (var i = 0; i < prompts.length; i++)
           ExpansionTile(

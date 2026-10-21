@@ -21,6 +21,23 @@ const summaryExamplesArabic = <String>[
   'مهني متعاون يمتلك مهارات قوية في التواصل وبناء العلاقات والتنظيم. لديه خبرة في التنسيق مع الآخرين وإدارة المسؤوليات وتكييف التواصل مع الاحتياجات المختلفة. يحرص على الإنجاز الموثوق والعمل الجماعي البنّاء والتطور المهني المستمر.',
 ];
 
+const summaryExampleCategoriesEnglish = [
+  'Experienced professional',
+  'Early-career professional',
+  'Career transition',
+  'Operations and coordination',
+  'Analysis and problem-solving',
+  'Communication and teamwork',
+];
+const summaryExampleCategoriesArabic = [
+  'مهني ذو خبرة',
+  'بداية المسيرة المهنية',
+  'الانتقال إلى مجال جديد',
+  'العمليات والتنسيق',
+  'التحليل وحل المشكلات',
+  'التواصل والعمل الجماعي',
+];
+
 class SummaryExamplesButton extends StatelessWidget {
   const SummaryExamplesButton({
     required this.controller,
@@ -50,9 +67,9 @@ class SummaryExamplesButton extends StatelessWidget {
 
             return JobixAlertDialog(
               title: Text(
-                ar
-                    ? 'أمثلة على الملخص المهني'
-                    : 'Professional Summary Examples',
+                (ar
+                    ? summaryExampleCategoriesArabic
+                    : summaryExampleCategoriesEnglish)[index],
               ),
               content: SizedBox(
                 width: double.maxFinite,

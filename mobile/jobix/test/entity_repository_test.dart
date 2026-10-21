@@ -30,7 +30,6 @@ void main() {
     (request) {
       return server.send(request);
     },
-    loadDraftItems: server.loadDrafts,
   );
 
   setUp(() {
@@ -70,7 +69,7 @@ void main() {
       final original = api.server.encode();
       final incomplete = complete.copyWith(section.fields.first.name, '');
       await expectLater(
-        repository.upsert(api.server, incomplete, isDraft: true),
+        repository.upsert(api.server, incomplete),
         throwsA(
           isA<PostgrestException>().having(
             (e) => e.message,
@@ -85,7 +84,7 @@ void main() {
 
       // A genuine new Draft still reopens and promotes with its same ID.
       final draft = ProfileItem(id: 'new-${section.key}', section: section);
-      await repository.upsert(api.server, draft, isDraft: true);
+      await repository.saveLocalDraft(api.server.id, draft);
       final reopened = await open().savedDraft(
         api.server.id,
         section,
@@ -233,7 +232,7 @@ void main() {
   });
 
   test(
-    'a known rejection releases the command without persisting the draft',
+    'a known rejection releases the command and preserves the saved local draft',
     () async {
       await repository.retainDraft(api.server.id, experience);
       server.rejectNext = 'VALIDATION_FAILED';
@@ -248,7 +247,7 @@ void main() {
           EntitySection.experience,
           experience.id,
         ),
-        isNull,
+        isNotNull,
       );
     },
   );
@@ -287,7 +286,10 @@ void main() {
       throwsA(isA<SocketException>()),
     );
     final edited = experience.copyWith('company', 'Edited later');
-    await repository.retainDraft(api.server.id, edited);
+    await expectLater(
+      repository.retainDraft(api.server.id, edited),
+      throwsA(isA<PendingSaveException>()),
+    );
     expect(
       await db.sectionDraft(
         'user-one',
@@ -368,19 +370,16 @@ void main() {
   });
 
   test(
-    'server Draft reopens and promotes the same identity after confirmation',
+    'local Draft reopens without a server query and promotes only on explicit Save',
     () async {
       final partial = ProfileItem(
         id: experience.id,
         section: EntitySection.experience,
         values: const {'job_title': 'Analyst'},
       );
-      final acknowledged = await repository.upsert(
-        api.server,
-        partial,
-        isDraft: true,
-      );
-      expect(acknowledged.of(EntitySection.experience), isEmpty);
+      await repository.saveLocalDraft(api.server.id, partial);
+      expect(server.requests, isEmpty);
+      expect(api.server.of(EntitySection.experience), isEmpty);
       expect(await repository.pending(api.server.id), isNull);
       repository = open();
       final draft = (await repository.savedDrafts(
@@ -392,7 +391,7 @@ void main() {
       expect(draft.problems(), isNotEmpty);
       final completed = await repository.upsert(api.server, experience);
       expect(completed.of(EntitySection.experience).single.id, draft.id);
-      expect(completed.of(EntitySection.experience).single.version, 2);
+      expect(completed.of(EntitySection.experience).single.version, 1);
       expect(
         await repository.savedDrafts(api.server.id, EntitySection.experience),
         isEmpty,
@@ -401,11 +400,25 @@ void main() {
   );
 
   test(
-    'uncertain Draft save survives restart and reuses its frozen request',
+    'legacy uncertain server Draft survives restart with its frozen protocol',
     () async {
       server.loseNextResponse = true;
+      final legacy = PendingMutation(
+        profileId: api.server.id,
+        key: 'legacy-draft-request',
+        version: api.server.version,
+        type: 'upsert_item',
+        section: experience.section.key,
+        value: experience.payload(),
+        isDraft: true,
+      );
+      await db.retainPendingMutation(
+        'user-one',
+        api.server.id,
+        legacy.encode(),
+      );
       await expectLater(
-        repository.upsert(api.server, experience, isDraft: true),
+        repository.resume(api.server.id),
         throwsA(isA<SocketException>()),
       );
       final commandKey = (await repository.pending(api.server.id))!.key;
@@ -427,12 +440,18 @@ void main() {
   test(
     'Draft discard is explicit, idempotent, and cannot remove a Complete row',
     () async {
-      await repository.upsert(api.server, experience, isDraft: true);
-      await repository.discardSavedDraft(
-        api.server,
+      await repository.saveLocalDraft(api.server.id, experience);
+      await repository.discardDraft(
+        api.server.id,
         EntitySection.experience,
         experience.id,
       );
+      await repository.discardDraft(
+        api.server.id,
+        experience.section,
+        experience.id,
+      );
+      expect(server.requests, isEmpty);
       expect(
         await repository.savedDrafts(api.server.id, EntitySection.experience),
         isEmpty,
@@ -452,17 +471,48 @@ void main() {
   );
 
   test(
-    'offline Draft save is unacknowledged and another account cannot load it',
+    'offline complete save is local, does not auto-upload, and is account/profile scoped',
     () async {
-      server.offline = true;
+      api.offline = true;
       await expectLater(
-        repository.upsert(api.server, experience, isDraft: true),
-        throwsA(isA<SocketException>()),
+        repository.upsert(api.server, experience),
+        throwsA(isA<LocalDraftSavedException>()),
       );
       expect(server.draftItems, isEmpty);
-      expect(await repository.pending(api.server.id), isNotNull);
-      server.offline = false;
-      await repository.resume(api.server.id);
+      expect(server.requests, isEmpty);
+      expect(await repository.pending(api.server.id), isNull);
+      expect(
+        (await repository.savedDrafts(
+          api.server.id,
+          experience.section,
+        )).single.isLocalDraft,
+        true,
+      );
+      final other = EntityRepository(
+        DraftRepository(db, api, 'user-two', () => true),
+        server.send,
+      );
+      expect(
+        await other.savedDrafts(api.server.id, experience.section),
+        isEmpty,
+      );
+      expect(
+        await repository.savedDrafts('another-profile', experience.section),
+        isEmpty,
+      );
+      api.offline = false;
+      await repository.parent.load();
+      expect(
+        server.requests,
+        isEmpty,
+        reason: 'Reconnection and reads never upload local Drafts.',
+      );
+      await repository.upsert(api.server, experience);
+      expect(server.requests.single.isDraft, false);
+      expect(
+        await repository.savedDrafts(api.server.id, experience.section),
+        isEmpty,
+      );
       active = false;
       await expectLater(
         repository.savedDrafts(api.server.id, EntitySection.experience),

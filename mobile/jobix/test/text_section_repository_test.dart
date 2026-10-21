@@ -94,7 +94,7 @@ void main() {
     },
   );
   test(
-    'known conflict releases the request and leaves no persisted edit',
+    'known conflict releases the request but preserves editable local text',
     () async {
       final repo = TextSectionRepository(parent, (_) async {
         throw const PostgrestException(
@@ -106,7 +106,10 @@ void main() {
         repo.save(draft('target_role', 'Engineer')),
         throwsA(isA<PostgrestException>()),
       );
-      expect(await repo.load(profile, 'target_role'), isNull);
+      final saved = await repo.load(profile, 'target_role');
+      expect(saved!.localOnly, true);
+      expect(saved.request, isNull);
+      expect(saved.text, 'Engineer');
     },
   );
   test('v2 upgrade preserves existing personal drafts and settings', () async {

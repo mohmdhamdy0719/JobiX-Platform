@@ -1,21 +1,24 @@
 ---
 name: Career draft authority
-description: Owner's distinction between intentional saved career Drafts and ordinary unsaved editing state.
+description: Device-only explicit Drafts, abandoned editing state, and genuinely uncertain server saves.
 ---
 
-An explicitly saved incomplete career entry is an intentional, server-persisted
-Draft. It is not an abandoned editing-session draft. Supabase is authoritative;
-do not create a competing local-only persistent store. Ordinary unsaved edits
-must still be abandoned on leaving, while Back must not delete a previously
-saved career Draft.
+Incomplete or offline-only edits must remain device-only Drafts, not
+server-side Profile Entry Drafts. Explicitly saved local Drafts are different
+from abandoned editing-session changes. Supabase remains authoritative for
+confirmed saved data. Reconnection alone must never upload a local Draft.
+Local Drafts do not affect completeness or appear in Resume/PDF output.
 
-**Why:** The owner explicitly requested returning to incomplete entries without
-publishing them or restoring edits the user intended to abandon.
+**Why:** The owner replaced the earlier server-persisted Draft proposal with a
+simpler, explicitly approved local-only/offline workflow.
 
-**How to apply:** Require authoritative acknowledgement for Save/Complete and
-explicit confirmation for Draft deletion. Preserve uncertain-request recovery
-separately from saved Draft content. Enforce Draft exclusion in canonical Resume
-data, not merely Flutter cards, including Preview, Layout, and PDF output.
+**How to apply:** Reuse account/profile-scoped encrypted local persistence,
+explain device-only/uninstall limitations, and require explicit online Save
+and authoritative acknowledgement before promoting a Draft. Preserve the
+existing sign-out loss warning/confirmation. Ordinary unsaved edits must not
+produce the uncertain-save warning; an actually submitted, unresolved request
+must retain its original key and payload until reconciled, even after Back.
+Enforce Draft exclusion from canonical Resume data, not merely Flutter cards.
 Summary examples edit the field only and must never invent background claims.
 The shared AI improvement box remains non-functional until separately approved.
 
@@ -26,6 +29,6 @@ separate saved edit copies only if they are compatible without excessive scope.
 **Why:** The owner explicitly prioritized preserving the existing Complete
 entry during incomplete editing and required discard never to delete it.
 
-**How to apply:** Protect this distinction server-side as well as in the UI.
-Do not introduce saved edit copies without defining original-version conflicts,
-replacement versus addition, and the existing duplicate-name behavior.
+**How to apply:** Retain Complete-edit validation and server version/authorization
+protections. Do not reclassify authoritative Complete data as a Draft. Local
+pending copies must not silently replace fresher confirmed server data.

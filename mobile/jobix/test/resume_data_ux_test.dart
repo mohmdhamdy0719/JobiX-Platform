@@ -47,6 +47,14 @@ void main() {
         );
         expect(tester.widget<IconButton>(previous).onPressed, isNull);
         for (var index = 0; index < 6; index++) {
+          expect(
+            find.text(
+              (ar
+                  ? summaryExampleCategoriesArabic
+                  : summaryExampleCategoriesEnglish)[index],
+            ),
+            findsOneWidget,
+          );
           final field = tester.widget<TextFormField>(
             find.byKey(ValueKey('summary-example-$index')),
           );
@@ -130,7 +138,6 @@ void main() {
           body: SingleChildScrollView(
             child: Column(
               children: [
-                const EntryResumeExample(section: EntitySection.experience),
                 const TextField(key: Key('editable-field')),
                 const SectionWritingGuidance(
                   section: EntitySection.certification,
@@ -141,11 +148,8 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Example on a Resume'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.byKey(const Key('entry-resume-example'))).dy,
-      lessThan(tester.getTopLeft(find.byKey(const Key('editable-field'))).dy),
-    );
+    expect(find.text('Example on a Resume'), findsNothing);
+    expect(find.text('Optional questions and examples'), findsNothing);
     await tester.tap(find.text('Tips to help you present your certifications'));
     await tester.pumpAndSettle();
     expect(

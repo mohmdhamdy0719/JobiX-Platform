@@ -17,7 +17,9 @@ import '../builder/profile_overview.dart';
 import 'summary_examples.dart';
 import '../home/home_page.dart';
 import 'career_profile.dart';
+import 'career_profile_repository.dart';
 import 'text_section_repository.dart';
+import 'summary_writing_hints.dart';
 
 String textSectionTitle(BuildContext context, String section) {
   final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
@@ -65,8 +67,8 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
 
   Future<void> advance() async {
     if (busy || draft == null) return;
-    if (dirty) await save();
-    if (!mounted || dirty) return;
+    if (dirty || draft!.localOnly || hasPendingSave) await save();
+    if (!mounted || dirty || draft!.localOnly || hasPendingSave) return;
     allowPop = true;
     context.go(
       fromPersonal
@@ -94,7 +96,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       final repo = await ref.read(textSectionRepositoryProvider.future);
       // Fresh acknowledged content if online; an encrypted acknowledged cache only
       // for real connectivity failures, matching the existing Profile repository.
-      final value = await repo.parent.load(freshOnly: true);
+      final value = await repo.parent.load();
       await repo.parent.draft(value);
       final local = await repo.load(value, widget.section);
       if (!mounted) return;
@@ -113,7 +115,10 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       controller.text = draft!.text;
       setState(() {
         failed = false;
-        dirty = local != null;
+        dirty = false;
+        notice = local?.localOnly == true
+            ? AppLocalizations.of(context)!.savedDevice
+            : null;
       });
     } catch (_) {
       if (mounted) setState(() => failed = true);
@@ -172,6 +177,16 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       if (retained == null) {
         showJobixFeedback(context, say('Changes saved.', 'تم حفظ التغييرات.'));
       }
+    } on LocalDraftSavedException {
+      final local = await repository!.load(profile!, widget.section);
+      if (mounted) {
+        setState(() {
+          draft = local ?? draft;
+          dirty = false;
+          notice = AppLocalizations.of(context)!.savedDevice;
+        });
+        ref.invalidate(unfinishedDraftProvider(profile!.id));
+      }
     } on PostgrestException catch (e) {
       if (!mounted) return;
       if (e.message == 'VERSION_CONFLICT') {
@@ -185,10 +200,10 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       } else {
         final unresolved = await repository!.load(profile!, widget.section);
         if (!mounted) return;
-        if (unresolved?.request != null) {
+        if (unresolved != null) {
           draft = unresolved;
-          controller.text = unresolved!.text;
-          dirty = true;
+          controller.text = unresolved.text;
+          dirty = !unresolved.localOnly;
         }
         setState(
           () => notice = hasPendingSave
@@ -200,10 +215,10 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       if (mounted) {
         final unresolved = await repository!.load(profile!, widget.section);
         if (!mounted) return;
-        if (unresolved?.request != null) {
+        if (unresolved != null) {
           draft = unresolved;
-          controller.text = unresolved!.text;
-          dirty = true;
+          controller.text = unresolved.text;
+          dirty = !unresolved.localOnly;
         }
         setState(
           () => notice = hasPendingSave
@@ -250,7 +265,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
           : latest.targetRole,
     );
     if (choice) {
-      // Reapply is held only in this editor until the next explicit Save.
+      await repository!.retain(draft!.deviceOnly());
     } else {
       await repository!.parent.database.discardSection(
         repository!.parent.user,
@@ -320,7 +335,8 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       if (choice == null || choice == 'stay' || !mounted) return;
       setState(() => busy = true);
       try {
-        await repository!.discard(profile!, widget.section);
+        // Editing is in-memory. Leaving abandons only this session's edits;
+        // an explicitly saved device draft remains available on reopen.
       } catch (_) {
         if (mounted) setState(() => notice = copy.outcomeUnknown);
         return;
@@ -370,26 +386,6 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 ),
               ],
               const SizedBox(height: TokensV0.space20),
-              if (widget.section == 'summary') ...[
-                Text(
-                  say(
-                    'Tips to help you write a professional summary',
-                    'نصائح لكتابة ملخص مهني',
-                  ),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: TokensV0.space4),
-                Text(
-                  say(
-                    'Briefly describe your professional background, key strengths, relevant experience, and the value you bring.',
-                    'صف بإيجاز خلفيتك المهنية ونقاط قوتك وخبراتك ذات الصلة والقيمة التي تضيفها.',
-                  ),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: TokensV0.space12),
-              ],
               SliceCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,6 +436,8 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 ),
                 const SizedBox(height: TokensV0.space12),
                 JobixImprovement(original: controller.text),
+                const SizedBox(height: TokensV0.space12),
+                const SummaryWritingHints(),
                 const SizedBox(height: TokensV0.space12),
               ],
               if (notice != null)

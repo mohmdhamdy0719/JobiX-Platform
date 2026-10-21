@@ -164,7 +164,7 @@ void main() {
       },
     );
 
-    testWidgets('$locale six expandable hints do not insert sample content', (
+    testWidgets('$locale four expandable hints do not insert sample content', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -176,16 +176,33 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(ExpansionTile), findsNWidgets(6));
-      expect(find.byType(TextField), findsNothing);
-      final last = find.byKey(const Key('summary-hint-5'));
-      await tester.ensureVisible(last);
-      await tester.tap(last);
+      await tester.tap(find.byKey(const Key('summary-writing-guidance')));
       await tester.pumpAndSettle();
-      expect(
-        find.textContaining(locale == 'ar' ? 'مثال:' : 'For example:'),
-        findsOneWidget,
-      );
+      expect(find.byType(ExpansionTile), findsNWidgets(5));
+      expect(find.byType(TextField), findsNothing);
+      final examples = locale == 'ar'
+          ? [
+              'متخصص في خدمة العملاء لديه خبرة في دعم العملاء وحل المشكلات وبناء علاقات إيجابية معهم.',
+              'أجيد التواصل وحل المشكلات واستخدام أنظمة إدارة علاقات العملاء والتعامل بكفاءة مع استفساراتهم.',
+              'لدي خبرة في التعامل مع أعداد كبيرة من طلبات العملاء مع الحفاظ على جودة الخدمة ودقة السجلات.',
+              'أركز على تقديم دعم موثوق للعملاء وتحسين رضاهم ومساعدة الفرق على حل المشكلات بكفاءة.',
+            ]
+          : [
+              'Customer service professional with experience supporting customers, resolving issues, and maintaining positive customer relationships.',
+              'Skilled in communication, problem-solving, CRM systems, and handling customer inquiries efficiently.',
+              'Experienced in managing high volumes of customer requests while maintaining service quality and accurate records.',
+              'Focused on delivering reliable customer support, improving customer satisfaction, and helping teams resolve issues efficiently.',
+            ];
+      for (var i = 0; i < examples.length; i++) {
+        final hint = find.byKey(Key('summary-hint-$i'));
+        await tester.ensureVisible(hint);
+        await tester.tap(hint);
+        await tester.pumpAndSettle();
+        expect(find.textContaining(examples[i]), findsOneWidget);
+        await tester.ensureVisible(hint);
+        await tester.tap(hint);
+        await tester.pumpAndSettle();
+      }
     });
 
     testWidgets('$locale section prompts are display-only', (tester) async {
@@ -209,8 +226,10 @@ void main() {
         ),
         findsOneWidget,
       );
+      await tester.tap(find.byKey(const Key('section-writing-prompt-0')));
+      await tester.pumpAndSettle();
       expect(
-        find.textContaining(locale == 'ar' ? 'مثال:' : 'For example:'),
+        find.textContaining(locale == 'ar' ? 'مثال:' : 'Example:'),
         findsWidgets,
       );
       expect(
@@ -242,6 +261,24 @@ void main() {
           find.byKey(const Key('jobix-generate')),
         );
         expect(button.onPressed, isNull);
+        expect(
+          find.text(
+            locale == 'ar' ? 'مساعد JobiX بالذكاء الاصطناعي' : 'JobiX AI Agent',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            locale == 'ar' ? 'حسّن النص مع JobiX' : 'Improve with JobiX',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(
+            locale == 'ar' ? 'اكتب بأسلوبك.' : 'Write in your own words.',
+          ),
+          findsOneWidget,
+        );
         expect(find.textContaining('0 / 6'), findsNothing);
         expect(find.textContaining('94%'), findsNothing);
         expect(find.byType(SegmentedButton<bool>), findsNothing);

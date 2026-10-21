@@ -9,44 +9,38 @@ class SummaryWritingHints extends StatelessWidget {
     final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
     const examples = [
       [
-        'What is your professional background?',
-        'ما خلفيتك المهنية؟',
-        'Marketing specialist with 3 years of experience in digital campaigns and content creation.',
-        'متخصص تسويق بخبرة ٣ سنوات في الحملات الرقمية وإنشاء المحتوى.',
+        'What kind of work do you do, or what role are you targeting?',
+        'ما طبيعة عملك، أو ما الدور الذي تستهدفه؟',
+        'Customer service professional with experience supporting customers, resolving issues, and maintaining positive customer relationships.',
+        'متخصص في خدمة العملاء لديه خبرة في دعم العملاء وحل المشكلات وبناء علاقات إيجابية معهم.',
       ],
       [
-        'What are your strongest skills or areas of expertise?',
-        'ما أبرز مهاراتك أو مجالات خبرتك؟',
-        'SEO, campaign analytics, content planning, and stakeholder communication.',
-        'تحسين محركات البحث، وتحليل الحملات، وتخطيط المحتوى، والتواصل مع أصحاب المصلحة.',
+        'What are your strongest relevant skills?',
+        'ما أبرز مهاراتك المرتبطة بالدور؟',
+        'Skilled in communication, problem-solving, CRM systems, and handling customer inquiries efficiently.',
+        'أجيد التواصل وحل المشكلات واستخدام أنظمة إدارة علاقات العملاء والتعامل بكفاءة مع استفساراتهم.',
       ],
       [
-        'What kind of work or problems do you solve best?',
-        'ما نوع العمل أو المشكلات التي تجيد حلها؟',
-        'Turning performance data into actionable campaign improvements.',
-        'تحويل بيانات الأداء إلى تحسينات عملية للحملات.',
+        'What relevant experience or achievement demonstrates your value?',
+        'ما الخبرة أو الإنجاز الذي يوضح القيمة التي تقدمها؟',
+        'Experienced in managing high volumes of customer requests while maintaining service quality and accurate records.',
+        'لدي خبرة في التعامل مع أعداد كبيرة من طلبات العملاء مع الحفاظ على جودة الخدمة ودقة السجلات.',
       ],
       [
-        'What achievements or results are you most proud of?',
-        'ما الإنجازات أو النتائج التي تفخر بها أكثر؟',
-        'Increased organic traffic by 25% over 6 months.',
-        'زيادة الزيارات الطبيعية بنسبة ٢٥٪ خلال ٦ أشهر.',
-      ],
-      [
-        'What role are you targeting next?',
-        'ما الدور الذي تستهدفه في خطوتك المقبلة؟',
-        'A digital marketing role focused on growth and experimentation.',
-        'دور في التسويق الرقمي يركز على النمو والتجربة.',
-      ],
-      [
-        'What value would you bring to an employer or team?',
-        'ما القيمة التي ستضيفها إلى جهة العمل أو الفريق؟',
-        'Combining analytical thinking with clear communication to improve team outcomes.',
-        'الجمع بين التفكير التحليلي والتواصل الواضح لتحسين نتائج الفريق.',
+        'What value can you bring to your next role?',
+        'ما القيمة التي يمكنك إضافتها في دورك المقبل؟',
+        'Focused on delivering reliable customer support, improving customer satisfaction, and helping teams resolve issues efficiently.',
+        'أركز على تقديم دعم موثوق للعملاء وتحسين رضاهم ومساعدة الفرق على حل المشكلات بكفاءة.',
       ],
     ];
-    return Wrap(
-      runSpacing: TokensV0.space8,
+    return ExpansionTile(
+      key: const Key('summary-writing-guidance'),
+      tilePadding: EdgeInsets.zero,
+      title: Text(
+        ar
+            ? 'نصائح لكتابة ملخص مهني'
+            : 'Tips to help you write a professional summary',
+      ),
       children: [
         for (var i = 0; i < examples.length; i++)
           SizedBox(

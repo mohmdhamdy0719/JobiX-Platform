@@ -16,11 +16,13 @@ class TextSectionDraft {
     required this.text,
     this.key,
     this.request,
+    this.localOnly = false,
   });
   final String profileId, section, text;
   final int version;
   final String? key;
   final Map<String, dynamic>? request;
+  final bool localOnly;
   TextSectionDraft edit(String value) => TextSectionDraft(
     profileId: profileId,
     section: section,
@@ -28,6 +30,14 @@ class TextSectionDraft {
     text: value,
     key: key,
     request: request,
+    localOnly: localOnly,
+  );
+  TextSectionDraft deviceOnly() => TextSectionDraft(
+    profileId: profileId,
+    section: section,
+    version: version,
+    text: text,
+    localOnly: true,
   );
   Map<String, dynamic> toJson() => {
     'profile': profileId,
@@ -36,6 +46,7 @@ class TextSectionDraft {
     'text': text,
     'key': key,
     'request': request,
+    'local_only': localOnly,
   };
   String encode() => jsonEncode(toJson());
   factory TextSectionDraft.decode(String raw) {
@@ -49,6 +60,7 @@ class TextSectionDraft {
       request: v['request'] == null
           ? null
           : Map<String, dynamic>.from(v['request'] as Map),
+      localOnly: v['local_only'] == true,
     );
   }
 }
@@ -74,7 +86,7 @@ class TextSectionRepository {
     check();
     if (raw == null) return null;
     final saved = TextSectionDraft.decode(raw);
-    if (saved.request != null) return saved;
+    if (saved.request != null || saved.localOnly) return saved;
 
     // Discard legacy keystroke drafts. The editable value is now held only by
     // the open screen; only an exact submitted request survives a restart.
@@ -88,7 +100,8 @@ class TextSectionRepository {
     if (!textSections.contains(draft.section)) {
       throw ArgumentError('Unknown section');
     }
-    if (draft.request == null) {
+    if (draft.request == null && !draft.localOnly) return;
+    {
       final existing = await parent.database.sectionDraft(
         parent.user,
         draft.profileId,
@@ -98,13 +111,6 @@ class TextSectionRepository {
           TextSectionDraft.decode(existing).request != null) {
         return;
       }
-      await parent.database.discardSection(
-        parent.user,
-        draft.profileId,
-        draft.section,
-      );
-      check();
-      return;
     }
     await parent.database.retainSection(
       parent.user,
@@ -129,17 +135,24 @@ class TextSectionRepository {
         ? null
         : TextSectionDraft.decode(existing);
     final pending = previous?.request;
-    final request = TextSectionDraft(
-      profileId: draft.profileId,
-      section: draft.section,
-      version: draft.version,
-      text: draft.text,
-      key: pending != null ? previous!.key : draft.key ?? newCommandKey(),
-      request:
-          pending ??
-          draft.request ??
-          {'version': draft.version, 'text': draft.text},
-    );
+    if (pending == null &&
+        draft.request == null &&
+        !await parent.probeServer()) {
+      await retain(draft.deviceOnly());
+      throw const LocalDraftSavedException();
+    }
+    final request = pending != null
+        ? previous!
+        : draft.request != null
+        ? draft
+        : TextSectionDraft(
+            profileId: draft.profileId,
+            section: draft.section,
+            version: draft.version,
+            text: draft.text,
+            key: draft.key ?? newCommandKey(),
+            request: {'version': draft.version, 'text': draft.text},
+          );
     await retain(request);
     check();
     CareerProfile result;
@@ -153,13 +166,13 @@ class TextSectionRepository {
         'FORBIDDEN',
         'AUTH_REQUIRED',
       ].contains(e.message)) {
-        // A confirmed rejection did not apply. Keep the current text in the
-        // open editor only; reopening will load the authoritative profile.
+        // A confirmed rejection is editable again, not an uncertain request.
         check();
-        await parent.database.discardSection(
+        await parent.database.retainSection(
           parent.user,
           request.profileId,
           request.section,
+          request.deviceOnly().encode(),
         );
         check();
       }

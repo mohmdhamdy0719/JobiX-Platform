@@ -14,6 +14,24 @@ SaveIssue saveIssue(Object error) {
   };
 }
 
+/// Transport/read/storage failures do not prove a mutation was submitted.
+/// Reserve the uncertainty guard for an actual durable submitted request.
+Future<SaveIssue> confirmedSaveIssue(
+  Object error,
+  EntityRepository repository,
+  String profile,
+) async {
+  final issue = saveIssue(error);
+  if (issue != SaveIssue.unknown) return issue;
+  try {
+    return await repository.pending(profile) != null
+        ? SaveIssue.unknown
+        : SaveIssue.rejected;
+  } catch (_) {
+    return SaveIssue.rejected;
+  }
+}
+
 String saveIssueText(AppLocalizations copy, SaveIssue issue) => switch (issue) {
   SaveIssue.pending => copy.savePending,
   SaveIssue.conflict => copy.saveConflict,

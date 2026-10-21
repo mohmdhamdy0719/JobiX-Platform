@@ -16,6 +16,7 @@ import '../../core/navigation/back_policy.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
+import '../career_profile/career_profile_repository.dart';
 import '../career_profile/entity_repository.dart';
 import '../career_profile/profile_sections.dart';
 import 'builder_scaffold.dart';
@@ -158,8 +159,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       if (item != null &&
           (pendingItem ||
               (serverItem != null ||
-                  serverDraft != null ||
-                  localDraftItem != null) &&
+                      serverDraft != null ||
+                      localDraftItem != null) &&
                   dirty)) {
         final copy = AppLocalizations.of(context)!;
         final discard = await showDialog<bool>(
@@ -169,10 +170,10 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             content: Text(
               pendingItem
                   ? copy.pendingBackWarning
-                   : serverDraft != null || localDraftItem != null
+                  : serverDraft != null || localDraftItem != null
                   ? (copy.localeName.startsWith('ar')
-                         ? 'سيتم تجاهل التغييرات التي أجريتها هنا، وستبقى المسودة المحفوظة على هذا الجهاز كما هي.'
-                         : 'Changes made in this editing session will be discarded. The saved device-only draft will remain unchanged.')
+                        ? 'سيتم تجاهل التغييرات التي أجريتها هنا، وستبقى المسودة المحفوظة على هذا الجهاز كما هي.'
+                        : 'Changes made in this editing session will be discarded. The saved device-only draft will remain unchanged.')
                   : copy.discardWarning,
             ),
             actions: [
@@ -193,7 +194,11 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       if (!mounted) return;
       if (mounted) close();
     } catch (error) {
-      if (mounted) setState(() => issue = saveIssue(error));
+      final repository = await ref.read(entityRepositoryProvider.future);
+      final failure = profile == null
+          ? SaveIssue.rejected
+          : await confirmedSaveIssue(error, repository, profile!.id);
+      if (mounted) setState(() => issue = failure);
     } finally {
       leaving = false;
     }
@@ -233,9 +238,13 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       _fill(server);
       setState(() {
         item = server;
+        localDraftItem = null;
         conflict = DraftConflict.none;
         problems = {};
       });
+      ref.invalidate(
+        entityDraftsProvider(EntityDraftQuery(profile!.id, widget.section)),
+      );
     }
   }
 
@@ -290,8 +299,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           title: Text(ar ? 'حفظ كمسودة؟' : 'Save as draft?'),
           content: Text(
             ar
-                ? 'هذا الإدخال ينقصه بعض المعلومات الأساسية. يمكنك حفظه كمسودة وإكماله لاحقًا. لن تظهر المسودات في سيرتك الذاتية.'
-                : 'This entry is missing some essential information. You can save it as a draft and complete it later. Drafts do not appear in your Resume.',
+                ? 'احفظه كمسودة على هذا الجهاز فقط وأكمله لاحقًا. لن يُحفظ في حسابك أو يظهر في سيرتك الذاتية أو نسبة اكتمال ملفك. قد تفقده عند حذف التطبيق أو بياناته.'
+                : 'Save a draft on this device only and complete it later. It will not be saved to your account, appear in your Resume, or count toward completeness. It may be lost if you uninstall the app or clear its data.',
           ),
           actions: [
             JobixDialogAction.secondary(
@@ -313,8 +322,12 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
     setState(() => busy = true);
     try {
       final repository = await ref.read(entityRepositoryProvider.future);
-      await repository.upsert(profile!, copy, isDraft: saveAsDraft);
-      ref.invalidate(firstProfileProvider);
+      if (saveAsDraft) {
+        await repository.saveLocalDraft(profile!.id, copy);
+      } else {
+        await repository.upsert(profile!, copy);
+        ref.invalidate(firstProfileProvider);
+      }
       ref.invalidate(
         entityDraftsProvider(EntityDraftQuery(profile!.id, widget.section)),
       );
@@ -322,9 +335,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         showJobixFeedback(
           context,
           saveAsDraft
-              ? (AppLocalizations.of(context)!.localeName.startsWith('ar')
-                    ? 'تم حفظ المسودة.'
-                    : 'Draft saved.')
+              ? AppLocalizations.of(context)!.savedDevice
               : copy.section == EntitySection.education
               ? (AppLocalizations.of(context)!.localeName.startsWith('ar')
                     ? 'تم حفظ المؤهل.'
@@ -335,8 +346,18 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         );
       }
       if (mounted) close();
+    } on LocalDraftSavedException {
+      ref.invalidate(
+        entityDraftsProvider(EntityDraftQuery(profile!.id, widget.section)),
+      );
+      if (mounted) {
+        showJobixFeedback(context, AppLocalizations.of(context)!.savedDevice);
+        close();
+      }
     } catch (error) {
-      if (mounted) setState(() => issue = saveIssue(error));
+      final repository = await ref.read(entityRepositoryProvider.future);
+      final failure = await confirmedSaveIssue(error, repository, profile!.id);
+      if (mounted) setState(() => issue = failure);
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -361,7 +382,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         setState(() => issue = null);
       }
     } catch (error) {
-      if (mounted) setState(() => issue = saveIssue(error));
+      final repository = await ref.read(entityRepositoryProvider.future);
+      final failure = await confirmedSaveIssue(error, repository, profile!.id);
+      if (mounted) setState(() => issue = failure);
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -375,9 +398,10 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         .of(widget.section)
         .where((i) => i.id == item!.id)
         .firstOrNull;
-    final persistedDraft = server == null
-        ? await repository.savedDraft(value.id, widget.section, item!.id)
-        : null;
+    final persistedDraft =
+        (value.items[widget.section] ?? const <ProfileItem>[])
+            .where((i) => i.id == item!.id && i.isDraft)
+            .firstOrNull;
     if (mounted) {
       setState(() {
         profile = value;
@@ -477,8 +501,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               ),
               const SizedBox(height: TokensV0.space16),
             ],
-            EntryResumeExample(section: widget.section),
-            const SizedBox(height: TokensV0.space16),
             for (final field in widget.section.fields) ...[
               _field(copy, field),
               if (field.name == 'description') ...[

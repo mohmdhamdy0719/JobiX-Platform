@@ -6,9 +6,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/tokens.dart';
 import '../../core/design/form_loading_state.dart';
+import '../../core/design/jobix_feedback.dart';
 import '../../l10n/app_localizations.dart';
 import '../auth/auth_controller.dart';
 import '../career_profile/career_profile.dart';
+import '../career_profile/career_profile_repository.dart';
 import '../career_profile/entity_repository.dart';
 import '../career_profile/profile_sections.dart';
 import 'builder_scaffold.dart';
@@ -79,7 +81,7 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
         setState(() => issue = SaveIssue.pending);
       }
     } catch (error) {
-      if (mounted) setState(() => issue = saveIssue(error));
+      if (mounted) setState(() => issue = SaveIssue.rejected);
     }
   }
 
@@ -95,8 +97,18 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
       final repository = await ref.read(entityRepositoryProvider.future);
       await action(repository);
       if (mounted) ref.invalidate(firstProfileProvider);
+    } on LocalDraftSavedException {
+      ref.invalidate(entityDraftsProvider);
+      if (mounted) {
+        showJobixFeedback(context, AppLocalizations.of(context)!.savedDevice);
+      }
     } catch (error) {
-      if (mounted) setState(() => issue = saveIssue(error));
+      final repository = await ref.read(entityRepositoryProvider.future);
+      final profile = ref.read(firstProfileProvider).valueOrNull;
+      final failure = profile == null
+          ? SaveIssue.rejected
+          : await confirmedSaveIssue(error, repository, profile.id);
+      if (mounted) setState(() => issue = failure);
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -110,7 +122,9 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
       ref.invalidate(firstProfileProvider);
       if (mounted) setState(() => issue = null);
     } catch (error) {
-      if (mounted) setState(() => issue = saveIssue(error));
+      final repository = await ref.read(entityRepositoryProvider.future);
+      final failure = await confirmedSaveIssue(error, repository, profile.id);
+      if (mounted) setState(() => issue = failure);
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -126,6 +140,28 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
         : confirmRemove(context);
     final approved = await confirmation;
     if (!approved || !mounted) return;
+    if (item.isLocalDraft) {
+      try {
+        final repository = await ref.read(entityRepositoryProvider.future);
+        if (await repository.pending(profile.id) != null) {
+          if (mounted) setState(() => issue = SaveIssue.pending);
+          return;
+        }
+        await repository.discardDraft(profile.id, item.section, item.id);
+        ref.invalidate(
+          entityDraftsProvider(EntityDraftQuery(profile.id, item.section)),
+        );
+      } catch (_) {
+        if (mounted) {
+          showJobixFeedback(
+            context,
+            AppLocalizations.of(context)!.localDraftsUnavailable,
+            kind: JobixFeedbackKind.error,
+          );
+        }
+      }
+      return;
+    }
     await run(
       (r) => item.isDraft
           ? r.discardSavedDraft(profile, item.section, item.id)
@@ -260,11 +296,19 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                         return EntityCardList(
                           section: section,
                           items: profile.of(section),
-                          drafts: draftState.valueOrNull ?? const [],
+                          drafts: [
+                            ...draftState.valueOrNull ?? const [],
+                            for (final legacy
+                                in profile.items[section] ??
+                                    const <ProfileItem>[])
+                              if (legacy.isDraft &&
+                                  !(draftState.valueOrNull ??
+                                          const <ProfileItem>[])
+                                      .any((local) => local.id == legacy.id))
+                                legacy,
+                          ],
                           draftLoadError: draftState.hasError
-                              ? (copy.localeName.startsWith('ar')
-                                    ? 'تعذر تحميل المسودات المحفوظة.'
-                                    : 'Saved drafts could not be loaded.')
+                              ? copy.localDraftsUnavailable
                               : null,
                           onRetryDrafts: () =>
                               ref.invalidate(entityDraftsProvider(draftQuery)),
@@ -320,13 +364,7 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
         if (draftState.hasError)
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  copy.localeName.startsWith('ar')
-                      ? 'تعذر تحميل المسودات المحفوظة.'
-                      : 'Saved drafts could not be loaded.',
-                ),
-              ),
+              Expanded(child: Text(copy.localDraftsUnavailable)),
               TextButton(
                 onPressed: () =>
                     ref.invalidate(entityDraftsProvider(draftQuery)),

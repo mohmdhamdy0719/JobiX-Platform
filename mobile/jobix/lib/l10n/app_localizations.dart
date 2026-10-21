@@ -809,13 +809,19 @@ abstract class AppLocalizations {
   /// No description provided for @savedDevice.
   ///
   /// In en, this message translates to:
-  /// **'Saved on this device. It has not been saved to your account yet.'**
+  /// **'Draft saved on this device only, not to your account. Save explicitly when online. It may be lost if you uninstall the app or clear its data.'**
   String get savedDevice;
+
+  /// No description provided for @localDraftsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts on this device could not be read. Your saved account data is unchanged.'**
+  String get localDraftsUnavailable;
 
   /// No description provided for @saveFailed.
   ///
   /// In en, this message translates to:
-  /// **'Server save did not complete. Your draft is retained on this device. Retry to reconcile the result.'**
+  /// **'Could not confirm a save to your account. Keep your edits here and try again.'**
   String get saveFailed;
 
   /// No description provided for @invalidEmail.

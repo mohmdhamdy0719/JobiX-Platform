@@ -452,7 +452,7 @@ void main() {
     },
   );
   test(
-    'offline save retains draft, identity and payload; explicit retry succeeds',
+    'offline save is local with no mutation identity; explicit online Save succeeds',
     () async {
       api.offline = true;
       const draft = PersonalDraft(
@@ -462,12 +462,17 @@ void main() {
       );
       await expectLater(
         repository.save(draft),
-        throwsA(isA<SocketException>()),
+        throwsA(isA<LocalDraftSavedException>()),
       );
       final pending = (await repository.draft(api.server))!;
-      expect(pending.commandKey, isNotNull);
-      expect(pending.frozen, isNotNull);
+      expect(pending.commandKey, isNull);
+      expect(pending.frozen, isNull);
+      expect(pending.localOnly, true);
+      expect(api.requests, isEmpty);
+      expect(api.server.personal, isEmpty);
       api.offline = false;
+      await repository.load();
+      expect(api.requests, isEmpty);
       final saved = await repository.save(pending);
       expect(saved.version, 2);
       expect(api.requests.map((r) => r.commandKey).toSet().length, 1);
@@ -502,7 +507,7 @@ void main() {
     },
   );
   test(
-    'a known version conflict discards unsaved local state without overwriting server',
+    'a known version conflict preserves editable local state without overwriting server',
     () async {
       api.server = const CareerProfile(
         id: 'profile-one',
@@ -519,8 +524,10 @@ void main() {
         ),
         throwsA(isA<PostgrestException>()),
       );
-      expect(await repository.draft(api.server), isNull);
-      expect(await db.draftFor('user-one', api.server.id), isNull);
+      final local = (await repository.draft(api.server))!;
+      expect(local.localOnly, true);
+      expect(local.frozen, isNull);
+      expect(local.personal['full_name'], 'My work');
       expect(api.server.personal['full_name'], 'Other device');
     },
   );

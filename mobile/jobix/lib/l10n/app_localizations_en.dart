@@ -394,11 +394,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get savedDevice =>
-      'Saved on this device. It has not been saved to your account yet.';
+      'Draft saved on this device only, not to your account. Save explicitly when online. It may be lost if you uninstall the app or clear its data.';
+
+  @override
+  String get localDraftsUnavailable =>
+      'Drafts on this device could not be read. Your saved account data is unchanged.';
 
   @override
   String get saveFailed =>
-      'Server save did not complete. Your draft is retained on this device. Retry to reconcile the result.';
+      'Could not confirm a save to your account. Keep your edits here and try again.';
 
   @override
   String get invalidEmail => 'Enter a valid email address.';

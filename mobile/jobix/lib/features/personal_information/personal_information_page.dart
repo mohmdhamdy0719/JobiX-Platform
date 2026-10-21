@@ -46,6 +46,7 @@ class _PersonalInformationPageState
   PersonalDraft? draft;
   TextSectionRepository? textRepository;
   TextSectionDraft? targetRoleDraft;
+  String roleBaseline = '';
   bool busy = false, failed = false, dirty = false, allowPop = false;
   String? notice;
   List<String> cityHistory = [];
@@ -54,8 +55,13 @@ class _PersonalInformationPageState
       dirty ||
       (profile != null &&
           targetRoleDraft != null &&
-          (targetRoleDraft!.text != profile!.targetRole ||
+          (targetRoleDraft!.text != roleBaseline ||
               targetRoleDraft!.request != null));
+  bool get needsServerSave =>
+      hasUnsavedChanges ||
+      draft?.localOnly == true ||
+      targetRoleDraft?.localOnly == true ||
+      hasPendingSave;
   bool get hasPendingSave =>
       draft?.frozen != null || targetRoleDraft?.request != null;
   @override
@@ -67,7 +73,7 @@ class _PersonalInformationPageState
   Future<void> load() async {
     try {
       final repo = await ref.read(draftRepositoryProvider.future);
-      final value = await repo.load(freshOnly: true);
+      final value = await repo.load();
       final local = await repo.draft(value);
       final textRepo = await ref.read(textSectionRepositoryProvider.future);
       final localRole = await textRepo.load(value, 'target_role');
@@ -85,6 +91,7 @@ class _PersonalInformationPageState
             text: value.targetRole,
           );
       targetRoleController.text = targetRoleDraft!.text;
+      roleBaseline = targetRoleDraft!.text;
       // Initial account suggestion only: do not reinsert an intentionally
       // cleared email from a local draft or overwrite saved profile contact.
       final authEmail = ref
@@ -115,7 +122,10 @@ class _PersonalInformationPageState
       }
       cityHistory =
           rawCities?.split('\n').where((v) => v.isNotEmpty).toList() ?? [];
-      dirty = local != null || prefillEmail;
+      dirty = prefillEmail;
+      notice = local?.localOnly == true || localRole?.localOnly == true
+          ? AppLocalizations.of(context)!.savedDevice
+          : null;
       if (!mounted) return;
       ref.read(authFlowProvider.notifier).state = const AuthFlow();
       setState(() {
@@ -156,6 +166,7 @@ class _PersonalInformationPageState
 
   Future<void> save() async {
     if (busy) return;
+    var savingRole = false;
     final copy = AppLocalizations.of(context)!;
     setState(() {
       busy = true;
@@ -184,10 +195,22 @@ class _PersonalInformationPageState
       return;
     }
     try {
+      // Capture both parts locally before either explicit mutation begins.
+      // These snapshots are not authoritative and never upload themselves.
+      if (draft!.frozen == null && (dirty || draft!.localOnly)) {
+        await repository!.retain(draft!.deviceOnly());
+      }
+      if (targetRoleDraft!.request == null &&
+          (targetRoleDraft!.text != profile!.targetRole ||
+              targetRoleDraft!.localOnly)) {
+        await textRepository!.retain(targetRoleDraft!.deviceOnly());
+      }
       // Resolve a durable, ambiguous role-save request before sending another
       // mutation against its old profile version.
       if (targetRoleDraft!.request != null) {
+        savingRole = true;
         profile = await textRepository!.save(targetRoleDraft!);
+        savingRole = false;
         targetRoleDraft =
             await textRepository!.load(profile!, 'target_role') ??
             TextSectionDraft(
@@ -250,7 +273,9 @@ class _PersonalInformationPageState
           text: targetRoleController.text,
         );
         if (targetRoleController.text.trim() != saved.targetRole.trim()) {
+          savingRole = true;
           profile = await textRepository!.save(targetRoleDraft!);
+          savingRole = false;
           targetRoleDraft =
               await textRepository!.load(profile!, 'target_role') ??
               TextSectionDraft(
@@ -264,6 +289,7 @@ class _PersonalInformationPageState
       }
       ref.invalidate(firstProfileProvider);
       ref.invalidate(unfinishedDraftProvider(saved.id));
+      roleBaseline = targetRoleDraft!.text;
       if (mounted) {
         setState(() {
           notice = retained == null && !hasUnsavedChanges
@@ -279,17 +305,33 @@ class _PersonalInformationPageState
           );
         }
       }
+    } on LocalDraftSavedException {
+      final local = await repository!.draft(profile!);
+      final localRole = await textRepository!.load(profile!, 'target_role');
+      if (!mounted) return;
+      setState(() {
+        draft = local ?? draft;
+        targetRoleDraft = localRole ?? targetRoleDraft;
+        roleBaseline = targetRoleDraft!.text;
+        dirty = false;
+        notice = copy.savedDevice;
+      });
+      ref.invalidate(unfinishedDraftProvider(profile!.id));
+      showJobixFeedback(context, copy.savedDevice);
     } catch (error) {
       if (!mounted) return;
       try {
         draft = await repository!.draft(profile!) ?? draft;
+        targetRoleDraft =
+            await textRepository!.load(profile!, 'target_role') ??
+            targetRoleDraft;
       } catch (_) {
         // Keep the open editor value; report that the save is not confirmed.
       }
       if (!mounted) return;
       if (error is PostgrestException &&
           error.message.contains('VERSION_CONFLICT')) {
-        if (targetRoleDraft?.request != null) {
+        if (savingRole) {
           await targetRoleConflict();
         } else {
           await conflict();
@@ -339,7 +381,10 @@ class _PersonalInformationPageState
           section: 'target_role',
           version: latest.version,
           text: targetRoleController.text,
+          localOnly: true,
         );
+        await textRepository!.retain(targetRoleDraft!);
+        roleBaseline = targetRoleDraft!.text;
         setState(
           () => notice = copy.localeName.startsWith('ar')
               ? 'تغييراتك غير محفوظة. اختر حفظ لتطبيقها.'
@@ -396,7 +441,10 @@ class _PersonalInformationPageState
           baseVersion: latest.version,
           personal: draft!.personal,
           resumeLanguage: draft!.resumeLanguage,
+          localOnly: true,
         );
+        await repository!.retain(draft!);
+        dirty = false;
       } else {
         await repository!.database.discardDraft(repository!.user, latest.id);
         draft = PersonalDraft(
@@ -484,8 +532,8 @@ class _PersonalInformationPageState
         if (mounted) setState(() => notice = copy.outcomeUnknown);
         return;
       }
-      await textRepository!.discard(profile!, 'target_role');
-      await repository!.discard(profile!.id);
+      // Input changes are only in memory. Preserve any previously explicitly
+      // saved device draft; this exit abandons edits made since that snapshot.
       if (mounted) exit();
     } catch (_) {
       if (mounted) setState(() => notice = copy.outcomeUnknown);
@@ -512,8 +560,8 @@ class _PersonalInformationPageState
   /// move on only after the server acknowledged the save.
   Future<void> advance() async {
     if (busy || draft == null) return;
-    if (hasUnsavedChanges) await save();
-    if (!mounted || hasUnsavedChanges) return;
+    if (needsServerSave) await save();
+    if (!mounted || needsServerSave) return;
     allowPop = true;
     context.go(
       fromReview

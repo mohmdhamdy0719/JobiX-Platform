@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/database/database.dart';
 import 'career_profile.dart';
@@ -118,6 +119,9 @@ class DraftRepository {
     } on TimeoutException {
       await _check();
       return false;
+    } on http.ClientException {
+      await _check();
+      return false;
     }
     await _check();
     return true;
@@ -139,10 +143,13 @@ class DraftRepository {
       // Only network failures may use an acknowledged cache; never suppress
       // authorization/lifecycle/provisioning failures.
       if (freshOnly ||
-          (error is! SocketException && error is! TimeoutException)) {
+          (error is! SocketException &&
+              error is! TimeoutException &&
+              error is! http.ClientException)) {
         rethrow;
       }
       final cache = await database.firstCachedProfile(user);
+      await _check();
       if (cache == null) rethrow;
       return CareerProfile.fromJson(jsonDecode(cache) as Map<String, dynamic>);
     }

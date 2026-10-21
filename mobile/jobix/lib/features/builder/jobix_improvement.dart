@@ -137,7 +137,7 @@ class _JobixImprovementState extends State<JobixImprovement> {
               const SizedBox(width: TokensV0.space8),
               Expanded(
                 child: Text(
-                  say('Improve with Jobix', 'حسّن النص مع Jobix'),
+                  say('JobiX AI Agent', 'مساعد JobiX بالذكاء الاصطناعي'),
                   style: Theme.of(
                     context,
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
@@ -148,8 +148,8 @@ class _JobixImprovementState extends State<JobixImprovement> {
           const SizedBox(height: TokensV0.space8),
           Text(
             say(
-              'Write naturally and share as much relevant detail as you can. JobiX can help turn your information into professional, ATS-friendly wording.',
-              'اكتب بطبيعتك وشارك أكبر قدر ممكن من التفاصيل ذات الصلة. يمكن لـ JobiX مساعدتك في صياغة معلوماتك بأسلوب مهني مناسب لأنظمة تتبع المتقدمين.',
+              'Write in your own words. Add relevant details, and JobiX can help make your wording clear, professional, and ATS-friendly.',
+              'اكتب بأسلوبك. أضف التفاصيل المهمة، ويمكن لـ JobiX مساعدتك في صياغتها بوضوح ومهنية وبما يناسب أنظمة تتبع المتقدمين.',
             ),
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -210,7 +210,7 @@ class _JobixImprovementState extends State<JobixImprovement> {
               key: const Key('jobix-generate'),
               onPressed: widget.onGenerate,
               icon: const Icon(Icons.auto_awesome_outlined, size: 18),
-              label: Text(say('Improve with Jobix', 'حسّن النص مع Jobix')),
+              label: Text(say('Improve with JobiX', 'حسّن النص مع JobiX')),
             ),
           ],
           if (widget.error != null) ...[
