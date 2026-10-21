@@ -1,0 +1,48 @@
+# JobiX — Fix HTML-Only Resume Preview/Export Review Guard
+
+Implement the smallest targeted fix identified by the read-only Resume Layout audit.
+
+## Objective
+
+Ensure that an HTML-only difference between the reviewed Resume Preview and the newly fetched authoritative Resume HTML invalidates the previous review.
+
+When such a difference is detected:
+- Refresh the displayed Preview with the latest authoritative content.
+- Do not submit a PDF export request on that same tap.
+- Require a separate, explicit Export tap after the refreshed Preview is displayed.
+
+## Before implementation
+
+1. Inspect the current implementation and tests in:
+   - `lib/features/resume/resume_preview_snapshot.dart`
+   - `test/resume_preview_snapshot_test.dart`
+   - `test/resume_export_test.dart`
+   - `test/resume_preview_session_test.dart`
+2. Confirm how `reviewedResumeDifferences`, the Preview refresh flow, and the export guard currently interact.
+3. Preserve existing safety behavior for unsaved edits, uncertain saves, configuration mismatches, profile isolation, and idempotent export requests.
+
+## Implementation
+
+- Add HTML comparison to the existing allowlisted reviewed-output comparison, using the actual field names and semantics in the current code.
+- Update the test that currently treats different HTML as equivalent.
+- Add a regression test proving that an HTML-only mismatch refreshes Preview and does not submit an export on the first tap.
+- Confirm the refreshed Preview is shown before a subsequent explicit Export tap can submit.
+- Avoid unrelated refactoring and do not change the HTML renderer or PDF pipeline unless the tests prove it is necessary.
+
+## Verification
+
+Run the focused Flutter tests for the four files above, plus the existing Resume layout parity test.
+
+Report the exact commands and results. If a test fails, distinguish a new regression from a pre-existing failure; do not weaken unrelated assertions to make tests pass.
+
+## Safety and scope
+
+- Local code and tests only.
+- Do not connect to Supabase or any remote database.
+- Do not apply migrations or modify database state.
+- Do not build or install an APK.
+- Do not run PDF exports, AI calls, or Credit operations.
+- Do not modify Production, billing, infrastructure, or credentials.
+- Do not remove existing user-facing safety messages without explaining the reason and asking for approval first.
+
+Finish with a concise report of changed files, behavior before/after, test results, and any unresolved concerns. Wait for approval before starting another task.

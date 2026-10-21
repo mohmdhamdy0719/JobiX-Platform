@@ -882,7 +882,7 @@ void main() {
     },
   );
   testWidgets(
-    'renderer-only HTML drift uses the current server document without an extra Preview review',
+    'renderer-only HTML drift refreshes Preview before any export submission',
     (tester) async {
       final panelKey = GlobalKey<ResumeExportPanelState>();
       await mount(tester, panelKey: panelKey);
@@ -900,20 +900,37 @@ void main() {
       expect(commands, isEmpty);
       expect(accepted, 0);
 
-      final createFuture = panelKey.currentState!.createPdf(local);
+      final refreshFuture = panelKey.currentState!.createPdf(local);
       for (var frame = 0; frame < 8; frame++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
       expect(commands.map((item) => item['action']), ['document']);
-      expect(find.text('Create — 2 Credits'), findsOneWidget);
+      final refreshed = (await refreshFuture)!;
+      expect(refreshed['html'], prepared['html']);
+      expect(panelKey.currentState!.document, equals(prepared));
+      expect(find.text('Create — 2 Credits'), findsNothing);
       expect(accepted, 0);
       expect(creditBalanceReads, 1);
       expect(await db.setting('resume:$actor:export:$profileId'), isNull);
       expect(find.byKey(const Key('review-updated-preview')), findsNothing);
+
+      // A separate tap with the refreshed document may start the ordinary
+      // explicit Credit-confirmation flow; the mismatch tap itself cannot.
+      final createFuture = panelKey.currentState!.createPdf(refreshed);
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(commands.map((item) => item['action']), ['document', 'document']);
+      expect(find.text('Create — 2 Credits'), findsOneWidget);
+      expect(accepted, 0);
       await tap(tester, 'Create — 2 Credits');
       await createFuture;
-      expect(commands.map((item) => item['action']), ['document', 'create']);
+      expect(commands.map((item) => item['action']), [
+        'document',
+        'document',
+        'create',
+      ]);
       final create = commands.singleWhere((item) => item['action'] == 'create');
       expect(create['command']['expected_profile_version'], 4);
       expect(

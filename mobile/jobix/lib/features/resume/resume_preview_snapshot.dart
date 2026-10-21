@@ -327,11 +327,11 @@ List<String> reviewedResumeDifferences(
   Map<String, dynamic> authoritative,
 ) {
   final differences = <String>[];
-  // HTML is a renderer output, not saved resume identity. The export panel
-  // fetches the current server canonical document and submits its hash; saved
-  // source hash, profile/configuration versions, and bundle remain strict
-  // comparisons.
+  // The server may run a newer renderer with the same version labels. Compare
+  // its exact HTML with the locally reviewed output so the Preview can refresh
+  // before any export is submitted. Only the field name is reported.
   for (final key in [
+    'html',
     'source_sha256',
     'profile_version',
     'configuration_version',

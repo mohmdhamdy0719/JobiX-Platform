@@ -84,7 +84,7 @@ class PreviewWebWidget extends PlatformWebViewWidget {
 void main() {
   for (final language in ['en', 'ar']) {
     testWidgets(
-      '$language same Preview passes refreshed snapshot on next tap; repeated close clears HTML',
+      '$language HTML-only mismatch refreshes Preview before the next tap; repeated close clears HTML',
       (tester) async {
         final platform = PreviewWebPlatform();
         WebViewPlatform.instance = platform;
@@ -98,7 +98,6 @@ void main() {
         final refreshed = {
           ...original,
           'html': '<html>REFRESHED_MARKER</html>',
-          'profile_version': 2,
         };
         final exported = <Map<String, dynamic>>[];
         await tester.pumpWidget(
@@ -153,10 +152,14 @@ void main() {
           expect(exported.single['html'], original['html']);
           expect(find.byType(ResumePreviewPage), findsOneWidget);
           expect(find.byKey(const Key('review-updated-preview')), findsNothing);
+          expect(platform.controllers.last.html, [
+            '<html>ORIGINAL_MARKER</html>',
+            '<html>REFRESHED_MARKER</html>',
+          ]);
           await tester.tap(export);
           await tester.pumpAndSettle();
           expect(exported.last, refreshed);
-          expect(exported.last['profile_version'], 2);
+          expect(exported.last['profile_version'], original['profile_version']);
           expect(exported.last, isNot(same(original)));
           navigator.currentState!.pop();
           await tester.pumpAndSettle();
