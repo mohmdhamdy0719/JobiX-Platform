@@ -1,0 +1,200 @@
+# JobiX V2 — Local-Only Drafts, Offline Editing, Save Reconciliation, and Data-Entry UX
+
+Implement the following approved changes in the existing Flutter application. Inspect the actual current code first, reuse existing components and patterns, and avoid unrelated refactoring.
+
+## A. Required Draft and Save Behavior
+
+### Core rule
+
+Incomplete or offline-only edits must remain local to the device. They must not be persisted as server-side Profile Entry Drafts.
+
+A local Draft:
+- Exists only on the current device.
+- Is not synced to another device.
+- Does not count toward Profile Completeness.
+- Does not appear in the Resume or PDF.
+- Can be edited and explicitly saved later.
+- May be lost if the app is uninstalled or its local data is cleared. Make this limitation clear to users when relevant.
+
+Only a complete entry explicitly saved while online may become authoritative server data, and only after the server confirms success.
+
+### Required behavior matrix
+
+1. **Online + complete entry**
+   - Validate required fields.
+   - Submit the normal server save.
+   - Show success and update the Resume/Profile Completeness only after authoritative server confirmation.
+
+2. **Online + incomplete entry**
+   - Keep it as a local Draft.
+   - Show a clear `Draft` state.
+   - Do not send an entry-creation or entry-update request to the server.
+   - Do not include it in the canonical Resume snapshot, PDF source, or Profile Completeness.
+   - Let the user continue editing and explicitly save after completing required fields.
+
+3. **Offline + complete or incomplete entry**
+   - Save the pending edits locally as a Draft, including complete-looking entries that cannot currently be uploaded.
+   - Clearly tell the user that the changes are stored on this device only and have not been saved to their account.
+   - Do not attempt to claim server success.
+   - Once connectivity is available, the user can reopen the Draft and explicitly press Save. Revalidate required fields and submit the normal server save.
+   - Do not silently upload Drafts merely because connectivity returns.
+
+4. **Existing Complete entry edited into an invalid/incomplete state**
+   - Never reclassify or overwrite the authoritative Complete entry with a Draft.
+   - Preserve the existing protection: show validation feedback, send no save request, and leave the saved server entry unchanged.
+   - The user may discard their pending edits or restore the required fields.
+   - Reopening the saved entry must load the confirmed server version.
+
+5. **Personal Information**
+   - Do not create server-side Draft records for Personal Information.
+   - When offline, preserve pending changes locally without changing authoritative server data or server-derived Profile Completeness.
+   - Clearly distinguish locally pending changes from account-saved information.
+   - On reconnection, require an explicit Save action to upload the pending changes.
+   - Preserve the existing account/profile isolation and version checks.
+
+### Local persistence and privacy
+
+Inspect the current local persistence mechanism and use the smallest appropriate existing solution. Local Drafts must be scoped to the signed-in account and the relevant profile/section to prevent cross-account or cross-profile leakage on shared devices.
+
+Do not introduce a competing persistent canonical profile or allow local Drafts to overwrite fresh server data silently. Distinguish local pending edits from authoritative server records.
+
+Do not silently delete pending data during sign-out. Follow the existing sign-out safety behavior, explain what will be lost, and require the appropriate user confirmation.
+
+### Fix the current uncertain-save error safely
+
+The app currently displays:
+
+`The previous save result is not yet confirmed. Retry the save before discarding; already-saved server data cannot be undone`
+
+Investigate the actual call path, request lifecycle, idempotency key, retry behavior, and discard flow before changing it.
+
+The intended experience is that ordinary local Drafts and ordinary unsaved edits should not produce this server-save uncertainty message.
+
+However, do not simply remove the message or discard an unresolved server request. A request that may already have reached the server must retain its original idempotency key and payload until its outcome is reconciled. Never issue a duplicate logical save with a new key, and never claim failure or success without evidence.
+
+Correctly distinguish:
+- A purely local Draft with no server request.
+- An ordinary unsaved edit.
+- A confirmed server save.
+- A server request whose outcome remains uncertain.
+
+Only the last case should require the existing reconciliation/retry protection. Resolve the underlying state-transition bug responsible for the current erroneous message.
+
+## B. Data-entry copy and layout changes
+
+### Description tips
+
+Remove the exact phrase `Optional questions and examples` wherever it is appended to the `Tips to help you describe your ...` section.
+
+Preserve the actual tips, question/answer examples, accessibility, and translations. Do not remove useful guidance.
+
+### Professional Summary examples dialog
+
+Keep the existing Professional Summary examples and their current English/Arabic content.
+
+Change the dialog title dynamically based on the currently selected example category. Do not keep `Professional summary examples` as a fixed title when the user navigates between examples.
+
+Use the existing example content and determine the correct category titles from the actual examples. Preserve the previous/next navigation, language support, and any existing replacement confirmation behavior.
+
+### JobiX AI Agent naming and writing guidance
+
+Change the section heading/title currently displayed as `Improve with JobiX` to:
+
+`JobiX AI Agent`
+
+Keep the action button label exactly:
+
+`Improve with JobiX`
+
+Replace the long guidance sentence:
+
+`Write naturally and share as much relevant detail as you can. JobiX can help turn your information into professional, ATS-friendly wording.`
+
+with concise, professional guidance that begins with:
+
+`Write in your own words.`
+
+Suggested English copy:
+
+`Write in your own words. Add relevant details, and JobiX can help make your wording clear, professional, and ATS-friendly.`
+
+Provide a natural, concise Arabic equivalent in the Arabic localization. Preserve the existing behavior of the Improve with JobiX button and do not invent working AI functionality if the feature is currently unavailable.
+
+### Remove the Resume example block
+
+Remove the `Example on a Resume` block from the beginning of the relevant data-entry page(s), as requested. Inspect the actual shared component usage so the block is removed consistently without deleting unrelated resume-preview or sample functionality.
+
+### Professional Summary guidance placement
+
+On the Professional Summary page:
+- Remove the top-of-page `Tips to help you write a professional summary` block.
+- Remove the sentence `Briefly describe your professional background, key strengths, relevant experience, and the value you bring.`
+- Add `Tips to help you write a professional summary` at the bottom of the page, following the same question-and-example interaction pattern used at the bottom of the other data-entry pages.
+- Write useful, specific questions and example answers that teach users how to write a strong Professional Summary.
+- Provide equivalent natural Arabic questions and examples.
+- Ensure this guidance is not duplicated elsewhere on the page.
+
+Use these questions and examples as the content basis, adapting wording to the existing app conventions:
+
+1. **Question:** What kind of work do you do, or what role are you targeting?
+   **Example:** `Customer service professional with experience supporting customers, resolving issues, and maintaining positive customer relationships.`
+
+2. **Question:** What are your strongest relevant skills?
+   **Example:** `Skilled in communication, problem-solving, CRM systems, and handling customer inquiries efficiently.`
+
+3. **Question:** What relevant experience or achievement demonstrates your value?
+   **Example:** `Experienced in managing high volumes of customer requests while maintaining service quality and accurate records.`
+
+4. **Question:** What value can you bring to your next role?
+   **Example:** `Focused on delivering reliable customer support, improving customer satisfaction, and helping teams resolve issues efficiently.`
+
+Treat these as guidance, not mandatory fields. Do not require users to answer all four questions, and do not automatically insert these examples into the user's saved Summary.
+
+### Saved Drafts list and status
+
+Remove the visible message:
+
+`Saved drafts could not be loaded (retry)`
+
+The local Drafts list must not depend on a server-side Drafts query. Display available device-local Drafts directly; when none exist, show the normal empty state.
+
+Do not disguise an actual storage/corruption failure as an empty list if doing so could hide or lose the user's data. Handle local storage errors safely and unobtrusively without reintroducing the removed server-load message.
+
+Show the `Draft` badge/state for incomplete or locally pending entries instead of `Complete`. Verify that server-backed Complete entries remain correctly classified and local Drafts are excluded from the canonical Resume and completeness calculation.
+
+## C. Preserve existing safety and architecture
+
+- Supabase remains authoritative for saved profile data.
+- Never report a server save as successful without server confirmation.
+- Preserve idempotent retries, version/conflict protection, and account/profile isolation.
+- Preserve the rule that an incomplete edit must never overwrite an existing Complete entry.
+- Do not silently upload local Drafts.
+- Do not create server-side Draft records for the new local-only Draft workflow.
+- Preserve existing Layout order/visibility behavior and PDF export safety.
+- Do not remove unrelated user-facing safety messages.
+- Do not apply Migrations 023 or 024 or make remote database changes.
+- Do not change Production, infrastructure, billing, or credentials.
+- Do not run PDF exports, AI calls, or Credit operations.
+
+## D. Tests and completion criteria
+
+Add or update focused tests for:
+
+1. Online complete entry saves to the server only after confirmation.
+2. Online incomplete entry remains local and sends no server mutation.
+3. Offline complete and incomplete entries are stored locally and are not uploaded automatically when connectivity returns.
+4. Explicit Save after reconnection uploads a complete entry and transitions it from Draft only after server confirmation.
+5. Incomplete edits cannot downgrade an existing Complete entry.
+6. Personal Information offline changes stay local and do not affect server completeness.
+7. Local Drafts remain isolated by account/profile and excluded from Resume/PDF/canonical completeness.
+8. The uncertain-save message is reserved for genuinely unresolved server requests, and retry reuses the original idempotency key/payload.
+9. No server-side Draft persistence is required for the local-only workflow.
+10. The description tips no longer include `Optional questions and examples`.
+11. The Professional Summary dialog title changes with the selected example category in English and Arabic.
+12. The JobiX AI Agent heading, unchanged button label, concise guidance, and removal of `Example on a Resume`.
+13. The Professional Summary tips appear at the bottom, with all four question/example pairs localized in English and Arabic.
+14. The Saved Drafts list uses local data, has a normal empty state, and displays Draft status correctly.
+
+Run focused Flutter tests, formatting, analysis, and `git diff --check`. Report exact commands and results. Do not weaken tests or hide failures.
+
+First inspect the current implementation and identify the smallest safe changes. Then implement the approved scope and report changed files, test results, and any remaining limitations. Do not build an APK in this task; wait for approval after the code and tests are complete.

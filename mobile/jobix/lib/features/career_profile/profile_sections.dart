@@ -167,12 +167,13 @@ class ProfileItem {
     this.version = 0,
     this.complete = false,
     this.isDraft = false,
+    this.isLocalDraft = false,
     this.values = const {},
   });
   final String id;
   final EntitySection section;
   final int version;
-  final bool complete, isDraft;
+  final bool complete, isDraft, isLocalDraft;
   final Map<String, Object?> values;
 
   String text(String field) => (values[field] as String?) ?? '';
@@ -190,6 +191,7 @@ class ProfileItem {
         ? true
         : json['complete'] == true,
     isDraft: json['is_draft'] == true,
+    isLocalDraft: json['is_local_draft'] == true,
     values: {
       for (final field in section.fields)
         if (json[field.name] != null)
@@ -208,6 +210,7 @@ class ProfileItem {
     'version': version,
     'complete': complete,
     'is_draft': isDraft,
+    'is_local_draft': isLocalDraft,
     ...values,
   };
 
@@ -217,6 +220,7 @@ class ProfileItem {
     version: version,
     complete: complete,
     isDraft: isDraft,
+    isLocalDraft: isLocalDraft,
     values: {...values, field: value},
   );
 
@@ -229,6 +233,7 @@ class ProfileItem {
     version: baseVersion,
     complete: complete,
     isDraft: isDraft,
+    isLocalDraft: isLocalDraft,
     values: values,
   );
 

@@ -108,11 +108,13 @@ class PersonalDraft {
     this.resumeLanguage,
     this.commandKey,
     this.frozen,
+    this.localOnly = false,
   });
   final String profileId;
   final int baseVersion;
   final Map<String, String> personal;
   final String? resumeLanguage, commandKey;
+  final bool localOnly;
   // Only an explicit in-flight save snapshot, not a background outbox.
   final Map<String, dynamic>? frozen;
   Map<String, dynamic> toJson() => {
@@ -122,6 +124,7 @@ class PersonalDraft {
     'language': resumeLanguage,
     'key': commandKey,
     'frozen': frozen,
+    'local_only': localOnly,
   };
   String encode() => jsonEncode(toJson());
   factory PersonalDraft.decode(String value) {
@@ -135,6 +138,7 @@ class PersonalDraft {
       frozen: json['frozen'] == null
           ? null
           : Map<String, dynamic>.from(json['frozen'] as Map),
+      localOnly: json['local_only'] == true,
     );
   }
   PersonalDraft edit(String field, String value) => PersonalDraft(
@@ -144,6 +148,7 @@ class PersonalDraft {
     resumeLanguage: resumeLanguage,
     commandKey: commandKey,
     frozen: frozen,
+    localOnly: localOnly,
   );
   PersonalDraft language(String value) => PersonalDraft(
     profileId: profileId,
@@ -152,5 +157,14 @@ class PersonalDraft {
     resumeLanguage: value,
     commandKey: commandKey,
     frozen: frozen,
+    localOnly: localOnly,
+  );
+
+  PersonalDraft deviceOnly() => PersonalDraft(
+    profileId: profileId,
+    baseVersion: baseVersion,
+    personal: personal,
+    resumeLanguage: resumeLanguage,
+    localOnly: true,
   );
 }

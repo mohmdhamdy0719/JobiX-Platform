@@ -89,8 +89,6 @@ class PendingMutation {
 }
 
 typedef MutationSend = Future<CareerProfile> Function(PendingMutation request);
-typedef DraftItemsLoad =
-    Future<List<ProfileItem>> Function(String profile, EntitySection section);
 
 class EntityDraftQuery {
   const EntityDraftQuery(this.profileId, this.section);
@@ -114,21 +112,35 @@ class PendingSaveException implements Exception {
 }
 
 class EntityRepository {
-  EntityRepository(this.parent, this.send, {this.loadDraftItems});
+  EntityRepository(this.parent, this.send);
   final DraftRepository parent;
   final MutationSend send;
-  final DraftItemsLoad? loadDraftItems;
 
   Future<List<ProfileItem>> savedDrafts(
     String profile,
     EntitySection section,
   ) async {
     await _guard();
-    final loader = loadDraftItems;
-    if (loader == null) return const [];
-    final items = await loader(profile, section);
+    final keys = await parent.database.sectionDraftKeys(
+      parent.user,
+      profile,
+      _draftPrefix(section),
+    );
+    final items = <ProfileItem>[];
+    for (final key in keys) {
+      final raw = await parent.database.sectionDraft(parent.user, profile, key);
+      if (raw == null) continue;
+      final item = ProfileItem.fromJson(
+        section,
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+      if (!item.isDraft || !item.isLocalDraft) {
+        throw StateError('LOCAL_DRAFT_CORRUPT');
+      }
+      items.add(item);
+    }
     await _guard();
-    return items.where((item) => item.isDraft).toList(growable: false);
+    return List.unmodifiable(items);
   }
 
   Future<ProfileItem?> savedDraft(
@@ -143,8 +155,10 @@ class EntityRepository {
     return null;
   }
 
+  String _draftPrefix(EntitySection section) =>
+      'entry_draft:${section.key}:';
   String _draftKey(EntitySection section, String id) =>
-      'entity:${section.key}:$id';
+      '${_draftPrefix(section)}$id';
   void _check() {
     if (!parent.isCurrentUser()) throw StateError('AUTH_REQUIRED');
   }
@@ -178,15 +192,14 @@ class EntityRepository {
     );
     _check();
     if (raw == null) return null;
-    // Legacy entity edits were persisted on each keystroke. They are not
-    // server-confirmed and must not be restored in a newly opened editor.
-    await parent.database.discardSection(
-      parent.user,
-      profile,
-      _draftKey(section, id),
+    final saved = ProfileItem.fromJson(
+      section,
+      jsonDecode(raw) as Map<String, dynamic>,
     );
-    _check();
-    return null;
+    if (!saved.isDraft || !saved.isLocalDraft || saved.id != id) {
+      throw StateError('LOCAL_DRAFT_CORRUPT');
+    }
+    return saved;
   }
 
   /// An unresolved explicit save is recoverable; ordinary unsaved items are
@@ -219,16 +232,27 @@ class EntityRepository {
   }
 
   Future<void> retainDraft(String profile, ProfileItem item) async {
+    await saveLocalDraft(profile, item);
+  }
+
+  Future<void> saveLocalDraft(String profile, ProfileItem item) async {
     _check();
-    // An unresolved request is immutable and must not be replaced by later
-    // keystrokes. Otherwise there is no durable unsaved draft to retain.
-    if (await pending(profile) == null) {
-      await parent.database.discardSection(
-        parent.user,
-        profile,
-        _draftKey(item.section, item.id),
-      );
-    }
+    if (await pending(profile) != null) throw const PendingSaveException();
+    final local = ProfileItem(
+      id: item.id,
+      section: item.section,
+      version: item.version,
+      complete: item.complete,
+      isDraft: true,
+      isLocalDraft: true,
+      values: item.values,
+    );
+    await parent.database.retainSection(
+      parent.user,
+      profile,
+      _draftKey(item.section, item.id),
+      jsonEncode(local.toJson()),
+    );
     await _guard();
   }
 
@@ -243,6 +267,7 @@ class EntityRepository {
       profile,
       _draftKey(section, id),
     );
+    await _guard();
   }
 
   Future<PendingMutation?> pending(String profile) async {
@@ -261,15 +286,17 @@ class EntityRepository {
 
   Future<CareerProfile> upsert(
     CareerProfile profile,
-    ProfileItem item, {
-    bool isDraft = false,
-  }) => _start(
-    profile,
-    'upsert_item',
-    item.section,
-    item.payload(),
-    isDraft: isDraft,
-  );
+    ProfileItem item,
+  ) async {
+    if (item.problems().isNotEmpty) {
+      throw const PostgrestException(message: 'VALIDATION_FAILED');
+    }
+    if (!await parent.probeServer()) {
+      await saveLocalDraft(profile.id, item);
+      throw const LocalDraftSavedException();
+    }
+    return _start(profile, 'upsert_item', item.section, item.payload());
+  }
 
   Future<CareerProfile> delete(
     CareerProfile profile,
@@ -367,16 +394,6 @@ final entityRepositoryProvider = FutureProvider<EntityRepository>((ref) async {
           )
           .timeout(const Duration(seconds: 15));
       return acknowledgedProfile(response);
-    },
-    loadDraftItems: (profile, section) async {
-      final rows = await client
-          .from(section.tableName)
-          .select()
-          .eq('profile_id', profile)
-          .eq('is_draft', true);
-      return rows
-          .map((row) => ProfileItem.fromJson(section, row))
-          .toList(growable: false);
     },
   );
 });

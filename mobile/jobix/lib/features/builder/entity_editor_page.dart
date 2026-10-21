@@ -59,11 +59,12 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   bool leaving = false, saveAttempted = false;
   bool get savePending => issue == SaveIssue.unknown;
   ProfileItem? serverDraft;
+  ProfileItem? localDraftItem;
   bool get dirty =>
       item != null &&
-      (serverItem != null || serverDraft != null) &&
+      (localDraftItem != null || serverItem != null || serverDraft != null) &&
       jsonEncode(item!.payload()) !=
-          jsonEncode((serverItem ?? serverDraft)!.payload());
+          jsonEncode((localDraftItem ?? serverItem ?? serverDraft)!.payload());
 
   /// Set while the draft's baseline differs from the server item; Save is
   /// blocked until the user picks a version.
@@ -88,7 +89,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   Future<void> load() async {
     try {
       final repository = await ref.read(entityRepositoryProvider.future);
-      final value = await repository.parent.load(freshOnly: true);
+      final value = await repository.parent.load();
       if (!mounted) return;
       await repository.parent.draft(value);
       final unresolved = await repository.pending(value.id);
@@ -98,13 +99,13 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       final id = widget.itemId == 'new'
           ? recovered?.id ?? newCommandKey()
           : widget.itemId;
-      final saved = value
-          .of(widget.section)
-          .where((i) => i.id == id)
+      final sectionItems = value.items[widget.section] ?? const [];
+      final saved = sectionItems
+          .where((i) => i.id == id && !i.isDraft)
           .firstOrNull;
-      final persistedDraft = widget.itemId == 'new' || saved != null
-          ? null
-          : await repository.savedDraft(value.id, widget.section, id);
+      final persistedDraft = sectionItems
+          .where((i) => i.id == id && i.isDraft && !i.isLocalDraft)
+          .firstOrNull;
       final local = await repository.draft(value.id, widget.section, id);
       final current =
           local ??
@@ -118,10 +119,11 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         item = current;
         serverItem = saved;
         serverDraft = persistedDraft;
+        localDraftItem = local?.isLocalDraft == true ? local : null;
         issue = unresolved == null ? null : SaveIssue.unknown;
         conflict = unresolved != null || local == null
             ? DraftConflict.none
-            : draftConflict(local, saved);
+            : draftConflict(local, saved ?? persistedDraft);
       });
     } catch (_) {
       if (mounted) setState(() => failed = true);
@@ -155,7 +157,10 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       final pendingItem = pending != null;
       if (item != null &&
           (pendingItem ||
-              (serverItem != null || serverDraft != null) && dirty)) {
+              (serverItem != null ||
+                  serverDraft != null ||
+                  localDraftItem != null) &&
+                  dirty)) {
         final copy = AppLocalizations.of(context)!;
         final discard = await showDialog<bool>(
           context: context,
@@ -164,10 +169,10 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
             content: Text(
               pendingItem
                   ? copy.pendingBackWarning
-                  : serverDraft != null
+                   : serverDraft != null || localDraftItem != null
                   ? (copy.localeName.startsWith('ar')
-                        ? 'سيتم تجاهل التغييرات غير المحفوظة، وستبقى المسودة المحفوظة كما هي.'
-                        : 'Your unsaved changes will be discarded. The saved draft will remain unchanged.')
+                         ? 'سيتم تجاهل التغييرات التي أجريتها هنا، وستبقى المسودة المحفوظة على هذا الجهاز كما هي.'
+                         : 'Changes made in this editing session will be discarded. The saved device-only draft will remain unchanged.')
                   : copy.discardWarning,
             ),
             actions: [
@@ -186,9 +191,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         if (discard != true || !mounted) return;
       }
       if (!mounted) return;
-      if (profile != null && item != null) {
-        await repository!.discardDraft(profile!.id, widget.section, item!.id);
-      }
       if (mounted) close();
     } catch (error) {
       if (mounted) setState(() => issue = saveIssue(error));

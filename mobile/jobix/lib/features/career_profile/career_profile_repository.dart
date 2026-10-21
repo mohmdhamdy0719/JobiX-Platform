@@ -90,6 +90,12 @@ CareerProfile acknowledgedProfile(Object? response) {
   );
 }
 
+/// A read-only reachability check proved no save request was sent, so the
+/// caller safely retained the edits as a device-only draft.
+class LocalDraftSavedException implements Exception {
+  const LocalDraftSavedException();
+}
+
 class DraftRepository {
   DraftRepository(this.database, this.api, this.user, this.isCurrentUser);
   final AppDatabase database;
@@ -98,6 +104,23 @@ class DraftRepository {
   final bool Function() isCurrentUser;
   Future<void> _check() async {
     if (!isCurrentUser()) throw StateError('AUTH_REQUIRED');
+  }
+
+  /// Uses the existing read-only profile RPC. A failure here is safe to treat
+  /// as offline because no mutation request has been started.
+  Future<bool> probeServer() async {
+    await _check();
+    try {
+      await api.firstProfile();
+    } on SocketException {
+      await _check();
+      return false;
+    } on TimeoutException {
+      await _check();
+      return false;
+    }
+    await _check();
+    return true;
   }
 
   Future<CareerProfile> load({bool freshOnly = false}) async {
@@ -131,7 +154,7 @@ class DraftRepository {
     await _check();
     if (raw == null) return null;
     final saved = PersonalDraft.decode(raw);
-    if (saved.frozen != null) return saved;
+    if (saved.frozen != null || saved.localOnly) return saved;
 
     // Older app versions stored every keystroke as a local draft. Those
     // values are not authoritative and must not reappear when an editor opens.
@@ -142,14 +165,14 @@ class DraftRepository {
 
   Future<void> retain(PersonalDraft draft) async {
     await _check();
-    if (draft.frozen == null) {
+    if (draft.frozen == null && !draft.localOnly) {
       final existing = await database.draftFor(user, draft.profileId);
-      if (existing != null && PersonalDraft.decode(existing).frozen != null) {
+      if (existing != null &&
+          (PersonalDraft.decode(existing).frozen != null ||
+              PersonalDraft.decode(existing).localOnly)) {
         // Never replace an unresolved, exact request with editable input.
         return;
       }
-      await database.discardDraft(user, draft.profileId);
-      await _check();
       return;
     }
     final existing = await database.draftFor(user, draft.profileId);
@@ -172,6 +195,10 @@ class DraftRepository {
       final previous = PersonalDraft.decode(pending);
       draft = previous;
     }
+    if (draft.frozen == null && !await probeServer()) {
+      await retain(draft.deviceOnly());
+      throw const LocalDraftSavedException();
+    }
     final request = draft.frozen == null
         ? PersonalDraft(
             profileId: draft.profileId,
@@ -179,6 +206,7 @@ class DraftRepository {
             personal: draft.personal,
             resumeLanguage: draft.resumeLanguage,
             commandKey: newCommandKey(),
+            localOnly: false,
             frozen: {
               'version': draft.baseVersion,
               'personal': draft.personal,
@@ -200,11 +228,15 @@ class DraftRepository {
         'ACCOUNT_DELETING',
         'AUTH_REQUIRED',
       ].any(error.message.contains)) {
-        // These transactional rejections are known not to have applied.
-        // Keep the user's edits only in the open editor; a later open must
-        // start from the current server version.
+        // A transactional rejection is known not to have applied. Preserve
+        // the values as an editable device-only draft, without reusing the
+        // rejected request key for a future mutation.
         await _check();
-        await database.discardDraft(user, request.profileId);
+        await database.saveDraft(
+          user,
+          request.profileId,
+          request.deviceOnly().encode(),
+        );
         await _check();
       }
       rethrow;
