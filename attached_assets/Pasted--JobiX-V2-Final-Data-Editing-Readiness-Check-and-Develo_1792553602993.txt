@@ -1,0 +1,61 @@
+# JobiX V2 — Final Data-Editing Readiness Check and Development APK
+
+We need to finish the previously implemented data-editing improvements and build a Development APK for device testing.
+
+## Phase 1 — Local readiness audit
+
+Inspect the current working tree and verify that all intended changes are present, including:
+
+1. Data-entry UX improvements, field guidance, summary examples, and copy updates.
+2. Education and field-of-study autocomplete, including editable free-text values and the bundled fallback catalog.
+3. Persistent Profile Entry Drafts behavior and same-record completion.
+4. Protection preventing an existing Complete entry from becoming a Draft when required fields are missing.
+5. Safe save/retry/discard behavior and preservation of existing user-facing safety messages.
+6. The HTML-only Preview/export review-guard fix already completed.
+
+Do not redo completed work. Identify missing, uncommitted, conflicting, or unexpectedly reverted changes.
+
+## Phase 2 — Focused verification
+
+Run the relevant existing tests for the changed data-entry and Draft behavior, Education autocomplete/catalog, Complete-entry protection, and recent Preview/export guard.
+
+Run formatting, analysis, and `git diff --check` as appropriate.
+
+Report exact commands and results. If failures occur, distinguish regressions from known or pre-existing failures. Do not weaken tests or remove safety checks to get a green result.
+
+## Phase 3 — Build decision
+
+If the local checks pass sufficiently to build safely, build the standard ARM64 Development APK using the established settings:
+
+- Flavor/build target: `developmentDebug`
+- Application ID: `com.mhflow.jobix`
+- Config: `config/dev.local.json`
+- Development Supabase project reference: `lmouxhbjhtqdtiqijcee`
+- `JOBIX_ENABLE_PDF_EXPORT=true`
+
+Use the existing project's documented build command and verify the resulting APK's actual path, timestamp, size, SHA-256, application ID, flavor, and configuration.
+
+Do not claim the APK includes changes that are not present in the verified working tree.
+
+## Strict safety scope
+
+- Local repository checks and a Development APK build only.
+- Do not connect to any remote database.
+- Do not apply Migration 023 or 024.
+- Do not deploy or modify Production.
+- Do not run PDF exports, AI calls, Credit operations, or billing operations.
+- Do not change dependencies, `pubspec.yaml`, or `pubspec.lock` unless required and separately approved.
+- Do not install the APK on a device.
+- Do not remove existing safety messages or weaken persistence/reconciliation behavior.
+- If a critical test fails or the Development configuration cannot be verified, stop before building and report the blocker.
+
+## Final report
+
+Provide:
+1. Readiness result and any blockers.
+2. Tests run and their exact results.
+3. Whether the APK was built.
+4. APK path, size, timestamp, SHA-256, and verified configuration if built.
+5. Explicit limitations: persistent Drafts requiring Migration 024 are not ready for full remote testing unless that migration has separately been applied and verified.
+
+Do not start another task after this.">End of prompt.
