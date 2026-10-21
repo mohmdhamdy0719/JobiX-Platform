@@ -1,0 +1,33 @@
+# JobiX — Read-Only Audit of the Current Resume Layout
+
+We are resuming the existing JobiX V2 MVP plan. Our immediate product priority is to finalize the visual quality of the Resume before starting the AI Agent.
+
+Perform a read-only audit of the existing Resume Layout editor, Preview renderer, and PDF rendering pipeline.
+
+Do not implement changes yet.
+
+Please inspect the actual current code and report:
+
+1. The files and components responsible for the Layout editor, saved section order/visibility, Resume Preview, and PDF rendering.
+2. The current visual structure: typography, spacing, margins, headings, entry formatting, page breaks, and multi-page behavior.
+3. Whether Arabic/RTL and English/LTR are handled correctly throughout Preview and PDF.
+4. Any verified differences between Preview output and the generated PDF based on the implementation and existing tests.
+5. Existing template/layout customization capabilities and their current limitations.
+6. Relevant existing tests, known failures, and behavior that has already been validated.
+7. Specific visual or usability issues supported by code or existing screenshots/tests. Clearly label anything that cannot be verified without a real device or PDF sample.
+8. A prioritized list of proposed improvements, separated into:
+   - Essential for the first public Resume release.
+   - Valuable but deferrable.
+   - Cosmetic or unnecessary for the MVP.
+9. The smallest implementation plan, exact files likely to change, and focused regression tests for the approved improvements.
+
+Safety and scope:
+- Read-only audit only; do not edit files.
+- Do not apply migrations or connect to remote databases.
+- Do not build an APK.
+- Do not run PDF exports, AI calls, or Credit operations.
+- Do not change billing, infrastructure, configuration, or Production.
+- Preserve existing Layout order/visibility behavior and all previously implemented data-entry improvements.
+- Do not propose rebuilding the rendering pipeline unless the existing code demonstrates a concrete need.
+
+Return the findings and recommended next implementation task. Wait for approval before changing anything.
