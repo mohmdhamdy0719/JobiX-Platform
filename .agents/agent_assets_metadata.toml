@@ -420,3 +420,17 @@ mtime_ms = 1792218309321
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/4cd7bb0c-b548-4b6f-95ef-fa85c2f529a8/25767280-ef6a-4c9c-8406-4bd238531793"
 storage_version_token = "1792218323464364"
 content_type = "text/plain"
+
+[[outputs]]
+id = "tPo9Cqrb17taEZyVxQvFN"
+uri = "file://.local/jobix-native-verification/downloads/jobix-development-arm64-debug-20261021.zip"
+type = "unspecified"
+title = "JobiX Development ARM64 Debug APK"
+description = "Verified fresh developmentDebug APK, package com.mhflow.jobix. Extract the ZIP to obtain app-arm64-v8a-development-debug.apk. Development Supabase configuration and PDF export build flag enabled; not installed or device-tested."
+logical_id = "1d6fa1c2-e5f7-490a-b9e7-f21b6a139043"
+content_hash = "sha256:1ffe517b948f9676a84ad3abfc8e865c5dfa6a7ab57f2378ad61ebf33ec165de"
+size = 57106918
+mtime_ms = 1792598555643
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/1d6fa1c2-e5f7-490a-b9e7-f21b6a139043/444e3446-78e0-4869-92b3-8723c549ab17"
+storage_version_token = "1792598570113754"
+content_type = "application/octet-stream"
