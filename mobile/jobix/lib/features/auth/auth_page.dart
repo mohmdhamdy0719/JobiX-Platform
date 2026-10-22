@@ -153,6 +153,28 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       data: (value) => value.googleEnabled,
       orElse: () => false,
     );
+    final googleChecking = settings.isLoading;
+    Widget googleButton() => OutlinedButton.icon(
+          key: const Key('auth-google'),
+          onPressed: googleEnabled && !busy ? google : null,
+          icon: googleChecking
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text(
+                  'G',
+                  style: TextStyle(
+                    color: Color(0xFF4285F4),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 19,
+                  ),
+                ),
+          label: Text(
+            googleChecking ? copy.googleCheckingAvailability : copy.googleSignIn,
+          ),
+        );
     return SliceScaffold(
       title: !gateway ? title : null,
       leading: gateway
@@ -220,21 +242,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                   onPressed: () => context.go('/auth?mode=login'),
                   child: Text(copy.loginAction),
                 ),
-                if (googleEnabled) ...[
+                if (googleEnabled || googleChecking) ...[
                   const SizedBox(height: TokensV0.space12),
-                  OutlinedButton.icon(
-                    key: const Key('auth-google'),
-                    onPressed: busy ? null : google,
-                    icon: const Text(
-                      'G',
-                      style: TextStyle(
-                        color: Color(0xFF4285F4),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 19,
-                      ),
-                    ),
-                    label: Text(copy.googleSignIn),
-                  ),
+                  googleButton(),
                 ],
               ] else if (confirm) ...[
                 PrimaryAction(
@@ -381,13 +391,10 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                             ? copy.createAccount
                             : copy.loginAction,
                       ),
-                      if ((login || signup) && googleEnabled) ...[
+                      if ((login || signup) &&
+                          (googleEnabled || googleChecking)) ...[
                         const SizedBox(height: TokensV0.space12),
-                        OutlinedButton(
-                          key: const Key('auth-google'),
-                          onPressed: busy ? null : google,
-                          child: Text(copy.googleSignIn),
-                        ),
+                        googleButton(),
                       ],
                       if (login) ...[
                         const SizedBox(height: TokensV0.space8),

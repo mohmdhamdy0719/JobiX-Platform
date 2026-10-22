@@ -178,6 +178,15 @@ class ProfileItem {
 
   String text(String field) => (values[field] as String?) ?? '';
   bool flag(String field) => values[field] == true;
+  bool get hasMeaningfulInput => section.fields.any((field) {
+    if (field.kind == FieldKind.toggle) return false;
+    final value = values[field.name];
+    if (value is String) return value.trim().isNotEmpty;
+    if (value is Iterable) {
+      return value.any((entry) => entry is String && entry.trim().isNotEmpty);
+    }
+    return false;
+  });
   List<String> list(String field) =>
       ((values[field] as List?) ?? const []).cast<String>();
 

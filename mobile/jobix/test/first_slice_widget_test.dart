@@ -55,6 +55,7 @@ void main() {
   late FakeEntityServer entities;
   late SupabaseClient resumeClient;
   late List<String> resumeRequests;
+  late List<Map<String, dynamic>> languageRequests;
   ProviderContainer? container;
   setUpAll(loadProductionFonts);
   SupabaseClient createResumeClient() => SupabaseClient(
@@ -84,6 +85,33 @@ void main() {
             headers: {'content-type': 'application/json'},
           );
         }
+      }
+      if (request.url.path.endsWith('/rpc/read_resume_configuration')) {
+        languageRequests.add({
+          'rpc': 'read_resume_configuration',
+          'request': jsonDecode(request.body) as Map<String, dynamic>,
+        });
+        return http.Response(
+          jsonEncode({'language': 'en', 'version': 4}),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      if (request.url.path.endsWith('/rpc/save_resume_configuration')) {
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+        languageRequests.add({
+          'rpc': 'save_resume_configuration',
+          'request': requestBody,
+        });
+        return http.Response(
+          jsonEncode({
+            'profile_id': requestBody['requested_profile'],
+            'language': requestBody['language'],
+            'version': (requestBody['expected_version'] as int) + 1,
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
       }
       return http.Response(
         jsonEncode({
@@ -135,6 +163,7 @@ void main() {
     core = _CoreFixture();
     entities = FakeEntityServer(api);
     resumeRequests = [];
+    languageRequests = [];
     resumeClient = createResumeClient();
     await database.setting(
       'locale',
@@ -155,6 +184,8 @@ void main() {
     bool newEntry = false,
     bool googleEnabled = true,
     bool providerFailure = false,
+    Completer<AuthProviderSettings>? pendingProviderSettings,
+    bool settle = true,
     Size size = const Size(402, 874),
     EntityRepository? entityOverride,
   }) async {
@@ -174,6 +205,9 @@ void main() {
         authApiProvider.overrideWith((_) async => auth),
         coreApiProvider.overrideWith((_) async => core),
         authProviderSettingsProvider.overrideWith((_) async {
+          if (pendingProviderSettings != null) {
+            return pendingProviderSettings.future;
+          }
           if (providerFailure) {
             throw const FormatException('Test settings unavailable');
           }
@@ -224,14 +258,18 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(container: container!, child: const JobixApp()),
     );
-    await tester.pumpAndSettle();
-    await tester.runAsync(
-      () async => precacheImage(
-        const AssetImage('assets/brand/logo_dark.png'),
-        tester.element(find.byType(MaterialApp)),
-      ),
-    );
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+      await tester.runAsync(
+        () async => precacheImage(
+          const AssetImage('assets/brand/logo_dark.png'),
+          tester.element(find.byType(MaterialApp)),
+        ),
+      );
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
   }
@@ -243,9 +281,17 @@ void main() {
     location: 'remote',
     help: ['cv'],
   );
-  Future<void> route(WidgetTester tester, String path) async {
+  Future<void> route(
+    WidgetTester tester,
+    String path, {
+    bool settle = true,
+  }) async {
     container!.read(routerProvider).go(path);
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+    }
   }
 
   Future<void> editFirstEntityField(
@@ -1076,7 +1122,7 @@ void main() {
     },
   );
   testWidgets(
-    'returning user opens Home then Career resumes the unfinished local Personal step',
+    'returning user Home Continue opens Career without deleting local work',
     (tester) async {
       await repository.retain(
         const PersonalDraft(
@@ -1094,23 +1140,24 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('continue-career')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('personal-full_name')), findsOneWidget);
       expect(
-        tester
-            .widget<TextFormField>(find.byKey(const Key('personal-full_name')))
-            .controller!
-            .text,
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/career',
+      );
+      expect(
+        (await repository.load()).personal['full_name'],
         'Unfinished',
       );
     },
   );
   testWidgets(
-    'new registration enters Personal directly with no invented Resume language',
+    'new registration initializes Resume language from the app locale',
     (tester) async {
       await pump(tester, state: StartupState.signedIn, newEntry: true);
       expect(find.byKey(const Key('resume-en')), findsOneWidget);
-      expect(find.byKey(const Key('personal-full_name')), findsNothing);
-      expect(find.textContaining('Choose a Resume Language'), findsOneWidget);
+      expect(find.byKey(const Key('personal-full_name')), findsOneWidget);
+      expect(tester.widget<ChoiceChip>(find.byKey(const Key('resume-en'))).selected, true);
+      expect(find.textContaining('Choose a Resume language before editing'), findsNothing);
     },
   );
   testWidgets(

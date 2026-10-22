@@ -16,6 +16,7 @@ import '../career_profile/profile_sections.dart';
 import 'builder_scaffold.dart';
 import 'entity_cards.dart';
 import 'entity_editor_page.dart';
+import 'entity_labels.dart';
 import 'save_feedback.dart';
 import 'language_editor_sheet.dart';
 
@@ -44,9 +45,11 @@ class BuilderSectionsStep extends ConsumerStatefulWidget {
   const BuilderSectionsStep({
     required this.step,
     this.origin = EditorOrigin.builder,
+    this.careerSections,
     super.key,
   });
   final int step;
+  final List<EntitySection>? careerSections;
 
   /// From Review, the step is a section editor: Back and Continue return
   /// to Review, and item editors return there after saving.
@@ -227,11 +230,16 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
     final async = ref.watch(firstProfileProvider);
     final profile = async.valueOrNull;
     if (profile != null) unawaited(recover(profile));
-    final sections = stepSections[widget.step]!;
+    final sections = widget.careerSections ?? stepSections[widget.step]!;
     final next = widget.step + 1;
     final total = profile == null
         ? 0
         : sections.fold<int>(0, (sum, s) => sum + profile.count(s));
+    final standaloneTitle = widget.careerSections == null
+        ? null
+        : sections.length == 1
+        ? sectionTitle(copy, sections.single)
+        : copy.skillsAndLanguages;
     return BuilderScaffold(
       step: widget.step,
       reviewEditor: widget.fromReview,
@@ -253,6 +261,7 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
           : total == 0 && widget.step == 3
           ? copy.skipAction
           : null,
+      standaloneTitle: standaloneTitle,
       child: profile == null
           ? Center(
               child: async.hasError

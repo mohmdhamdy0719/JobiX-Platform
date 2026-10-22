@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../core_mvp/core_api.dart';
 import 'resume_preview_layout.dart';
 
@@ -32,7 +33,6 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
     with WidgetsBindingObserver {
   late final WebViewController controller;
   late Map<String, dynamic> reviewedDocument;
-  String? snapshotNotice;
   int page = 0, pages = 0;
   bool busy = false, failed = false;
   bool ownerInvalidated = false;
@@ -167,7 +167,7 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
       exportEnabled: widget.exportEnabled,
       valid: valid,
       availableCredits: availableCredits,
-      notice: snapshotNotice,
+      notice: null,
       paper: failed
           ? Center(
               child: Text(
@@ -200,14 +200,26 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
                     reviewedDocument = Map<String, dynamic>.from(replacement);
                     page = 0;
                     pages = 0;
-                    snapshotNotice = t(
-                      'Preview now shows the current server PDF snapshot. Check it, then tap Export PDF. No PDF was created.',
-                      'تعرض المعاينة الآن نسخة PDF الحالية من الخادم. راجعها ثم اضغط تصدير PDF. لم يتم إنشاء ملف.',
-                    );
                   });
                   await controller.loadHtmlString(
                     reviewedDocument['html'] as String,
                   );
+                  if (mounted && !ownerInvalidated) {
+                    final copy = AppLocalizations.of(context)!;
+                    await showDialog<void>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: Text(copy.resumeChangedSincePreview),
+                        content: Text(copy.resumeChangedSincePreview),
+                        actions: [
+                          FilledButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: Text(copy.reviewUpdatedResume),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                 }
               } finally {
                 if (mounted) setState(() => busy = false);

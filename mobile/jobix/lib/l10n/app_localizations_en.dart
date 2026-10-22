@@ -33,8 +33,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get itemSaved => 'Saved';
 
   @override
-  String get pendingBackWarning =>
-      'The earlier Save may already have reached the server. Back discards only unsubmitted edits, not that request. Its exact request is retained for Retry; no new Save will be sent.';
+  String get pendingBackWarning => 'The earlier Save may already have reached the server. Back discards only unsubmitted edits, not that request. Its exact request is retained for Retry; no new Save will be sent.';
 
   @override
   String get appTitle => 'Jobix';
@@ -49,15 +48,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signedIn => 'Signed-in foundation';
 
   @override
-  String get placeholder =>
-      'Foundation placeholder. Product screens are not implemented.';
+  String get placeholder => 'Foundation placeholder. Product screens are not implemented.';
 
   @override
   String get updateRequired => 'An app update is required.';
 
   @override
-  String get startupFailed =>
-      'Jobix could not start. Check configuration and connectivity, then retry.';
+  String get startupFailed => 'Jobix could not start. Check configuration and connectivity, then retry.';
 
   @override
   String get retry => 'Retry';
@@ -87,45 +84,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingTitleOne => 'Build a professional, ATS-friendly CV';
 
   @override
-  String get onboardingTitleTwo =>
-      'Turn your experience into professional content';
+  String get onboardingTitleTwo => 'Turn your experience into professional content';
 
   @override
   String get onboardingTitleThree => 'Create it once. Update it anytime.';
 
   @override
-  String get onboardingBodyOne =>
-      'Create a CV that clearly presents your experience, skills, and strengths — without the hassle of starting from scratch.';
+  String get onboardingBodyOne => 'Create a CV that clearly presents your experience, skills, and strengths — without the hassle of starting from scratch.';
 
   @override
-  String get onboardingBodyTwo =>
-      'Describe your experience in your own words. Jobix can help refine it into clear, professional CV-ready content — without inventing information.';
+  String get onboardingBodyTwo => 'Describe your experience in your own words. Jobix can help refine it into clear, professional CV-ready content — without inventing information.';
 
   @override
-  String get onboardingBodyThree =>
-      'Choose your CV template, export it as a PDF, and keep your information ready to update whenever your career changes.';
+  String get onboardingBodyThree => 'Choose your CV template, export it as a PDF, and keep your information ready to update whenever your career changes.';
 
   @override
   String get researchHeading => 'A little about your career';
 
   @override
-  String get contextOnly =>
-      'Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings.';
+  String get contextOnly => 'Your preferences help us tailor your future JobiX experience. You can change them anytime in Settings.';
 
   @override
   String get questionStage => 'Which best describes your current career stage?';
 
   @override
-  String get questionGoal =>
-      'What are you currently looking to achieve in your career?';
+  String get questionGoal => 'What are you currently looking to achieve in your career?';
 
   @override
-  String get questionLocation =>
-      'Where are you currently looking for job opportunities?';
+  String get questionLocation => 'Where are you currently looking for job opportunities?';
 
   @override
-  String get questionHelp =>
-      'What would you most like help with in your career?';
+  String get questionHelp => 'What would you most like help with in your career?';
 
   @override
   String get helpLimit => 'Select up to 3';
@@ -137,15 +126,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stageGraduate => 'Recent Graduate (0–1 year of experience)';
 
   @override
-  String get stageEarly =>
-      'Early-Career Professional (1–3 years of experience)';
+  String get stageEarly => 'Early-Career Professional (1–3 years of experience)';
 
   @override
   String get stageMid => 'Mid-Career Professional (4–7 years of experience)';
 
   @override
-  String get stageExperienced =>
-      'Experienced Professional (8+ years of experience)';
+  String get stageExperienced => 'Experienced Professional (8+ years of experience)';
 
   @override
   String get stageReturning => 'Return to work after a break';
@@ -208,12 +195,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcome => 'Welcome to Jobix';
 
   @override
-  String get welcomeSubtitle =>
-      'Build your career profile and prepare for your next opportunity.';
+  String get welcomeSubtitle => 'Build your career profile and prepare for your next opportunity.';
 
   @override
-  String get authSubtitle =>
-      'Your career, in your own words. Create an account or sign in to continue.';
+  String get authSubtitle => 'Your career, in your own words. Create an account or sign in to continue.';
 
   @override
   String get createAccount => 'Create account';
@@ -231,14 +216,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get googleSignIn => 'Continue with Google';
 
   @override
+  String get googleCheckingAvailability => 'Checking Google sign-in availability…';
+
+  @override
   String get forgotPassword => 'Forgot password?';
 
   @override
   String get sendReset => 'Send reset link';
 
   @override
-  String get resetSent =>
-      'If an account exists, a password reset link has been sent. Open the link to choose a new password.';
+  String get resetSent => 'If an account exists, a password reset link has been sent. Open the link to choose a new password.';
 
   @override
   String get newPassword => 'New password';
@@ -253,27 +240,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmEmail => 'Confirm your email';
 
   @override
-  String get confirmEmailBody =>
-      'Open the confirmation link in your email, then sign in. You are not signed in until your email is confirmed.';
+  String get confirmEmailBody => 'Open the confirmation link in your email, then sign in. You are not signed in until your email is confirmed.';
 
   @override
-  String get authError =>
-      'We could not complete authentication. Check your details, confirmation status and connection, then retry.';
+  String get authError => 'We could not complete authentication. Check your details, confirmation status and connection, then retry.';
 
   @override
-  String get googleUnavailable =>
-      'Google sign-in could not open. Please retry or use email and password.';
+  String get googleUnavailable => 'Google sign-in could not open. Please retry or use email and password.';
 
   @override
-  String get localWriteError =>
-      'Your changes could not be saved on this device. Please retry before leaving.';
+  String get localWriteError => 'Your changes could not be saved on this device. Please retry before leaving.';
 
   @override
   String get homeTitle => 'Your career starts here';
 
   @override
-  String get homeSubtitle =>
-      'Keep your information ready for your next opportunity.';
+  String get homeSubtitle => 'Keep your information ready for your next opportunity.';
 
   @override
   String get careerTitle => 'Career Profile #1';
@@ -288,31 +270,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personalInformation => 'Personal Information';
 
   @override
-  String get personalIntro =>
-      'Start with your contact details. You can save or leave at any time, even if this section is incomplete.';
+  String get personalIntro => 'Start with your contact details. You can save or leave at any time.';
 
   @override
-  String get moreStepsLater =>
-      'Other Career steps are not available in this slice yet.';
+  String get moreStepsLater => 'Other Career steps are not available in this slice yet.';
 
   @override
-  String get contextPending =>
-      'Your research answers are saved on this device. Retry to save them to your account.';
+  String get contextPending => 'Your research answers are saved on this device. Retry to save them to your account.';
 
   @override
-  String get profileUnavailable =>
-      'Your first Profile could not be loaded. Please retry. No local substitute Profile has been created.';
+  String get profileUnavailable => 'Your first Profile could not be loaded. Please retry. No local substitute Profile has been created.';
 
   @override
   String get resumeLanguage => 'Resume Language';
 
   @override
-  String get resumeLanguageHint =>
-      'Choose the language for Profile labels and examples. Your app language and existing content will not change.';
+  String get resumeLanguageHint => 'Choose the language for your Resume. Your app language and existing content will stay unchanged.';
 
   @override
-  String get chooseResumeLanguage =>
-      'Choose a Resume Language to start entering your information.';
+  String get chooseResumeLanguage => 'Choose a Resume language before editing your information.';
+
+  @override
+  String get changeResumeLanguage => 'Change Resume language';
+
+  @override
+  String get resumeLanguageSaveFailed => 'The Resume language could not be saved. Check your connection and try again.';
+
+  @override
+  String get resumeLanguageChanged => 'Resume language updated.';
+
+  @override
+  String get doneAction => 'Done';
 
   @override
   String get contactHeading => 'Contact Essentials';
@@ -360,12 +348,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get useEgypt => 'Use Egypt';
 
   @override
-  String get exportRequiredHint =>
-      'Name, email and phone are required for eventual export, not for saving or leaving.';
+  String get exportRequiredHint => 'Name, email and phone are required for eventual export, not for saving or leaving.';
 
   @override
-  String get phoneValidationHint =>
-      'Format checks do not verify that a phone number is active.';
+  String get phoneValidationHint => 'Format checks do not verify that a phone number is active.';
 
   @override
   String get saveAction => 'Save';
@@ -386,41 +372,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get leaveTitle => 'Discard unsaved changes?';
 
   @override
-  String get discardWarning =>
-      'Your changes haven\'t been saved. If you leave now, you\'ll lose them.';
+  String get discardWarning => 'Your changes haven\'t been saved. If you leave now, you\'ll lose them.';
 
   @override
   String get savedServer => 'Saved to your account.';
 
   @override
-  String get savedDevice =>
-      'Draft saved on this device only, not to your account. Save explicitly when online. It may be lost if you uninstall the app or clear its data.';
+  String get savedDevice => 'Draft saved. You can finish it later; drafts don\'t appear in your Resume.';
 
   @override
-  String get localDraftsUnavailable =>
-      'Drafts on this device could not be read. Your saved account data is unchanged.';
+  String get draftNeedsInformation => 'Add some information before saving a draft.';
 
   @override
-  String get saveFailed =>
-      'Could not confirm a save to your account. Keep your edits here and try again.';
+  String get saveDraftPrompt => 'Some required details are missing. Save this as a draft and finish it later.';
+
+  @override
+  String get incompleteEntry => 'This entry is incomplete. Complete the required fields before adding it to your Resume.';
+
+  @override
+  String get resumeChangedSincePreview => 'The saved Resume changed since this preview. Review the updated version before exporting.';
+
+  @override
+  String get reviewUpdatedResume => 'Review this version';
+
+  @override
+  String get skillsAndLanguages => 'Skills and Languages';
+
+  @override
+  String get localDraftsUnavailable => 'Drafts on this device could not be read. Your saved account data is unchanged.';
+
+  @override
+  String get saveFailed => 'Could not confirm a save to your account. Keep your edits here and try again.';
 
   @override
   String get invalidEmail => 'Enter a valid email address.';
 
   @override
-  String get invalidPhone =>
-      'Enter a plausible phone number using digits, spaces, parentheses or hyphens.';
+  String get invalidPhone => 'Enter a plausible phone number using digits, spaces, parentheses or hyphens.';
 
   @override
-  String get invalidLink =>
-      'Use a full HTTPS link, for example https://linkedin.com/in/your-name.';
+  String get invalidLink => 'Use a full HTTPS link, for example https://linkedin.com/in/your-name.';
 
   @override
   String get conflictTitle => 'Your Profile changed elsewhere';
 
   @override
-  String get conflictBody =>
-      'Your local work is still safe. Keep the saved server version or explicitly reapply your local work.';
+  String get conflictBody => 'Your local work is still safe. Keep the saved server version or explicitly reapply your local work.';
 
   @override
   String get keepServer => 'Keep server version';
@@ -429,8 +426,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reapplyLocal => 'Reapply local work';
 
   @override
-  String get outcomeUnknown =>
-      'The previous save result is not yet confirmed. Retry the save before discarding; already-saved server data cannot be undone here.';
+  String get outcomeUnknown => 'The previous save result is not yet confirmed. Retry the save before discarding; already-saved server data cannot be undone here.';
 
   @override
   String get showPassword => 'Show or hide password';
@@ -439,16 +435,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginAction => 'Sign in';
 
   @override
-  String get loginSubtitle =>
-      'Welcome back. Sign in to continue your career profile.';
+  String get loginSubtitle => 'Welcome back. Sign in to continue your career profile.';
 
   @override
-  String get signupSubtitle =>
-      'Create an account to keep your career information together.';
+  String get signupSubtitle => 'Create an account to keep your career information together.';
 
   @override
-  String get providerSettingsUnavailable =>
-      'Other sign-in options could not be verified. Email sign-in is still available.';
+  String get providerSettingsUnavailable => 'Other sign-in options could not be verified. Email sign-in is still available.';
 
   @override
   String get passwordRequired => 'Enter your password.';
@@ -457,16 +450,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hidePassword => 'Hide password';
 
   @override
-  String get startupStorageFailed =>
-      'Jobix could not open the protected local store. Retry to continue; your data has not been reset.';
+  String get startupStorageFailed => 'Jobix could not open the protected local store. Retry to continue; your data has not been reset.';
 
   @override
-  String get startupSessionFailed =>
-      'Jobix could not restore your secure session. Check your connection and retry.';
+  String get startupSessionFailed => 'Jobix could not restore your secure session. Check your connection and retry.';
 
   @override
-  String get startupPolicyFailed =>
-      'Jobix could not verify the required app policy. Check your connection and retry.';
+  String get startupPolicyFailed => 'Jobix could not verify the required app policy. Check your connection and retry.';
 
   @override
   String get haveAccount => 'Already have an account? Sign in';
@@ -475,12 +465,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get needAccount => 'New to Jobix? Create an account';
 
   @override
-  String get legalLinksUnavailable =>
-      'By creating an account, you acknowledge the Terms of Service and Privacy Policy. Their links are not configured yet.';
+  String get legalLinksUnavailable => 'By creating an account, you acknowledge the Terms of Service and Privacy Policy. Their links are not configured yet.';
 
   @override
-  String get researchLoadError =>
-      'Your saved career context could not be loaded. Your existing answers have not been changed.';
+  String get researchLoadError => 'Your saved career context could not be loaded. Your existing answers have not been changed.';
 
   @override
   String researchStep(int number) {
@@ -488,12 +476,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get locationDataMissing =>
-      'Enter a city, or choose one you have saved before.';
+  String get locationDataMissing => 'Enter a city, or choose one you have saved before.';
 
   @override
-  String get signOutLocalWarning =>
-      'Signing out removes unsaved changes kept only on this device. Information already saved to your account will remain.';
+  String get signOutLocalWarning => 'Signing out removes unsaved changes kept only on this device. Information already saved to your account will remain.';
 
   @override
   String get homeNav => 'Home';
@@ -517,15 +503,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get careerPageTitle => 'Your Career Profile';
 
   @override
-  String get careerPageSubtitle =>
-      'Keep your professional information accurate and ready to use.';
+  String get careerPageSubtitle => 'Keep your professional information accurate and ready to use.';
 
   @override
   String get activeProfile => 'Your current profile';
 
   @override
-  String get profileTruthNote =>
-      'This profile is your career information. Resume tools and other profile sections are not available in this release.';
+  String get profileTruthNote => 'This profile is your career information. Resume tools and other profile sections are not available in this release.';
 
   @override
   String get notEntered => 'Not entered';
@@ -534,8 +518,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editPersonalInformation => 'Edit Personal Information';
 
   @override
-  String get careerOtherSectionsUnavailable =>
-      'Additional profile sections are not available in this release.';
+  String get careerOtherSectionsUnavailable => 'Additional profile sections are not available in this release.';
 
   @override
   String get arabicLanguage => 'Arabic';
@@ -550,8 +533,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountInformation => 'Account Information';
 
   @override
-  String get accountInfoUnavailable =>
-      'Account information is temporarily unavailable.';
+  String get accountInfoUnavailable => 'Account information is temporarily unavailable.';
 
   @override
   String get personalInfoSettingsHint => 'Edit your saved contact information';
@@ -569,8 +551,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get creditHistoryTitle => 'Credit History';
 
   @override
-  String get creditHistorySubtitle =>
-      'Server-recorded changes to your available Credits.';
+  String get creditHistorySubtitle => 'Server-recorded changes to your available Credits.';
 
   @override
   String get supportSection => 'Support';
@@ -597,16 +578,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountActionsSection => 'Account Actions';
 
   @override
-  String get settingsFooter =>
-      'Jobix keeps your career information factual and under your control.';
+  String get settingsFooter => 'Jobix keeps your career information factual and under your control.';
 
   @override
-  String get creditHistoryLoadFailed =>
-      'Credit history could not be loaded. No history has been assumed.';
+  String get creditHistoryLoadFailed => 'Credit history could not be loaded. No history has been assumed.';
 
   @override
-  String get creditHistoryEmpty =>
-      'No credit transactions are available for this account yet.';
+  String get creditHistoryEmpty => 'No credit transactions are available for this account yet.';
 
   @override
   String get moreTransactionsFailed => 'More transactions could not be loaded.';
@@ -685,8 +663,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionLanguages => 'Languages';
 
   @override
-  String get emptyExperience =>
-      'No roles added yet. Add one now or skip this step.';
+  String get emptyExperience => 'No roles added yet. Add one now or skip this step.';
 
   @override
   String get emptySection => 'Nothing added yet.';
@@ -752,19 +729,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldInstitution => 'Institution';
 
   @override
-  String get institutionAutocompleteHint =>
-      'Type an institution name or enter your own.';
+  String get institutionAutocompleteHint => 'Type an institution name or enter your own.';
 
   @override
   String get fieldStudy => 'Field of study';
 
   @override
-  String get studyFieldAutocompleteHint =>
-      'Search or enter your own field of study.';
+  String get studyFieldAutocompleteHint => 'Search or enter your own field of study.';
 
   @override
-  String get educationSuggestionsFallback =>
-      'Common suggestions only; you can still enter any value.';
+  String get educationSuggestionsFallback => 'Common suggestions only; you can still enter any value.';
 
   @override
   String get clearField => 'Clear field';
@@ -835,12 +809,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get problemRequired => 'This is required.';
 
   @override
-  String get descriptionMinimum =>
-      'Write at least 20 characters for this to count toward completeness.';
+  String get descriptionMinimum => 'Write at least 20 characters for this to count toward completeness.';
 
   @override
-  String get incompleteSaveNote =>
-      'You can save now and finish the details later; incomplete items don\'t count toward completeness.';
+  String get incompleteSaveNote => 'You can save now and finish the details later; incomplete items don\'t count toward completeness.';
 
   @override
   String get profBasic => 'Basic';
@@ -870,8 +842,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suggestedSkills => 'Suggestions';
 
   @override
-  String get saveConflict =>
-      'This profile changed on another device. Reload to see the latest version; your edits stay on this device.';
+  String get saveConflict => 'This profile changed on another device. Reload to see the latest version; your edits stay on this device.';
 
   @override
   String get reloadAction => 'Reload';
@@ -887,9 +858,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewIntro => 'Check each section. Tap Edit to change anything.';
-
-  @override
-  String get doneAction => 'Done';
 
   @override
   String get completenessLabel => 'Profile completeness';
@@ -923,26 +891,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contactSection => 'Contact';
 
   @override
-  String get authRateLimited =>
-      'Too many emails were requested. Wait a while, then try again.';
+  String get authRateLimited => 'Too many emails were requested. Wait a while, then try again.';
 
   @override
-  String get authNotConfirmed =>
-      'Confirm your email first. Check your inbox or resend the link.';
+  String get authNotConfirmed => 'Confirm your email first. Check your inbox or resend the link.';
 
   @override
   String get authInvalidCredentials => 'Email or password is incorrect.';
 
   @override
-  String get authWeakPassword =>
-      'Choose a stronger password (at least 8 characters).';
+  String get authWeakPassword => 'Choose a stronger password (at least 8 characters).';
 
   @override
   String get authInvalidEmail => 'Enter a valid email address.';
 
   @override
-  String get authUserExists =>
-      'An account already exists for this email. Sign in instead.';
+  String get authUserExists => 'An account already exists for this email. Sign in instead.';
 
   @override
   String get authNetwork => 'No connection. Check your internet and try again.';
@@ -957,8 +921,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notSavedYet => 'Not saved yet';
 
   @override
-  String get reviewPersonalMissing =>
-      'Add your name, email and phone to export a resume later.';
+  String get reviewPersonalMissing => 'Add your name, email and phone to export a resume later.';
 
   @override
   String welcomeBack(Object name) {
@@ -984,12 +947,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get itemChangedElsewhere =>
-      'This item was changed on another device after you started editing. Choose which version to keep.';
+  String get itemChangedElsewhere => 'This item was changed on another device after you started editing. Choose which version to keep.';
 
   @override
-  String get itemRemovedElsewhere =>
-      'This item was removed on another device after you started editing. Choose whether to keep it removed or add it back with your changes.';
+  String get itemRemovedElsewhere => 'This item was removed on another device after you started editing. Choose whether to keep it removed or add it back with your changes.';
 
   @override
   String get keepServerVersion => 'Use the latest version';
@@ -998,8 +959,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reapplyMyChanges => 'Keep my changes';
 
   @override
-  String get exportRateLimited =>
-      'You have reached the export limit. Please wait before retrying the saved request.';
+  String get exportRateLimited => 'You have reached the export limit. Please wait before retrying the saved request.';
 
   @override
   String exportRateLimitedRetry(int seconds) {
@@ -1007,12 +967,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get exportTemporarilyUnavailable =>
-      'Service is temporarily unavailable. Please try again later.';
+  String get exportTemporarilyUnavailable => 'Service is temporarily unavailable. Please try again later.';
 
   @override
-  String get exportInProgress =>
-      'An export for this profile is already in progress. Check its status before starting another.';
+  String get exportInProgress => 'An export for this profile is already in progress. Check its status before starting another.';
 
   @override
   String get backToReview => 'Back to Review';

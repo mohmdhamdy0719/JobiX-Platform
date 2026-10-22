@@ -107,6 +107,9 @@ class _PersonalInformationPageState
           value.resumeLanguage == null &&
           authEmail != null &&
           authEmail.isNotEmpty;
+      final appLanguage = Localizations.localeOf(context).languageCode == 'ar'
+          ? 'ar'
+          : 'en';
       draft =
           local ??
           PersonalDraft(
@@ -115,7 +118,8 @@ class _PersonalInformationPageState
             personal: prefillEmail
                 ? {...value.personal, 'email': authEmail}
                 : value.personal,
-            resumeLanguage: value.resumeLanguage,
+            resumeLanguage: value.resumeLanguage ??
+                (prefillEmail ? appLanguage : null),
           );
       for (final field in personalFields) {
         controllers[field]!.text = draft!.personal[field] ?? '';
@@ -699,59 +703,71 @@ class _PersonalInformationPageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SectionHeading(
-                title: copy.resumeLanguage,
-                subtitle: copy.resumeLanguageHint,
-              ),
-              const SizedBox(height: TokensV0.space16),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: TokensV0.secondarySurface,
-                  borderRadius: BorderRadius.circular(TokensV0.controlRadius),
+              if (widget.origin != 'career') ...[
+                SectionHeading(
+                  title: copy.resumeLanguage,
+                  subtitle: copy.resumeLanguageHint,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        key: const Key('resume-en'),
-                        label: const Text('English (LTR)'),
-                        showCheckmark: true,
-                        checkmarkColor: TokensV0.onPrimary,
-                        labelStyle: TokensV0.languageChoiceLabel(
-                          languageCode: 'en',
-                          selected: language == 'en',
-                        ),
-                        selectedColor: TokensV0.primary,
-                        backgroundColor: TokensV0.secondarySurface,
-                        selected: language == 'en',
-                        onSelected: busy || hasPendingSave
-                            ? null
-                            : (_) => retain(draft!.language('en')),
-                      ),
+                const SizedBox(height: TokensV0.space16),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: TokensV0.secondarySurface,
+                    borderRadius: BorderRadius.circular(
+                      TokensV0.controlRadius,
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: ChoiceChip(
-                        key: const Key('resume-ar'),
-                        label: const Text('العربية (RTL)'),
-                        showCheckmark: true,
-                        checkmarkColor: TokensV0.onPrimary,
-                        labelStyle: TokensV0.languageChoiceLabel(
-                          languageCode: 'ar',
-                          selected: language == 'ar',
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ChoiceChip(
+                            key: const Key('resume-en'),
+                            label: const Text('English (LTR)'),
+                            showCheckmark: true,
+                            checkmarkColor: TokensV0.onPrimary,
+                            labelStyle: TokensV0.languageChoiceLabel(
+                              languageCode: 'en',
+                              selected: language == 'en',
+                            ),
+                            selectedColor: TokensV0.primary,
+                            backgroundColor: TokensV0.secondarySurface,
+                            selected: language == 'en',
+                            onSelected: busy || hasPendingSave
+                                ? null
+                                : (_) => retain(draft!.language('en')),
+                          ),
                         ),
-                        selectedColor: TokensV0.primary,
-                        backgroundColor: TokensV0.secondarySurface,
-                        selected: language == 'ar',
-                        onSelected: busy || hasPendingSave
-                            ? null
-                            : (_) => retain(draft!.language('ar')),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ChoiceChip(
+                            key: const Key('resume-ar'),
+                            label: const Text('العربية (RTL)'),
+                            showCheckmark: true,
+                            checkmarkColor: TokensV0.onPrimary,
+                            labelStyle: TokensV0.languageChoiceLabel(
+                              languageCode: 'ar',
+                              selected: language == 'ar',
+                            ),
+                            selectedColor: TokensV0.primary,
+                            backgroundColor: TokensV0.secondarySurface,
+                            selected: language == 'ar',
+                            onSelected: busy || hasPendingSave
+                                ? null
+                                : (_) => retain(draft!.language('ar')),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

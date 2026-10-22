@@ -224,7 +224,7 @@ void main() {
   );
 
   test(
-    'requires explicit saved-version confirmation for unsaved and ambiguous edits',
+    'local unsent edits preview the saved snapshot while uncertain saves stay guarded',
     () async {
       const draftState = ResumePreviewDraftState(
         hasUnsentEdits: true,
@@ -236,22 +236,9 @@ void main() {
         configuration: _configuration(),
         drafts: draftState,
       );
-      await expectLater(
-        loader.load(),
-        throwsA(
-          isA<ResumePreviewNeedsConfirmation>().having(
-            (error) => error.fingerprint,
-            'fingerprint',
-            'draft-fingerprint',
-          ),
-        ),
-      );
-      expect(
-        (await loader.load(
-          confirmedDraftFingerprint: 'draft-fingerprint',
-        )).hasUnsentEdits,
-        isTrue,
-      );
+      final preview = await loader.load();
+      expect(preview.hasUnsentEdits, isTrue);
+      expect(preview.document['profile_version'], 3);
 
       final unresolved = _loader(
         profiles: [_profile(3), _profile(3)],

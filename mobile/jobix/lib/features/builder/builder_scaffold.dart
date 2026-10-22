@@ -44,6 +44,7 @@ class BuilderScaffold extends StatelessWidget {
     this.continueLabel,
     this.continueKey,
     this.reviewEditor = false,
+    this.standaloneTitle,
     super.key,
   });
   final int step;
@@ -53,6 +54,7 @@ class BuilderScaffold extends StatelessWidget {
   final String? meta, continueLabel;
   final bool busy;
   final bool reviewEditor;
+  final String? standaloneTitle;
   final Key? continueKey;
 
   @override
@@ -61,7 +63,7 @@ class BuilderScaffold extends StatelessWidget {
       onBack: busy ? () {} : onBack,
       child: ResumeJourneyRecorder(
         step: step,
-        enabled: !reviewEditor,
+        enabled: !reviewEditor && standaloneTitle == null,
         child: frame(context),
       ),
     );
@@ -70,6 +72,26 @@ class BuilderScaffold extends StatelessWidget {
   Widget frame(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
     final title = stepTitle(copy, step);
+    if (standaloneTitle != null) {
+      return SliceScaffold(
+        title: standaloneTitle!,
+        singleLineTitle: true,
+        actions: const [CreditsPill(compact: true)],
+        leading: IconButton(
+          key: const Key('career-section-back'),
+          tooltip: copy.backAction,
+          icon: const BackButtonIcon(),
+          onPressed: busy ? null : onBack,
+        ),
+        bottom: PrimaryAction(
+          key: const Key('career-section-back-bottom'),
+          label: copy.backAction,
+          busy: busy,
+          onPressed: onBack,
+        ),
+        child: child,
+      );
+    }
     if (reviewEditor) {
       return SliceScaffold(
         title: title,

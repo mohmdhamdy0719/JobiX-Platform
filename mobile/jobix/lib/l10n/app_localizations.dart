@@ -62,8 +62,7 @@ import 'app_localizations_en.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,8 +70,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -84,18 +82,17 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
-    Locale('en'),
+    Locale('en')
   ];
 
   /// No description provided for @sectionVolunteer.
@@ -512,6 +509,12 @@ abstract class AppLocalizations {
   /// **'Continue with Google'**
   String get googleSignIn;
 
+  /// No description provided for @googleCheckingAvailability.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking Google sign-in availability…'**
+  String get googleCheckingAvailability;
+
   /// No description provided for @forgotPassword.
   ///
   /// In en, this message translates to:
@@ -617,7 +620,7 @@ abstract class AppLocalizations {
   /// No description provided for @personalIntro.
   ///
   /// In en, this message translates to:
-  /// **'Start with your contact details. You can save or leave at any time, even if this section is incomplete.'**
+  /// **'Start with your contact details. You can save or leave at any time.'**
   String get personalIntro;
 
   /// No description provided for @moreStepsLater.
@@ -647,14 +650,38 @@ abstract class AppLocalizations {
   /// No description provided for @resumeLanguageHint.
   ///
   /// In en, this message translates to:
-  /// **'Choose the language for Profile labels and examples. Your app language and existing content will not change.'**
+  /// **'Choose the language for your Resume. Your app language and existing content will stay unchanged.'**
   String get resumeLanguageHint;
 
   /// No description provided for @chooseResumeLanguage.
   ///
   /// In en, this message translates to:
-  /// **'Choose a Resume Language to start entering your information.'**
+  /// **'Choose a Resume language before editing your information.'**
   String get chooseResumeLanguage;
+
+  /// No description provided for @changeResumeLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Resume language'**
+  String get changeResumeLanguage;
+
+  /// No description provided for @resumeLanguageSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The Resume language could not be saved. Check your connection and try again.'**
+  String get resumeLanguageSaveFailed;
+
+  /// No description provided for @resumeLanguageChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume language updated.'**
+  String get resumeLanguageChanged;
+
+  /// No description provided for @doneAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneAction;
 
   /// No description provided for @contactHeading.
   ///
@@ -809,8 +836,44 @@ abstract class AppLocalizations {
   /// No description provided for @savedDevice.
   ///
   /// In en, this message translates to:
-  /// **'Draft saved on this device only, not to your account. Save explicitly when online. It may be lost if you uninstall the app or clear its data.'**
+  /// **'Draft saved. You can finish it later; drafts don\'t appear in your Resume.'**
   String get savedDevice;
+
+  /// No description provided for @draftNeedsInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add some information before saving a draft.'**
+  String get draftNeedsInformation;
+
+  /// No description provided for @saveDraftPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Some required details are missing. Save this as a draft and finish it later.'**
+  String get saveDraftPrompt;
+
+  /// No description provided for @incompleteEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'This entry is incomplete. Complete the required fields before adding it to your Resume.'**
+  String get incompleteEntry;
+
+  /// No description provided for @resumeChangedSincePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved Resume changed since this preview. Review the updated version before exporting.'**
+  String get resumeChangedSincePreview;
+
+  /// No description provided for @reviewUpdatedResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Review this version'**
+  String get reviewUpdatedResume;
+
+  /// No description provided for @skillsAndLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills and Languages'**
+  String get skillsAndLanguages;
 
   /// No description provided for @localDraftsUnavailable.
   ///
@@ -1718,12 +1781,6 @@ abstract class AppLocalizations {
   /// **'Check each section. Tap Edit to change anything.'**
   String get reviewIntro;
 
-  /// No description provided for @doneAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get doneAction;
-
   /// No description provided for @completenessLabel.
   ///
   /// In en, this message translates to:
@@ -1929,8 +1986,7 @@ abstract class AppLocalizations {
   String get backToReview;
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -1939,26 +1995,25 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['ar', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['ar', 'en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'ar':
-      return AppLocalizationsAr();
-    case 'en':
-      return AppLocalizationsEn();
+    case 'ar': return AppLocalizationsAr();
+    case 'en': return AppLocalizationsEn();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
+    'that was used.'
   );
 }

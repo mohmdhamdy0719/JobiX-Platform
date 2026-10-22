@@ -259,8 +259,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
         setState(() {
           confirmedDraftFingerprint = error.fingerprint;
           message = t(
-            'Some edits or a save are not confirmed. Preview will show only the latest version currently saved on the server; it will not save, retry, or discard local work. Select Preview saved version to continue.',
-            'بعض التعديلات أو عملية الحفظ غير مؤكدة. ستعرض المعاينة أحدث نسخة محفوظة حاليًا على الخادم فقط، ولن تحفظ العمل المحلي أو تعيد إرساله أو تحذفه. اختر معاينة النسخة المحفوظة للمتابعة.',
+            'A save is still awaiting server confirmation. Retry that same save before Preview; Preview will not retry, save, or discard it.',
+            'ما زال حفظٌ ما بانتظار تأكيد الخادم. أعد محاولة الحفظ نفسه قبل المعاينة؛ لن تعيد المعاينة المحاولة أو تحفظ أو تتجاهل التغييرات.',
           );
         });
       }
@@ -611,13 +611,11 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                 PrimaryAction(
                   label: t(
                     confirmedDraftFingerprint != null ||
-                            languageDirty ||
                             pending ||
                             layoutPending
                         ? 'Preview saved version'
                         : 'Preview & Export',
                     confirmedDraftFingerprint != null ||
-                            languageDirty ||
                             pending
                         ? 'معاينة النسخة المحفوظة'
                         : 'معاينة وتصدير',
@@ -675,7 +673,9 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                               if (mounted) context.go('/career');
                             },
                             exportEnabled:
-                                exportKey.currentState?.creationEnabled == true,
+                                exportKey.currentState?.creationEnabled == true &&
+                                    !pending &&
+                                    !layoutPending,
                             onExport: _exportReviewedDocument,
                           ),
                         ),

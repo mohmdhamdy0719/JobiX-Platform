@@ -33,8 +33,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get itemSaved => 'محفوظ';
 
   @override
-  String get pendingBackWarning =>
-      'قد يكون طلب الحفظ السابق قد وصل إلى الخادم. الرجوع يلغي التعديلات غير المرسلة فقط، وليس ذلك الطلب. سنحتفظ بالطلب نفسه لإعادة المحاولة، ولن نرسل طلب حفظ جديدًا.';
+  String get pendingBackWarning => 'قد يكون طلب الحفظ السابق قد وصل إلى الخادم. الرجوع يلغي التعديلات غير المرسلة فقط، وليس ذلك الطلب. سنحتفظ بالطلب نفسه لإعادة المحاولة، ولن نرسل طلب حفظ جديدًا.';
 
   @override
   String get appTitle => 'Jobix';
@@ -55,8 +54,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get updateRequired => 'يلزم تحديث التطبيق.';
 
   @override
-  String get startupFailed =>
-      'تعذّر تشغيل Jobix. تحقق من الإعدادات والاتصال ثم أعد المحاولة.';
+  String get startupFailed => 'تعذّر تشغيل Jobix. تحقق من الإعدادات والاتصال ثم أعد المحاولة.';
 
   @override
   String get retry => 'إعادة المحاولة';
@@ -83,8 +81,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get languageSwitch => 'لغة التطبيق';
 
   @override
-  String get onboardingTitleOne =>
-      'أنشئ سيرة ذاتية احترافية ومتوافقة مع أنظمة تتبع المتقدمين';
+  String get onboardingTitleOne => 'أنشئ سيرة ذاتية احترافية ومتوافقة مع أنظمة تتبع المتقدمين';
 
   @override
   String get onboardingTitleTwo => 'حوّل خبرتك إلى محتوى احترافي';
@@ -93,23 +90,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get onboardingTitleThree => 'أنشئها مرة واحدة. وحدّثها في أي وقت.';
 
   @override
-  String get onboardingBodyOne =>
-      'أنشئ سيرة ذاتية تعرض خبراتك ومهاراتك ونقاط قوتك بوضوح — دون عناء البدء من الصفر.';
+  String get onboardingBodyOne => 'أنشئ سيرة ذاتية تعرض خبراتك ومهاراتك ونقاط قوتك بوضوح — دون عناء البدء من الصفر.';
 
   @override
-  String get onboardingBodyTwo =>
-      'صِف خبرتك بكلماتك. يساعدك Jobix على صياغتها في محتوى واضح واحترافي مناسب للسيرة الذاتية — دون اختلاق معلومات.';
+  String get onboardingBodyTwo => 'صِف خبرتك بكلماتك. يساعدك Jobix على صياغتها في محتوى واضح واحترافي مناسب للسيرة الذاتية — دون اختلاق معلومات.';
 
   @override
-  String get onboardingBodyThree =>
-      'اختر قالب سيرتك الذاتية وصدّرها بصيغة PDF واحتفظ بمعلوماتك جاهزة للتحديث مع كل تغيير في مسيرتك المهنية.';
+  String get onboardingBodyThree => 'اختر قالب سيرتك الذاتية وصدّرها بصيغة PDF واحتفظ بمعلوماتك جاهزة للتحديث مع كل تغيير في مسيرتك المهنية.';
 
   @override
   String get researchHeading => 'لنتعرّف على مسيرتك المهنية';
 
   @override
-  String get contextOnly =>
-      'تساعدنا تفضيلاتك على تخصيص تجربة JobiX مستقبلًا. يمكنك تغييرها في أي وقت من الإعدادات.';
+  String get contextOnly => 'تساعدنا تفضيلاتك على تخصيص تجربة JobiX مستقبلًا. يمكنك تغييرها في أي وقت من الإعدادات.';
 
   @override
   String get questionStage => 'أي وصف يناسب مرحلتك المهنية الحالية؟';
@@ -121,8 +114,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get questionLocation => 'أين تبحث حاليًا عن فرص عمل؟';
 
   @override
-  String get questionHelp =>
-      'ما أكثر ما تحتاج إلى مساعدة فيه في مسيرتك المهنية؟';
+  String get questionHelp => 'ما أكثر ما تحتاج إلى مساعدة فيه في مسيرتك المهنية؟';
 
   @override
   String get helpLimit => 'اختر حتى 3 إجابات';
@@ -206,8 +198,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get welcomeSubtitle => 'أنشئ ملفك المهني واستعد لفرصتك القادمة.';
 
   @override
-  String get authSubtitle =>
-      'مسيرتك المهنية بكلماتك. أنشئ حسابًا أو سجّل الدخول للمتابعة.';
+  String get authSubtitle => 'مسيرتك المهنية بكلماتك. أنشئ حسابًا أو سجّل الدخول للمتابعة.';
 
   @override
   String get createAccount => 'إنشاء حساب';
@@ -225,14 +216,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get googleSignIn => 'المتابعة باستخدام Google';
 
   @override
+  String get googleCheckingAvailability => 'جارٍ التحقق من توفر تسجيل الدخول باستخدام Google…';
+
+  @override
   String get forgotPassword => 'نسيت كلمة المرور؟';
 
   @override
   String get sendReset => 'إرسال رابط إعادة التعيين';
 
   @override
-  String get resetSent =>
-      'إذا كان الحساب موجودًا، فقد أُرسل رابط إعادة تعيين كلمة المرور. افتح الرابط لاختيار كلمة مرور جديدة.';
+  String get resetSent => 'إذا كان الحساب موجودًا، فقد أُرسل رابط إعادة تعيين كلمة المرور. افتح الرابط لاختيار كلمة مرور جديدة.';
 
   @override
   String get newPassword => 'كلمة المرور الجديدة';
@@ -247,20 +240,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get confirmEmail => 'تأكيد بريدك الإلكتروني';
 
   @override
-  String get confirmEmailBody =>
-      'افتح رابط التأكيد في بريدك الإلكتروني، ثم سجّل الدخول. لن يتم تسجيل دخولك قبل تأكيد البريد.';
+  String get confirmEmailBody => 'افتح رابط التأكيد في بريدك الإلكتروني، ثم سجّل الدخول. لن يتم تسجيل دخولك قبل تأكيد البريد.';
 
   @override
-  String get authError =>
-      'تعذّر إكمال المصادقة. تحقق من بياناتك وتأكيد بريدك والاتصال ثم أعد المحاولة.';
+  String get authError => 'تعذّر إكمال المصادقة. تحقق من بياناتك وتأكيد بريدك والاتصال ثم أعد المحاولة.';
 
   @override
-  String get googleUnavailable =>
-      'تعذّر فتح تسجيل الدخول باستخدام Google. أعد المحاولة أو استخدم البريد وكلمة المرور.';
+  String get googleUnavailable => 'تعذّر فتح تسجيل الدخول باستخدام Google. أعد المحاولة أو استخدم البريد وكلمة المرور.';
 
   @override
-  String get localWriteError =>
-      'تعذّر حفظ تغييراتك على هذا الجهاز. أعد المحاولة قبل المغادرة.';
+  String get localWriteError => 'تعذّر حفظ تغييراتك على هذا الجهاز. أعد المحاولة قبل المغادرة.';
 
   @override
   String get homeTitle => 'مسيرتك المهنية تبدأ هنا';
@@ -281,31 +270,37 @@ class AppLocalizationsAr extends AppLocalizations {
   String get personalInformation => 'المعلومات الشخصية';
 
   @override
-  String get personalIntro =>
-      'ابدأ ببيانات التواصل. يمكنك الحفظ أو المغادرة في أي وقت، حتى لو لم تكمل هذا القسم.';
+  String get personalIntro => 'ابدأ ببيانات التواصل. يمكنك الحفظ أو المغادرة في أي وقت.';
 
   @override
-  String get moreStepsLater =>
-      'الخطوات المهنية الأخرى غير متاحة في هذه المرحلة بعد.';
+  String get moreStepsLater => 'الخطوات المهنية الأخرى غير متاحة في هذه المرحلة بعد.';
 
   @override
-  String get contextPending =>
-      'إجاباتك محفوظة على هذا الجهاز. أعد المحاولة لحفظها في حسابك.';
+  String get contextPending => 'إجاباتك محفوظة على هذا الجهاز. أعد المحاولة لحفظها في حسابك.';
 
   @override
-  String get profileUnavailable =>
-      'تعذّر تحميل ملفك المهني الأول. أعد المحاولة. لم يتم إنشاء ملف محلي بديل.';
+  String get profileUnavailable => 'تعذّر تحميل ملفك المهني الأول. أعد المحاولة. لم يتم إنشاء ملف محلي بديل.';
 
   @override
   String get resumeLanguage => 'لغة السيرة الذاتية';
 
   @override
-  String get resumeLanguageHint =>
-      'اختر لغة أسماء الحقول والأمثلة. لن تتغيّر لغة التطبيق أو محتواك الحالي.';
+  String get resumeLanguageHint => 'اختر لغة سيرتك الذاتية. ستبقى لغة التطبيق ومحتواك الحالي دون تغيير.';
 
   @override
-  String get chooseResumeLanguage =>
-      'اختر لغة السيرة الذاتية لبدء إدخال معلوماتك.';
+  String get chooseResumeLanguage => 'اختر لغة السيرة الذاتية قبل تعديل بياناتك.';
+
+  @override
+  String get changeResumeLanguage => 'تغيير لغة السيرة الذاتية';
+
+  @override
+  String get resumeLanguageSaveFailed => 'تعذّر حفظ لغة السيرة الذاتية. تحقق من الاتصال ثم أعد المحاولة.';
+
+  @override
+  String get resumeLanguageChanged => 'تم تحديث لغة السيرة الذاتية.';
+
+  @override
+  String get doneAction => 'تم';
 
   @override
   String get contactHeading => 'بيانات التواصل الأساسية';
@@ -353,12 +348,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get useEgypt => 'استخدام مصر';
 
   @override
-  String get exportRequiredHint =>
-      'الاسم والبريد والهاتف مطلوبة للتصدير لاحقًا، وليست شرطًا للحفظ أو المغادرة.';
+  String get exportRequiredHint => 'الاسم والبريد والهاتف مطلوبة للتصدير لاحقًا، وليست شرطًا للحفظ أو المغادرة.';
 
   @override
-  String get phoneValidationHint =>
-      'التحقق من الصيغة لا يعني التحقق من أن الرقم يعمل.';
+  String get phoneValidationHint => 'التحقق من الصيغة لا يعني التحقق من أن الرقم يعمل.';
 
   @override
   String get saveAction => 'حفظ';
@@ -385,34 +378,46 @@ class AppLocalizationsAr extends AppLocalizations {
   String get savedServer => 'تم الحفظ في حسابك.';
 
   @override
-  String get savedDevice =>
-      'حُفظت المسودة على هذا الجهاز فقط، وليس في حسابك. اضغط حفظ عند الاتصال بالإنترنت. قد تفقدها عند حذف التطبيق أو بياناته.';
+  String get savedDevice => 'تم حفظ المسودة. يمكنك إكمالها لاحقًا؛ لن تظهر المسودات في سيرتك الذاتية.';
 
   @override
-  String get localDraftsUnavailable =>
-      'تعذرت قراءة المسودات على هذا الجهاز. بيانات حسابك المحفوظة لم تتغير.';
+  String get draftNeedsInformation => 'أضف بعض المعلومات قبل حفظ المسودة.';
 
   @override
-  String get saveFailed =>
-      'تعذر تأكيد الحفظ في حسابك. احتفظ بتعديلاتك هنا وأعد المحاولة.';
+  String get saveDraftPrompt => 'بعض البيانات المطلوبة ناقصة. احفظها كمسودة وأكملها لاحقًا.';
+
+  @override
+  String get incompleteEntry => 'هذه البيانات غير مكتملة. أكمل الحقول المطلوبة قبل إضافتها إلى سيرتك الذاتية.';
+
+  @override
+  String get resumeChangedSincePreview => 'تغيّرت السيرة المحفوظة منذ فتح هذه المعاينة. راجع النسخة المحدّثة قبل التصدير.';
+
+  @override
+  String get reviewUpdatedResume => 'مراجعة هذه النسخة';
+
+  @override
+  String get skillsAndLanguages => 'المهارات واللغات';
+
+  @override
+  String get localDraftsUnavailable => 'تعذرت قراءة المسودات على هذا الجهاز. بيانات حسابك المحفوظة لم تتغير.';
+
+  @override
+  String get saveFailed => 'تعذر تأكيد الحفظ في حسابك. احتفظ بتعديلاتك هنا وأعد المحاولة.';
 
   @override
   String get invalidEmail => 'أدخل بريدًا إلكترونيًا صحيحًا.';
 
   @override
-  String get invalidPhone =>
-      'أدخل رقم هاتف بصيغة مناسبة باستخدام الأرقام والمسافات والأقواس والشرطات.';
+  String get invalidPhone => 'أدخل رقم هاتف بصيغة مناسبة باستخدام الأرقام والمسافات والأقواس والشرطات.';
 
   @override
-  String get invalidLink =>
-      'استخدم رابط HTTPS كاملًا، مثل https://linkedin.com/in/your-name.';
+  String get invalidLink => 'استخدم رابط HTTPS كاملًا، مثل https://linkedin.com/in/your-name.';
 
   @override
   String get conflictTitle => 'تغيّر ملفك المهني في مكان آخر';
 
   @override
-  String get conflictBody =>
-      'عملك المحلي محفوظ. احتفظ بنسخة الخادم أو أعد تطبيق عملك المحلي باختيارك.';
+  String get conflictBody => 'عملك المحلي محفوظ. احتفظ بنسخة الخادم أو أعد تطبيق عملك المحلي باختيارك.';
 
   @override
   String get keepServer => 'الاحتفاظ بنسخة الخادم';
@@ -421,8 +426,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reapplyLocal => 'إعادة تطبيق العمل المحلي';
 
   @override
-  String get outcomeUnknown =>
-      'لم تتأكد نتيجة الحفظ السابق بعد. أعد الحفظ قبل التجاهل؛ لا يمكن التراجع هنا عن البيانات المحفوظة على الخادم.';
+  String get outcomeUnknown => 'لم تتأكد نتيجة الحفظ السابق بعد. أعد الحفظ قبل التجاهل؛ لا يمكن التراجع هنا عن البيانات المحفوظة على الخادم.';
 
   @override
   String get showPassword => 'إظهار أو إخفاء كلمة المرور';
@@ -434,12 +438,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get loginSubtitle => 'مرحبًا بعودتك. سجّل الدخول لمتابعة ملفك المهني.';
 
   @override
-  String get signupSubtitle =>
-      'أنشئ حسابًا للاحتفاظ بمعلوماتك المهنية في مكان واحد.';
+  String get signupSubtitle => 'أنشئ حسابًا للاحتفاظ بمعلوماتك المهنية في مكان واحد.';
 
   @override
-  String get providerSettingsUnavailable =>
-      'تعذّر التحقق من خيارات الدخول الأخرى. لا يزال الدخول بالبريد الإلكتروني متاحًا.';
+  String get providerSettingsUnavailable => 'تعذّر التحقق من خيارات الدخول الأخرى. لا يزال الدخول بالبريد الإلكتروني متاحًا.';
 
   @override
   String get passwordRequired => 'أدخل كلمة المرور.';
@@ -448,16 +450,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get hidePassword => 'إخفاء كلمة المرور';
 
   @override
-  String get startupStorageFailed =>
-      'تعذّر على Jobix فتح التخزين المحلي المحمي. أعد المحاولة للمتابعة؛ لم تُحذف بياناتك.';
+  String get startupStorageFailed => 'تعذّر على Jobix فتح التخزين المحلي المحمي. أعد المحاولة للمتابعة؛ لم تُحذف بياناتك.';
 
   @override
-  String get startupSessionFailed =>
-      'تعذّر على Jobix استعادة جلسة الدخول الآمنة. تحقّق من الاتصال وأعد المحاولة.';
+  String get startupSessionFailed => 'تعذّر على Jobix استعادة جلسة الدخول الآمنة. تحقّق من الاتصال وأعد المحاولة.';
 
   @override
-  String get startupPolicyFailed =>
-      'تعذّر على Jobix التحقق من سياسة التطبيق المطلوبة. تحقّق من الاتصال وأعد المحاولة.';
+  String get startupPolicyFailed => 'تعذّر على Jobix التحقق من سياسة التطبيق المطلوبة. تحقّق من الاتصال وأعد المحاولة.';
 
   @override
   String get haveAccount => 'لديك حساب بالفعل؟ سجّل الدخول';
@@ -466,12 +465,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get needAccount => 'جديد في Jobix؟ أنشئ حسابًا';
 
   @override
-  String get legalLinksUnavailable =>
-      'بإنشاء حساب، تقرّ بشروط الخدمة وسياسة الخصوصية. لم يتم إعداد روابطهما بعد.';
+  String get legalLinksUnavailable => 'بإنشاء حساب، تقرّ بشروط الخدمة وسياسة الخصوصية. لم يتم إعداد روابطهما بعد.';
 
   @override
-  String get researchLoadError =>
-      'تعذّر تحميل سياقك المهني المحفوظ. لم يتم تغيير إجاباتك السابقة.';
+  String get researchLoadError => 'تعذّر تحميل سياقك المهني المحفوظ. لم يتم تغيير إجاباتك السابقة.';
 
   @override
   String researchStep(int number) {
@@ -482,8 +479,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get locationDataMissing => 'أدخل مدينة أو اختر مدينة سبق أن حفظتها.';
 
   @override
-  String get signOutLocalWarning =>
-      'سيؤدي تسجيل الخروج إلى حذف التغييرات غير المحفوظة إلا على هذا الجهاز. ستبقى المعلومات المحفوظة في حسابك كما هي.';
+  String get signOutLocalWarning => 'سيؤدي تسجيل الخروج إلى حذف التغييرات غير المحفوظة إلا على هذا الجهاز. ستبقى المعلومات المحفوظة في حسابك كما هي.';
 
   @override
   String get homeNav => 'الرئيسية';
@@ -507,15 +503,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get careerPageTitle => 'ملفك المهني';
 
   @override
-  String get careerPageSubtitle =>
-      'احتفظ بمعلوماتك المهنية دقيقة وجاهزة للاستخدام.';
+  String get careerPageSubtitle => 'احتفظ بمعلوماتك المهنية دقيقة وجاهزة للاستخدام.';
 
   @override
   String get activeProfile => 'ملفك الحالي';
 
   @override
-  String get profileTruthNote =>
-      'هذا الملف هو معلوماتك المهنية. أدوات السيرة الذاتية والأقسام الأخرى غير متاحة في هذا الإصدار.';
+  String get profileTruthNote => 'هذا الملف هو معلوماتك المهنية. أدوات السيرة الذاتية والأقسام الأخرى غير متاحة في هذا الإصدار.';
 
   @override
   String get notEntered => 'لم يُدخَل';
@@ -524,8 +518,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editPersonalInformation => 'تعديل المعلومات الشخصية';
 
   @override
-  String get careerOtherSectionsUnavailable =>
-      'الأقسام المهنية الإضافية غير متاحة في هذا الإصدار.';
+  String get careerOtherSectionsUnavailable => 'الأقسام المهنية الإضافية غير متاحة في هذا الإصدار.';
 
   @override
   String get arabicLanguage => 'العربية';
@@ -558,8 +551,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get creditHistoryTitle => 'سجل الرصيد';
 
   @override
-  String get creditHistorySubtitle =>
-      'تغييرات الرصيد المتاح المسجّلة على الخادم.';
+  String get creditHistorySubtitle => 'تغييرات الرصيد المتاح المسجّلة على الخادم.';
 
   @override
   String get supportSection => 'الدعم';
@@ -586,12 +578,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accountActionsSection => 'إجراءات الحساب';
 
   @override
-  String get settingsFooter =>
-      'يحافظ Jobix على دقة معلوماتك المهنية ويترك التحكم بها لك.';
+  String get settingsFooter => 'يحافظ Jobix على دقة معلوماتك المهنية ويترك التحكم بها لك.';
 
   @override
-  String get creditHistoryLoadFailed =>
-      'تعذّر تحميل سجل الرصيد. لم يتم افتراض وجود سجل فارغ.';
+  String get creditHistoryLoadFailed => 'تعذّر تحميل سجل الرصيد. لم يتم افتراض وجود سجل فارغ.';
 
   @override
   String get creditHistoryEmpty => 'لا توجد معاملات رصيد لهذا الحساب حتى الآن.';
@@ -673,8 +663,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sectionLanguages => 'اللغات';
 
   @override
-  String get emptyExperience =>
-      'لم تتم إضافة أي دور بعد. أضف دورًا الآن أو تخطَّ هذه الخطوة.';
+  String get emptyExperience => 'لم تتم إضافة أي دور بعد. أضف دورًا الآن أو تخطَّ هذه الخطوة.';
 
   @override
   String get emptySection => 'لم تتم إضافة شيء بعد.';
@@ -740,19 +729,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldInstitution => 'المؤسسة التعليمية';
 
   @override
-  String get institutionAutocompleteHint =>
-      'اكتب اسم المؤسسة أو أدخل اسمًا من اختيارك.';
+  String get institutionAutocompleteHint => 'اكتب اسم المؤسسة أو أدخل اسمًا من اختيارك.';
 
   @override
   String get fieldStudy => 'التخصص';
 
   @override
-  String get studyFieldAutocompleteHint =>
-      'ابحث عن تخصص أو أدخل تخصصًا من اختيارك.';
+  String get studyFieldAutocompleteHint => 'ابحث عن تخصص أو أدخل تخصصًا من اختيارك.';
 
   @override
-  String get educationSuggestionsFallback =>
-      'تظهر اقتراحات شائعة فقط؛ يمكنك إدخال أي قيمة.';
+  String get educationSuggestionsFallback => 'تظهر اقتراحات شائعة فقط؛ يمكنك إدخال أي قيمة.';
 
   @override
   String get clearField => 'مسح الحقل';
@@ -823,12 +809,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get problemRequired => 'هذا الحقل مطلوب.';
 
   @override
-  String get descriptionMinimum =>
-      'اكتب 20 حرفًا على الأقل ليُحتسب ضمن اكتمال الملف.';
+  String get descriptionMinimum => 'اكتب 20 حرفًا على الأقل ليُحتسب ضمن اكتمال الملف.';
 
   @override
-  String get incompleteSaveNote =>
-      'يمكنك الحفظ الآن وإكمال التفاصيل لاحقًا؛ العناصر غير المكتملة لا تُحتسب ضمن اكتمال الملف.';
+  String get incompleteSaveNote => 'يمكنك الحفظ الآن وإكمال التفاصيل لاحقًا؛ العناصر غير المكتملة لا تُحتسب ضمن اكتمال الملف.';
 
   @override
   String get profBasic => 'أساسي';
@@ -858,8 +842,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get suggestedSkills => 'اقتراحات';
 
   @override
-  String get saveConflict =>
-      'تم تغيير هذا الملف على جهاز آخر. أعد التحميل لرؤية أحدث نسخة؛ تبقى تعديلاتك على هذا الجهاز.';
+  String get saveConflict => 'تم تغيير هذا الملف على جهاز آخر. أعد التحميل لرؤية أحدث نسخة؛ تبقى تعديلاتك على هذا الجهاز.';
 
   @override
   String get reloadAction => 'إعادة التحميل';
@@ -875,9 +858,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get reviewIntro => 'راجع كل قسم. اضغط تعديل لتغيير أي شيء.';
-
-  @override
-  String get doneAction => 'تم';
 
   @override
   String get completenessLabel => 'اكتمال الملف';
@@ -911,16 +891,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get contactSection => 'بيانات التواصل';
 
   @override
-  String get authRateLimited =>
-      'تم طلب عدد كبير من الرسائل. انتظر قليلًا ثم حاول مرة أخرى.';
+  String get authRateLimited => 'تم طلب عدد كبير من الرسائل. انتظر قليلًا ثم حاول مرة أخرى.';
 
   @override
-  String get authNotConfirmed =>
-      'أكّد بريدك الإلكتروني أولًا. تحقق من صندوق الوارد أو أعد إرسال الرابط.';
+  String get authNotConfirmed => 'أكّد بريدك الإلكتروني أولًا. تحقق من صندوق الوارد أو أعد إرسال الرابط.';
 
   @override
-  String get authInvalidCredentials =>
-      'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+  String get authInvalidCredentials => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
 
   @override
   String get authWeakPassword => 'اختر كلمة مرور أقوى (8 أحرف على الأقل).';
@@ -929,8 +906,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authInvalidEmail => 'أدخل بريدًا إلكترونيًا صالحًا.';
 
   @override
-  String get authUserExists =>
-      'يوجد حساب بهذا البريد بالفعل. سجّل الدخول بدلًا من ذلك.';
+  String get authUserExists => 'يوجد حساب بهذا البريد بالفعل. سجّل الدخول بدلًا من ذلك.';
 
   @override
   String get authNetwork => 'لا يوجد اتصال. تحقق من الإنترنت وحاول مرة أخرى.';
@@ -945,8 +921,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notSavedYet => 'لم يُحفظ بعد';
 
   @override
-  String get reviewPersonalMissing =>
-      'أضف اسمك وبريدك الإلكتروني ورقم هاتفك لتتمكن من تصدير السيرة الذاتية لاحقًا.';
+  String get reviewPersonalMissing => 'أضف اسمك وبريدك الإلكتروني ورقم هاتفك لتتمكن من تصدير السيرة الذاتية لاحقًا.';
 
   @override
   String welcomeBack(Object name) {
@@ -972,12 +947,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get itemChangedElsewhere =>
-      'تم تغيير هذا العنصر على جهاز آخر بعد أن بدأت التعديل. اختر النسخة التي تريد الاحتفاظ بها.';
+  String get itemChangedElsewhere => 'تم تغيير هذا العنصر على جهاز آخر بعد أن بدأت التعديل. اختر النسخة التي تريد الاحتفاظ بها.';
 
   @override
-  String get itemRemovedElsewhere =>
-      'تمت إزالة هذا العنصر على جهاز آخر بعد أن بدأت التعديل. اختر إبقاءه محذوفًا أو إضافته مجددًا بتعديلاتك.';
+  String get itemRemovedElsewhere => 'تمت إزالة هذا العنصر على جهاز آخر بعد أن بدأت التعديل. اختر إبقاءه محذوفًا أو إضافته مجددًا بتعديلاتك.';
 
   @override
   String get keepServerVersion => 'استخدام أحدث نسخة';
@@ -986,8 +959,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reapplyMyChanges => 'الاحتفاظ بتعديلاتي';
 
   @override
-  String get exportRateLimited =>
-      'وصلت إلى الحد المسموح للتصدير. يرجى الانتظار قبل إعادة محاولة الطلب المحفوظ.';
+  String get exportRateLimited => 'وصلت إلى الحد المسموح للتصدير. يرجى الانتظار قبل إعادة محاولة الطلب المحفوظ.';
 
   @override
   String exportRateLimitedRetry(int seconds) {
@@ -995,12 +967,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get exportTemporarilyUnavailable =>
-      'الخدمة غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى لاحقًا.';
+  String get exportTemporarilyUnavailable => 'الخدمة غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى لاحقًا.';
 
   @override
-  String get exportInProgress =>
-      'يوجد تصدير قيد التنفيذ لهذا الملف الشخصي. تحقق من حالته قبل بدء تصدير آخر.';
+  String get exportInProgress => 'يوجد تصدير قيد التنفيذ لهذا الملف الشخصي. تحقق من حالته قبل بدء تصدير آخر.';
 
   @override
   String get backToReview => 'العودة إلى المراجعة';

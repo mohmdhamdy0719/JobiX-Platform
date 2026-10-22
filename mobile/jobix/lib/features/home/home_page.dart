@@ -208,17 +208,9 @@ class HomePage extends ConsumerWidget {
                     const SizedBox(height: TokensV0.space16),
                     PrimaryAction(
                       key: const Key('continue-career'),
-                      label: journey.valueOrNull?.complete == true
-                          ? copy.careerTitle
-                          : copy.continueProfile,
+                      label: copy.continueCareer,
                       icon: Icons.arrow_forward,
-                      onPressed: journey.isLoading || journey.hasError
-                          ? null
-                          : () => context.go(
-                              journey.valueOrNull?.complete == true
-                                  ? '/career'
-                                  : '/builder/${journey.valueOrNull?.step ?? 1}',
-                            ),
+                      onPressed: () => context.go('/career'),
                     ),
                     if (journey.hasError)
                       TextButton(

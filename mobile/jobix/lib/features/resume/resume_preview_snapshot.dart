@@ -111,12 +111,11 @@ class ResumePreviewSnapshotLoader {
           beforeDrafts.fingerprint == afterDrafts.fingerprint;
       if (!stable) continue;
 
-      // Preview is a read-only view of the saved server snapshot. An
-      // unacknowledged local write must not be silently discarded or replayed,
-      // but it also must not prevent the user from reviewing what the server
-      // currently has. Require the same explicit saved-version confirmation
-      // used for ordinary local edits.
-      if ((afterDrafts.hasUnsentEdits || afterDrafts.hasUnresolvedSave) &&
+      // Preview is a read-only view of the saved server snapshot. Ordinary
+      // unsent local edits are not included and do not require a confirmation.
+      // A write with an uncertain outcome remains frozen until the existing
+      // same-request reconciliation path confirms it.
+      if (afterDrafts.hasUnresolvedSave &&
           confirmedDraftFingerprint != afterDrafts.fingerprint) {
         throw ResumePreviewNeedsConfirmation(afterDrafts.fingerprint);
       }

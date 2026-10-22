@@ -170,6 +170,38 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
               GoRoute(path: '/home', builder: (_, __) => const HomePage()),
               GoRoute(path: '/career', builder: (_, __) => const CareerPage()),
+              GoRoute(
+                path: '/career/section/:section',
+                builder: (_, state) {
+                  final sections = switch (state.pathParameters['section']) {
+                    'experience' => [EntitySection.experience],
+                    'volunteer' => [EntitySection.volunteer],
+                    'education' => [EntitySection.education],
+                    'certification' => [EntitySection.certification],
+                    'achievement' => [EntitySection.achievement],
+                    'skills-languages' => [
+                      EntitySection.skill,
+                      EntitySection.language,
+                    ],
+                    'project' => [EntitySection.project],
+                    _ => const <EntitySection>[],
+                  };
+                  if (sections.isEmpty) return const CareerPage();
+                  final step = switch (sections.first) {
+                    EntitySection.experience || EntitySection.volunteer => 3,
+                    EntitySection.education ||
+                    EntitySection.certification ||
+                    EntitySection.achievement => 4,
+                    _ => 5,
+                  };
+                  return BuilderSectionsStep(
+                    key: ValueKey(state.uri.toString()),
+                    step: step,
+                    origin: EditorOrigin.career,
+                    careerSections: sections,
+                  );
+                },
+              ),
               GoRoute(path: '/resume', builder: (_, __) => const ResumePage()),
               GoRoute(
                 path: '/export-history',

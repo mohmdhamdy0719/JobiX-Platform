@@ -293,15 +293,20 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         );
         return;
       }
+      if (!copy.hasMeaningfulInput) {
+        setState(() => problems = found);
+        showJobixFeedback(
+          context,
+          AppLocalizations.of(context)!.draftNeedsInformation,
+          kind: JobixFeedbackKind.error,
+        );
+        return;
+      }
       final saveDraft = await showDialog<bool>(
         context: context,
         builder: (dialog) => JobixAlertDialog(
           title: Text(ar ? 'حفظ كمسودة؟' : 'Save as draft?'),
-          content: Text(
-            ar
-                ? 'احفظه كمسودة على هذا الجهاز فقط وأكمله لاحقًا. لن يُحفظ في حسابك أو يظهر في سيرتك الذاتية أو نسبة اكتمال ملفك. قد تفقده عند حذف التطبيق أو بياناته.'
-                : 'Save a draft on this device only and complete it later. It will not be saved to your account, appear in your Resume, or count toward completeness. It may be lost if you uninstall the app or clear its data.',
-          ),
+          content: Text(AppLocalizations.of(context)!.saveDraftPrompt),
           actions: [
             JobixDialogAction.secondary(
               key: const Key('back-from-entry-draft-confirmation'),
@@ -472,9 +477,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               Semantics(
                 liveRegion: true,
                 child: saveIssueCard(
-                  copy.localeName.startsWith('ar')
-                      ? 'لا يمكن إضافة هذا العنصر بعد. راجع الحقول المحددة؛ تم الاحتفاظ بمسودتك.'
-                      : "This item can't be added yet. Check the highlighted fields; your draft is retained.",
+                  item?.hasMeaningfulInput == false
+                      ? copy.draftNeedsInformation
+                      : copy.incompleteEntry,
                 ),
               ),
               const SizedBox(height: TokensV0.space16),
