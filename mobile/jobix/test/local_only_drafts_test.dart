@@ -128,6 +128,30 @@ void main() {
   );
 
   test(
+    'meaningful incomplete Education Draft remains local and incomplete',
+    () async {
+      const educationDraft = ProfileItem(
+        id: 'local-education',
+        section: EntitySection.education,
+        values: {'degree': 'BSc', 'is_current': true},
+      );
+      final original = api.server.encode();
+      await repository().saveLocalDraft(api.server.id, educationDraft);
+      final saved = (await repository().savedDrafts(
+        api.server.id,
+        EntitySection.education,
+      )).single;
+      expect(saved.isDraft, isTrue);
+      expect(saved.isLocalDraft, isTrue);
+      expect(saved.text('degree'), 'BSc');
+      expect(server.requests, isEmpty);
+      expect(api.server.count(EntitySection.education), 0);
+      expect(api.server.completeCount(EntitySection.education), 0);
+      expect(api.server.encode(), original);
+    },
+  );
+
+  test(
     'local Draft promotion waits for server confirmation and uses normal complete-save RPC',
     () async {
       await repository().saveLocalDraft(api.server.id, complete);

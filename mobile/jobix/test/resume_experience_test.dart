@@ -12,12 +12,23 @@ import 'package:jobix/features/builder/resume_journey.dart';
 import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/core_mvp/core_api.dart';
 import 'package:jobix/features/home/home_page.dart';
+import 'package:jobix/features/onboarding/onboarding_controller.dart';
+import 'package:jobix/features/onboarding/research_context.dart';
 import 'package:jobix/features/resume/resume_document.dart';
 import 'package:jobix/features/resume/resume_experience_shared.dart';
 import 'package:jobix/features/resume/resume_experience_widgets.dart';
 import 'package:jobix/l10n/app_localizations.dart';
 import 'resume_export_test.dart' as fixtures;
 import 'support/production_fonts.dart';
+
+class _ResearchFixture extends ResearchController {
+  _ResearchFixture(this.value);
+
+  final ResearchProgress value;
+
+  @override
+  Future<ResearchProgress> build() async => value;
+}
 
 void main() {
   setUpAll(loadProductionFonts);
@@ -181,9 +192,13 @@ void main() {
     expect(resumeJobState({'state': 'FAILED'}), 'failed');
     expect(resumeJobState({'state': 'QUEUED'}), 'queued');
   });
-  for (final complete in [false, true]) {
+  for (final (firstLaunchComplete, complete) in [
+    (true, false),
+    (true, true),
+    (false, false),
+  ]) {
     testWidgets(
-      'Home opens Career ${complete ? 'after completion' : 'with an unfinished builder step'}',
+      'Home ${firstLaunchComplete ? 'opens Career after first launch' : 'resumes incomplete first-launch onboarding'}${complete ? ' after profile completion' : ''}',
       (tester) async {
         final router = GoRouter(
           initialLocation: '/home',
@@ -194,8 +209,8 @@ void main() {
               builder: (_, __) => const Text('Career destination'),
             ),
             GoRoute(
-              path: '/builder/4',
-              builder: (_, __) => const Text('Education destination'),
+              path: '/onboarding',
+              builder: (_, __) => const Text('Onboarding destination'),
             ),
           ],
         );
@@ -203,6 +218,16 @@ void main() {
           ProviderScope(
             overrides: [
               firstProfileProvider.overrideWith((_) async => profile),
+              firstEntryProvider.overrideWith(
+                (_) async => throw StateError(
+                  'Home must not consume the registration-entry claim',
+                ),
+              ),
+              researchProvider.overrideWith(
+                () => _ResearchFixture(
+                  ResearchProgress(firstLaunchComplete: firstLaunchComplete),
+                ),
+              ),
               resumeJourneyProvider(profile.id).overrideWith(
                 (_) async => ResumeJourney(step: 4, complete: complete),
               ),
@@ -227,7 +252,14 @@ void main() {
         await tester.ensureVisible(find.byKey(const Key('continue-career')));
         await tester.tap(find.byKey(const Key('continue-career')));
         await tester.pumpAndSettle();
-        expect(find.text('Career destination'), findsOneWidget);
+        expect(
+          find.text(
+            firstLaunchComplete
+                ? 'Career destination'
+                : 'Onboarding destination',
+          ),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         router.dispose();

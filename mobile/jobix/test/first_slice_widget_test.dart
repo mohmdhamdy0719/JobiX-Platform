@@ -1151,7 +1151,12 @@ void main() {
           localOnly: true,
         ),
       );
-      await pump(tester, state: StartupState.signedIn);
+      await database.setSetting('first_launch_completed', 'true');
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        progress: complete.copy(firstLaunchComplete: true),
+      );
       expect(find.byKey(const Key('continue-career')), findsOneWidget);
       await expectLater(
         find.byType(Scaffold),
@@ -1276,6 +1281,20 @@ void main() {
       expect(find.text(copy.sectionLanguages), findsOneWidget);
       expect(find.text(copy.sectionProjects), findsNothing);
       expect(find.byKey(const Key('builder-continue')), findsNothing);
+      final routes = [
+        ('volunteer', copy.sectionVolunteer, copy.stepExperience),
+        ('education', copy.sectionEducation, copy.sectionVolunteer),
+        ('certification', copy.sectionCertifications, copy.sectionEducation),
+        ('achievement', copy.sectionAchievements, copy.sectionCertifications),
+        ('project', copy.sectionProjects, copy.sectionAchievements),
+      ];
+      for (final (section, title, unrelated) in routes) {
+        await route(tester, '/career/section/$section');
+        expect(find.text(title), findsWidgets, reason: section);
+        expect(find.text(unrelated), findsNothing, reason: section);
+        expect(find.byKey(const Key('builder-continue')), findsNothing);
+        expect(find.textContaining(RegExp(r'Step\s+\d+')), findsNothing);
+      }
     },
   );
   testWidgets(

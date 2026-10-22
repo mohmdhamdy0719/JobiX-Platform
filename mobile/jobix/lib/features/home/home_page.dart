@@ -13,6 +13,7 @@ import '../builder/builder_scaffold.dart';
 import '../builder/profile_overview.dart';
 import '../core_mvp/core_api.dart';
 import '../builder/resume_journey.dart';
+import '../onboarding/onboarding_controller.dart';
 
 final unfinishedDraftProvider = FutureProvider.family<bool, String>((
   ref,
@@ -58,6 +59,7 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final copy = AppLocalizations.of(context)!;
     final profile = ref.watch(firstProfileProvider);
+    final research = ref.watch(researchProvider);
     final merge = ref.watch(contextMergeProvider);
     final balance = ref.watch(coreSummaryProvider);
     final theme = Theme.of(context);
@@ -208,16 +210,26 @@ class HomePage extends ConsumerWidget {
                     const SizedBox(height: TokensV0.space16),
                     PrimaryAction(
                       key: const Key('continue-career'),
-                      label: journey.valueOrNull?.complete == true
+                      label: research.valueOrNull?.firstLaunchComplete != true
+                          ? copy.continueAction
+                          : journey.valueOrNull?.complete == true
                           ? copy.careerTitle
                           : copy.continueProfile,
                       icon: Icons.arrow_forward,
-                      onPressed: () => context.go('/career'),
+                      onPressed: research.isLoading || research.hasError
+                          ? null
+                          : () => context.go(
+                              research.valueOrNull?.firstLaunchComplete == true
+                                  ? '/career'
+                                  : '/onboarding',
+                            ),
                     ),
-                    if (journey.hasError)
+                    if (journey.hasError || research.hasError)
                       TextButton(
-                        onPressed: () =>
-                            ref.invalidate(resumeJourneyProvider(value.id)),
+                        onPressed: () {
+                          ref.invalidate(resumeJourneyProvider(value.id));
+                          ref.invalidate(researchProvider);
+                        },
                         child: Text(copy.retry),
                       ),
                   ],
