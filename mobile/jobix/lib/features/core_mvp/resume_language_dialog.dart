@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/database/database.dart';
 import '../../core/design/jobix_feedback.dart';
 import '../../core/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../career_profile/career_profile.dart';
-import '../career_profile/career_profile_repository.dart';
+import '../auth/auth_controller.dart';
 import '../resume/resume_language_repository.dart';
 
 Future<void> showCareerResumeLanguageDialog(
@@ -16,6 +15,9 @@ Future<void> showCareerResumeLanguageDialog(
   CareerProfile profile,
 ) async {
   final copy = AppLocalizations.of(context)!;
+  final appLanguage = Localizations.localeOf(context).languageCode == 'ar'
+      ? 'ar'
+      : 'en';
   try {
     final client = await ref.read(supabaseClientProvider.future);
     final user = client.auth.currentUser?.id;
@@ -44,21 +46,18 @@ Future<void> showCareerResumeLanguageDialog(
     );
     final initial = await repository.load(
       profileLanguage: profile.resumeLanguage,
-      appLanguage: Localizations.localeOf(context).languageCode == 'ar'
-          ? 'ar'
-          : 'en',
+      appLanguage: appLanguage,
     );
     if (!context.mounted) return;
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => _ResumeLanguageDialog(
-        repository: repository,
-        initial: initial,
-      ),
+      builder: (dialogContext) =>
+          _ResumeLanguageDialog(repository: repository, initial: initial),
     );
     if (saved == true && context.mounted) {
       ref.invalidate(firstProfileProvider);
+      ref.invalidate(savedResumeLanguageProvider(profile.id));
       showJobixFeedback(context, copy.resumeLanguageChanged);
     }
   } on PostgrestException catch (error) {
@@ -97,27 +96,38 @@ class _ResumeLanguageDialog extends StatefulWidget {
 
 class _ResumeLanguageDialogState extends State<_ResumeLanguageDialog> {
   late String selected = widget.initial.language;
+  late String savedLanguage = widget.initial.language;
+  late int version = widget.initial.version;
+  late bool pendingRequest = widget.initial.pending;
   bool saving = false;
   String? error;
 
   Future<void> save() async {
     if (saving) return;
-    if (!widget.initial.pending && selected == widget.initial.language) {
+    if (!pendingRequest && selected == savedLanguage) {
       Navigator.pop(context, false);
       return;
     }
     setState(() {
       saving = true;
+      pendingRequest = true;
       error = null;
     });
     try {
-      await widget.repository.save(selected, widget.initial.version);
+      await widget.repository.save(selected, version);
       if (mounted) Navigator.pop(context, true);
+    } on ResumeLanguageConflict catch (conflict) {
+      if (mounted) {
+        setState(() {
+          selected = savedLanguage = conflict.latest.language;
+          version = conflict.latest.version;
+          pendingRequest = false;
+          error = AppLocalizations.of(context)!.conflictBody;
+        });
+      }
     } catch (_) {
       if (mounted) {
-        setState(
-          () => error = AppLocalizations.of(context)!.resumeLanguageSaveFailed,
-        );
+        setState(() => error = AppLocalizations.of(context)!.saveFailed);
       }
     } finally {
       if (mounted) setState(() => saving = false);
@@ -140,13 +150,12 @@ class _ResumeLanguageDialogState extends State<_ResumeLanguageDialog> {
               key: Key('career-resume-language-${option.$1}'),
               value: option.$1,
               groupValue: selected,
-              onChanged: saving || widget.initial.pending
+              onChanged: saving || pendingRequest
                   ? null
                   : (value) => setState(() => selected = value!),
               title: Text(option.$2),
             ),
-          if (error != null)
-            Semantics(liveRegion: true, child: Text(error!)),
+          if (error != null) Semantics(liveRegion: true, child: Text(error!)),
         ],
       ),
       actions: [

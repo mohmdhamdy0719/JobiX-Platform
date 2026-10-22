@@ -183,7 +183,7 @@ void main() {
   });
   for (final complete in [false, true]) {
     testWidgets(
-      'Home ${complete ? 'opens Career after completion' : 'resumes saved step instead of Review'}',
+      'Home opens Career ${complete ? 'after completion' : 'with an unfinished builder step'}',
       (tester) async {
         final router = GoRouter(
           initialLocation: '/home',
@@ -227,10 +227,7 @@ void main() {
         await tester.ensureVisible(find.byKey(const Key('continue-career')));
         await tester.tap(find.byKey(const Key('continue-career')));
         await tester.pumpAndSettle();
-        expect(
-          find.text(complete ? 'Career destination' : 'Education destination'),
-          findsOneWidget,
-        );
+        expect(find.text('Career destination'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         router.dispose();

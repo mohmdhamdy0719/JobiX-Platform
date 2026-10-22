@@ -103,26 +103,29 @@ void main() {
     },
   );
 
-  test('Draft eligibility ignores toggles but accepts entered section data', () {
-    const blankExperience = ProfileItem(
-      id: 'blank',
-      section: EntitySection.experience,
-      values: {'is_current': true},
-    );
-    const enteredExperience = ProfileItem(
-      id: 'entered',
-      section: EntitySection.experience,
-      values: {'is_current': true, 'job_title': 'Engineer'},
-    );
-    const blankSkill = ProfileItem(
-      id: 'blank-skill',
-      section: EntitySection.skill,
-      values: {'name': '   '},
-    );
-    expect(blankExperience.hasMeaningfulInput, isFalse);
-    expect(enteredExperience.hasMeaningfulInput, isTrue);
-    expect(blankSkill.hasMeaningfulInput, isFalse);
-  });
+  test(
+    'Draft eligibility ignores toggles but accepts entered section data',
+    () {
+      const blankExperience = ProfileItem(
+        id: 'blank',
+        section: EntitySection.experience,
+        values: {'is_current': true},
+      );
+      const enteredExperience = ProfileItem(
+        id: 'entered',
+        section: EntitySection.experience,
+        values: {'is_current': true, 'job_title': 'Engineer'},
+      );
+      const blankSkill = ProfileItem(
+        id: 'blank-skill',
+        section: EntitySection.skill,
+        values: {'name': '   '},
+      );
+      expect(blankExperience.hasMeaningfulInput, isFalse);
+      expect(enteredExperience.hasMeaningfulInput, isTrue);
+      expect(blankSkill.hasMeaningfulInput, isFalse);
+    },
+  );
 
   test(
     'local Draft promotion waits for server confirmation and uses normal complete-save RPC',

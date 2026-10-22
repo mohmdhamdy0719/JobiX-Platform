@@ -259,8 +259,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
         setState(() {
           confirmedDraftFingerprint = error.fingerprint;
           message = t(
-            'A save is still awaiting server confirmation. Retry that same save before Preview; Preview will not retry, save, or discard it.',
-            'ما زال حفظٌ ما بانتظار تأكيد الخادم. أعد محاولة الحفظ نفسه قبل المعاينة؛ لن تعيد المعاينة المحاولة أو تحفظ أو تتجاهل التغييرات.',
+            'A save is awaiting server confirmation. Preview saved version shows only current cloud data; it will not retry or discard the pending request. Retry the same save to reconcile it.',
+            'ما زال حفظٌ ما بانتظار تأكيد الخادم. تعرض معاينة النسخة المحفوظة البيانات السحابية الحالية فقط، دون إعادة الطلب المعلّق أو تجاهله. أعد محاولة الحفظ نفسه لتأكيد نتيجته.',
           );
         });
       }
@@ -616,7 +616,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                         ? 'Preview saved version'
                         : 'Preview & Export',
                     confirmedDraftFingerprint != null ||
-                            pending
+                            pending ||
+                            layoutPending
                         ? 'معاينة النسخة المحفوظة'
                         : 'معاينة وتصدير',
                   ),
@@ -673,9 +674,10 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                               if (mounted) context.go('/career');
                             },
                             exportEnabled:
-                                exportKey.currentState?.creationEnabled == true &&
-                                    !pending &&
-                                    !layoutPending,
+                                exportKey.currentState?.creationEnabled ==
+                                    true &&
+                                !pending &&
+                                !layoutPending,
                             onExport: _exportReviewedDocument,
                           ),
                         ),

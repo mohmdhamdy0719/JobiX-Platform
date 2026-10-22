@@ -1,6 +1,6 @@
 ---
 name: Policy RPC compatibility
-description: Live PostgREST empty-policy responses can differ from fixture assumptions
+description: Supabase RPC response compatibility and request-aware HTTP fixtures
 ---
 
 For a missing authenticated startup policy, require that startup refuses entry;
@@ -15,3 +15,13 @@ exception incorrectly rejected the live result.
 **How to apply:** On Supabase SDK/server upgrades, exercise absent-policy RPC
 responses against the real service. Preserve explicit failure; never catch all
 RPC errors and silently allow authenticated startup.
+
+HTTP fixtures for Supabase RPCs must attach the originating request to their
+responses, not just a valid JSON body and status.
+
+**Why:** The pinned PostgREST parser dereferences response request metadata.
+A mock response without it throws a TypeError before application-level parsing,
+which can look like a repository or UI loading failure.
+
+**How to apply:** Preserve request metadata in MockClient responses; keep
+transport-contract failures distinct from application save/reconciliation errors.

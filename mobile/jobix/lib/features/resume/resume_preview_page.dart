@@ -204,12 +204,12 @@ class _ResumePreviewPageState extends ConsumerState<ResumePreviewPage>
                   await controller.loadHtmlString(
                     reviewedDocument['html'] as String,
                   );
-                  if (mounted && !ownerInvalidated) {
+                  if (context.mounted && !ownerInvalidated) {
                     final copy = AppLocalizations.of(context)!;
                     await showDialog<void>(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
-                        title: Text(copy.resumeChangedSincePreview),
+                        title: Text(copy.reviewUpdatedResume),
                         content: Text(copy.resumeChangedSincePreview),
                         actions: [
                           FilledButton(

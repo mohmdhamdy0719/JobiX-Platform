@@ -14,6 +14,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/app_localizations_ar.dart';
 import '../../l10n/app_localizations_en.dart';
 import '../auth/auth_controller.dart';
+import '../resume/resume_language_repository.dart';
 import '../builder/builder_scaffold.dart';
 import '../builder/profile_overview.dart';
 import '../career_profile/career_profile.dart';
@@ -110,6 +111,17 @@ class _PersonalInformationPageState
       final appLanguage = Localizations.localeOf(context).languageCode == 'ar'
           ? 'ar'
           : 'en';
+      final initializeLanguage =
+          local == null &&
+          value.resumeLanguage == null &&
+          await ref.read(firstEntryProvider.future);
+      final configuredLanguage =
+          local == null &&
+              value.resumeLanguage == null &&
+              widget.origin == 'career'
+          ? await ref.read(savedResumeLanguageProvider(value.id).future)
+          : value.resumeLanguage;
+      if (!mounted) return;
       draft =
           local ??
           PersonalDraft(
@@ -118,15 +130,15 @@ class _PersonalInformationPageState
             personal: prefillEmail
                 ? {...value.personal, 'email': authEmail}
                 : value.personal,
-            resumeLanguage: value.resumeLanguage ??
-                (prefillEmail ? appLanguage : null),
+            resumeLanguage:
+                configuredLanguage ?? (initializeLanguage ? appLanguage : null),
           );
       for (final field in personalFields) {
         controllers[field]!.text = draft!.personal[field] ?? '';
       }
       cityHistory =
           rawCities?.split('\n').where((v) => v.isNotEmpty).toList() ?? [];
-      dirty = prefillEmail;
+      dirty = prefillEmail || initializeLanguage;
       notice = local?.localOnly == true || localRole?.localOnly == true
           ? AppLocalizations.of(context)!.savedDevice
           : null;
@@ -713,9 +725,7 @@ class _PersonalInformationPageState
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: TokensV0.secondarySurface,
-                    borderRadius: BorderRadius.circular(
-                      TokensV0.controlRadius,
-                    ),
+                    borderRadius: BorderRadius.circular(TokensV0.controlRadius),
                   ),
                   child: Row(
                     children: [

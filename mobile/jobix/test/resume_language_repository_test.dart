@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jobix/core/database/database.dart';
 import 'package:jobix/core/database/encryption.dart';
 import 'package:jobix/features/resume/resume_language_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 void main() {
   configureSqlCipher(
@@ -42,10 +43,9 @@ void main() {
             },
           );
 
-      final initial = await repository('account-one').load(
-        profileLanguage: null,
-        appLanguage: 'ar',
-      );
+      final initial = await repository(
+        'account-one',
+      ).load(profileLanguage: null, appLanguage: 'ar');
       expect(initial.language, 'en');
       expect(initial.version, 4);
       expect(reads, 1);
@@ -68,7 +68,11 @@ void main() {
       );
       expect(pending.pending, isTrue);
       expect(pending.language, 'ar');
-      expect(reads, 1, reason: 'a frozen request is not replaced by a new read');
+      expect(
+        reads,
+        1,
+        reason: 'a frozen request is not replaced by a new read',
+      );
 
       actor = 'account-two';
       await expectLater(
@@ -82,6 +86,36 @@ void main() {
       expect(requests, hasLength(2));
       expect(requests[1], frozen, reason: 'retry reuses the exact request key');
       expect(await database.setting(restarted.key), isNull);
+    },
+  );
+
+  test(
+    'definitive version conflict reloads saved configuration without a new write',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      var writes = 0;
+      final repository = ResumeLanguageRepository(
+        database: database,
+        user: 'account-one',
+        profileId: 'profile-one',
+        isCurrentUser: () => true,
+        readRemote: (_) async => {'language': 'ar', 'version': 6},
+        saveRemote: (_) async {
+          writes++;
+          throw const PostgrestException(message: 'VERSION_CONFLICT');
+        },
+      );
+      await expectLater(
+        repository.save('ar', 4),
+        throwsA(
+          isA<ResumeLanguageConflict>()
+              .having((error) => error.latest.version, 'version', 6)
+              .having((error) => error.latest.language, 'language', 'ar'),
+        ),
+      );
+      expect(writes, 1, reason: 'a conflict never automatically resubmits');
+      expect(await database.setting(repository.key), isNull);
     },
   );
 }

@@ -95,7 +95,7 @@
   "resumeLanguageHint": "Choose the language for your Resume. Your app language and existing content will stay unchanged.",
   "chooseResumeLanguage": "Choose a Resume language before editing your information.",
   "changeResumeLanguage": "Change Resume language",
-  "resumeLanguageSaveFailed": "The Resume language could not be saved. Check your connection and try again.",
+  "resumeLanguageSaveFailed": "Resume language is unavailable. Check your connection and try again.",
   "resumeLanguageChanged": "Resume language updated.",
   "doneAction": "Done",
   "contactHeading": "Contact Essentials",

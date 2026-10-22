@@ -101,7 +101,7 @@
   "resumeLanguageHint": "اختر لغة سيرتك الذاتية. ستبقى لغة التطبيق ومحتواك الحالي دون تغيير.",
   "chooseResumeLanguage": "اختر لغة السيرة الذاتية قبل تعديل بياناتك.",
   "changeResumeLanguage": "تغيير لغة السيرة الذاتية",
-  "resumeLanguageSaveFailed": "تعذّر حفظ لغة السيرة الذاتية. تحقق من الاتصال ثم أعد المحاولة.",
+  "resumeLanguageSaveFailed": "تعذّر تحميل لغة السيرة الذاتية. تحقق من الاتصال ثم أعد المحاولة.",
   "resumeLanguageChanged": "تم تحديث لغة السيرة الذاتية.",
   "doneAction": "تم",
   "contactHeading": "بيانات التواصل الأساسية",

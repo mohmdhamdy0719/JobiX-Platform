@@ -13,6 +13,7 @@ import '../builder/profile_overview.dart';
 import '../builder/resume_journey.dart';
 import '../career_profile/career_profile.dart';
 import '../career_profile/profile_sections.dart';
+import '../resume/resume_language_repository.dart';
 import 'resume_language_dialog.dart';
 import 'authenticated_navigation.dart';
 
@@ -111,9 +112,11 @@ class _CareerBody extends ConsumerWidget {
       'phone',
     ].where((f) => field(f).isNotEmpty).length;
     final journey = ref.watch(resumeJourneyProvider(profile.id));
-    final resumeLanguageReady = const ['en', 'ar'].contains(
-      profile.resumeLanguage,
-    );
+    final savedLanguage = ref.watch(savedResumeLanguageProvider(profile.id));
+    final resumeLanguageReady = const [
+      'en',
+      'ar',
+    ].contains(savedLanguage.valueOrNull ?? profile.resumeLanguage);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,7 +127,8 @@ class _CareerBody extends ConsumerWidget {
               ? 'إنشاء السيرة الذاتية'
               : 'Build resume',
           icon: Icons.description_outlined,
-          onPressed: journey.isLoading || journey.hasError
+          onPressed:
+              !resumeLanguageReady || journey.isLoading || journey.hasError
               ? null
               : () => context.go(
                   journey.valueOrNull?.complete == true
@@ -211,155 +215,154 @@ class _CareerBody extends ConsumerWidget {
         if (!resumeLanguageReady) ...[
           SliceCard(child: Text(copy.chooseResumeLanguage)),
         ] else ...[
-        const SizedBox(height: TokensV0.space16),
-        _SectionCard(
-          key: const Key('career-edit-personal'),
-          icon: Icons.person_outline,
-          title: copy.personalInformation,
-          badge: '$contactDone/3',
-          done: contactDone == 3,
-          onTap: () => context.go('/career/personal'),
-          child: field('full_name').isEmpty && location.isEmpty
-              ? empty()
-              : Text(
-                  [
-                    field('full_name'),
-                    location,
-                  ].where((v) => v.isNotEmpty).join(' · '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: secondary,
-                ),
-        ),
-        _SectionCard(
-          key: const Key('career-edit-summary'),
-          icon: Icons.notes_outlined,
-          title: copy.stepSummary,
-          onTap: () => context.go('/career/summary'),
-          child: profile.summary.trim().isEmpty
-              ? empty()
-              : Text(
-                  profile.summary.trim(),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium,
-                ),
-        ),
-        _SectionCard(
-          key: const Key('career-experience'),
-          icon: Icons.work_outline,
-          title: copy.stepExperience,
-          badge: count(EntitySection.experience),
-          done: profile.completeCount(EntitySection.experience) > 0,
-          onTap: () => context.go('/career/section/experience'),
-          trailing: TextButton.icon(
-            key: const Key('career-add-experience'),
-            onPressed: () =>
-                context.go('/career/edit/experience/new?origin=career'),
-            icon: const Icon(Icons.add, size: 18),
-            label: Text(copy.addAction),
+          const SizedBox(height: TokensV0.space16),
+          _SectionCard(
+            key: const Key('career-edit-personal'),
+            icon: Icons.person_outline,
+            title: copy.personalInformation,
+            badge: '$contactDone/3',
+            done: contactDone == 3,
+            onTap: () => context.go('/career/personal'),
+            child: field('full_name').isEmpty && location.isEmpty
+                ? empty()
+                : Text(
+                    [
+                      field('full_name'),
+                      location,
+                    ].where((v) => v.isNotEmpty).join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: secondary,
+                  ),
           ),
-          child: lines(EntitySection.experience),
-        ),
-        _SectionCard(
-          key: const Key('career-volunteer'),
-          icon: Icons.volunteer_activism_outlined,
-          title: copy.sectionVolunteer,
-          badge: count(EntitySection.volunteer),
-          done: false,
-          onTap: () => context.go('/career/section/volunteer'),
-          trailing: TextButton.icon(
-            key: const Key('career-add-volunteer'),
-            onPressed: () =>
-                context.go('/career/edit/volunteer/new?origin=career'),
-            icon: const Icon(Icons.add, size: 18),
-            label: Text(copy.addAction),
+          _SectionCard(
+            key: const Key('career-edit-summary'),
+            icon: Icons.notes_outlined,
+            title: copy.stepSummary,
+            onTap: () => context.go('/career/summary'),
+            child: profile.summary.trim().isEmpty
+                ? empty()
+                : Text(
+                    profile.summary.trim(),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium,
+                  ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              lines(EntitySection.volunteer),
-            ],
+          _SectionCard(
+            key: const Key('career-experience'),
+            icon: Icons.work_outline,
+            title: copy.stepExperience,
+            badge: count(EntitySection.experience),
+            done: profile.completeCount(EntitySection.experience) > 0,
+            onTap: () => context.go('/career/section/experience'),
+            trailing: TextButton.icon(
+              key: const Key('career-add-experience'),
+              onPressed: () =>
+                  context.go('/career/edit/experience/new?origin=career'),
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(copy.addAction),
+            ),
+            child: lines(EntitySection.experience),
           ),
-        ),
-        _SectionCard(
-          key: const Key('career-education'),
-          icon: Icons.school_outlined,
-          title: copy.stepEducation,
-          badge: count(EntitySection.education),
-          done: profile.completeCount(EntitySection.education) > 0,
-          onTap: () => context.go('/career/section/education'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [lines(EntitySection.education, max: 1)],
+          _SectionCard(
+            key: const Key('career-volunteer'),
+            icon: Icons.volunteer_activism_outlined,
+            title: copy.sectionVolunteer,
+            badge: count(EntitySection.volunteer),
+            done: false,
+            onTap: () => context.go('/career/section/volunteer'),
+            trailing: TextButton.icon(
+              key: const Key('career-add-volunteer'),
+              onPressed: () =>
+                  context.go('/career/edit/volunteer/new?origin=career'),
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(copy.addAction),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [lines(EntitySection.volunteer)],
+            ),
           ),
-        ),
-        _SectionCard(
-          key: const Key('career-certifications'),
-          icon: Icons.workspace_premium_outlined,
-          title: copy.sectionCertifications,
-          badge: count(EntitySection.certification),
-          onTap: () => context.go('/career/section/certification'),
-          child: lines(EntitySection.certification),
-        ),
-        _SectionCard(
-          key: const Key('career-achievements'),
-          icon: Icons.emoji_events_outlined,
-          title: copy.sectionAchievements,
-          badge: count(EntitySection.achievement),
-          onTap: () => context.go('/career/section/achievement'),
-          child: lines(EntitySection.achievement),
-        ),
-        _SectionCard(
-          key: const Key('career-skills-languages'),
-          icon: Icons.psychology_outlined,
-          title: copy.skillsAndLanguages,
-          badge:
-              '${count(EntitySection.skill)} · ${count(EntitySection.language)}',
-          done: skills.isNotEmpty || languages.isNotEmpty,
-          onTap: () => context.go('/career/section/skills-languages'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (skills.isNotEmpty)
-                Wrap(
-                  spacing: TokensV0.space8,
-                  runSpacing: TokensV0.space8,
-                  children: [
-                    for (final s in skills.take(6))
-                      _Tag(label: s.text('name')),
-                    if (skills.length > 6)
-                      _Tag(
-                        label: copy.moreCount(skills.length - 6),
-                        muted: true,
-                      ),
-                  ],
-                )
-              else
-                empty(),
-              const SizedBox(height: TokensV0.space8),
-              if (languages.isEmpty)
-                empty()
-              else
-                Text(
-                  languages
-                      .map(
-                        (l) =>
-                            '${l.text('name')} (${proficiencyLabel(copy, l.text('proficiency'))})',
-                      )
-                      .join(' · '),
-                ),
-            ],
+          _SectionCard(
+            key: const Key('career-education'),
+            icon: Icons.school_outlined,
+            title: sectionTitle(copy, EntitySection.education),
+            badge: count(EntitySection.education),
+            done: profile.completeCount(EntitySection.education) > 0,
+            onTap: () => context.go('/career/section/education'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [lines(EntitySection.education, max: 1)],
+            ),
           ),
-        ),
-        _SectionCard(
-          key: const Key('career-projects'),
-          icon: Icons.folder_outlined,
-          title: copy.sectionProjects,
-          badge: count(EntitySection.project),
-          onTap: () => context.go('/career/section/project'),
-          child: lines(EntitySection.project),
-        ),
+          _SectionCard(
+            key: const Key('career-certifications'),
+            icon: Icons.workspace_premium_outlined,
+            title: copy.sectionCertifications,
+            badge: count(EntitySection.certification),
+            onTap: () => context.go('/career/section/certification'),
+            child: lines(EntitySection.certification),
+          ),
+          _SectionCard(
+            key: const Key('career-achievements'),
+            icon: Icons.emoji_events_outlined,
+            title: copy.sectionAchievements,
+            badge: count(EntitySection.achievement),
+            onTap: () => context.go('/career/section/achievement'),
+            child: lines(EntitySection.achievement),
+          ),
+          _SectionCard(
+            key: const Key('career-skills-languages'),
+            icon: Icons.psychology_outlined,
+            title: copy.skillsAndLanguages,
+            badge: skills.isEmpty && languages.isEmpty
+                ? null
+                : '${skills.length} · ${languages.length}',
+            done: skills.isNotEmpty || languages.isNotEmpty,
+            onTap: () => context.go('/career/section/skills-languages'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (skills.isNotEmpty)
+                  Wrap(
+                    spacing: TokensV0.space8,
+                    runSpacing: TokensV0.space8,
+                    children: [
+                      for (final s in skills.take(6))
+                        _Tag(label: s.text('name')),
+                      if (skills.length > 6)
+                        _Tag(
+                          label: copy.moreCount(skills.length - 6),
+                          muted: true,
+                        ),
+                    ],
+                  )
+                else
+                  empty(),
+                const SizedBox(height: TokensV0.space8),
+                if (languages.isEmpty)
+                  empty()
+                else
+                  Text(
+                    languages
+                        .map(
+                          (l) =>
+                              '${l.text('name')} (${proficiencyLabel(copy, l.text('proficiency'))})',
+                        )
+                        .join(' · '),
+                  ),
+              ],
+            ),
+          ),
+          _SectionCard(
+            key: const Key('career-projects'),
+            icon: Icons.folder_outlined,
+            title: copy.sectionProjects,
+            badge: count(EntitySection.project),
+            onTap: () => context.go('/career/section/project'),
+            child: lines(EntitySection.project),
+          ),
         ],
       ],
     );

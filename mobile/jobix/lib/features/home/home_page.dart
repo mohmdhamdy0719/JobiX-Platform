@@ -208,7 +208,9 @@ class HomePage extends ConsumerWidget {
                     const SizedBox(height: TokensV0.space16),
                     PrimaryAction(
                       key: const Key('continue-career'),
-                      label: copy.continueCareer,
+                      label: journey.valueOrNull?.complete == true
+                          ? copy.careerTitle
+                          : copy.continueProfile,
                       icon: Icons.arrow_forward,
                       onPressed: () => context.go('/career'),
                     ),

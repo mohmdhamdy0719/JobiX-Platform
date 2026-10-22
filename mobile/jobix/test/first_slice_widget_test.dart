@@ -24,6 +24,7 @@ import 'package:jobix/features/career_profile/career_profile.dart';
 import 'package:jobix/features/career_profile/career_profile_repository.dart';
 import 'package:jobix/features/core_mvp/core_api.dart';
 import 'package:jobix/features/resume/resume_export_panel.dart';
+import 'package:jobix/features/resume/resume_language_repository.dart';
 import 'package:jobix/features/career_profile/text_section_repository.dart';
 import 'package:jobix/features/onboarding/research_context.dart';
 import 'package:jobix/features/career_profile/entity_repository.dart';
@@ -94,6 +95,7 @@ void main() {
         return http.Response(
           jsonEncode({'language': 'en', 'version': 4}),
           200,
+          request: request,
           headers: {'content-type': 'application/json'},
         );
       }
@@ -110,6 +112,7 @@ void main() {
             'version': (requestBody['expected_version'] as int) + 1,
           }),
           200,
+          request: request,
           headers: {'content-type': 'application/json'},
         );
       }
@@ -158,6 +161,10 @@ void main() {
       encryptedDatabase(File('${directory.path}/db'), databaseKey),
     );
     api = FakeProfileApi();
+    api.server = CareerProfile.fromJson({
+      ...api.server.toJson(),
+      'cv_language': 'en',
+    });
     repository = DraftRepository(database, api, 'user-one', () => true);
     auth = FakeAuthApi();
     core = _CoreFixture();
@@ -186,6 +193,8 @@ void main() {
     bool providerFailure = false,
     Completer<AuthProviderSettings>? pendingProviderSettings,
     bool settle = true,
+    bool missingResumeLanguage = false,
+    String? configuredResumeLanguage,
     Size size = const Size(402, 874),
     EntityRepository? entityOverride,
   }) async {
@@ -193,6 +202,12 @@ void main() {
     tester.view.devicePixelRatio = 1;
     await database.saveOnboarding(progress.encode());
     await database.setSetting('locale', locale);
+    if (missingResumeLanguage) {
+      api.server = CareerProfile.fromJson({
+        ...api.server.toJson(),
+        'cv_language': null,
+      });
+    }
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWith((_) async => database),
@@ -244,6 +259,9 @@ void main() {
           (_) async => EducationCatalogData.fallback,
         ),
         firstEntryProvider.overrideWith((_) async => newEntry),
+        savedResumeLanguageProvider(api.server.id).overrideWith(
+          (_) async => configuredResumeLanguage ?? api.server.resumeLanguage,
+        ),
         contextMergeProvider.overrideWith((_) async {}),
       ],
     );
@@ -1130,6 +1148,7 @@ void main() {
           baseVersion: 1,
           personal: {'full_name': 'Unfinished'},
           resumeLanguage: 'en',
+          localOnly: true,
         ),
       );
       await pump(tester, state: StartupState.signedIn);
@@ -1145,7 +1164,7 @@ void main() {
         '/career',
       );
       expect(
-        (await repository.load()).personal['full_name'],
+        (await repository.draft(api.server))!.personal['full_name'],
         'Unfinished',
       );
     },
@@ -1153,11 +1172,151 @@ void main() {
   testWidgets(
     'new registration initializes Resume language from the app locale',
     (tester) async {
-      await pump(tester, state: StartupState.signedIn, newEntry: true);
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        newEntry: true,
+        missingResumeLanguage: true,
+      );
       expect(find.byKey(const Key('resume-en')), findsOneWidget);
       expect(find.byKey(const Key('personal-full_name')), findsOneWidget);
-      expect(tester.widget<ChoiceChip>(find.byKey(const Key('resume-en'))).selected, true);
-      expect(find.textContaining('Choose a Resume language before editing'), findsNothing);
+      expect(
+        tester.widget<ChoiceChip>(find.byKey(const Key('resume-en'))).selected,
+        true,
+      );
+      expect(
+        find.textContaining('Choose a Resume language before editing'),
+        findsNothing,
+      );
+    },
+  );
+  testWidgets(
+    'Arabic registration language choices keep equal geometry without saving',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        newEntry: true,
+        missingResumeLanguage: true,
+        locale: 'ar',
+      );
+      final english = find.byKey(const Key('resume-en'));
+      final arabic = find.byKey(const Key('resume-ar'));
+      expect(tester.widget<ChoiceChip>(arabic).selected, isTrue);
+      expect(tester.getSize(english), tester.getSize(arabic));
+      await tester.tap(english);
+      await tester.pumpAndSettle();
+      expect(tester.getSize(english), tester.getSize(arabic));
+      expect(api.requests, isEmpty);
+    },
+  );
+  testWidgets('new registration preserves an existing saved Resume language', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      newEntry: true,
+      locale: 'ar',
+    );
+    expect(
+      tester.widget<ChoiceChip>(find.byKey(const Key('resume-en'))).selected,
+      isTrue,
+    );
+    expect(api.requests, isEmpty);
+  });
+  testWidgets('legacy missing Resume language has a clear Career fallback', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      missingResumeLanguage: true,
+    );
+    await route(tester, '/career');
+    expect(
+      find.text('Choose a Resume language before editing your information.'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('career-change-resume-language')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('career-edit-personal')), findsNothing);
+    expect(api.requests, isEmpty);
+  });
+  testWidgets(
+    'Career Personal uses confirmed configuration when profile language is missing',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        missingResumeLanguage: true,
+        configuredResumeLanguage: 'ar',
+      );
+      await route(tester, '/career/personal');
+      expect(find.byKey(const Key('personal-full_name')), findsOneWidget);
+      expect(find.byKey(const Key('resume-en')), findsNothing);
+      expect(find.byKey(const Key('resume-ar')), findsNothing);
+      expect(api.requests, isEmpty);
+    },
+  );
+  testWidgets(
+    'Career section lists are independent and do not display wizard steps',
+    (tester) async {
+      await pump(tester, state: StartupState.signedIn);
+      await route(tester, '/career/section/experience');
+      var copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+      expect(find.text(copy.sectionVolunteer), findsNothing);
+      expect(find.byKey(const Key('builder-continue')), findsNothing);
+      expect(find.byKey(const Key('career-section-back')), findsOneWidget);
+      await route(tester, '/career/section/skills-languages');
+      copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+      expect(find.text(copy.sectionSkills), findsOneWidget);
+      expect(find.text(copy.sectionLanguages), findsOneWidget);
+      expect(find.text(copy.sectionProjects), findsNothing);
+      expect(find.byKey(const Key('builder-continue')), findsNothing);
+    },
+  );
+  testWidgets(
+    'Career language Done persists through the existing versioned RPC',
+    (tester) async {
+      resumeClient.dispose();
+      resumeClient = await createAuthenticatedResumeClient();
+      await pump(tester, state: StartupState.signedIn);
+      await route(tester, '/career');
+      await tester.tap(find.byKey(const Key('career-change-resume-language')));
+      await tester.pumpAndSettle();
+      expect(languageRequests.single['rpc'], 'read_resume_configuration');
+      expect(
+        find.byKey(const Key('career-resume-language-ar')),
+        findsOneWidget,
+        reason: tester
+            .widgetList<Text>(find.byType(Text))
+            .map((text) => text.data)
+            .join(' | '),
+      );
+      await tester.tap(find.byKey(const Key('career-resume-language-ar')));
+      await tester.tap(find.byKey(const Key('career-resume-language-done')));
+      await tester.pumpAndSettle();
+      final write = languageRequests.last['request'] as Map<String, dynamic>;
+      expect(languageRequests.last['rpc'], 'save_resume_configuration');
+      expect(write['language'], 'ar');
+      expect(write['expected_version'], 4);
+      expect(write['template_id'], 'resume_ats_ar_v1');
+      expect(
+        await database.setting(
+          'resume:${testSession().user.id}:${api.server.id}',
+        ),
+        isNull,
+      );
+      expect(
+        find.byKey(const Key('career-resume-language-done')),
+        findsNothing,
+      );
+      await route(tester, '/career/personal');
+      expect(find.byKey(const Key('resume-en')), findsNothing);
+      expect(find.byKey(const Key('resume-ar')), findsNothing);
     },
   );
   testWidgets(
@@ -1561,6 +1720,31 @@ void main() {
       },
     );
   }
+  testWidgets(
+    'Google action is immediately visible but disabled during provider discovery',
+    (tester) async {
+      final settings = Completer<AuthProviderSettings>();
+      await pump(
+        tester,
+        progress: complete,
+        pendingProviderSettings: settings,
+        settle: false,
+      );
+      await route(tester, '/auth?mode=login', settle: false);
+      await tester.pump(const Duration(milliseconds: 100));
+      final button = find.byKey(const Key('auth-google'));
+      expect(button, findsOneWidget);
+      expect(tester.widget<OutlinedButton>(button).onPressed, isNull);
+      expect(
+        find.text('Checking Google sign-in availability…'),
+        findsOneWidget,
+      );
+      expect(auth.calls, isEmpty);
+      settings.complete(const AuthProviderSettings(googleEnabled: false));
+      await tester.pumpAndSettle();
+      expect(button, findsNothing);
+    },
+  );
   testWidgets('disabled Google is hidden without preventing email login', (
     tester,
   ) async {
@@ -3100,6 +3284,34 @@ void main() {
     expect(entities.requests, isEmpty);
     expect(await repo.savedDrafts(api.server.id, draft.section), isEmpty);
     expect(api.server.of(EntitySection.experience).single.id, complete.id);
+  });
+
+  testWidgets('blank and checkbox-only entries cannot become local Drafts', (
+    tester,
+  ) async {
+    await pump(tester, state: StartupState.signedIn);
+    await route(tester, '/career/edit/experience/new?origin=career');
+    await tester.tap(find.byKey(const Key('editor-save')));
+    await tester.pumpAndSettle();
+    var copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(copy.draftNeedsInformation), findsWidgets);
+    expect(find.text('Save as draft?'), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('field-is_current')));
+    await tester.tap(find.byKey(const Key('field-is_current')));
+    await tester.ensureVisible(find.byKey(const Key('editor-save')));
+    await tester.tap(find.byKey(const Key('editor-save')));
+    await tester.pumpAndSettle();
+    copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+    expect(find.text(copy.draftNeedsInformation), findsWidgets);
+    expect(find.text('Save as draft?'), findsNothing);
+    expect(entities.requests, isEmpty);
+    expect(
+      await EntityRepository(
+        repository,
+        entities.send,
+      ).savedDrafts(api.server.id, EntitySection.experience),
+      isEmpty,
+    );
   });
 
   for (final section in EntitySection.values) {

@@ -257,7 +257,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/career/personal',
                 builder: (_, state) => PersonalInformationPage(
-                  origin: state.uri.queryParameters['origin'],
+                  origin: state.uri.queryParameters['origin'] ?? 'career',
                 ),
               ),
               GoRoute(

@@ -154,27 +154,37 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       orElse: () => false,
     );
     final googleChecking = settings.isLoading;
-    Widget googleButton() => OutlinedButton.icon(
+    Widget googleButton({bool showBrand = false}) {
+      if (!showBrand && !googleChecking) {
+        return OutlinedButton(
           key: const Key('auth-google'),
           onPressed: googleEnabled && !busy ? google : null,
-          icon: googleChecking
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text(
-                  'G',
-                  style: TextStyle(
-                    color: Color(0xFF4285F4),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 19,
-                  ),
-                ),
-          label: Text(
-            googleChecking ? copy.googleCheckingAvailability : copy.googleSignIn,
-          ),
+          child: Text(copy.googleSignIn),
         );
+      }
+      return OutlinedButton.icon(
+        key: const Key('auth-google'),
+        onPressed: googleEnabled && !busy ? google : null,
+        icon: googleChecking
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text(
+                'G',
+                style: TextStyle(
+                  color: Color(0xFF4285F4),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 19,
+                ),
+              ),
+        label: Text(
+          googleChecking ? copy.googleCheckingAvailability : copy.googleSignIn,
+        ),
+      );
+    }
+
     return SliceScaffold(
       title: !gateway ? title : null,
       leading: gateway
@@ -244,7 +254,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                 ),
                 if (googleEnabled || googleChecking) ...[
                   const SizedBox(height: TokensV0.space12),
-                  googleButton(),
+                  googleButton(showBrand: true),
                 ],
               ] else if (confirm) ...[
                 PrimaryAction(
