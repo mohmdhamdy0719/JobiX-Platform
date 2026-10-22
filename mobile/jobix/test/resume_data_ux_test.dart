@@ -1,12 +1,266 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jobix/features/builder/entity_cards.dart';
+import 'package:jobix/features/builder/education_catalog.dart';
+import 'package:jobix/features/personal_information/country_autocomplete.dart';
 import 'package:jobix/features/builder/section_writing_guidance.dart';
 import 'package:jobix/features/career_profile/profile_sections.dart';
 import 'package:jobix/features/career_profile/summary_examples.dart';
+import 'package:jobix/features/career_profile/summary_writing_hints.dart';
 import 'package:jobix/l10n/app_localizations.dart';
 
 void main() {
+  for (final appLanguage in ['en', 'ar']) {
+    for (final resumeLanguage in ['en', 'ar']) {
+      testWidgets(
+        'writing samples use Resume $resumeLanguage; controls use app $appLanguage',
+        (tester) async {
+          final controller = TextEditingController(
+            text: 'Existing user content',
+          );
+          addTearDown(controller.dispose);
+          var changes = 0;
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: Locale(appLanguage),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: SummaryExamplesButton(
+                  controller: controller,
+                  enabled: true,
+                  resumeLanguage: resumeLanguage,
+                  onChanged: (_) => changes++,
+                ),
+              ),
+            ),
+          );
+          final uiArabic = appLanguage == 'ar';
+          final contentArabic = resumeLanguage == 'ar';
+          expect(
+            find.text(
+              uiArabic ? 'استكشف أمثلة الملخص' : 'Explore summary examples',
+            ),
+            findsOneWidget,
+          );
+          await tester.tap(find.byKey(const Key('explore-summary-examples')));
+          await tester.pumpAndSettle();
+          expect(
+            find.text(
+              (uiArabic
+                      ? summaryExampleCategoriesArabic
+                      : summaryExampleCategoriesEnglish)
+                  .first,
+            ),
+            findsOneWidget,
+          );
+          final field = tester.widget<TextFormField>(
+            find.byKey(const ValueKey('summary-example-0')),
+          );
+          expect(
+            field.initialValue,
+            (contentArabic ? summaryExamplesArabic : summaryExamplesEnglish)
+                .first,
+          );
+          expect(
+            tester
+                .widget<TextField>(
+                  find.descendant(
+                    of: find.byKey(const ValueKey('summary-example-0')),
+                    matching: find.byType(TextField),
+                  ),
+                )
+                .textDirection,
+            contentArabic ? TextDirection.rtl : TextDirection.ltr,
+          );
+          expect(
+            find.text(uiArabic ? 'استخدام هذا الملخص' : 'Use this summary'),
+            findsOneWidget,
+          );
+          await tester.tap(find.text(uiArabic ? 'إغلاق' : 'Close'));
+          await tester.pumpAndSettle();
+          expect(controller.text, 'Existing user content');
+          expect(changes, 0);
+        },
+      );
+
+      testWidgets(
+        'writing guidance uses Resume $resumeLanguage with app $appLanguage chrome',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: Locale(appLanguage),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      SummaryWritingHints(resumeLanguage: resumeLanguage),
+                      SectionWritingGuidance(
+                        section: EntitySection.experience,
+                        resumeLanguage: resumeLanguage,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+          expect(
+            find.text(
+              appLanguage == 'ar'
+                  ? 'نصائح لكتابة ملخص مهني'
+                  : 'Tips to help you write a professional summary',
+            ),
+            findsOneWidget,
+          );
+          await tester.tap(find.byKey(const Key('summary-writing-guidance')));
+          await tester.pumpAndSettle();
+          expect(
+            find.text(
+              resumeLanguage == 'ar'
+                  ? 'ما طبيعة عملك، أو ما الدور الذي تستهدفه؟'
+                  : 'What kind of work do you do, or what role are you targeting?',
+            ),
+            findsOneWidget,
+          );
+          final section = find.byKey(const Key('section-writing-guidance'));
+          await tester.ensureVisible(section);
+          await tester.tap(section);
+          await tester.pumpAndSettle();
+          expect(
+            find.text(
+              resumeLanguage == 'ar'
+                  ? 'ما دورك وما مسؤولياتك؟'
+                  : 'What was your role and what were you responsible for?',
+            ),
+            findsOneWidget,
+          );
+          expect(find.byType(TextField), findsNothing);
+        },
+      );
+    }
+  }
+  for (final resumeLanguage in ['en', 'ar']) {
+    final appLanguage = resumeLanguage == 'ar' ? 'en' : 'ar';
+    testWidgets(
+      'country autofill uses Resume $resumeLanguage, not app $appLanguage',
+      (tester) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+        Future<void> waitForCatalog() async {
+          await tester.runAsync(() async {
+            await tester
+                .widget<RawAutocomplete<String>>(
+                  find.byType(RawAutocomplete<String>),
+                )
+                .optionsBuilder(TextEditingValue.empty);
+          });
+          await tester.pumpAndSettle();
+        }
+
+        Widget country(String ui, String writing) => MaterialApp(
+          locale: Locale(ui),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CountryAutocomplete(
+              controller: controller,
+              language: writing,
+              uiLanguage: ui,
+              onChanged: (_) {},
+              hint: writing == 'ar' ? 'الدولة' : 'Country',
+              clearLabel: ui == 'ar' ? 'مسح الحقل' : 'Clear field',
+            ),
+          ),
+        );
+        await tester.pumpWidget(country(appLanguage, resumeLanguage));
+        await waitForCatalog();
+        final expected = resumeLanguage == 'ar' ? 'مصر' : 'Egypt';
+        final query = resumeLanguage == 'ar' ? 'مص' : 'Egy';
+        expect(
+          await tester
+              .widget<RawAutocomplete<String>>(
+                find.byType(RawAutocomplete<String>),
+              )
+              .optionsBuilder(TextEditingValue(text: query)),
+          contains(expected),
+          reason: 'Bundled country data must be loaded before suggesting.',
+        );
+        await tester.tap(find.byType(TextField));
+        await tester.enterText(find.byType(TextField), query);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(expected));
+        await tester.pumpAndSettle();
+        expect(controller.text, expected);
+        await tester.pumpWidget(country(resumeLanguage, resumeLanguage));
+        await waitForCatalog();
+        expect(
+          controller.text,
+          expected,
+        ); // App-language switching never translates data.
+        await tester.pumpWidget(country(resumeLanguage, appLanguage));
+        await waitForCatalog();
+        expect(
+          controller.text,
+          expected,
+        ); // Resume-language switching changes suggestions only.
+        await tester.enterText(
+          find.byType(TextField),
+          appLanguage == 'ar' ? 'مص' : 'Egy',
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.text(appLanguage == 'ar' ? 'مصر' : 'Egypt'),
+          findsOneWidget,
+        );
+      },
+    );
+    testWidgets(
+      'education autofill uses Resume $resumeLanguage, not app $appLanguage',
+      (tester) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+        Widget education(String ui, String writing) => MaterialApp(
+          locale: Locale(ui),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: EducationAutocompleteField(
+              controller: controller,
+              label: ui == 'ar' ? 'الجامعة' : 'University',
+              hint: writing == 'ar' ? 'اكتب جامعتك' : 'Your university',
+              language: writing,
+              suggestions: const [
+                EducationSuggestion(
+                  nameEn: 'Cairo University',
+                  nameAr: 'جامعة القاهرة',
+                ),
+              ],
+              onChanged: (_) {},
+              clearLabel: ui == 'ar' ? 'مسح الحقل' : 'Clear field',
+            ),
+          ),
+        );
+        await tester.pumpWidget(education(appLanguage, resumeLanguage));
+        await tester.enterText(find.byType(TextField), 'cairo');
+        await tester.pumpAndSettle();
+        final expected = resumeLanguage == 'ar'
+            ? 'جامعة القاهرة'
+            : 'Cairo University';
+        await tester.tap(find.text(expected));
+        await tester.pumpAndSettle();
+        expect(controller.text, expected);
+        await tester.pumpWidget(education(resumeLanguage, resumeLanguage));
+        await tester.pumpAndSettle();
+        expect(controller.text, expected);
+        await tester.pumpWidget(education(resumeLanguage, appLanguage));
+        await tester.pumpAndSettle();
+        expect(controller.text, expected);
+      },
+    );
+  }
   for (final language in ['en', 'ar']) {
     testWidgets(
       'summary samples are read-only, bounded, and explicit $language',

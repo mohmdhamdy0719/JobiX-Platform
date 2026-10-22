@@ -1751,7 +1751,7 @@ abstract class AppLocalizations {
   /// No description provided for @saveConflict.
   ///
   /// In en, this message translates to:
-  /// **'This profile changed on another device. Reload to see the latest version; your edits stay on this device.'**
+  /// **'The saved Profile changed after this screen was opened. Reload to see the latest version; your edits stay on this device.'**
   String get saveConflict;
 
   /// No description provided for @reloadAction.

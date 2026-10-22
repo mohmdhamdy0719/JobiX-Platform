@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/design/jobix_feedback.dart';
+import '../../core/design/jobix_dialog.dart';
+import '../../core/design/tokens.dart';
 import '../../core/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../career_profile/career_profile.dart';
@@ -137,29 +139,63 @@ class _ResumeLanguageDialogState extends State<_ResumeLanguageDialog> {
   @override
   Widget build(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
-    return AlertDialog(
+    return JobixAlertDialog(
+      icon: const Icon(Icons.translate, color: TokensV0.primary),
       title: Text(copy.changeResumeLanguage),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(copy.resumeLanguageHint),
+          const SizedBox(height: TokensV0.space16),
           for (final option in const [
             ('en', 'English (LTR)'),
             ('ar', 'العربية (RTL)'),
           ])
-            RadioListTile<String>(
-              key: Key('career-resume-language-${option.$1}'),
-              value: option.$1,
-              groupValue: selected,
-              onChanged: saving || pendingRequest
-                  ? null
-                  : (value) => setState(() => selected = value!),
-              title: Text(option.$2),
+            Padding(
+              padding: const EdgeInsets.only(bottom: TokensV0.space8),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: selected == option.$1
+                      ? TokensV0.secondarySurface
+                      : TokensV0.surfaceCard,
+                  borderRadius: BorderRadius.circular(TokensV0.controlRadius),
+                  border: Border.all(
+                    color: selected == option.$1
+                        ? TokensV0.primary
+                        : TokensV0.border,
+                  ),
+                ),
+                child: RadioListTile<String>(
+                  key: Key('career-resume-language-${option.$1}'),
+                  value: option.$1,
+                  groupValue: selected,
+                  onChanged: saving || pendingRequest
+                      ? null
+                      : (value) => setState(() => selected = value!),
+                  title: Text(
+                    option.$2,
+                    textDirection: option.$1 == 'ar'
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                    style: TokensV0.languageChoiceLabel(
+                      languageCode: option.$1,
+                      selected: selected == option.$1,
+                    ),
+                  ),
+                ),
+              ),
             ),
           if (error != null) Semantics(liveRegion: true, child: Text(error!)),
         ],
       ),
       actions: [
-        FilledButton(
+        if (!pendingRequest)
+          JobixDialogAction.secondary(
+            onPressed: saving ? null : () => Navigator.pop(context, false),
+            child: Text(copy.cancelAction),
+          ),
+        JobixDialogAction.primary(
           key: const Key('career-resume-language-done'),
           onPressed: saving ? null : save,
           child: Text(copy.doneAction),

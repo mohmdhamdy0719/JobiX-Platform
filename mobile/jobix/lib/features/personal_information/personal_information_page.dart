@@ -48,6 +48,8 @@ class _PersonalInformationPageState
   TextSectionRepository? textRepository;
   TextSectionDraft? targetRoleDraft;
   String roleBaseline = '';
+  Map<String, String> personalBaseline = {};
+  String? languageBaseline;
   bool busy = false, failed = false, dirty = false, allowPop = false;
   String? notice;
   List<String> cityHistory = [];
@@ -56,7 +58,7 @@ class _PersonalInformationPageState
       dirty ||
       (profile != null &&
           targetRoleDraft != null &&
-          (targetRoleDraft!.text != roleBaseline ||
+          (targetRoleDraft!.text.trim() != roleBaseline.trim() ||
               targetRoleDraft!.request != null));
   bool get needsServerSave =>
       hasUnsavedChanges ||
@@ -138,7 +140,7 @@ class _PersonalInformationPageState
       }
       cityHistory =
           rawCities?.split('\n').where((v) => v.isNotEmpty).toList() ?? [];
-      dirty = prefillEmail || initializeLanguage;
+      resetEditBaseline();
       notice = local?.localOnly == true || localRole?.localOnly == true
           ? AppLocalizations.of(context)!.savedDevice
           : null;
@@ -165,9 +167,21 @@ class _PersonalInformationPageState
     if (hasPendingSave) return;
     setState(() {
       draft = value;
-      dirty = true;
+      dirty =
+          personalFields.any(
+            (field) =>
+                (value.personal[field] ?? '').trim() !=
+                (personalBaseline[field] ?? '').trim(),
+          ) ||
+          value.resumeLanguage != languageBaseline;
       notice = null;
     });
+  }
+
+  void resetEditBaseline() {
+    personalBaseline = Map<String, String>.from(draft!.personal);
+    languageBaseline = draft!.resumeLanguage;
+    dirty = false;
   }
 
   void retainTargetRole(String value) {
@@ -181,8 +195,9 @@ class _PersonalInformationPageState
   }
 
   Future<void> save() async {
-    if (busy) return;
+    if (busy || !needsServerSave) return;
     var savingRole = false;
+    var confirmedMutation = false;
     final copy = AppLocalizations.of(context)!;
     setState(() {
       busy = true;
@@ -226,6 +241,7 @@ class _PersonalInformationPageState
       if (targetRoleDraft!.request != null) {
         savingRole = true;
         profile = await textRepository!.save(targetRoleDraft!);
+        confirmedMutation = true;
         savingRole = false;
         targetRoleDraft =
             await textRepository!.load(profile!, 'target_role') ??
@@ -247,11 +263,20 @@ class _PersonalInformationPageState
       }
       final personalChanged =
           draft!.frozen != null ||
-          personalFields.any(
-            (field) => draft!.personal[field] != profile!.personal[field],
-          ) ||
-          draft!.resumeLanguage != profile!.resumeLanguage;
+          (dirty || draft!.localOnly) &&
+              (personalFields.any(
+                    (field) =>
+                        (draft!.personal[field] ?? '').trim() !=
+                        (profile!.personal[field] ?? '').trim(),
+                  ) ||
+                  draft!.resumeLanguage != profile!.resumeLanguage);
+      if (!personalChanged && draft!.localOnly) {
+        // An acknowledged saved value may have caught up with an older local
+        // draft. Do not submit its obsolete version or invent a new mutation.
+        await repository!.discard(profile!.id);
+      }
       final saved = personalChanged ? await repository!.save(draft!) : profile!;
+      confirmedMutation = confirmedMutation || personalChanged;
       if (!mounted) return;
       profile = saved;
       final retained = await repository!.draft(saved);
@@ -263,7 +288,7 @@ class _PersonalInformationPageState
             personal: saved.personal,
             resumeLanguage: saved.resumeLanguage,
           );
-      dirty = retained != null;
+      resetEditBaseline();
       for (final field in personalFields) {
         controllers[field]!.text = draft!.personal[field] ?? '';
       }
@@ -291,6 +316,7 @@ class _PersonalInformationPageState
         if (targetRoleController.text.trim() != saved.targetRole.trim()) {
           savingRole = true;
           profile = await textRepository!.save(targetRoleDraft!);
+          confirmedMutation = true;
           savingRole = false;
           targetRoleDraft =
               await textRepository!.load(profile!, 'target_role') ??
@@ -303,16 +329,28 @@ class _PersonalInformationPageState
           targetRoleController.text = targetRoleDraft!.text;
         }
       }
+      if (retained == null) {
+        // Target Role is a second, versioned Profile mutation. Keep the open
+        // Personal form on the final acknowledged version, not the version
+        // preceding that mutation. Never rebase an unresolved request.
+        draft = PersonalDraft(
+          profileId: profile!.id,
+          baseVersion: profile!.version,
+          personal: profile!.personal,
+          resumeLanguage: profile!.resumeLanguage,
+        );
+        resetEditBaseline();
+      }
       ref.invalidate(firstProfileProvider);
       ref.invalidate(unfinishedDraftProvider(saved.id));
       roleBaseline = targetRoleDraft!.text;
       if (mounted) {
         setState(() {
           notice = retained == null && !hasUnsavedChanges
-              ? copy.savedServer
+              ? (confirmedMutation ? copy.savedServer : null)
               : copy.saveFailed;
         });
-        if (retained == null && !hasUnsavedChanges) {
+        if (confirmedMutation && retained == null && !hasUnsavedChanges) {
           showJobixFeedback(
             context,
             copy.localeName.startsWith('ar')
@@ -329,7 +367,7 @@ class _PersonalInformationPageState
         draft = local ?? draft;
         targetRoleDraft = localRole ?? targetRoleDraft;
         roleBaseline = targetRoleDraft!.text;
-        dirty = false;
+        resetEditBaseline();
         notice = copy.savedDevice;
       });
       ref.invalidate(unfinishedDraftProvider(profile!.id));
@@ -460,7 +498,7 @@ class _PersonalInformationPageState
           localOnly: true,
         );
         await repository!.retain(draft!);
-        dirty = false;
+        resetEditBaseline();
       } else {
         await repository!.database.discardDraft(repository!.user, latest.id);
         draft = PersonalDraft(
@@ -469,7 +507,7 @@ class _PersonalInformationPageState
           personal: latest.personal,
           resumeLanguage: latest.resumeLanguage,
         );
-        dirty = false;
+        resetEditBaseline();
         for (final field in personalFields) {
           controllers[field]!.text = draft!.personal[field] ?? '';
         }
@@ -688,40 +726,29 @@ class _PersonalInformationPageState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(copy.personalIntro),
-        if (hasPendingSave ||
-            profile != null &&
-                draft != null &&
-                (draft!.resumeLanguage != profile!.resumeLanguage ||
-                    targetRoleController.text != profile!.targetRole ||
-                    personalFields.any(
-                      (field) =>
-                          draft!.personal[field] != profile!.personal[field],
-                    ))) ...[
+        if (hasPendingSave) ...[
           const SizedBox(height: TokensV0.space12),
           SliceCard(
             child: Text(
-              hasPendingSave
-                  ? (copy.localeName.startsWith('ar')
-                        ? 'لم يتم تأكيد الحفظ. أعد الحفظ لتسوية الطلب الأصلي؛ التعديل متوقف حتى ذلك الحين.'
-                        : 'This save is not confirmed. Retry Save to reconcile the original request; editing is locked until then.')
-                  : copy.localeName.startsWith('ar')
-                  ? 'هذه التغييرات غير محفوظة في حسابك. اختر حفظ لتحديث ملفك.'
-                  : 'These changes are not saved to your account. Choose Save to update your profile.',
+              copy.localeName.startsWith('ar')
+                  ? 'لم يتم تأكيد الحفظ. أعد الحفظ لتسوية الطلب الأصلي؛ التعديل متوقف حتى ذلك الحين.'
+                  : 'This save is not confirmed. Retry Save to reconcile the original request; editing is locked until then.',
             ),
           ),
         ],
-        const SizedBox(height: TokensV0.space24),
-        SliceCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (widget.origin != 'career') ...[
+        if (widget.origin != 'career') ...[
+          const SizedBox(height: TokensV0.space24),
+          SliceCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 SectionHeading(
                   title: copy.resumeLanguage,
                   subtitle: copy.resumeLanguageHint,
                 ),
                 const SizedBox(height: TokensV0.space16),
                 Container(
+                  key: const Key('resume-language-options'),
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: TokensV0.secondarySurface,
@@ -735,7 +762,15 @@ class _PersonalInformationPageState
                           height: 48,
                           child: ChoiceChip(
                             key: const Key('resume-en'),
-                            label: const Text('English (LTR)'),
+                            label: const Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'English (LTR)',
+                                  textDirection: TextDirection.ltr,
+                                ),
+                              ),
+                            ),
                             showCheckmark: true,
                             checkmarkColor: TokensV0.onPrimary,
                             labelStyle: TokensV0.languageChoiceLabel(
@@ -758,7 +793,15 @@ class _PersonalInformationPageState
                           height: 48,
                           child: ChoiceChip(
                             key: const Key('resume-ar'),
-                            label: const Text('العربية (RTL)'),
+                            label: const Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'العربية (RTL)',
+                                  textDirection: TextDirection.rtl,
+                                ),
+                              ),
+                            ),
                             showCheckmark: true,
                             checkmarkColor: TokensV0.onPrimary,
                             labelStyle: TokensV0.languageChoiceLabel(
@@ -778,9 +821,9 @@ class _PersonalInformationPageState
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
+        ],
         if (mergeFailed) ...[
           const SizedBox(height: TokensV0.space16),
           Text(copy.contextPending),
@@ -798,8 +841,9 @@ class _PersonalInformationPageState
           Text(copy.chooseResumeLanguage)
         else
           PersonalInformationFields(
-            copy: profileCopy,
-            clearLabel: language == 'ar' ? 'مسح الحقل' : 'Clear field',
+            copy: copy,
+            writingCopy: profileCopy,
+            clearLabel: copy.clearField,
             language: language,
             controllers: controllers,
             errors: errors,

@@ -42,12 +42,12 @@ class FakeProfileApi implements ProfileApi {
       );
     }
     final values = Map<String, String>.from(frozen['personal'] as Map);
-    server = CareerProfile(
-      id: server.id,
-      version: server.version + 1,
-      resumeLanguage: frozen['language'] as String?,
-      personal: {for (final f in personalFields) f: (values[f] ?? '').trim()},
-    );
+    server = CareerProfile.fromJson({
+      ...server.toJson(),
+      'profile_version': server.version + 1,
+      'cv_language': frozen['language'] as String?,
+      'personal': {for (final f in personalFields) f: (values[f] ?? '').trim()},
+    });
     acknowledged[draft.commandKey!] = server;
     if (loseNextResponse) {
       loseNextResponse = false;

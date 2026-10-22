@@ -897,7 +897,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get saveConflict =>
-      'تم تغيير هذا الملف على جهاز آخر. أعد التحميل لرؤية أحدث نسخة؛ تبقى تعديلاتك على هذا الجهاز.';
+      'تغيّر الملف المهني المحفوظ بعد فتح هذه الشاشة. أعد التحميل لرؤية أحدث نسخة؛ تبقى تعديلاتك على هذا الجهاز.';
 
   @override
   String get reloadAction => 'إعادة التحميل';

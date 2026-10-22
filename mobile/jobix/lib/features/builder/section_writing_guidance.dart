@@ -4,9 +4,14 @@ import '../career_profile/profile_sections.dart';
 
 /// Read-only Resume-format example and optional, truthful writing guidance.
 class SectionWritingGuidance extends StatelessWidget {
-  const SectionWritingGuidance({required this.section, super.key});
+  const SectionWritingGuidance({
+    required this.section,
+    this.resumeLanguage,
+    super.key,
+  });
 
   final EntitySection section;
+  final String? resumeLanguage;
 
   static const _prompts = <EntitySection, List<(String, String, String, String)>>{
     EntitySection.experience: [
@@ -112,6 +117,7 @@ class SectionWritingGuidance extends StatelessWidget {
     final prompts = _prompts[section];
     if (prompts == null) return const SizedBox.shrink();
     final arabic = Localizations.localeOf(context).languageCode == 'ar';
+    final contentArabic = (resumeLanguage ?? (arabic ? 'ar' : 'en')) == 'ar';
     final heading = _headings[section]!;
     return ExpansionTile(
       key: const Key('section-writing-guidance'),
@@ -122,7 +128,12 @@ class SectionWritingGuidance extends StatelessWidget {
           ExpansionTile(
             key: Key('section-writing-prompt-$i'),
             tilePadding: const EdgeInsetsDirectional.only(start: 12, end: 8),
-            title: Text(arabic ? prompts[i].$2 : prompts[i].$1),
+            title: Text(
+              contentArabic ? prompts[i].$2 : prompts[i].$1,
+              textDirection: contentArabic
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
+            ),
             childrenPadding: const EdgeInsetsDirectional.fromSTEB(
               12,
               0,
@@ -133,7 +144,10 @@ class SectionWritingGuidance extends StatelessWidget {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
-                  '${arabic ? 'مثال:' : 'Example:'} ${arabic ? prompts[i].$4 : prompts[i].$3}',
+                  '${contentArabic ? 'مثال:' : 'Example:'} ${contentArabic ? prompts[i].$4 : prompts[i].$3}',
+                  textDirection: contentArabic
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
                 ),
               ),
             ],

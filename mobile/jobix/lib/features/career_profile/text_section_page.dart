@@ -20,6 +20,7 @@ import 'career_profile.dart';
 import 'career_profile_repository.dart';
 import 'text_section_repository.dart';
 import 'summary_writing_hints.dart';
+import '../resume/resume_language_repository.dart';
 
 String textSectionTitle(BuildContext context, String section) {
   final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
@@ -49,6 +50,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   TextSectionRepository? repository;
   CareerProfile? profile;
   TextSectionDraft? draft;
+  String openedText = '';
   bool busy = false, failed = false, dirty = false, allowPop = false;
   String? notice;
   bool get ar => AppLocalizations.of(context)!.localeName.startsWith('ar');
@@ -113,6 +115,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 : value.targetRole,
           );
       controller.text = draft!.text;
+      openedText = draft!.text;
       setState(() {
         failed = false;
         dirty = false;
@@ -130,7 +133,7 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
     final next = draft!.edit(value);
     setState(() {
       draft = next;
-      dirty = true;
+      dirty = value.trim() != openedText.trim();
       notice = null;
     });
   }
@@ -142,6 +145,24 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
       notice = null;
     });
     try {
+      final savedText = widget.section == 'summary'
+          ? profile!.summary
+          : profile!.targetRole;
+      if (!hasPendingSave && draft!.text.trim() == savedText.trim()) {
+        // No-op Save must not increment the authoritative Profile version.
+        // Submitted/uncertain requests are deliberately never short-circuited.
+        await repository!.discard(profile!, widget.section);
+        draft = TextSectionDraft(
+          profileId: profile!.id,
+          section: widget.section,
+          version: profile!.version,
+          text: savedText,
+        );
+        controller.text = openedText = savedText;
+        dirty = false;
+        ref.invalidate(unfinishedDraftProvider(profile!.id));
+        return;
+      }
       if (draft!.text.trim().runes.length > maximum) {
         setState(
           () => notice = say(
@@ -166,7 +187,8 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                 : result.targetRole,
           );
       controller.text = draft!.text;
-      dirty = retained != null;
+      openedText = draft!.text;
+      dirty = false;
       ref.invalidate(firstProfileProvider);
       ref.invalidate(unfinishedDraftProvider(result.id));
       setState(
@@ -354,6 +376,12 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
   @override
   Widget build(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
+    final writingLanguage = profile == null
+        ? copy.localeName
+        : ref.watch(savedResumeLanguageProvider(profile!.id)).valueOrNull ??
+              profile!.resumeLanguage ??
+              copy.localeName;
+    final writingArabic = writingLanguage.startsWith('ar');
     final count = controller.text.trim().runes.length;
     return JobixBackHandler(
       onBack: leave,
@@ -393,20 +421,21 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                     TextField(
                       key: Key('editor-${widget.section}'),
                       controller: controller,
+                      textDirection: writingArabic
+                          ? TextDirection.rtl
+                          : TextDirection.ltr,
                       readOnly: busy || hasPendingSave,
                       onChanged: edit,
                       minLines: widget.section == 'summary' ? 6 : 1,
                       maxLines: widget.section == 'summary' ? 12 : 3,
                       decoration: InputDecoration(
                         hintText: widget.section == 'summary'
-                            ? say(
-                                'Write about your professional background, strengths, and experience…',
-                                'اكتب عن خلفيتك المهنية ونقاط قوتك وخبراتك…',
-                              )
-                            : say(
-                                'e.g. Senior Frontend Developer',
-                                'مثال: مطوّر واجهات أمامية أول',
-                              ),
+                            ? (writingArabic
+                                  ? 'اكتب عن خلفيتك المهنية ونقاط قوتك وخبراتك…'
+                                  : 'Write about your professional background, strengths, and experience…')
+                            : (writingArabic
+                                  ? 'مثال: مطوّر واجهات أمامية أول'
+                                  : 'e.g. Senior Frontend Developer'),
                         suffixIcon: controller.text.isEmpty
                             ? null
                             : IconButton(
@@ -433,11 +462,12 @@ class _TextSectionPageState extends ConsumerState<TextSectionPage> {
                   controller: controller,
                   enabled: !busy && !hasPendingSave,
                   onChanged: edit,
+                  resumeLanguage: writingLanguage,
                 ),
                 const SizedBox(height: TokensV0.space12),
                 JobixImprovement(original: controller.text),
                 const SizedBox(height: TokensV0.space12),
-                const SummaryWritingHints(),
+                SummaryWritingHints(resumeLanguage: writingLanguage),
                 const SizedBox(height: TokensV0.space12),
               ],
               if (notice != null)

@@ -910,7 +910,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveConflict =>
-      'This profile changed on another device. Reload to see the latest version; your edits stay on this device.';
+      'The saved Profile changed after this screen was opened. Reload to see the latest version; your edits stay on this device.';
 
   @override
   String get reloadAction => 'Reload';

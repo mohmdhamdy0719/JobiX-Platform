@@ -452,8 +452,12 @@ void main() {
           api.server.id,
           section,
         );
+        expect(retained, isNull);
         expect(
-          TextSectionDraft.decode(retained!).text,
+          tester
+              .widget<TextField>(find.byKey(Key('editor-$section')))
+              .controller!
+              .text,
           locale == 'ar' ? 'مسودة' : 'draft',
         );
         await tester.ensureVisible(find.byKey(Key('save-$section')));
@@ -563,6 +567,7 @@ void main() {
           tester,
           state: StartupState.signedIn,
           locale: locale,
+          configuredResumeLanguage: locale,
           size: const Size(360, 1200),
         );
         await route(tester, '/career/edit/${section.key}/new?origin=career');
@@ -574,19 +579,19 @@ void main() {
         );
         final expected = switch ((section, locale)) {
           (EntitySection.education, 'en') =>
-            'Add relevant coursework, projects, honors, or academic achievements.',
+            'Write about relevant coursework, projects, or academic achievements…',
           (EntitySection.volunteer, 'en') =>
             'Describe the cause you supported, your role, and how you contributed.',
           (EntitySection.achievement, 'en') =>
-            'Describe what you achieved, why it mattered, and any measurable result.',
+            'Write about the achievement and why it mattered; include a verified result if relevant.',
           (EntitySection.project, 'en') =>
             "Describe the project's purpose, your contribution, and its outcome.",
           (EntitySection.education, 'ar') =>
-            'أضف المقررات أو المشاريع أو التكريمات أو الإنجازات الأكاديمية ذات الصلة.',
+            'اكتب عن المقررات أو المشاريع أو الإنجازات الأكاديمية ذات الصلة…',
           (EntitySection.volunteer, 'ar') =>
             'صِف القضية التي دعمتها ودورك وكيف أسهمت.',
           (EntitySection.achievement, 'ar') =>
-            'صِف ما حققته، ولماذا كان مهمًا، وأي نتيجة قابلة للقياس.',
+            'اكتب عن الإنجاز وأهميته، واذكر نتيجة موثقة إن وجدت.',
           (EntitySection.project, 'ar') =>
             'صِف هدف المشروع ومساهمتك والنتيجة التي حققها.',
           _ => throw StateError('Uncovered section prompt'),
@@ -670,6 +675,7 @@ void main() {
         profileId: 'profile-one',
         baseVersion: 1,
         personal: {'full_name': 'Local work'},
+        localOnly: true,
       ),
     );
     await pump(tester, state: StartupState.signedIn);
@@ -997,8 +1003,16 @@ void main() {
         'EG',
       );
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
-      await pump(tester, state: StartupState.signedIn, newEntry: true);
-      expect(api.server.personal, isEmpty);
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        newEntry: true,
+        missingResumeLanguage: true,
+      );
+      expect(
+        api.server.personal.values.every((value) => value.isEmpty),
+        isTrue,
+      );
       expect(api.server.resumeLanguage, isNull);
       expect(api.requests, isEmpty);
       noUnsupportedContent(tester);
@@ -1036,14 +1050,17 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile('goldens/slice_personal_empty_en.png'),
       );
-      expect(api.server.personal, isEmpty);
+      expect(
+        api.server.personal.values.every((value) => value.isEmpty),
+        isTrue,
+      );
       expect(api.requests, isEmpty);
       await tester.tap(find.byKey(const Key('builder-continue')));
       await tester.pumpAndSettle();
-      expect(api.server.resumeLanguage, 'en');
+      expect(api.server.resumeLanguage, isNull);
       expect(api.server.personal.values.every((v) => v.isEmpty), true);
-      expect(api.requests.single.frozen!['personal'], isEmpty);
-      // Continue moves on only after the acknowledged save.
+      expect(api.requests, isEmpty);
+      // No user edit: Continue navigates without creating a mutation or Draft.
       expect(
         container!.read(routerProvider).routeInformationProvider.value.uri.path,
         '/builder/2',
@@ -1054,11 +1071,15 @@ void main() {
       await tester.tap(find.byKey(const Key('use-egypt')));
       await tester.pumpAndSettle();
       expect(
-        (await repository.draft(api.server))!.personal['country'],
+        tester
+            .widget<TextField>(find.byKey(const Key('personal-country')))
+            .controller!
+            .text,
         'Egypt',
       );
+      expect(await repository.draft(api.server), isNull);
       expect(api.server.personal['country'], '');
-      expect(api.requests.length, 1);
+      expect(api.requests, isEmpty);
     },
   );
   testWidgets('app language switch changes general UI and persists', (
@@ -1195,26 +1216,43 @@ void main() {
       );
     },
   );
-  testWidgets(
-    'Arabic registration language choices keep equal geometry without saving',
-    (tester) async {
-      await pump(
-        tester,
-        state: StartupState.signedIn,
-        newEntry: true,
-        missingResumeLanguage: true,
-        locale: 'ar',
-      );
-      final english = find.byKey(const Key('resume-en'));
-      final arabic = find.byKey(const Key('resume-ar'));
-      expect(tester.widget<ChoiceChip>(arabic).selected, isTrue);
-      expect(tester.getSize(english), tester.getSize(arabic));
-      await tester.tap(english);
-      await tester.pumpAndSettle();
-      expect(tester.getSize(english), tester.getSize(arabic));
-      expect(api.requests, isEmpty);
-    },
-  );
+  for (final width in [360.0, 600.0]) {
+    testWidgets(
+      'Arabic language choices fill equal halves without saving at $width',
+      (tester) async {
+        await pump(
+          tester,
+          state: StartupState.signedIn,
+          newEntry: true,
+          missingResumeLanguage: true,
+          locale: 'ar',
+          size: Size(width, 1100),
+        );
+        final english = find.byKey(const Key('resume-en'));
+        final arabic = find.byKey(const Key('resume-ar'));
+        expect(tester.widget<ChoiceChip>(arabic).selected, isTrue);
+        expect(tester.getSize(english), tester.getSize(arabic));
+        final optionsWidth = tester
+            .getSize(find.byKey(const Key('resume-language-options')))
+            .width;
+        expect(
+          tester.getSize(english).width + tester.getSize(arabic).width + 6 + 8,
+          closeTo(optionsWidth, 0.1),
+        );
+        final englishSurface = find
+            .descendant(of: english, matching: find.byType(Material))
+            .first;
+        expect(
+          tester.getSize(englishSurface).width,
+          tester.getSize(english).width,
+        );
+        await tester.tap(english);
+        await tester.pumpAndSettle();
+        expect(tester.getSize(english), tester.getSize(arabic));
+        expect(api.requests, isEmpty);
+      },
+    );
+  }
   testWidgets('new registration preserves an existing saved Resume language', (
     tester,
   ) async {
@@ -1338,6 +1376,59 @@ void main() {
       expect(find.byKey(const Key('resume-ar')), findsNothing);
     },
   );
+  testWidgets('Career language Cancel does not send a save request', (
+    tester,
+  ) async {
+    resumeClient.dispose();
+    resumeClient = await createAuthenticatedResumeClient();
+    await pump(tester, state: StartupState.signedIn);
+    await route(tester, '/career');
+    await tester.tap(find.byKey(const Key('career-change-resume-language')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('career-resume-language-ar')));
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(languageRequests.map((r) => r['rpc']), [
+      'read_resume_configuration',
+    ]);
+    expect(api.requests, isEmpty);
+  });
+  for (final resumeLanguage in ['en', 'ar']) {
+    testWidgets(
+      'skill suggestions use saved Resume $resumeLanguage independently of UI',
+      (tester) async {
+        final appLanguage = resumeLanguage == 'ar' ? 'en' : 'ar';
+        await pump(
+          tester,
+          state: StartupState.signedIn,
+          locale: appLanguage,
+          configuredResumeLanguage: resumeLanguage,
+          size: const Size(402, 1100),
+        );
+        await route(tester, '/builder/5');
+        final field = find.byKey(const Key('skill-input'));
+        await tester.enterText(
+          field,
+          resumeLanguage == 'ar' ? 'Comm' : 'تواصل',
+        );
+        await tester.pumpAndSettle();
+        final suggestion = resumeLanguage == 'ar' ? 'التواصل' : 'Communication';
+        await tester.tap(find.text(suggestion));
+        await tester.pumpAndSettle();
+        expect(tester.widget<TextField>(field).controller!.text, suggestion);
+        expect(
+          tester.widget<TextField>(field).decoration!.hintText,
+          resumeLanguage == 'ar' ? 'اكتب مهارة' : 'Type a skill',
+        );
+        await container!
+            .read(localeProvider.notifier)
+            .setOverride(resumeLanguage);
+        await tester.pumpAndSettle();
+        expect(tester.widget<TextField>(field).controller!.text, suggestion);
+        expect(entities.requests, isEmpty); // Selection is not Add/save.
+      },
+    );
+  }
   testWidgets(
     'Target Role is inline, in-memory until explicit Save, and acknowledged by server',
     (tester) async {
@@ -1356,7 +1447,7 @@ void main() {
       );
       await tester.enterText(targetRole, 'Senior Product Manager');
       await tester.pumpAndSettle();
-      expect(find.textContaining('not saved to your account'), findsOneWidget);
+      expect(find.textContaining('not saved to your account'), findsNothing);
       expect(api.requests, isEmpty);
       expect(api.server.targetRole, savedTargetRole);
       final roleRepository = await container!.read(
@@ -1367,7 +1458,10 @@ void main() {
       await tester.tap(find.byKey(const Key('save-personal')));
       await tester.pumpAndSettle();
       expect(api.server.targetRole, 'Senior Product Manager');
-      expect(api.requests, isNotEmpty);
+      expect(
+        api.requests,
+        isEmpty,
+      ); // Target Role must not also save Personal defaults.
     },
   );
   testWidgets(
@@ -1410,13 +1504,25 @@ void main() {
     },
   );
   testWidgets(
-    'App English / Resume Arabic changes only labels and field direction, not content',
+    'app and Resume languages independently control UI and writing hints',
     (tester) async {
       await pump(tester, state: StartupState.signedIn, newEntry: true);
       await tester.tap(find.byKey(const Key('resume-ar')));
       await tester.pumpAndSettle();
-      expect(find.text('Full Name'), findsNothing);
-      expect(find.text('الاسم الكامل'), findsOneWidget);
+      expect(find.text('Full Name'), findsOneWidget);
+      expect(find.text('الاسم الكامل'), findsNothing);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(const Key('personal-full_name')),
+                matching: find.byType(TextField),
+              ),
+            )
+            .decoration!
+            .hintText,
+        'اسمك الكامل',
+      );
       // App-language chrome (Step 1 of the builder) stays English.
       expect(find.text('Continue'), findsOneWidget);
       expect(
@@ -1455,17 +1561,169 @@ void main() {
       await container!.read(localeProvider.notifier).setOverride('ar');
       await tester.pumpAndSettle();
       expect(await database.setting('locale'), 'ar');
-      expect((await repository.draft(api.server))!.resumeLanguage, 'en');
+      expect(await repository.draft(api.server), isNull);
+      expect(
+        tester.widget<ChoiceChip>(find.byKey(const Key('resume-en'))).selected,
+        isTrue,
+      );
       expect(
         tester.widget<TextFormField>(field).controller!.text,
         'مهندس Flutter',
       );
-      expect(find.text('Full Name'), findsOneWidget);
+      expect(find.text('Full Name'), findsNothing);
+      expect(find.text('الاسم الكامل'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(of: field, matching: find.byType(TextField)),
+            )
+            .decoration!
+            .hintText,
+        'Your full name',
+      );
       final ar = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
       expect(find.text(ar.continueAction), findsOneWidget);
       noUnsupportedContent(tester);
     },
   );
+  testWidgets(
+    'unchanged Step 1 Continue creates no Draft or mutation offline',
+    (tester) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        newEntry: true,
+        missingResumeLanguage: true,
+      );
+      api.offline = true;
+      await tester.tap(find.byKey(const Key('builder-continue')));
+      await tester.pumpAndSettle();
+      expect(
+        container!.read(routerProvider).routeInformationProvider.value.uri.path,
+        '/builder/2',
+      );
+      expect(api.requests, isEmpty);
+      expect(await database.draftFor(repository.user, api.server.id), isNull);
+      expect(
+        await database.sectionDraft(
+          repository.user,
+          api.server.id,
+          'target_role',
+        ),
+        isNull,
+      );
+      expect(find.textContaining('Draft saved'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'reverting Personal edits and no-op Save do not advance versions',
+    (tester) async {
+      await pump(tester, state: StartupState.signedIn);
+      await route(tester, '/career/personal');
+      final name = find.byKey(const Key('personal-full_name'));
+      final initial = tester.widget<TextFormField>(name).controller!.text;
+      await tester.enterText(name, 'Temporary edit');
+      await tester.enterText(name, initial);
+      await tester.tap(find.byKey(const Key('save-personal')));
+      await tester.pumpAndSettle();
+      expect(api.requests, isEmpty);
+      expect(api.server.version, 1);
+      expect(await database.draftFor(repository.user, api.server.id), isNull);
+      expect(find.text('Personal information saved.'), findsNothing);
+      expect(
+        find.textContaining('These changes are not saved to your account'),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('Target Role save rebases the next Personal save on its ACK', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      state: StartupState.signedIn,
+      size: const Size(402, 1100),
+    );
+    await route(tester, '/career/personal');
+    final target = find.byKey(const Key('personal-target-role'));
+    await tester.ensureVisible(target);
+    await tester.enterText(target, 'Product Manager');
+    await tester.tap(find.byKey(const Key('save-personal')));
+    await tester.pumpAndSettle();
+    expect(api.server.version, 2);
+    expect(api.server.targetRole, 'Product Manager');
+    final name = find.byKey(const Key('personal-full_name'));
+    await tester.ensureVisible(name);
+    await tester.enterText(name, 'Confirmed name');
+    await tester.tap(find.byKey(const Key('save-personal')));
+    await tester.pumpAndSettle();
+    expect(api.requests.single.frozen!['version'], 2);
+    expect(api.server.version, 3);
+    expect(api.server.personal['full_name'], 'Confirmed name');
+    expect(api.server.targetRole, 'Product Manager');
+    expect(find.text('Your Profile changed elsewhere'), findsNothing);
+  });
+
+  testWidgets('no-op Summary Save preserves the reviewed Profile version', (
+    tester,
+  ) async {
+    api.server = CareerProfile.fromJson({
+      ...api.server.toJson(),
+      'summary': 'Confirmed summary',
+    });
+    await pump(tester, state: StartupState.signedIn);
+    await route(tester, '/career/summary');
+    await tester.ensureVisible(find.byKey(const Key('save-summary')));
+    await tester.tap(find.byKey(const Key('save-summary')));
+    await tester.pumpAndSettle();
+    expect(api.server.version, 1);
+    expect(find.text('Changes saved.'), findsNothing);
+    expect(
+      await database.sectionDraft(repository.user, api.server.id, 'summary'),
+      isNull,
+    );
+    await tester.enterText(
+      find.byKey(const Key('editor-summary')),
+      'Changed summary',
+    );
+    await tester.ensureVisible(find.byKey(const Key('save-summary')));
+    await tester.tap(find.byKey(const Key('save-summary')));
+    await tester.pumpAndSettle();
+    expect(api.server.version, 2);
+    expect(api.server.summary, 'Changed summary');
+  });
+
+  testWidgets('a genuine concurrent Personal change still requires review', (
+    tester,
+  ) async {
+    await pump(tester, state: StartupState.signedIn);
+    await route(tester, '/career/personal');
+    await tester.enterText(
+      find.byKey(const Key('personal-full_name')),
+      'My pending name',
+    );
+    api.server = CareerProfile.fromJson({
+      ...api.server.toJson(),
+      'profile_version': 2,
+      'personal': {...api.server.personal, 'full_name': 'Other confirmed name'},
+    });
+    await tester.tap(find.byKey(const Key('save-personal')));
+    // Save awaits this dialog while its busy indicator remains animated.
+    for (
+      var i = 0;
+      i < 30 && find.text('Your Profile changed elsewhere').evaluate().isEmpty;
+      i++
+    ) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Your Profile changed elsewhere'), findsOneWidget);
+    expect(api.server.personal['full_name'], 'Other confirmed name');
+    expect(api.server.version, 2);
+    expect((await repository.draft(api.server))!.localOnly, isTrue);
+    expect((await repository.draft(api.server))!.frozen, isNull);
+  });
   testWidgets(
     'Back discards local Personal edits; explicit Continue saves incomplete content',
     (tester) async {
@@ -1580,10 +1838,9 @@ void main() {
       expect(find.text('My custom city'), findsOneWidget);
       await tester.tap(find.text('My custom city'));
       await tester.pumpAndSettle();
-      expect(
-        (await repository.draft(api.server))!.personal['city'],
-        'My custom city',
-      );
+      expect(tester.widget<TextField>(city).controller!.text, 'My custom city');
+      expect(await repository.draft(api.server), isNull);
+      expect(api.requests, isEmpty);
     },
   );
   testWidgets(
@@ -2170,7 +2427,7 @@ void main() {
   }
 
   testWidgets(
-    'discard waits for a delayed local write and cannot resurrect it',
+    'ordinary edits create no delayed local write that can resurrect after discard',
     (tester) async {
       final gate = Completer<void>();
       final slow = _DelayedEntityRepository(
@@ -2188,10 +2445,11 @@ void main() {
       );
       await tester.binding.handlePopRoute();
       await tester.pump();
-      expect(currentPath(), '/career/edit/education/new');
+      expect(slow.localWrites, 0);
       gate.complete();
       await tester.pumpAndSettle();
       expect(currentPath(), '/career');
+      expect(slow.localWrites, 0);
       expect(
         await slow.unsavedNew(api.server, EntitySection.education),
         isEmpty,
@@ -2346,7 +2604,10 @@ void main() {
     for (final path in ['/builder/3', '/builder/6']) {
       await route(tester, path);
       expect(find.text(copy.itemIncomplete), findsNothing);
-      expect(find.text(copy.itemSaved), findsOneWidget);
+      expect(
+        find.textContaining(seededExperience.text('job_title')),
+        findsWidgets,
+      );
       expect(api.server.of(EntitySection.experience).single.complete, false);
     }
     expect(entities.requests, isEmpty);
@@ -2475,6 +2736,7 @@ void main() {
         tester,
         state: StartupState.signedIn,
         locale: locale,
+        configuredResumeLanguage: locale,
         size: const Size(402, 1100),
       );
       for (final step in [3, 4, 5, 6]) {
@@ -2516,7 +2778,7 @@ void main() {
       expect(entities.requests, isEmpty, reason: 'viewing never writes');
     });
     testWidgets(
-      'invalid month drafts remain editable after disk reopen $locale',
+      'invalid month Save creates no implicit Draft across restart $locale',
       (tester) async {
         await pump(
           tester,
@@ -2552,7 +2814,7 @@ void main() {
             repository,
             entities.send,
           ).unsavedNew(api.server, section);
-          final id = drafts.single.id;
+          expect(drafts, isEmpty);
 
           // Close both the app and its SQLCipher connection, then open the
           // persisted file with the same key and fresh providers.
@@ -2575,10 +2837,15 @@ void main() {
           );
           await route(tester, '/builder/$step');
           expect(find.text(invalid), findsNothing);
-          expect(find.byKey(Key('card-${section.key}-$id')), findsNothing);
+          expect(
+            await EntityRepository(
+              repository,
+              entities.send,
+            ).savedDrafts(api.server.id, section),
+            isEmpty,
+          );
           expect(tester.takeException(), isNull);
-          // Explicit Add resumes the editor-only recovery draft without
-          // representing it as an acknowledged record in the parent list.
+          // Failed validation must not implicitly make edits persistent.
           await tester.tap(find.byKey(Key('add-${section.key}')));
           await tester.pumpAndSettle();
           expect(currentPath(), '/career/edit/${section.key}/new');
@@ -2587,7 +2854,7 @@ void main() {
                 .widget<TextField>(find.byKey(Key('field-$field')))
                 .controller!
                 .text,
-            invalid,
+            isEmpty,
           );
           expect(tester.takeException(), isNull);
         }
@@ -3509,8 +3776,10 @@ void main() {
 class _DelayedEntityRepository extends EntityRepository {
   _DelayedEntityRepository(super.parent, super.send, this.gate);
   final Future<void> gate;
+  int localWrites = 0;
   @override
   Future<void> retainDraft(String profile, ProfileItem item) async {
+    localWrites++;
     await gate;
     await super.retainDraft(profile, item);
   }

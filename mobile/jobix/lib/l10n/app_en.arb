@@ -306,7 +306,7 @@
   "addAction": "Add",
   "duplicateItem": "This is already in your list.",
   "suggestedSkills": "Suggestions",
-  "saveConflict": "This profile changed on another device. Reload to see the latest version; your edits stay on this device.",
+  "saveConflict": "The saved Profile changed after this screen was opened. Reload to see the latest version; your edits stay on this device.",
   "reloadAction": "Reload",
   "savePending": "A previous save hasn't been confirmed yet.",
   "retrySave": "Retry save",

@@ -3,10 +3,12 @@ import '../../core/design/tokens.dart';
 import '../../l10n/app_localizations.dart';
 
 class SummaryWritingHints extends StatelessWidget {
-  const SummaryWritingHints({super.key});
+  const SummaryWritingHints({this.resumeLanguage, super.key});
+  final String? resumeLanguage;
   @override
   Widget build(BuildContext context) {
     final ar = AppLocalizations.of(context)!.localeName.startsWith('ar');
+    final contentArabic = (resumeLanguage ?? (ar ? 'ar' : 'en')) == 'ar';
     const examples = [
       [
         'What kind of work do you do, or what role are you targeting?',
@@ -60,12 +62,20 @@ class SummaryWritingHints extends StatelessWidget {
                 borderRadius: BorderRadius.circular(TokensV0.cardRadius),
                 side: const BorderSide(color: TokensV0.border),
               ),
-              title: Text(examples[i][ar ? 1 : 0]),
+              title: Text(
+                examples[i][contentArabic ? 1 : 0],
+                textDirection: contentArabic
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
+              ),
               children: [
                 Padding(
                   padding: const EdgeInsets.all(TokensV0.space12),
                   child: Text(
-                    '${ar ? 'مثال:' : 'For example:'} ${examples[i][ar ? 3 : 2]}',
+                    '${contentArabic ? 'مثال:' : 'For example:'} ${examples[i][contentArabic ? 3 : 2]}',
+                    textDirection: contentArabic
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
                   ),
                 ),
               ],

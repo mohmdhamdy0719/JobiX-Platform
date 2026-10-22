@@ -9,6 +9,7 @@ import 'country_autocomplete.dart';
 class PersonalInformationFields extends StatelessWidget {
   const PersonalInformationFields({
     required this.copy,
+    this.writingCopy,
     required this.clearLabel,
     required this.language,
     required this.controllers,
@@ -23,6 +24,7 @@ class PersonalInformationFields extends StatelessWidget {
     super.key,
   });
   final AppLocalizations copy;
+  final AppLocalizations? writingCopy;
   final String clearLabel;
   final String language;
   final Map<String, TextEditingController> controllers;
@@ -47,6 +49,8 @@ class PersonalInformationFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final direction = language == 'ar' ? TextDirection.rtl : TextDirection.ltr;
+    final contentCopy = writingCopy ?? copy;
+    final uiLanguage = copy.localeName.startsWith('ar') ? 'ar' : 'en';
     Widget field(
       String key,
       String label,
@@ -186,9 +190,9 @@ class PersonalInformationFields extends StatelessWidget {
     }
 
     return Directionality(
-      textDirection: direction,
+      textDirection: uiLanguage == 'ar' ? TextDirection.rtl : TextDirection.ltr,
       child: Theme(
-        data: foundationTheme(languageCode: language),
+        data: foundationTheme(languageCode: uiLanguage),
         child: Column(
           children: [
             SliceCard(
@@ -203,20 +207,20 @@ class PersonalInformationFields extends StatelessWidget {
                   field(
                     'full_name',
                     copy.fullName,
-                    copy.nameExample,
+                    contentCopy.nameExample,
                     Icons.badge_outlined,
                   ),
                   field(
                     'email',
                     copy.emailLabel,
-                    copy.emailExample,
+                    contentCopy.emailExample,
                     Icons.mail_outline,
                     keyboard: TextInputType.emailAddress,
                   ),
                   field(
                     'phone',
                     copy.phoneLabel,
-                    copy.phoneExample,
+                    contentCopy.phoneExample,
                     Icons.phone_outlined,
                     keyboard: TextInputType.phone,
                   ),
@@ -238,7 +242,8 @@ class PersonalInformationFields extends StatelessWidget {
                           CountryAutocomplete(
                             controller: controllers['country']!,
                             language: language,
-                            hint: copy.countryExample,
+                            uiLanguage: uiLanguage,
+                            hint: contentCopy.countryExample,
                             clearLabel: clearLabel,
                             enabled: enabled,
                             onChanged: (value) => onChanged('country', value),
@@ -258,6 +263,7 @@ class PersonalInformationFields extends StatelessWidget {
                             history: cityHistory,
                             direction: direction,
                             copy: copy,
+                            hint: contentCopy.cityExample,
                             enabled: enabled,
                             onChanged: (value) => onChanged('city', value),
                           ),
@@ -301,7 +307,7 @@ class PersonalInformationFields extends StatelessWidget {
                   children: [
                     SectionHeading(
                       title: copy.targetRoleOptional,
-                      subtitle: language == 'ar'
+                      subtitle: uiLanguage == 'ar'
                           ? 'يظهر هذا الدور أعلى سيرتك الذاتية.'
                           : 'This role appears near the top of your resume.',
                     ),
@@ -369,6 +375,7 @@ class _CityAutocomplete extends StatefulWidget {
     required this.history,
     required this.direction,
     required this.copy,
+    required this.hint,
     required this.enabled,
     required this.onChanged,
   });
@@ -376,6 +383,7 @@ class _CityAutocomplete extends StatefulWidget {
   final List<String> history;
   final TextDirection direction;
   final AppLocalizations copy;
+  final String hint;
   final bool enabled;
   final ValueChanged<String> onChanged;
   @override
@@ -407,7 +415,7 @@ class _CityAutocompleteState extends State<_CityAutocomplete> {
       focusNode: node,
       textDirection: contentDirection(controller.text, widget.direction),
       decoration: InputDecoration(
-        hintText: widget.copy.cityExample,
+        hintText: widget.hint,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,

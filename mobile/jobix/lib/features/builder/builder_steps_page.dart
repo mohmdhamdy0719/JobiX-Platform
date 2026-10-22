@@ -13,6 +13,7 @@ import '../career_profile/career_profile.dart';
 import '../career_profile/career_profile_repository.dart';
 import '../career_profile/entity_repository.dart';
 import '../career_profile/profile_sections.dart';
+import '../resume/resume_language_repository.dart';
 import 'builder_scaffold.dart';
 import 'entity_cards.dart';
 import 'entity_editor_page.dart';
@@ -27,6 +28,28 @@ const skillCatalog = [
   'Python', 'JavaScript', 'Flutter', 'Customer Service', 'Sales',
   'Marketing', 'Accounting', 'Graphic Design', 'Public Speaking',
   'Time Management', 'Research', 'Writing',
+];
+const skillCatalogArabic = [
+  'التواصل',
+  'العمل الجماعي',
+  'القيادة',
+  'حل المشكلات',
+  'إدارة المشاريع',
+  'Microsoft Excel',
+  'تحليل البيانات',
+  'SQL',
+  'Python',
+  'JavaScript',
+  'Flutter',
+  'خدمة العملاء',
+  'المبيعات',
+  'التسويق',
+  'المحاسبة',
+  'التصميم الجرافيكي',
+  'التحدث أمام الجمهور',
+  'إدارة الوقت',
+  'البحث',
+  'الكتابة',
 ];
 
 const stepSections = {
@@ -343,6 +366,11 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
   }
 
   Widget _skills(AppLocalizations copy, CareerProfile profile) {
+    final language =
+        ref.watch(savedResumeLanguageProvider(profile.id)).valueOrNull ??
+        profile.resumeLanguage ??
+        copy.localeName;
+    final writingArabic = language.startsWith('ar');
     final skills = profile.of(EntitySection.skill);
     final draftQuery = EntityDraftQuery(profile.id, EntitySection.skill);
     final draftState = ref.watch(entityDraftsProvider(draftQuery));
@@ -448,11 +476,14 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                 optionsBuilder: (value) {
                   final query = nameKey(value.text);
                   if (query.isEmpty) return const [];
-                  return skillCatalog.where(
-                    (s) =>
-                        nameKey(s).contains(query) &&
-                        !taken.contains(nameKey(s)),
-                  );
+                  return [
+                    for (var i = 0; i < skillCatalog.length; i++)
+                      if ((nameKey(skillCatalog[i]).contains(query) ||
+                              nameKey(skillCatalogArabic[i]).contains(query)) &&
+                          !taken.contains(nameKey(skillCatalog[i])) &&
+                          !taken.contains(nameKey(skillCatalogArabic[i])))
+                        (writingArabic ? skillCatalogArabic : skillCatalog)[i],
+                  ];
                 },
                 // Selection edits the input; only Add/submit commits it.
                 onSelected: (value) => skillController.text = value,
@@ -463,8 +494,11 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
                     focusNode: focus,
                     maxLength: 100,
                     enabled: !busy,
+                    textDirection: writingArabic
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
                     decoration: InputDecoration(
-                      hintText: copy.skillHint,
+                      hintText: writingArabic ? 'اكتب مهارة' : 'Type a skill',
                       counterText: '',
                     ),
                     onSubmitted: (value) => addSkill(profile, value),

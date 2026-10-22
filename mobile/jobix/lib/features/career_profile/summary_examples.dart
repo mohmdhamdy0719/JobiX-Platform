@@ -43,16 +43,21 @@ class SummaryExamplesButton extends StatelessWidget {
     required this.controller,
     required this.enabled,
     required this.onChanged,
+    this.resumeLanguage,
     super.key,
   });
 
   final TextEditingController controller;
   final bool enabled;
   final ValueChanged<String> onChanged;
+  final String? resumeLanguage;
 
   Future<void> _open(BuildContext context) async {
     final ar = Localizations.localeOf(context).languageCode == 'ar';
-    final samples = ar ? summaryExamplesArabic : summaryExamplesEnglish;
+    final contentArabic = (resumeLanguage ?? (ar ? 'ar' : 'en')) == 'ar';
+    final samples = contentArabic
+        ? summaryExamplesArabic
+        : summaryExamplesEnglish;
     final selected = await showDialog<String>(
       context: context,
       builder: (dialogContext) {
@@ -82,7 +87,9 @@ class SummaryExamplesButton extends StatelessWidget {
                       readOnly: true,
                       minLines: 6,
                       maxLines: 12,
-                      textDirection: ar ? TextDirection.rtl : TextDirection.ltr,
+                      textDirection: contentArabic
+                          ? TextDirection.rtl
+                          : TextDirection.ltr,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.all(TokensV0.space12),

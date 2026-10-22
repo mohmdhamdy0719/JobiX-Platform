@@ -11,6 +11,7 @@ class CountryAutocomplete extends StatefulWidget {
   const CountryAutocomplete({
     required this.controller,
     required this.language,
+    this.uiLanguage,
     required this.onChanged,
     required this.hint,
     required this.clearLabel,
@@ -19,6 +20,7 @@ class CountryAutocomplete extends StatefulWidget {
   });
   final TextEditingController controller;
   final String language, hint, clearLabel;
+  final String? uiLanguage;
   final ValueChanged<String> onChanged;
   final bool enabled;
 
@@ -30,21 +32,27 @@ class _CountryAutocompleteState extends State<CountryAutocomplete> {
   final focus = FocusNode();
   List<String> names = const [];
   String? failure;
+  late Future<void> loading;
 
   @override
   void initState() {
     super.initState();
-    load();
+    loading = load();
   }
 
   @override
   void didUpdateWidget(CountryAutocomplete oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.language != widget.language) load();
+    if (oldWidget.uiLanguage != widget.uiLanguage ||
+        oldWidget.language != widget.language) {
+      loading = load();
+    }
   }
 
   Future<void> load() async {
     final language = widget.language == 'ar' ? 'ar' : 'en';
+    names = [];
+    failure = null;
     try {
       final raw = await rootBundle.loadString(
         'assets/localization/countries_$language.json',
@@ -58,15 +66,17 @@ class _CountryAutocompleteState extends State<CountryAutocomplete> {
               !{'ZZ', 'EU', 'EZ', 'UN', 'QO', 'XA', 'XB'}.contains(entry.key))
             entry.value as String,
       ]..sort();
-      if (!mounted || widget.language != language) return;
+      if (!mounted || widget.language != language) {
+        return;
+      }
       setState(() {
         names = values;
         failure = null;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || widget.language != language) return;
       setState(
-        () => failure = language == 'ar'
+        () => failure = (widget.uiLanguage ?? widget.language) == 'ar'
             ? 'الاقتراحات غير متاحة. يمكنك كتابة الدولة.'
             : 'Suggestions unavailable. You can still type your country.',
       );
@@ -81,9 +91,13 @@ class _CountryAutocompleteState extends State<CountryAutocomplete> {
 
   @override
   Widget build(BuildContext context) => RawAutocomplete<String>(
+    key: ValueKey(widget.language),
     focusNode: focus,
     textEditingController: widget.controller,
-    optionsBuilder: (value) {
+    optionsBuilder: (value) async {
+      final currentLoad = loading;
+      await currentLoad;
+      if (!mounted || currentLoad != loading) return const <String>[];
       final query = value.text.trim().toLowerCase();
       return query.isEmpty
           ? const <String>[]

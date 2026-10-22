@@ -204,7 +204,7 @@ class _CareerBody extends ConsumerWidget {
         ),
         Align(
           alignment: AlignmentDirectional.centerStart,
-          child: TextButton.icon(
+          child: OutlinedButton.icon(
             key: const Key('career-change-resume-language'),
             onPressed: () =>
                 showCareerResumeLanguageDialog(context, ref, profile),

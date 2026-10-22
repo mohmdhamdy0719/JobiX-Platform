@@ -19,6 +19,7 @@ import '../career_profile/career_profile.dart';
 import '../career_profile/career_profile_repository.dart';
 import '../career_profile/entity_repository.dart';
 import '../career_profile/profile_sections.dart';
+import '../resume/resume_language_repository.dart';
 import 'builder_scaffold.dart';
 import 'entity_labels.dart';
 import 'save_feedback.dart';
@@ -423,6 +424,11 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
   @override
   Widget build(BuildContext context) {
     final copy = AppLocalizations.of(context)!;
+    final writingLanguage = profile == null
+        ? copy.localeName
+        : ref.watch(savedResumeLanguageProvider(profile!.id)).valueOrNull ??
+              profile!.resumeLanguage ??
+              copy.localeName;
     final title = sectionTitle(copy, widget.section);
     final back = IconButton(
       key: const Key('editor-back'),
@@ -507,7 +513,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               const SizedBox(height: TokensV0.space16),
             ],
             for (final field in widget.section.fields) ...[
-              _field(copy, field),
+              _field(copy, field, writingLanguage),
               if (field.name == 'description') ...[
                 const SizedBox(height: TokensV0.space8),
                 JobixImprovement(original: item!.text('description')),
@@ -515,14 +521,22 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               const SizedBox(height: TokensV0.space16),
             ],
             const SizedBox(height: TokensV0.space8),
-            SectionWritingGuidance(section: widget.section),
+            SectionWritingGuidance(
+              section: widget.section,
+              resumeLanguage: writingLanguage,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _field(AppLocalizations copy, SectionField field) {
+  Widget _field(
+    AppLocalizations copy,
+    SectionField field,
+    String writingLanguage,
+  ) {
+    final writingArabic = writingLanguage.startsWith('ar');
     final label = fieldLabel(copy, widget.section, field.name);
     final key = Key('field-${field.name}');
     final isEducationSuggestion =
@@ -538,12 +552,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         fieldKey: key,
         controller: controllers[field.name]!,
         label: field.required ? '$label *' : label,
-        hint: _fieldHint(
-          widget.section,
-          field.name,
-          copy.localeName.startsWith('ar'),
-        )!,
-        language: copy.localeName.startsWith('ar') ? 'ar' : 'en',
+        hint: _fieldHint(widget.section, field.name, writingArabic)!,
+        language: writingArabic ? 'ar' : 'en',
         suggestions: institutions ? catalog.institutions : catalog.studyFields,
         errorText: _error(copy, field),
         clearLabel: copy.clearField,
@@ -586,7 +596,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           DropdownButtonFormField<String>(
             key: key,
             value: selected.isEmpty ? null : selected,
-            hint: Text(_fieldHint(widget.section, 'degree', ar)!),
+            hint: Text(_fieldHint(widget.section, 'degree', writingArabic)!),
             decoration: InputDecoration(
               labelText: '$label *',
               errorText: _error(copy, field),
@@ -620,10 +630,15 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
               key: const Key('field-degree-other'),
               enabled: !busy && !savePending,
               controller: degreeOtherController,
+              textDirection: writingArabic
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
               inputFormatters: [LengthLimitingTextInputFormatter(194)],
               decoration: InputDecoration(
                 labelText: copy.fieldDegreeTitle,
-                hintText: copy.fieldDegreeTitleHint,
+                hintText: writingArabic
+                    ? 'أدخل مؤهلك'
+                    : 'Enter your qualification',
                 errorText:
                     saveAttempted && degreeOtherController.text.trim().isEmpty
                     ? copy.problemRequired
@@ -660,7 +675,9 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       textDirection:
           field.kind == FieldKind.month || field.kind == FieldKind.url
           ? TextDirection.ltr
-          : null,
+          : writingArabic
+          ? TextDirection.rtl
+          : TextDirection.ltr,
       decoration: InputDecoration(
         labelText: field.name == 'description'
             ? null
@@ -670,12 +687,8 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
         hintText: field.kind == FieldKind.month
             ? copy.monthHint
             : field.name == 'description'
-            ? _descriptionHint(widget.section, copy.localeName.startsWith('ar'))
-            : _fieldHint(
-                widget.section,
-                field.name,
-                copy.localeName.startsWith('ar'),
-              ),
+            ? _descriptionHint(widget.section, writingArabic)
+            : _fieldHint(widget.section, field.name, writingArabic),
         errorText: _error(copy, field),
         suffixIcon: controller.text.isEmpty
             ? null
