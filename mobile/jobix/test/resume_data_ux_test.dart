@@ -1,4 +1,8 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jobix/features/builder/entity_cards.dart';
 import 'package:jobix/features/builder/education_catalog.dart';
@@ -10,6 +14,16 @@ import 'package:jobix/features/career_profile/summary_writing_hints.dart';
 import 'package:jobix/l10n/app_localizations.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  final catalogs = <String, ByteData>{};
+  setUpAll(() async {
+    // Read the real packaged bytes outside the fake clock. Only their platform
+    // transport is made synchronous below; parsing/filtering stay production.
+    for (final language in ['en', 'ar']) {
+      final key = 'assets/localization/countries_$language.json';
+      catalogs[key] = await rootBundle.load(key);
+    }
+  });
   for (final appLanguage in ['en', 'ar']) {
     for (final resumeLanguage in ['en', 'ar']) {
       testWidgets(
@@ -147,16 +161,37 @@ void main() {
     testWidgets(
       'country autofill uses Resume $resumeLanguage, not app $appLanguage',
       (tester) async {
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        rootBundle.clear();
+        messenger.setMockMessageHandler('flutter/assets', (message) {
+          final key = utf8.decode(Uint8List.sublistView(message!));
+          final bytes = catalogs[key];
+          return bytes == null
+              ? messenger.delegate.send('flutter/assets', message)
+              : SynchronousFuture<ByteData?>(bytes);
+        });
+        addTearDown(() {
+          messenger.setMockMessageHandler('flutter/assets', null);
+          // Never retain a Future created in this test's fake-async zone.
+          rootBundle.clear();
+        });
         final controller = TextEditingController();
         addTearDown(controller.dispose);
+        Future<Iterable<String>> catalogOptions(TextEditingValue value) async {
+          final pending = tester
+              .widget<RawAutocomplete<String>>(
+                find.byType(RawAutocomplete<String>),
+              )
+              .optionsBuilder(value);
+          // Flush fake-zone microtasks before awaiting the async builder.
+          // Awaiting it first suspends the test that must advance that clock.
+          await tester.pump();
+          return await pending;
+        }
+
         Future<void> waitForCatalog() async {
-          await tester.runAsync(() async {
-            await tester
-                .widget<RawAutocomplete<String>>(
-                  find.byType(RawAutocomplete<String>),
-                )
-                .optionsBuilder(TextEditingValue.empty);
-          });
+          await catalogOptions(TextEditingValue.empty);
           await tester.pumpAndSettle();
         }
 
@@ -180,11 +215,7 @@ void main() {
         final expected = resumeLanguage == 'ar' ? 'مصر' : 'Egypt';
         final query = resumeLanguage == 'ar' ? 'مص' : 'Egy';
         expect(
-          await tester
-              .widget<RawAutocomplete<String>>(
-                find.byType(RawAutocomplete<String>),
-              )
-              .optionsBuilder(TextEditingValue(text: query)),
+          await catalogOptions(TextEditingValue(text: query)),
           contains(expected),
           reason: 'Bundled country data must be loaded before suggesting.',
         );

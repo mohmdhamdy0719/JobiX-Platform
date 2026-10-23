@@ -170,6 +170,20 @@ settle popup animations before interacting. Keep fixture snapshots private and
 verify restoration after every live mutation pass. This is still host UI
 verification, not proof of native Keystore, email callbacks or process-death recovery.
 
+Keep bundled-asset widget tests in one clock domain; do not use `runAsync`
+to await work that was already started inside the widget's fake-async zone.
+
+**Why:** Platform asset delivery and cached asset Futures can outlive or depend
+on a suspended fake clock. Preloading strings alone did not resolve the hang;
+Flutter's test messenger also documents that awaiting async handlers without
+advancing fake microtasks can stall a test.
+
+**How to apply:** For deterministic bundled-catalog tests, load the actual
+packaged bytes outside `testWidgets`, use synchronous test-only asset-channel
+delivery for those bytes, pump pending microtasks, and clear per-test caches.
+Keep the production parser and selection assertions intact; do not substitute
+invented catalog entries or arbitrary delays.
+
 Flutter dependency restoration can run localization generation/formatting before
 downloading missing packages.
 
