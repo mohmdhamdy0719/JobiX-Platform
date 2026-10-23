@@ -509,6 +509,11 @@ class _BuilderSectionsStepState extends ConsumerState<BuilderSectionsStep> {
             const SizedBox(width: TokensV0.space8),
             FilledButton.tonal(
               key: const Key('skill-add'),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(TokensV0.controlRadius),
+                ),
+              ),
               onPressed: busy
                   ? null
                   : () => addSkill(profile, skillController.text),

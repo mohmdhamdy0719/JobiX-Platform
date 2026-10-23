@@ -267,6 +267,39 @@ void main() {
     );
   }
   for (final language in ['en', 'ar']) {
+    for (final size in [const Size(180, 280), const Size(280, 350)]) {
+      testWidgets('template name and bounded card $language $size', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          fixtures.app(
+            Center(
+              child: SizedBox(
+                width: size.width,
+                height: size.height,
+                child: ResumeTemplateCard(
+                  language: language,
+                  templateId: 'resume_ats_${language}_v1',
+                  onInspect: () {},
+                ),
+              ),
+            ),
+            language: language,
+          ),
+        );
+        await tester.pumpAndSettle();
+        final copy = ResumeCopy.of(
+          tester.element(find.byType(ResumeTemplateCard)),
+        );
+        expect(
+          tester
+              .widget<Text>(find.byKey(const Key('selected-template-name')))
+              .data,
+          resumeTemplateDisplayName(copy, 'resume_ats_${language}_v1'),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
     testWidgets(
       'native resume presentation $language at phone width has truthful states and working actions',
       (tester) async {

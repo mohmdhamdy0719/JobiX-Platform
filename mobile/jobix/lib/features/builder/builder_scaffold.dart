@@ -10,7 +10,7 @@ import 'resume_journey.dart';
 const builderSteps = 6;
 
 String stepTitle(AppLocalizations copy, int step) => switch (step) {
-  1 => copy.stepPersonal,
+  1 => copy.personalInformation,
   2 => copy.stepSummary,
   3 => copy.stepExperience,
   4 => copy.stepEducation,
@@ -83,12 +83,14 @@ class BuilderScaffold extends StatelessWidget {
           icon: const BackButtonIcon(),
           onPressed: busy ? null : onBack,
         ),
-        bottom: PrimaryAction(
-          key: const Key('career-section-back-bottom'),
-          label: copy.backAction,
-          busy: busy,
-          onPressed: onBack,
-        ),
+        bottom: step == 5 && MediaQuery.viewInsetsOf(context).bottom > 0
+            ? null
+            : PrimaryAction(
+                key: const Key('career-section-back-bottom'),
+                label: copy.backAction,
+                busy: busy,
+                onPressed: onBack,
+              ),
         child: child,
       );
     }
@@ -103,25 +105,27 @@ class BuilderScaffold extends StatelessWidget {
           icon: const BackButtonIcon(),
           onPressed: busy ? null : () => requestJobixBack(context),
         ),
-        bottom: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: busy ? null : () => requestJobixBack(context),
-                child: Text(copy.backToReview),
+        bottom: step == 5 && MediaQuery.viewInsetsOf(context).bottom > 0
+            ? null
+            : Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: busy ? null : () => requestJobixBack(context),
+                      child: Text(copy.backToReview),
+                    ),
+                  ),
+                  const SizedBox(width: TokensV0.space12),
+                  Expanded(
+                    child: PrimaryAction(
+                      key: continueKey ?? const Key('builder-continue'),
+                      label: copy.saveAction,
+                      busy: busy,
+                      onPressed: onContinue,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: TokensV0.space12),
-            Expanded(
-              child: PrimaryAction(
-                key: continueKey ?? const Key('builder-continue'),
-                label: copy.saveAction,
-                busy: busy,
-                onPressed: onContinue,
-              ),
-            ),
-          ],
-        ),
         child: child,
       );
     }
@@ -183,29 +187,33 @@ class BuilderScaffold extends StatelessWidget {
           ],
         ),
       ),
-      bottom: Row(
-        children: [
-          if (onBack != null && step != 1 && step != 6) ...[
-            OutlinedButton.icon(
-              key: const Key('builder-back'),
-              onPressed: busy ? null : () => requestJobixBack(context),
-              // The theme default is full-width; Back stays compact here.
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 50)),
-              icon: const BackButtonIcon(),
-              label: Text(copy.backAction),
+      bottom: step == 5 && MediaQuery.viewInsetsOf(context).bottom > 0
+          ? null
+          : Row(
+              children: [
+                if (onBack != null && step != 1 && step != 6) ...[
+                  OutlinedButton.icon(
+                    key: const Key('builder-back'),
+                    onPressed: busy ? null : () => requestJobixBack(context),
+                    // The theme default is full-width; Back stays compact here.
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 50),
+                    ),
+                    icon: const BackButtonIcon(),
+                    label: Text(copy.backAction),
+                  ),
+                  const SizedBox(width: TokensV0.space12),
+                ],
+                Expanded(
+                  child: PrimaryAction(
+                    key: continueKey ?? const Key('builder-continue'),
+                    label: continueLabel ?? copy.continueAction,
+                    busy: busy,
+                    onPressed: onContinue,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: TokensV0.space12),
-          ],
-          Expanded(
-            child: PrimaryAction(
-              key: continueKey ?? const Key('builder-continue'),
-              label: continueLabel ?? copy.continueAction,
-              busy: busy,
-              onPressed: onContinue,
-            ),
-          ),
-        ],
-      ),
       child: child,
     );
   }

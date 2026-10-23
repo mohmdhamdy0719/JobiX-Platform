@@ -326,11 +326,13 @@ List<String> reviewedResumeDifferences(
   Map<String, dynamic> authoritative,
 ) {
   final differences = <String>[];
-  // The server may run a newer renderer with the same version labels. Compare
-  // its exact HTML with the locally reviewed output so the Preview can refresh
-  // before any export is submitted. Only the field name is reported.
+  // Local Preview and the deployed canonicalizer can serialize/render the same
+  // saved snapshot differently (including embedded font data). HTML is not a
+  // saved-content identity. Profile saves (including links) advance the profile
+  // version; presentation saves advance the configuration version. Keep those
+  // guards and renderer/configuration compatibility, then submit the fresh
+  // authoritative document/hash through the unchanged server validation.
   for (final key in [
-    'html',
     'source_sha256',
     'profile_version',
     'configuration_version',

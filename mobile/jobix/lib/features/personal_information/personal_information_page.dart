@@ -771,7 +771,9 @@ class _PersonalInformationPageState
                                 ),
                               ),
                             ),
-                            showCheckmark: true,
+                            showCheckmark: false,
+                            labelPadding: EdgeInsets.zero,
+                            padding: EdgeInsets.zero,
                             checkmarkColor: TokensV0.onPrimary,
                             labelStyle: TokensV0.languageChoiceLabel(
                               languageCode: 'en',
@@ -802,7 +804,9 @@ class _PersonalInformationPageState
                                 ),
                               ),
                             ),
-                            showCheckmark: true,
+                            showCheckmark: false,
+                            labelPadding: EdgeInsets.zero,
+                            padding: EdgeInsets.zero,
                             checkmarkColor: TokensV0.onPrimary,
                             labelStyle: TokensV0.languageChoiceLabel(
                               languageCode: 'ar',

@@ -74,7 +74,7 @@ Preview HTML in memory, clean up route/WebView resources, prevent unbounded
 memory/storage growth, and do not persist Preview output in resumes or history.
 Block unresolved save requests and unsupported saved settings rather than
 silently omitting data. Before PDF submission, re-fetch the authoritative
-document and require the existing review flow if it differs. Do not build or
+document and require the existing review flow if its saved-data identity differs. Do not build or
 deploy a production APK until the owner reviews the implementation report.
 
 ## Export interaction state
@@ -90,22 +90,21 @@ background refreshes and obscured which export was downloading.
 **How to apply:** Keep quiet polling free of full-screen progress, stop it for
 terminal jobs, and give each in-flight download its own visible progress state.
 
-## Independently shipped renderer parity
+## Saved-data identity across independently shipped renderers
 
-Keep exact reviewed HTML/hash validation even when renderer and template version
-labels match. On a definitive snapshot difference, show the authoritative
-document in the same Preview and require review before the next normal Export
-tap. Do not silently submit changed content or add a separate updated-Preview
-button to the normal flow.
+Unchanged saved Resume data should open the ordinary Export confirmation without
+an extra review dialog solely because local/server HTML bytes differ. Preserve
+saved profile/configuration versions, server source-hash comparison when present,
+and presentation/renderer compatibility checks. A genuine saved-data difference
+still requires review of the refreshed snapshot.
 
-**Why:** Independently shipped client/server renderers can share version labels
-while emitting different bytes. Retaining the original reviewed snapshot after
-refresh creates a repeated rejection loop; comparing versions alone would hide
-the discrepancy rather than resolve it.
+**Why:** The owner explicitly requested no false review for unchanged saved data.
+Renderer serialization is not saved-data identity. This relies on every approved
+profile/link/presentation mutation advancing the corresponding saved version.
 
-**How to apply:** Test real standalone canonicalizer parity as well as the native
-route's next-tap snapshot. Keep shared render dependencies usable without Flutter.
-Distinguish definitive rejected intents from ambiguous outcomes: only the former
-can be discarded for a refreshed review; ambiguous requests retain their original
-idempotency key. Diagnostic output should name differing fields, not document
+**How to apply:** Keep fetching the authoritative server document before submission
+and preserve its exact hash/version validation at the server. Test unchanged data
+and genuine version/source/configuration changes separately. New write paths must
+honor the saved-version contract. Ambiguous requests retain their original
+idempotency key; diagnostic output names differing fields, never document
 contents, signed URLs, or raw errors.

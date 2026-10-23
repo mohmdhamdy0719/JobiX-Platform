@@ -8,11 +8,13 @@ class ResumeTemplateCard extends StatelessWidget {
   const ResumeTemplateCard({
     required this.language,
     required this.onInspect,
+    this.templateId,
     this.enlarged = false,
     super.key,
   });
 
   final String language;
+  final String? templateId;
   final VoidCallback onInspect;
   final bool enlarged;
 
@@ -20,101 +22,123 @@ class ResumeTemplateCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isArabic = language.toLowerCase().startsWith('ar');
     final copy = ResumeCopy.of(context);
-    return Semantics(
-      button: true,
-      label: copy.inspectTemplate,
-      child: Material(
-        color: TokensV0.surfaceCard,
-        borderRadius: BorderRadius.circular(TokensV0.cardRadius),
-        child: InkWell(
-          onTap: onInspect,
-          borderRadius: BorderRadius.circular(TokensV0.cardRadius),
-          child: Container(
-            width: enlarged ? 336 : 238,
-            padding: const EdgeInsets.all(TokensV0.space12),
-            decoration: BoxDecoration(
+    final name = resumeTemplateDisplayName(
+      copy,
+      templateId ?? 'resume_ats_${isArabic ? 'ar' : 'en'}_v1',
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = (enlarged ? 336.0 : 238.0)
+            .clamp(0.0, constraints.maxWidth)
+            .toDouble();
+        final previewHeight = constraints.hasBoundedHeight
+            ? (constraints.maxHeight - 198)
+                  .clamp(48.0, enlarged ? 300.0 : 204.0)
+                  .toDouble()
+            : enlarged
+            ? 300.0
+            : 204.0;
+        return Semantics(
+          button: true,
+          label: copy.inspectTemplate,
+          child: Material(
+            color: TokensV0.surfaceCard,
+            borderRadius: BorderRadius.circular(TokensV0.cardRadius),
+            child: InkWell(
+              onTap: onInspect,
               borderRadius: BorderRadius.circular(TokensV0.cardRadius),
-              border: Border.all(color: TokensV0.primary, width: 1.5),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsetsDirectional.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: TokensV0.primary,
-                          borderRadius: BorderRadius.circular(
-                            TokensV0.chipRadius,
+              child: Container(
+                width: width,
+                padding: const EdgeInsets.all(TokensV0.space12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(TokensV0.cardRadius),
+                  border: Border.all(color: TokensV0.primary, width: 1.5),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsetsDirectional.symmetric(
+                                horizontal: 9,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: TokensV0.primary,
+                                borderRadius: BorderRadius.circular(
+                                  TokensV0.chipRadius,
+                                ),
+                              ),
+                              child: Text(
+                                name ?? copy.inspectTemplate,
+                                key: const Key('selected-template-name'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: TokensV0.onPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: TokensV0.space8),
+                          Icon(
+                            isArabic
+                                ? Icons.format_textdirection_r_to_l
+                                : Icons.format_textdirection_l_to_r,
+                            color: TokensV0.primary,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: TokensV0.space12),
+                      SizedBox(
+                        height: previewHeight,
+                        width: double.infinity,
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: SizedBox(
+                            width: 214,
+                            height: 184,
+                            child: _FictionalResumePreview(isArabic: isArabic),
                           ),
                         ),
-                        child: Text(
-                          copy.atsProfessional,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: TokensV0.onPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
+                      ),
+                      const SizedBox(height: TokensV0.space12),
+                      Text(
+                        copy.sampleFictional,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: TokensV0.textSecondary,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: TokensV0.space8),
-                    Icon(
-                      isArabic
-                          ? Icons.format_textdirection_r_to_l
-                          : Icons.format_textdirection_l_to_r,
-                      color: TokensV0.primary,
-                      size: 20,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: TokensV0.space12),
-                SizedBox(
-                  height: enlarged ? 300 : 204,
-                  width: double.infinity,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: SizedBox(
-                      width: 214,
-                      height: 184,
-                      child: _FictionalResumePreview(isArabic: isArabic),
-                    ),
+                      const SizedBox(height: TokensV0.space4),
+                      Text(
+                        copy.atsSingleTemplate,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: TokensV0.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: TokensV0.space4),
+                      Text(
+                        copy.templateSpecifications,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: TokensV0.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: TokensV0.space12),
-                Text(
-                  copy.sampleFictional,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: TokensV0.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: TokensV0.space4),
-                Text(
-                  copy.atsSingleTemplate,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: TokensV0.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: TokensV0.space4),
-                Text(
-                  copy.templateSpecifications,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: TokensV0.textSecondary,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

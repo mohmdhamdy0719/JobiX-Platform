@@ -596,7 +596,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
           DropdownButtonFormField<String>(
             key: key,
             value: selected.isEmpty ? null : selected,
-            hint: Text(_fieldHint(widget.section, 'degree', writingArabic)!),
             decoration: InputDecoration(
               labelText: '$label *',
               errorText: _error(copy, field),
@@ -613,12 +612,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
                 : (value) {
                     if (value == null) return;
                     if (value == 'degree:other') {
-                      edit(
-                        'degree',
-                        degreeOtherController.text.trim().isEmpty
-                            ? ''
-                            : 'other:${degreeOtherController.text}',
-                      );
+                      edit('degree', 'other:${degreeOtherController.text}');
                     } else {
                       edit('degree', value);
                     }
@@ -644,8 +638,7 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
                     ? copy.problemRequired
                     : null,
               ),
-              onChanged: (value) =>
-                  edit('degree', value.trim().isEmpty ? '' : 'other:$value'),
+              onChanged: (value) => edit('degree', 'other:$value'),
             ),
           ],
         ],
@@ -780,7 +773,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       'job_title': 'e.g., Marketing Specialist',
       'company': 'e.g., Jobix Company',
       'location': 'e.g., Alexandria, Egypt',
-      'degree': 'e.g., Bachelor of Commerce',
       'institution': 'e.g., Alexandria University',
       'field_of_study': 'e.g., Business Administration',
       'organization': 'e.g., a community organization',
@@ -798,7 +790,6 @@ class _EntityEditorPageState extends ConsumerState<EntityEditorPage> {
       'job_title': 'مثال: أخصائي تسويق',
       'company': 'مثال: Jobix Company',
       'location': 'مثال: الإسكندرية، مصر',
-      'degree': 'مثال: بكالوريوس التجارة',
       'institution': 'مثال: جامعة الإسكندرية',
       'field_of_study': 'مثال: إدارة الأعمال',
       'organization': 'مثال: مؤسسة مجتمعية',

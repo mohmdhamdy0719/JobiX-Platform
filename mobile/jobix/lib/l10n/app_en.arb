@@ -221,6 +221,12 @@
   "stepReview": "Review Profile",
   "skipAction": "Skip for now",
   "itemsAdded": "{count} added",
+  "itemsCompleted": "{count} completed",
+  "@itemsCompleted": {
+    "placeholders": {
+      "count": { "type": "Object" }
+    }
+  },
   "@itemsAdded": {
     "placeholders": {
       "count": {

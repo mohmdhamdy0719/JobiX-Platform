@@ -688,6 +688,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String itemsCompleted(Object count) {
+    return '$count completed';
+  }
+
+  @override
   String get addRole => 'Add Role';
 
   @override

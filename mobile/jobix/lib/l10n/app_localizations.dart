@@ -1322,6 +1322,12 @@ abstract class AppLocalizations {
   /// **'{count} added'**
   String itemsAdded(Object count);
 
+  /// No description provided for @itemsCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} completed'**
+  String itemsCompleted(Object count);
+
   /// No description provided for @addRole.
   ///
   /// In en, this message translates to:

@@ -13,6 +13,7 @@ import 'package:jobix/app.dart';
 import 'package:jobix/core/database/database.dart';
 import 'package:jobix/core/database/encryption.dart';
 import 'package:jobix/core/design/slice_widgets.dart';
+import 'package:jobix/core/design/tokens.dart';
 import 'package:jobix/core/navigation/router.dart';
 import 'package:jobix/core/navigation/back_policy.dart';
 import 'package:jobix/core/providers.dart';
@@ -1217,41 +1218,62 @@ void main() {
     },
   );
   for (final width in [360.0, 600.0]) {
-    testWidgets(
-      'Arabic language choices fill equal halves without saving at $width',
-      (tester) async {
-        await pump(
-          tester,
-          state: StartupState.signedIn,
-          newEntry: true,
-          missingResumeLanguage: true,
-          locale: 'ar',
-          size: Size(width, 1100),
-        );
-        final english = find.byKey(const Key('resume-en'));
-        final arabic = find.byKey(const Key('resume-ar'));
-        expect(tester.widget<ChoiceChip>(arabic).selected, isTrue);
-        expect(tester.getSize(english), tester.getSize(arabic));
-        final optionsWidth = tester
-            .getSize(find.byKey(const Key('resume-language-options')))
-            .width;
-        expect(
-          tester.getSize(english).width + tester.getSize(arabic).width + 6 + 8,
-          closeTo(optionsWidth, 0.1),
-        );
-        final englishSurface = find
-            .descendant(of: english, matching: find.byType(Material))
-            .first;
-        expect(
-          tester.getSize(englishSurface).width,
-          tester.getSize(english).width,
-        );
-        await tester.tap(english);
-        await tester.pumpAndSettle();
-        expect(tester.getSize(english), tester.getSize(arabic));
-        expect(api.requests, isEmpty);
-      },
-    );
+    for (final locale in ['en', 'ar']) {
+      testWidgets(
+        '$locale language choices fill equal halves without saving at $width',
+        (tester) async {
+          await pump(
+            tester,
+            state: StartupState.signedIn,
+            newEntry: true,
+            missingResumeLanguage: true,
+            locale: locale,
+            size: Size(width, 1100),
+          );
+          final english = find.byKey(const Key('resume-en'));
+          final arabic = find.byKey(const Key('resume-ar'));
+          expect(tester.widget<ChoiceChip>(arabic).selected, locale == 'ar');
+          expect(tester.getSize(english), tester.getSize(arabic));
+          final copy = AppLocalizations.of(
+            tester.element(find.byType(Scaffold)),
+          )!;
+          expect(find.text(copy.personalInformation), findsWidgets);
+          expect(find.text(copy.stepPersonal), findsNothing);
+          for (final (choice, label) in [
+            (english, 'English (LTR)'),
+            (arabic, 'العربية (RTL)'),
+          ]) {
+            final labelRect = tester.getRect(
+              find.descendant(of: choice, matching: find.text(label)),
+            );
+            final buttonRect = tester.getRect(choice);
+            expect(labelRect.center.dx, closeTo(buttonRect.center.dx, 1));
+            expect(labelRect.center.dy, closeTo(buttonRect.center.dy, 1));
+          }
+          final optionsWidth = tester
+              .getSize(find.byKey(const Key('resume-language-options')))
+              .width;
+          expect(
+            tester.getSize(english).width +
+                tester.getSize(arabic).width +
+                6 +
+                8,
+            closeTo(optionsWidth, 0.1),
+          );
+          final englishSurface = find
+              .descendant(of: english, matching: find.byType(Material))
+              .first;
+          expect(
+            tester.getSize(englishSurface).width,
+            tester.getSize(english).width,
+          );
+          await tester.tap(english);
+          await tester.pumpAndSettle();
+          expect(tester.getSize(english), tester.getSize(arabic));
+          expect(api.requests, isEmpty);
+        },
+      );
+    }
   }
   testWidgets('new registration preserves an existing saved Resume language', (
     tester,
@@ -1342,8 +1364,36 @@ void main() {
       resumeClient = await createAuthenticatedResumeClient();
       await pump(tester, state: StartupState.signedIn);
       await route(tester, '/career');
+      final triggerPadding = tester.widget<Padding>(
+        find
+            .ancestor(
+              of: find.byKey(const Key('career-change-resume-language')),
+              matching: find.byType(Padding),
+            )
+            .first,
+      );
+      final spacing = triggerPadding.padding.resolve(TextDirection.ltr);
+      expect(spacing.top, TokensV0.space12);
+      expect(spacing.bottom, TokensV0.space12);
       await tester.tap(find.byKey(const Key('career-change-resume-language')));
       await tester.pumpAndSettle();
+      final selectedTitle = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('career-resume-language-en')),
+          matching: find.text('English (LTR)'),
+        ),
+      );
+      expect(selectedTitle.style!.color, TokensV0.textPrimary);
+      final contrast =
+          (TokensV0.secondarySurface.computeLuminance() + .05) /
+          (selectedTitle.style!.color!.computeLuminance() + .05);
+      expect(contrast, greaterThanOrEqualTo(4.5));
+      expect(
+        tester
+            .getSize(find.byKey(const Key('career-resume-language-en')))
+            .height,
+        greaterThanOrEqualTo(56),
+      );
       expect(languageRequests.single['rpc'], 'read_resume_configuration');
       expect(
         find.byKey(const Key('career-resume-language-ar')),
@@ -1354,6 +1404,19 @@ void main() {
             .join(' | '),
       );
       await tester.tap(find.byKey(const Key('career-resume-language-ar')));
+      await tester.pump();
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: find.byKey(const Key('career-resume-language-ar')),
+                matching: find.text('العربية (RTL)'),
+              ),
+            )
+            .style!
+            .color,
+        TokensV0.textPrimary,
+      );
       await tester.tap(find.byKey(const Key('career-resume-language-done')));
       await tester.pumpAndSettle();
       final write = languageRequests.last['request'] as Map<String, dynamic>;
@@ -1429,6 +1492,32 @@ void main() {
       },
     );
   }
+  testWidgets('skills keyboard hides and restores bottom navigation', (
+    tester,
+  ) async {
+    await pump(tester, state: StartupState.signedIn);
+    await route(tester, '/builder/5');
+    expect(find.byKey(const Key('builder-back')), findsOneWidget);
+    final add = tester.widget<FilledButton>(find.byKey(const Key('skill-add')));
+    final shape = add.style!.shape!.resolve({})! as RoundedRectangleBorder;
+    expect(shape.borderRadius, BorderRadius.circular(TokensV0.controlRadius));
+    final field = find.byKey(const Key('skill-input'));
+    await tester.ensureVisible(field);
+    await tester.tap(field);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(field);
+    expect(find.byKey(const Key('builder-back')), findsNothing);
+    await tester.enterText(field, 'Synthetic skill');
+    expect(tester.widget<TextField>(field).controller!.text, 'Synthetic skill');
+    expect(tester.takeException(), isNull);
+    FocusManager.instance.primaryFocus?.unfocus();
+    tester.view.resetViewInsets();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('builder-back')), findsOneWidget);
+    expect(entities.requests, isEmpty);
+  });
   testWidgets(
     'Target Role is inline, in-memory until explicit Save, and acknowledged by server',
     (tester) async {
@@ -2170,6 +2259,158 @@ void main() {
 
   String currentPath() =>
       container!.read(routerProvider).routeInformationProvider.value.uri.path;
+
+  for (final locale in ['en', 'ar']) {
+    testWidgets('Review saved completion counts exclude drafts $locale', (
+      tester,
+    ) async {
+      api.server = CareerProfile(
+        id: api.server.id,
+        version: 1,
+        resumeLanguage: 'en',
+        items: {
+          for (final section in EntitySection.values)
+            section: [
+              ProfileItem(
+                id: 'saved-${section.key}',
+                section: section,
+                complete: section != EntitySection.volunteer,
+                values: completeEntryValues[section]!,
+              ),
+              if (section != EntitySection.volunteer &&
+                  section != EntitySection.skill &&
+                  section != EntitySection.language)
+                ProfileItem(
+                  id: 'incomplete-${section.key}',
+                  section: section,
+                  complete: false,
+                  values: {section.fields.first.name: 'Incomplete saved entry'},
+                ),
+              ProfileItem(
+                id: 'draft-${section.key}',
+                section: section,
+                complete: true,
+                isDraft: true,
+                isLocalDraft: true,
+                values: completeEntryValues[section]!,
+              ),
+            ],
+        },
+      );
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        locale: locale,
+        size: const Size(402, 1100),
+      );
+      await route(tester, '/builder/6');
+      final copy = AppLocalizations.of(tester.element(find.byType(Scaffold)))!;
+      for (final section in EntitySection.values) {
+        final card = find
+            .ancestor(
+              of: find.byKey(Key('review-edit-${section.key}')),
+              matching: find.byType(SliceCard),
+            )
+            .first;
+        expect(
+          find.descendant(
+            of: card,
+            matching: find.text(
+              section == EntitySection.volunteer
+                  ? copy.itemsAdded(1)
+                  : copy.itemsCompleted(1),
+            ),
+          ),
+          findsOneWidget,
+          reason: section.key,
+        );
+        expect(
+          find.byKey(Key('review-${section.key}-draft-${section.key}')),
+          findsNothing,
+        );
+      }
+      expect(entities.requests, isEmpty);
+    });
+    testWidgets('Education degree selects, saves, reopens and edits $locale', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        state: StartupState.signedIn,
+        locale: locale,
+        size: const Size(402, 1100),
+      );
+      await route(tester, '/career/edit/education/new?origin=career');
+      final degree = find.byKey(const Key('field-degree'));
+      expect(
+        tester
+            .widget<DropdownButtonFormField<String>>(degree)
+            .decoration
+            .hintText,
+        isNull,
+      );
+      await tester.tap(degree);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(locale == 'ar' ? 'أخرى' : 'Other').last);
+      await tester.pumpAndSettle();
+      final other = find.byKey(const Key('field-degree-other'));
+      expect(
+        other,
+        findsOneWidget,
+        reason: 'Other must not clear the model/selection',
+      );
+      await tester.enterText(other, 'Synthetic qualification');
+      await tester.enterText(other, '');
+      expect(
+        other,
+        findsOneWidget,
+        reason: 'Clearing custom text retains Other',
+      );
+      await tester.tap(degree);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find
+            .text(locale == 'ar' ? 'درجة البكالوريوس' : "Bachelor's Degree")
+            .last,
+      );
+      await tester.pumpAndSettle();
+      for (final entry in {
+        'institution': 'Synthetic University',
+        'field_of_study': 'Commerce',
+        'start_month': '2018-01',
+        'end_month': '2022-01',
+      }.entries) {
+        final field = find.byKey(Key('field-${entry.key}'));
+        await tester.ensureVisible(field);
+        await tester.enterText(field, entry.value);
+      }
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      expect(entities.requests, hasLength(1));
+      expect(entities.requests.single.isDraft, isFalse);
+      final saved = api.server.of(EntitySection.education).single;
+      expect(saved.text('degree'), 'degree:bachelor');
+      expect(saved.complete, isTrue);
+      await route(tester, '/career/edit/education/${saved.id}?origin=career');
+      final selected = tester.widget<DropdownButtonFormField<String>>(degree);
+      expect(selected.initialValue, 'degree:bachelor');
+      await tester.tap(degree);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text(locale == 'ar' ? 'درجة الماجستير' : "Master's Degree").last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('editor-save')));
+      await tester.pumpAndSettle();
+      expect(entities.requests, hasLength(2));
+      expect(entities.requests.last.isDraft, isFalse);
+      expect(
+        api.server.of(EntitySection.education).single.text('degree'),
+        'degree:master',
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('existing language edit owns its controller through dismissal', (
     tester,

@@ -36,6 +36,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
   final exportKey = GlobalKey<ResumeExportPanelState>();
   String? message;
   Map<String, dynamic>? preparedDocument;
+  String? templateId;
   bool configurationConflict = false;
   bool layoutPending = false;
   String? confirmedDraftFingerprint;
@@ -70,9 +71,11 @@ class _ResumePageState extends ConsumerState<ResumePage> {
       ownerId = actor;
       if (data is Map) {
         savedLanguage = data['language'] as String;
+        templateId = data['template_id'] as String?;
         version = data['version'] as int;
       } else {
         savedLanguage = p.resumeLanguage ?? 'en';
+        templateId = 'resume_ats_${savedLanguage}_v1';
         version = 0;
       }
       language = savedLanguage;
@@ -140,6 +143,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
     ownerId = actor;
     version = snapshot.configuration['version'] as int;
     savedLanguage = snapshot.configuration['language'] as String;
+    templateId = snapshot.configuration['template_id'] as String;
     if (!keepSelectedLanguage) language = savedLanguage;
     return snapshot;
   }
@@ -190,6 +194,9 @@ class _ResumePageState extends ConsumerState<ResumePage> {
           savedLanguage = selectedLanguage;
           language = selectedLanguage;
           version = result['version'] as int;
+          templateId =
+              result['template_id'] as String? ??
+              'resume_ats_${selectedLanguage}_v1';
           pending = false;
           configurationConflict = false;
           confirmedDraftFingerprint = null;
@@ -418,6 +425,8 @@ class _ResumePageState extends ConsumerState<ResumePage> {
     profile = p;
     version = config['version'] as int;
     savedLanguage = config['language'] as String;
+    templateId =
+        config['template_id'] as String? ?? 'resume_ats_${savedLanguage}_v1';
     return (profile: p, configuration: config);
   }
 
@@ -542,6 +551,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                     alignment: AlignmentDirectional.centerStart,
                     child: ResumeTemplateCard(
                       language: language!,
+                      templateId: templateId,
                       onInspect: () => showDialog<void>(
                         context: context,
                         builder: (dialog) => Dialog(
@@ -552,6 +562,7 @@ class _ResumePageState extends ConsumerState<ResumePage> {
                               children: [
                                 ResumeTemplateCard(
                                   language: language!,
+                                  templateId: templateId,
                                   enlarged: true,
                                   onInspect: () => Navigator.pop(dialog),
                                 ),

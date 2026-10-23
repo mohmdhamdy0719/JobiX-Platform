@@ -186,14 +186,9 @@ class _ReviewBody extends StatelessWidget {
             editKey: section.key,
             meta: section == EntitySection.volunteer
                 ? copy.itemsAdded(profile.count(section))
-                : section == EntitySection.skill ||
-                      section == EntitySection.language ||
-                      profile.count(section) == 0
+                : profile.count(section) == 0
                 ? null
-                : copy.sectionStatusCount(
-                    profile.completeCount(section),
-                    profile.count(section),
-                  ),
+                : copy.itemsCompleted(profile.completeCount(section)),
             onEdit: () => edit('/builder/${stepFor(section)}?origin=review'),
             children: [
               if (profile.of(section).isEmpty)

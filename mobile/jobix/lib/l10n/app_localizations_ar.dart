@@ -675,6 +675,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String itemsCompleted(Object count) {
+    return '$count مكتمل';
+  }
+
+  @override
   String get addRole => 'إضافة دور';
 
   @override

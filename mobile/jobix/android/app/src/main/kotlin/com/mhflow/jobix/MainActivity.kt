@@ -87,12 +87,21 @@ class MainActivity : FlutterActivity() {
                     streamOpened = true
                     stream.use { output ->
                         output.write(bytes)
+                        output.flush()
                         writeCompleted = true
                         bytesWritten = bytes.size
                     }
                     streamClosed = true
-                    val finalSize = readDocumentSize(selectedUri)
-                    val sizeMatches = finalSize == null || finalSize == bytes.size.toLong()
+                    // SAF providers may return stale/zero SIZE immediately
+                    // after close. Read back suspicious metadata when allowed;
+                    // never interpret zero metadata as an actual empty file.
+                    val finalSize = PdfSaveVerification.verifiedSize(
+                        readDocumentSize(selectedUri), bytes
+                    ) { contentResolver.openInputStream(selectedUri) }
+                    val sizeMatches = PdfSaveVerification.completeWrite(
+                        bytes.size.toLong(), bytesWritten?.toLong(),
+                        streamOpened, writeCompleted, streamClosed, finalSize
+                    )
                     completeSave(
                         saved = sizeMatches,
                         stage = if (sizeMatches) "saved" else "size_mismatch",

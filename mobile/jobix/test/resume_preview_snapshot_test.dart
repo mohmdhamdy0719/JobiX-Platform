@@ -427,7 +427,7 @@ void main() {
     },
   );
 
-  test('export review compares exact renderer HTML and saved identity', () {
+  test('export review compares saved identity, not renderer serialization', () {
     final reviewed = {
       'profile_version': 7,
       'configuration_version': 4,
@@ -460,14 +460,14 @@ void main() {
         ...authoritative,
         'html': '<html>new</html>',
       }),
-      isFalse,
+      isTrue,
     );
     expect(
       reviewedResumeDifferences(reviewed, {
         ...authoritative,
         'html': '<html>new</html>',
       }),
-      ['html'],
+      isEmpty,
     );
     expect(
       sameReviewedResume(reviewed, {

@@ -170,6 +170,10 @@ class _ResumeLanguageDialogState extends State<_ResumeLanguageDialog> {
                   key: Key('career-resume-language-${option.$1}'),
                   value: option.$1,
                   groupValue: selected,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: TokensV0.space12,
+                    vertical: TokensV0.space4,
+                  ),
                   onChanged: saving || pendingRequest
                       ? null
                       : (value) => setState(() => selected = value!),
@@ -181,7 +185,7 @@ class _ResumeLanguageDialogState extends State<_ResumeLanguageDialog> {
                     style: TokensV0.languageChoiceLabel(
                       languageCode: option.$1,
                       selected: selected == option.$1,
-                    ),
+                    ).copyWith(color: TokensV0.textPrimary),
                   ),
                 ),
               ),

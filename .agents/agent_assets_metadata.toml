@@ -448,3 +448,17 @@ mtime_ms = 1792725640668
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/e68e211f-851e-49fb-bb5e-b790fe6f3853/8a10cb7f-9213-4b64-9da4-979030030125"
 storage_version_token = "1792725652224384"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "tX7Xm0eW3QeyKP-bGDWsv"
+uri = "file://mobile/jobix/build/app/outputs/flutter-apk/JobiX-development-arm64-debug-49d7dad72ed9.zip"
+type = "unspecified"
+title = "Download JobiX Development APK (ZIP)"
+description = "Contains the verified ARM64 developmentDebug APK, package com.mhflow.jobix. Extract the APK before installing. APK SHA-256: 49d7dad72ed9eb6d831031950609341f7f1a4a9889b489a636b63071c2da4a68"
+logical_id = "e2552184-f083-4574-8edd-bda2b0ceead4"
+content_hash = "sha256:e4973074f8778c3a4497195caff7f2c405cf3c82f2971c2c5795ce7ce690f2ad"
+size = 57229355
+mtime_ms = 1792767426193
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:63f6383c-20a1-405b-888d-24d1da49fd78/e2552184-f083-4574-8edd-bda2b0ceead4/ca935ebd-a9f0-46e5-a74c-a1c6769c985e"
+storage_version_token = "1792767440988073"
+content_type = "application/octet-stream"
