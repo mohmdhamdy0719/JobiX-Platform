@@ -19,3 +19,4 @@
 - [Native resume experience](native-resume-experience.md) — explicit setup completion, renderer-supported presentation, and the owner’s live-activation boundary.
 - [Resume export widget tests](resume-export-widget-tests.md) — post-accept polling tests must navigate to the real operation screen and use bounded pumps.
 - [Career draft authority](career-draft-authority.md) — explicit Drafts are device-only; confirmed cloud data and genuinely uncertain submitted requests stay distinct.
+- [Current JobiX handoff](jobix-handoff.md) — read `docs/JOBIX_AGENT_HANDOFF.md` for the latest tested APK, completed UX fixes, live-state caveats and manual checks.

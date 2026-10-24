@@ -2,6 +2,11 @@
 
 **Snapshot date:** 2026-10-09
 
+> Historical snapshot. The current source/test/APK handoff is
+> [`docs/JOBIX_AGENT_HANDOFF.md`](docs/JOBIX_AGENT_HANDOFF.md), updated
+> 2026-10-24. Recheck live Development and Production facts; do not interpret
+> this Oct 9 cloud inventory as current.
+
 **Local source revision at the start of this handoff update:** `20696923c17c` on
 `main` (65 commits reachable locally).
 **Assessment:** Development MVP has a verified, bounded authenticated PDF

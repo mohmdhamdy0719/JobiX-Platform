@@ -2,6 +2,23 @@
 name: Jobix scope and authority
 description: User-specified product authority and implementation boundaries
 ---
+## Current snapshot and authorization precedence — 2026-10-24
+
+`docs/JOBIX_AGENT_HANDOFF.md` is the current compact implementation and
+verification snapshot. The dated, scoped approvals below are historical records;
+they are not standing permission to repeat cloud mutations, exports, Credit
+operations, or builds. The owner most recently reported Development PDF Export
+enabled, but its live gate/accounting values and revisions were not rechecked
+for the latest APK. Production remains unauthorized.
+
+**Why:** Many one-time migration, deployment, and personal-export approvals in
+this file belong to completed tasks. Reusing them as current authorization would
+expand scope and could repeat irreversible or billable work.
+
+**How to apply:** Follow the latest owner message, inspect current source/status,
+and obtain fresh, exact approval for remote changes or live exports. Read the
+current handoff to distinguish APK build defines from server/database gates.
+
 ## Current product intent: normal Development export
 
 Ship Local Preview and PDF Export together for physical Android validation.

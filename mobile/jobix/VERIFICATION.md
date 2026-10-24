@@ -2304,3 +2304,32 @@ is a test port here, not native SQLCipher verification. Native cold starts,
 backup/transfer exclusion, encrypted storage, locale/RTL and device startup
 still require the unavailable native runners/devices. No staging/production
 resource, product feature, or operational policy was created.
+
+## Final UX fixes and fresh standard Development APK — 2026-10-23/24
+
+This entry records local work only; it does not claim fresh live backend or
+physical-device verification. The consolidated status and all remaining
+limitations are in `../../docs/JOBIX_AGENT_HANDOFF.md`.
+
+- Preview snapshot guard, Review completion counts, Education degree selection,
+  Personal Information labels/alignment, responsive template card/title, Career
+  language dialog, Skills keyboard/Add control, and Android PDF save-size
+  verification were corrected with focused regressions.
+- Validation: 31 default-off snapshot/export/template tests, 52 export-enabled
+  export tests, 15 focused editing/UI tests, 6 updated golden tests, 1 focused
+  language-save test, 4 bounded-template tests, and 14 pure-JVM Android save
+  checks passed. `flutter analyze --no-pub`, changed-Dart format check, and
+  `git diff --check` passed. Dependency versions and lockfiles were unchanged.
+- Built one `developmentDebug` ARM64 APK with `config/dev.local.json` and
+  `JOBIX_ENABLE_PDF_EXPORT=true`; package `com.mhflow.jobix`; exit 0.
+- Artifact:
+  `build/app/outputs/flutter-apk/app-arm64-v8a-development-debug.apk`;
+  121,686,033 bytes; built 2026-10-23 17:55:06 Africa/Cairo.
+- SHA-256:
+  `49d7dad72ed9eb6d831031950609341f7f1a4a9889b489a636b63071c2da4a68`.
+- The latest APK was not installed. Owner-confirmed successful download/open
+  evidence belongs to an earlier device test. The current Android
+  content-provider save path still needs device verification.
+- A downloadable ZIP contains the identical APK because the raw file exceeds
+  the Library's 100 MiB limit:
+  `build/app/outputs/flutter-apk/JobiX-development-arm64-debug-49d7dad72ed9.zip`.

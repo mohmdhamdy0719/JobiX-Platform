@@ -1,8 +1,9 @@
 # Jobix
 
 Jobix is a native Flutter career-profile and resume app backed by Supabase.
-Start with `README.md`, `PROJECT_STATUS.md`, and `docs/AI_HANDOFF.md` for the
-2026-10-09 handoff. `PROJECT_HANDOFF.md` is an earlier, superseded snapshot.
+Start with `docs/JOBIX_AGENT_HANDOFF.md` for the current JobiX snapshot.
+`PROJECT_STATUS.md` and `docs/AI_HANDOFF.md` are historical 2026-10-09
+references; `PROJECT_HANDOFF.md` is older and superseded.
 The root pnpm workspace is supporting Replit infrastructure, not another
 Jobix client.
 
@@ -14,6 +15,8 @@ Jobix client.
 - `mobile/jobix/supabase/` — migrations, permission tests and maintenance scripts.
 - `mobile/jobix/README.md` — native setup and public client configuration.
 - `mobile/jobix/VERIFICATION.md` — verification history and limitations.
+- `docs/JOBIX_AGENT_HANDOFF.md` — latest app/source, Development, APK and
+  outstanding device-verification status; recheck dated cloud facts.
 - `docs/handoff/` — architecture, decisions, known gaps and migration guidance.
 - `attached_assets/` — authoritative architecture, product and design references.
 
@@ -86,16 +89,20 @@ not installed; neither is required for this Android command-line setup.
 The ignored `config/dev.local.json` was restored from the existing public
 development settings and passed the client configuration check. No server
 credentials, staging/production configuration or export-gate changes were added.
-No Android device is connected. No APK build, native launch or live-service
-verification was performed in this setup; local tests are not device evidence.
-The SDK and public local configuration must be restored again in a fresh clone.
+This paragraph records the Oct 10 import setup only. On Oct 23 a fresh standard
+Development ARM64 debug APK was built; see `docs/JOBIX_AGENT_HANDOFF.md` and
+`mobile/jobix/VERIFICATION.md` for its checksum and limitations. The latest APK
+was not installed. The SDK and ignored public local configuration must be
+restored again in a fresh clone.
 
 To launch Android, connect an authorized device, confirm its identifier with
 `flutter devices`, then run from `mobile/jobix/`:
 
 ```sh
 flutter run -d <android-device-id> \
-  --dart-define-from-file=config/dev.local.json
+  --flavor development \
+  --dart-define-from-file=config/dev.local.json \
+  --dart-define=JOBIX_ENABLE_PDF_EXPORT=true
 ```
 
 Do not fabricate staging/production configuration or release signing. The

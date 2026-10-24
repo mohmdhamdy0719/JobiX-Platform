@@ -2,6 +2,12 @@
 
 **Snapshot:** 2026-10-09
 
+> **Historical snapshot notice (2026-10-24):** This document preserves the
+> Oct 9 account handoff. Its APK, tests, deployed revisions, gates and
+> production-readiness statements are not the latest state. Start with
+> [`docs/JOBIX_AGENT_HANDOFF.md`](JOBIX_AGENT_HANDOFF.md) for the newer app,
+> test and APK record; it also marks which cloud/device facts remain unverified.
+
 **Product:** native Flutter/Supabase JobiX V2.
 **Current posture:** development happy path verified on the owner's Samsung
 M31; public production is **NO-GO**. The owner requested repository
